@@ -1,0 +1,19 @@
+{
+  "name": "@repo/app-modules",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types.ts",
+    "./server-actions": "./server-actions/index.ts"
+  },
+  "dependencies": {
+    "@repo/api": "workspace:*",
+    "next": "15.4.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

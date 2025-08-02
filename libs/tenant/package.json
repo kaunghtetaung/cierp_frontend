@@ -1,0 +1,40 @@
+{
+  "name": "@repo/tenant",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./client": "./client.ts",
+    "./server": "./server.ts",
+    "./middleware-core": "./middleware-core.ts",
+    "./providers": "./providers.ts",
+    "./hooks": "./hooks.ts",
+    "./tenant-service": "./tenant-service.ts",
+    "./wrapper": "./wrapper.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/security": "workspace:*",
+    "@repo/cache": "workspace:*",
+    "@repo/api": "workspace:*",
+    "tldts": "^6.1.59",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "next": "^15.4.3"
+  }
+}

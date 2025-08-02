@@ -1,0 +1,47 @@
+{
+  "name": "@repo/auth",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./core": "./core/index.ts",
+    "./server": "./server/server.ts",
+    "./server-api": "./server/server-api.ts",
+    "./hooks": "./hooks/hooks.ts",
+    "./auth-provider": "./components/auth-provider.tsx",
+    "./login-page": "./components/login-page.tsx",
+    "./login-utils": "./utils/login-utils.ts",
+    "./api-routes": "./routes/api-routes.ts",
+    "./token-manager": "./managers/token-manager.ts",
+    "./refactored-token-manager": "./managers/refactored-token-manager.ts",
+    "./token-types": "./types/token-types.ts",
+    "./oidc-client": "./clients/oidc-client.ts",
+    "./initializer-token-strategy": "./managers/initializer-token-strategy.ts",
+    "./tenant-token-strategy": "./managers/tenant-token-strategy.ts",
+    "./user-token-strategy": "./managers/user-token-strategy.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/security": "workspace:*",
+    "@repo/cache": "workspace:*",
+    "@repo/api": "workspace:*",
+    "@repo/tenant": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "next": "^15.4.3"
+  }
+}

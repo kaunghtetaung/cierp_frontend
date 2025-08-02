@@ -1,0 +1,35 @@
+{
+  "name": "@repo/post",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./post-service": "./services/post-service.ts",
+    "./types": "./types/types.ts",
+    "./post-types": "./types/post-types.ts",
+    "./post-wrapper": "./components/post-wrapper.ts",
+    "./tenant-context": "./context/tenant-context.ts",
+    "./strategies/cache": "./strategies/cache-strategy.ts",
+    "./strategies/category": "./strategies/category-strategy.ts",
+    "./strategies/post-data": "./strategies/post-data-strategy.ts",
+    "./strategies/search": "./strategies/search-strategy.ts",
+    "./strategies/seo": "./strategies/seo-strategy.ts",
+    "./strategies/tag": "./strategies/tag-strategy.ts",
+    "./strategies/utility": "./strategies/utility-strategy.ts",
+    "./strategies/validation": "./strategies/validation-strategy.ts"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/cache": "workspace:*",
+    "@repo/auth": "workspace:*",
+    "@repo/tenant": "workspace:*",
+    "@repo/api": "workspace:*",
+    "next": "15.4.3",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

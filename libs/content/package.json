@@ -1,0 +1,29 @@
+{
+  "name": "@repo/content",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./server": "./server.ts",
+    "./wrapper": "./wrapper.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/cache": "workspace:*",
+    "tldts": "^6.1.59"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {}
+}

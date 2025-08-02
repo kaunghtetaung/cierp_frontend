@@ -1,0 +1,32 @@
+{
+  "name": "@repo/utils",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./common": "./common/index.ts",
+    "./common/*": "./common/*.ts",
+    "./client": "./client/index.ts", 
+    "./client/*": "./client/*.ts",
+    "./server": "./server/index.ts",
+    "./server/*": "./server/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.0.0",
+    "tldts": "^6.1.59",
+    "next": "15.4.3",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@repo/types": "workspace:*",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

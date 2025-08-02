@@ -1,0 +1,368 @@
+// Simplified Token Management - Following your established patterns
+import { getCacheInstance, CacheKeys, CacheTTL } from "@repo/cache";
+import { getTenantSecrets } from "@repo/tenant/wrapper";
+
+// Simple types (much cleaner than before)
+export interface TokenData {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
+  scope?: string;
+  refresh_token?: string;
+}
+
+export interface StoredToken {
+  token: string;
+  tokenData: TokenData; // Store full JWT token data
+  expiresAt: number;
+  type: 'initializer' | 'tenant' | 'user';
+  createdAt: number;
+}
+
+// Constants
+const TOKEN_EXPIRY_BUFFER = 300; // 5 minutes buffer
+const DEFAULT_TOKEN_TTL = 3600; // 1 hour
+
+// ===== INITIALIZER TOKEN FUNCTIONS =====
+
+export async function getInitializerToken(): Promise<string | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.initializerToken();
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Check if token is expired (with buffer)
+  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    await cache.del(key);
+    return null;
+  }
+  
+  return stored.token;
+}
+
+export async function setInitializerToken(tokenData: TokenData): Promise<void> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.initializerToken();
+  
+  const now = Math.floor(Date.now() / 1000);
+  const storedToken: StoredToken = {
+    token: tokenData.access_token,
+    tokenData,
+    expiresAt: now + tokenData.expires_in,
+    type: 'initializer',
+    createdAt: now
+  };
+  
+  await cache.set(key, storedToken, tokenData.expires_in);
+}
+
+
+export async function getInitializerTokenData(): Promise<StoredToken | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.initializerToken();
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Check if token is expired (with buffer)
+  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    await cache.del(key);
+    return null;
+  }
+  
+  return stored;
+}
+
+export async function clearInitializerToken(): Promise<void> {
+  const cache = getCacheInstance();
+  await cache.del(CacheKeys.initializerToken());
+}
+
+// ===== TENANT TOKEN FUNCTIONS =====
+
+export async function getTenantToken(tenantId: string): Promise<string | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.tenantAccessToken(tenantId);
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Check if token is expired (with buffer)
+  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    await cache.del(key);
+    return null;
+  }
+  
+  return stored.token;
+}
+
+export async function setTenantToken(tenantId: string, tokenData: TokenData): Promise<void> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.tenantAccessToken(tenantId);
+  
+  const now = Math.floor(Date.now() / 1000);
+  const storedToken: StoredToken = {
+    token: tokenData.access_token,
+    tokenData,
+    expiresAt: now + tokenData.expires_in,
+    type: 'tenant',
+    createdAt: now
+  };
+  
+  await cache.set(key, storedToken, tokenData.expires_in);
+}
+
+
+export async function getTenantTokenData(tenantId: string): Promise<StoredToken | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.tenantAccessToken(tenantId);
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Check if token is expired (with buffer)
+  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    await cache.del(key);
+    return null;
+  }
+  
+  return stored;
+}
+
+export async function clearTenantToken(tenantId: string): Promise<void> {
+  const cache = getCacheInstance();
+  await cache.del(CacheKeys.tenantAccessToken(tenantId));
+}
+
+// ===== USER TOKEN FUNCTIONS =====
+
+export async function getUserAccessToken(tenantId: string, userId: string): Promise<string | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.userAccessToken(tenantId, userId);
+  
+  console.log(`[getUserAccessToken] key: ${key}`);
+  const token = await cache.get<string>(key);
+  console.log(`[getUserAccessToken] token found: ${!!token}`);
+  
+  // Simply return JWT token string for backend offline verification
+  return token;
+}
+
+export async function setUserAccessToken(
+  tenantId: string, 
+  userId: string, 
+  token: string,
+  expiresIn: number
+): Promise<void> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.userAccessToken(tenantId, userId);
+  
+  console.log(`[setUserAccessToken] key: ${key}, expiresIn: ${expiresIn}`);
+  console.log(`[setUserAccessToken] token length: ${token?.length || 0}`);
+  
+  // Store only JWT token string for backend offline verification
+  await cache.set(key, token, expiresIn);
+}
+
+
+export async function getUserAccessTokenData(tenantId: string, userId: string): Promise<StoredToken | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.userAccessToken(tenantId, userId);
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Check if token is expired (with buffer)
+  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    await cache.del(key);
+    return null;
+  }
+  
+  return stored;
+}
+
+export async function getUserRefreshToken(tenantId: string, userId: string): Promise<string | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.userRefreshToken(tenantId, userId);
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Refresh tokens don't need expiry buffer check - they're long-lived
+  return stored.token;
+}
+
+export async function setUserRefreshToken(
+  tenantId: string, 
+  userId: string, 
+  refreshToken: string, 
+  expiresIn: number = 7 * 24 * 3600 // 7 days
+): Promise<void> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.userRefreshToken(tenantId, userId);
+  
+  const now = Math.floor(Date.now() / 1000);
+  const tokenData: TokenData = {
+    access_token: refreshToken, // For refresh tokens, we store the refresh token as access_token
+    expires_in: expiresIn,
+    token_type: 'refresh'
+  };
+  
+  const storedToken: StoredToken = {
+    token: refreshToken,
+    tokenData,
+    expiresAt: now + expiresIn,
+    type: 'user',
+    createdAt: now
+  };
+  
+  await cache.set(key, storedToken, expiresIn);
+}
+
+export async function getUserRefreshTokenData(tenantId: string, userId: string): Promise<StoredToken | null> {
+  const cache = getCacheInstance();
+  const key = CacheKeys.userRefreshToken(tenantId, userId);
+  
+  const stored = await cache.get<StoredToken>(key);
+  if (!stored) return null;
+  
+  // Refresh tokens don't need expiry buffer check - they're long-lived
+  return stored;
+}
+
+export async function clearUserTokens(tenantId: string, userId: string): Promise<void> {
+  const cache = getCacheInstance();
+  await Promise.all([
+    cache.del(CacheKeys.userAccessToken(tenantId, userId)),
+    cache.del(CacheKeys.userRefreshToken(tenantId, userId))
+  ]);
+}
+
+// ===== TOKEN PRIORITY LOGIC (Simplified) =====
+
+/**
+ * Get the best available token for a request
+ * Priority: User token > Tenant token > Initializer token
+ */
+export async function getTokenForRequest(tenantId?: string, userId?: string): Promise<string | null> {
+  console.log(`[TokenManager] Getting token for request: tenantId=${tenantId}, userId=${userId}`);
+  
+  // Try user token if we have both tenantId and userId
+  if (tenantId && userId) {
+    const userToken = await getUserAccessToken(tenantId, userId);
+    if (userToken) {
+      console.log(`[TokenManager] ✅ Using userAccessToken for tenant=${tenantId}, user=${userId}`);
+      return userToken;
+    }
+    console.log(`[TokenManager] ❌ No userAccessToken found for tenant=${tenantId}, user=${userId}`);
+  }
+  
+  // Try tenant token if we have tenantId
+  if (tenantId) {
+    const tenantToken = await getTenantToken(tenantId);
+    if (tenantToken) {
+      console.log(`[TokenManager] ⚠️  Using tenantAccessToken for tenant=${tenantId}`);
+      return tenantToken;
+    }
+    console.log(`[TokenManager] ❌ No tenantAccessToken found for tenant=${tenantId}`);
+  }
+  
+  // Fallback to initializer token
+  const initToken = await getInitializerToken();
+  if (initToken) {
+    console.log(`[TokenManager] ⚠️  Using initializerToken as fallback`);
+  } else {
+    console.log(`[TokenManager] ❌ No tokens available!`);
+  }
+  return initToken;
+}
+
+// ===== TOKEN REFRESH LOGIC =====
+
+export async function refreshUserTokenIfNeeded(
+  tenantId: string, 
+  userId: string, 
+  refreshTokenFn: (refreshToken: string) => Promise<TokenData>
+): Promise<string | null> {
+  // Check if access token is expired
+  const accessToken = await getUserAccessToken(tenantId, userId);
+  if (accessToken) return accessToken; // Still valid
+  
+  // Get refresh token
+  const refreshToken = await getUserRefreshToken(tenantId, userId);
+  if (!refreshToken) return null;
+  
+  try {
+    // Use the provided refresh function
+    const tokenData = await refreshTokenFn(refreshToken);
+    
+    // Store new tokens with correct parameters
+    await setUserAccessToken(tenantId, userId, tokenData.access_token, tokenData.expires_in);
+    if (tokenData.refresh_token) {
+      await setUserRefreshToken(tenantId, userId, tokenData.refresh_token);
+    }
+    
+    return tokenData.access_token;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    // Clear invalid refresh token
+    await clearUserTokens(tenantId, userId);
+    return null;
+  }
+}
+
+// New function to get full token data for API requests
+export async function getTokenDataForRequest(tenantId?: string, userId?: string): Promise<StoredToken | null> {
+  // Try user token if we have both tenantId and userId
+  if (tenantId && userId) {
+    const userTokenData = await getUserAccessTokenData(tenantId, userId);
+    if (userTokenData) return userTokenData;
+  }
+  
+  // Try tenant token if we have tenantId
+  if (tenantId) {
+    const tenantTokenData = await getTenantTokenData(tenantId);
+    if (tenantTokenData) return tenantTokenData;
+  }
+  
+  // Fallback to initializer token
+  return await getInitializerTokenData();
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+export async function clearAllTokens(): Promise<void> {
+  const cache = getCacheInstance();
+  // Clear all token patterns following your established cache key structure
+  try {
+    await cache.deletePattern('ciApp:*:Token:*');
+    await cache.del(CacheKeys.initializerToken());
+  } catch (error) {
+    console.warn('Failed to clear all tokens:', error);
+  }
+}
+
+export async function getTokenMetadata(tenantId?: string, userId?: string): Promise<{
+  hasInitializer: boolean;
+  hasTenant: boolean;
+  hasUser: boolean;
+  initializerData?: StoredToken;
+  tenantData?: StoredToken;
+  userData?: StoredToken;
+}> {
+  const [initializer, tenant, user] = await Promise.all([
+    getInitializerTokenData(),
+    tenantId ? getTenantTokenData(tenantId) : null,
+    tenantId && userId ? getUserAccessTokenData(tenantId, userId) : null
+  ]);
+  
+  return {
+    hasInitializer: !!initializer,
+    hasTenant: !!tenant,
+    hasUser: !!user,
+    initializerData: initializer || undefined,
+    tenantData: tenant || undefined,
+    userData: user || undefined
+  };
+}

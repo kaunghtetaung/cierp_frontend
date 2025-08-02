@@ -1,0 +1,51 @@
+{
+  "name": "@repo/language",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts",
+      "require": "./index.ts"
+    },
+    "./config": {
+      "types": "./config.ts",
+      "import": "./config.ts",
+      "require": "./config.ts"
+    },
+    "./service": {
+      "types": "./service.ts",
+      "import": "./service.ts",
+      "require": "./service.ts"
+    },
+    "./types": {
+      "types": "./types.ts",
+      "import": "./types.ts",
+      "require": "./types.ts"
+    },
+    "./utils": {
+      "types": "./utils.ts",
+      "import": "./utils.ts",
+      "require": "./utils.ts"
+    },
+    "./LanguageProvider": {
+      "types": "./LanguageProvider.tsx",
+      "import": "./LanguageProvider.tsx",
+      "require": "./LanguageProvider.tsx"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

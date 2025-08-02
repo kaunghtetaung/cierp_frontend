@@ -1,0 +1,45 @@
+{
+  "name": "@repo/appSchema",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Next.js server-side library for fetching and managing Core module schemas from /core/initialize endpoint",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./service": "./appSchema.service.ts",
+    "./wrapper": "./wrapper.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/api": "workspace:*",
+    "@repo/cache": "workspace:*",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.6.0",
+    "eslint": "^8.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "keywords": [
+    "nextjs",
+    "server-side",
+    "module-schemas",
+    "core-api",
+    "initialize",
+    "tenant",
+    "cache",
+    "typescript"
+  ],
+  "author": "CI App Team",
+  "license": "MIT"
+}

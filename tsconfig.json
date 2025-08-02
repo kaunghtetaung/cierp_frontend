@@ -1,0 +1,63 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["dom", "dom.iterable", "es2022"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@ui/*": ["./libs/ui/*"],
+      "@utils/*": ["./libs/utils/*"],
+      "@types/*": ["./libs/types/*"],
+      "@repo/auth": ["./libs/auth"],
+      "@repo/auth/*": ["./libs/auth/*"],
+      "@repo/app-modules": ["./libs/appModules"],
+      "@repo/app-modules/*": ["./libs/appModules/*"],
+      "@repo/base-dashboard": ["./libs/baseDashboard"],
+      "@repo/base-dashboard/*": ["./libs/baseDashboard/*"],
+      "@repo/api": ["./libs/api"],
+      "@repo/api/*": ["./libs/api/*"],
+      "@repo/cache": ["./libs/cache"],
+      "@repo/cache/*": ["./libs/cache/*"],
+      "@repo/content": ["./libs/content"],
+      "@repo/content/*": ["./libs/content/*"],
+      "@repo/hooks": ["./libs/hooks"],
+      "@repo/hooks/*": ["./libs/hooks/*"],
+      "@repo/language": ["./libs/language"],
+      "@repo/language/*": ["./libs/language/*"],
+      "@repo/page": ["./libs/page"],
+      "@repo/page/*": ["./libs/page/*"],
+      "@repo/post": ["./libs/post"],
+      "@repo/post/*": ["./libs/post/*"],
+      "@repo/section": ["./libs/section"],
+      "@repo/section/*": ["./libs/section/*"],
+      "@repo/security": ["./libs/security"],
+      "@repo/security/*": ["./libs/security/*"],
+      "@repo/tenant": ["./libs/tenant"],
+      "@repo/tenant/*": ["./libs/tenant/*"],
+      "@repo/types": ["./libs/types"],
+      "@repo/types/*": ["./libs/types/*"],
+      "@repo/ui": ["./libs/ui"],
+      "@repo/ui/*": ["./libs/ui/*"],
+      "@repo/utils": ["./libs/utils"],
+      "@repo/utils/*": ["./libs/utils/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

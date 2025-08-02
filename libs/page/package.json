@@ -1,0 +1,24 @@
+{
+  "name": "@repo/page",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types.ts"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/cache": "workspace:*",
+    "@repo/auth": "workspace:*",
+    "@repo/tenant": "workspace:*",
+    "@repo/section": "workspace:*",
+    "@repo/api": "workspace:*",
+    "next": "15.4.3",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

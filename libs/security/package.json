@@ -1,0 +1,37 @@
+{
+  "name": "@repo/security",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./csrf": "./core/csrf.ts",
+    "./cookies": "./core/cookies.ts",
+    "./session": "./utils/session.ts",
+    "./session-manager": "./managers/session-manager.ts",
+    "./validation": "./core/validation.ts",
+    "./encryption": "./core/encryption.ts",
+    "./session-types": "./types/session-types.ts",
+    "./strategies/session-creation": "./strategies/session-creation-strategy.ts",
+    "./strategies/session-validation": "./strategies/session-validation-strategy.ts",
+    "./strategies/session-renewal": "./strategies/session-renewal-strategy.ts",
+    "./strategies/session-storage": "./strategies/session-storage-strategy.ts",
+    "./strategies/session-activity": "./strategies/session-activity-strategy.ts",
+    "./strategies/session-cleanup": "./strategies/session-cleanup-strategy.ts",
+    "./strategies/user-session": "./strategies/user-session-strategy.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.6.0"
+  }
+}
