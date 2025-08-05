@@ -72,7 +72,13 @@ export default async function RootLayout({
   // If we have a critical error, render fallback UI instead of TenantProvider
   if (criticalError && initialError) {
     console.error("Critical error in RootLayout:", initialError);
-    return <CriticalErrorFallback error={initialError} />;
+    return (
+      <html lang="en">
+        <body>
+          <CriticalErrorFallback error={initialError} />
+        </body>
+      </html>
+    );
   }
 
   // Normal operation - use TenantProvider (can handle non-critical tenant errors)

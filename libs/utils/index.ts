@@ -11,5 +11,11 @@ export * from "./client";
 // Type exports
 export type { MultilingualText } from "./common/localization";
 
+// Z-index system
+export * from "./z-index";
+
+// Toast utilities
+export * from "./toast";
+
 // Note: Server-specific utilities should be imported directly:
 // - Use "@repo/utils/server" for server-side utilities

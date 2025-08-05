@@ -21,6 +21,18 @@ export class StandardResponseHandler implements ResponseHandler {
     const contentType = response.headers.get("content-type");
     const isJson = contentType?.includes("application/json");
 
+    // Debug logging for response
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🌐 StandardResponseHandler: Processing response:', {
+        url: response.url,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries([...response.headers.entries()]),
+        contentType
+      });
+    }
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       let errorDetails: any = undefined;
@@ -30,8 +42,40 @@ export class StandardResponseHandler implements ResponseHandler {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
           errorDetails = errorData;
-        } catch {
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ StandardResponseHandler: Error response JSON:', {
+              status: response.status,
+              errorData,
+              errorMessage
+            });
+          }
+        } catch (jsonError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ StandardResponseHandler: Failed to parse error JSON:', {
+              status: response.status,
+              jsonError: jsonError instanceof Error ? jsonError.message : jsonError
+            });
+          }
           // Ignore JSON parsing errors for error responses
+        }
+      } else {
+        // Try to get text content for non-JSON errors
+        try {
+          const errorText = await response.text();
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ StandardResponseHandler: Error response text:', {
+              status: response.status,
+              errorText: errorText.substring(0, 500) // Limit length
+            });
+          }
+          if (errorText && errorText.length > 0) {
+            errorMessage = errorText;
+          }
+        } catch (textError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ StandardResponseHandler: Failed to get error text:', textError);
+          }
         }
       }
 

@@ -46,7 +46,7 @@ export function AppLayout({ children, tenant, appSchemaData }: AppLayoutProps) {
         </DashboardErrorBoundary>
 
         <DashboardErrorBoundary>
-          <main className="flex flex-1 flex-col p-4">{children}</main>
+          <main className="flex flex-1 flex-col p-4 min-w-0 overflow-hidden">{children}</main>
         </DashboardErrorBoundary>
       </SidebarInset>
     </SidebarProvider>

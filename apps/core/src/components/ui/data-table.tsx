@@ -38,6 +38,7 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   searchPlaceholder?: string;
   onRowSelectionChange?: (selectedRows: TData[]) => void;
+  initialColumnVisibility?: VisibilityState;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,11 +47,48 @@ export function DataTable<TData, TValue>({
   searchKey,
   searchPlaceholder = "Search...",
   onRowSelectionChange,
+  initialColumnVisibility = {},
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(initialColumnVisibility);
   const [rowSelection, setRowSelection] = React.useState({});
+  
+  // Track user manual overrides to preserve them
+  const [userOverrides, setUserOverrides] = React.useState<Record<string, boolean>>({});
+
+  // Update column visibility when initialColumnVisibility changes, but preserve user overrides
+  React.useEffect(() => {
+    // Only update if there's actually a change to prevent infinite loops
+    const mergedVisibility = { ...initialColumnVisibility, ...userOverrides };
+    const hasChanged = JSON.stringify(mergedVisibility) !== JSON.stringify(columnVisibility);
+    
+    if (hasChanged) {
+      setColumnVisibility(mergedVisibility);
+    }
+  }, [JSON.stringify(initialColumnVisibility), JSON.stringify(userOverrides)]); // Use JSON.stringify for stable comparison
+
+  // Custom column visibility change handler to track user overrides
+  const handleColumnVisibilityChange = React.useCallback((updater: any) => {
+    setColumnVisibility(prev => {
+      const newVisibility = typeof updater === 'function' ? updater(prev) : updater;
+      
+      // Track what the user manually changed
+      const newOverrides = { ...userOverrides };
+      Object.keys(newVisibility).forEach(columnId => {
+        if (newVisibility[columnId] !== initialColumnVisibility[columnId]) {
+          newOverrides[columnId] = newVisibility[columnId];
+        } else {
+          // Remove override if user set it back to default
+          delete newOverrides[columnId];
+        }
+      });
+      
+      setUserOverrides(newOverrides);
+      
+      return newVisibility;
+    });
+  }, [initialColumnVisibility, userOverrides]);
 
   const table = useReactTable({
     data,
@@ -61,7 +99,7 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,

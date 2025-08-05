@@ -6,18 +6,40 @@ import type { ResponseInterceptor, HttpResponseContext } from '../types/http-typ
 export class AuthResponseInterceptor implements ResponseInterceptor {
   private refreshPromise: Promise<string> | null = null;
   private tokenManager: TokenManager | null = null;
+  private enableAuth: boolean;
 
   constructor(enableAuth: boolean = true) {
-    if (enableAuth) {
-      this.tokenManager = TokenManager.getInstance();
+    this.enableAuth = enableAuth;
+    // Don't initialize TokenManager immediately to avoid circular dependency
+    // Initialize it lazily when needed
+  }
+
+  /**
+   * Lazy initialization of TokenManager to avoid circular dependencies
+   */
+  private getTokenManager(): TokenManager | null {
+    if (!this.enableAuth) {
+      return null;
     }
+
+    if (!this.tokenManager) {
+      try {
+        this.tokenManager = TokenManager.getInstance();
+      } catch (error) {
+        console.warn("Failed to initialize TokenManager:", error);
+        return null;
+      }
+    }
+
+    return this.tokenManager;
   }
 
   async intercept<T>(context: HttpResponseContext<T>): Promise<HttpResponseContext<T>> {
     // Handle 401 (unauthorized) - attempt token refresh
+    const tokenManager = this.getTokenManager();
     if (
       context.response.status === HTTP_STATUS.UNAUTHORIZED &&
-      this.tokenManager
+      tokenManager
     ) {
       const refreshedToken = await this.refreshAuthToken(context);
       if (refreshedToken) {
@@ -52,7 +74,8 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
    * Refresh authentication token using TokenManager's Client Credentials logic
    */
   private async refreshAuthToken<T>(context: HttpResponseContext<T>): Promise<string | null> {
-    if (!this.tokenManager) {
+    const tokenManager = this.getTokenManager();
+    if (!tokenManager) {
       console.warn("TokenManager not initialized - cannot refresh token");
       return null;
     }
@@ -83,7 +106,8 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
    * This delegates to TokenManager which handles the proper OIDC Client Credentials refresh
    */
   private async performTokenRefresh<T>(context: HttpResponseContext<T>): Promise<string> {
-    if (!this.tokenManager) {
+    const tokenManager = this.getTokenManager();
+    if (!tokenManager) {
       throw new Error("TokenManager not initialized");
     }
 
@@ -93,7 +117,7 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
       
       // Use TokenManager's proper Client Credentials refresh logic
       // This will handle the priority: User -> Tenant -> Initializer tokens
-      const newToken = await this.tokenManager.getTokenForRequest(tenantId, undefined);
+      const newToken = await tokenManager.getTokenForRequest(tenantId, undefined);
       
       if (!newToken) {
         throw new Error("Failed to refresh token using TokenManager");

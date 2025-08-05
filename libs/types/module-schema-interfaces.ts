@@ -3,7 +3,7 @@
  */
 
 import { MultilingualText, LucideIconName, ServiceName, SupportedLanguage } from './module-schema';
-import { FormLayout, FormField } from './form-types';
+import { FormLayout, FormField, WizardFormConfig, WizardStep } from './form-types';
 import { DataTableSchema, ExtraActionForm } from './table-types';
 import { ModuleAccessPolicy } from './access-policy-types';
 
@@ -20,6 +20,8 @@ export interface ModuleSchema {
   formLayout: FormLayout;
   customLayoutName?: string; // optional for custom layouts
   formFields: FormField[];
+  wizardConfig?: WizardFormConfig; // Enhanced wizard configuration (optional)
+  steps?: WizardStep[]; // Backend steps configuration (optional)
   
   // Data table configuration
   dataTableSchema: DataTableSchema;

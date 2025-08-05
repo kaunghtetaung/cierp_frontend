@@ -71,7 +71,6 @@ async function getAppFromHostname(request: NextRequest) {
     const hostname = request.headers.get("host") || "";
     const appId = getAppFromHostname(hostname);
     
-    console.log(`🔧 Detected app "${appId}" from hostname: ${hostname}`);
     
     return {
       appId,
@@ -119,7 +118,6 @@ async function getValidLanguage(request: NextRequest) {
  */
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  console.log("Core middleware triggered for:", pathname);
 
   // Get app information from hostname
   const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppFromHostname(request);
@@ -130,10 +128,6 @@ export async function middleware(request: NextRequest) {
   // Determine which config to use based on route
   const isAuthRoute = pathname.startsWith("/api/auth");
   const middlewareConfig = isAuthRoute ? authConfig : coreConfig;
-
-  if (isAuthRoute) {
-    console.log("Running middleware for auth API route");
-  }
 
   // Prepare middleware options
   const middlewareOptions: MiddlewareOptions = {

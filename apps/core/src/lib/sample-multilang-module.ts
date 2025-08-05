@@ -35,7 +35,7 @@ export const sampleMultilangModule: ModuleSchema = {
       },
       readonly: false,
       hidden: false,
-      isMultilanguage: true // This field supports multilanguage input
+      isMultiLang: true // This field supports multilanguage input
     },
     {
       fieldName: 'description',
@@ -57,7 +57,7 @@ export const sampleMultilangModule: ModuleSchema = {
       readonly: false,
       hidden: false,
       rows: 5,
-      isMultilanguage: true // This field supports multilanguage input
+      isMultiLang: true // This field supports multilanguage input
     },
     {
       fieldName: 'category',
@@ -123,6 +123,37 @@ export const sampleMultilangModule: ModuleSchema = {
       },
       readonly: false,
       hidden: false
+    },
+    {
+      fieldName: 'priority',
+      fieldType: 'select',
+      label: {
+        en: 'Priority Level',
+        mm: 'ဦးစားပေးအဆင့်'
+      },
+      validationRule: {
+        required: false,
+        errorMessage: {
+          en: 'Please select a valid priority',
+          mm: 'မှန်ကန်သော ဦးစားပေးအဆင့် ရွေးချယ်ပါ'
+        }
+      },
+      readonly: false,
+      hidden: false,
+      options: [
+        {
+          value: 'low',
+          label: { en: 'Low', mm: 'နိမ့်' }
+        },
+        {
+          value: 'medium',
+          label: { en: 'Medium', mm: 'အလယ်အလတ်' }
+        },
+        {
+          value: 'high',
+          label: { en: 'High', mm: 'မြင့်' }
+        }
+      ]
     }
   ],
   dataTableSchema: {

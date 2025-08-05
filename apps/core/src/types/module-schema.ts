@@ -20,10 +20,10 @@ export interface LocalizedText {
 
 export interface FormField {
   fieldName: string
-  fieldType: 'text' | 'email' | 'password' | 'textArea' | 'select' | 'multiSelect' | 'date' | 'boolean' | 'checkbox' | 'number' | 'icon'
+  fieldType: 'text' | 'email' | 'password' | 'textArea' | 'select' | 'multiSelect' | 'date' | 'boolean' | 'checkbox' | 'number' | 'icon' | 'radio' | 'file' | 'htmlContent'
   label: LocalizedText
   placeHolder?: string
-  validationRule: ValidationRule
+  validationRule?: ValidationRule
   readonly: boolean
   hidden: boolean
   rows?: number

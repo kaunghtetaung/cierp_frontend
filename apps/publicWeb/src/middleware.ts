@@ -32,6 +32,8 @@ const publicWebConfig: Partial<MiddlewareConfig> = {
     "/api/ping",
     "/api/status",
     "/api/lang",
+    // Exclude error pages to prevent infinite redirects
+    "/error/tenant-not-found",
   ],
   enableLogging: process.env.NODE_ENV === "development",
 };

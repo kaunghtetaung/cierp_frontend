@@ -7,7 +7,7 @@ import { getLocalizedText } from '@repo/utils'
 import { Button } from '@/components/ui/button'
 import { IconComponent } from '@repo/ui/components/icons'
 // Server component - data will be passed as props
-import { DynamicForm } from '../forms/DynamicForm'
+import { ReactHookForm } from '../forms/ReactHookForm'
 import type { ModuleSchema } from '@repo/types'
 
 interface ModuleDetailPageProps {
@@ -88,15 +88,22 @@ export function ModuleDetailPage({ module, id, mode, initialData }: ModuleDetail
         )}
       </div>
 
-      {/* Dynamic Form */}
+      {/* React Hook Form */}
       <div className="bg-card rounded-lg p-6">
-        <DynamicForm
-          module={module}
-          action={mode === 'create' ? 'create' : 'update'}
-          id={id}
+        <ReactHookForm
+          fields={module.formFields}
           initialData={initialData}
-          onSuccess={handleSuccess}
-          onError={handleError}
+          onSuccess={(data) => {
+            handleSuccess(data);
+            // Navigate back to list after successful create/update
+            router.push(`/${module.slug}`);
+          }}
+          onCancel={handleCancel}
+          submitButtonText={mode === 'create' 
+            ? (currentLanguage === 'mm' ? 'ထည့်မည်' : 'Create')
+            : (currentLanguage === 'mm' ? 'သိမ်းမည်' : 'Save')
+          }
+          cancelButtonText={currentLanguage === 'mm' ? 'ပြန်သွားမည်' : 'Cancel'}
         />
       </div>
     </div>

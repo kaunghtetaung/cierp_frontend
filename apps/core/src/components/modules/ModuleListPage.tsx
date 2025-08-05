@@ -30,7 +30,9 @@ import {
   useBulkModuleOperation,
 } from "@/hooks/use-module-query";
 import { DynamicSearch } from "./DynamicSearch";
-import { DynamicForm } from "../forms/DynamicForm";
+import { ReactHookForm } from "../forms/ReactHookForm";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { toastSuccess, toastError } from "@repo/utils";
 import type { ModuleSchema, DataTableColumn } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -45,6 +47,11 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Confirmation dialog states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
@@ -133,46 +140,73 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
     }));
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      confirm(
-        currentLanguage === "mm"
-          ? "ဖျက်လိုသည်လား?"
-          : "Are you sure you want to delete this item?"
-      )
-    ) {
-      try {
-        await deleteItemMutation.mutateAsync(id);
-        // TanStack Query automatically invalidates and refetches
-      } catch (error) {
-        console.error("Failed to delete item:", error);
-        // Error notification would be nice here
-      }
+  const handleDelete = (id: string) => {
+    setPendingDeleteId(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!pendingDeleteId) return;
+    
+    try {
+      await deleteItemMutation.mutateAsync(pendingDeleteId);
+      
+      // Show success toast
+      const successMessage = currentLanguage === "mm"
+        ? `${getLocalizedText(module.name, currentLanguage)} အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
+        : `${getLocalizedText(module.name, currentLanguage)} deleted successfully!`;
+      
+      toastSuccess(successMessage);
+      
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      
+      // Show error toast
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (currentLanguage === "mm" 
+          ? "ဖျက်ခြင်း မအောင်မြင်ပါ"
+          : "Failed to delete item");
+      
+      toastError(errorMessage);
+    } finally {
+      setPendingDeleteId(null);
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedItems.length === 0) return;
+    setBulkDeleteConfirmOpen(true);
+  };
 
-    if (
-      confirm(
-        currentLanguage === "mm"
-          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်လား?`
-          : `Are you sure you want to delete ${selectedItems.length} selected items?`
-      )
-    ) {
-      try {
-        const ids = selectedItems.map((item) => item._id);
-        await bulkOperationMutation.mutateAsync({
-          operation: "delete",
-          ids,
-        });
-        setSelectedItems([]);
-        // TanStack Query automatically invalidates and refetches
-      } catch (error) {
-        console.error("Failed to delete items:", error);
-        // Error notification would be nice here
-      }
+  const executeBulkDelete = async () => {
+    try {
+      const ids = selectedItems.map((item) => item._id);
+      await bulkOperationMutation.mutateAsync({
+        operation: "delete",
+        ids,
+      });
+      
+      // Clear selection and show success toast
+      setSelectedItems([]);
+      
+      const successMessage = currentLanguage === "mm"
+        ? `${selectedItems.length} ခု အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
+        : `${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''} deleted successfully!`;
+      
+      toastSuccess(successMessage);
+      
+    } catch (error) {
+      console.error("Failed to delete items:", error);
+      
+      // Show error toast
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (currentLanguage === "mm" 
+          ? "အစုလိုက် ဖျက်ခြင်း မအောင်မြင်ပါ"
+          : "Failed to delete items");
+      
+      toastError(errorMessage);
     }
   };
 
@@ -550,15 +584,15 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
                 </div>
               </div>
             ) : editItemData ? (
-              <DynamicForm
-                module={module}
-                action="update"
-                id={editingItemId!}
+              <ReactHookForm
+                fields={module.formFields}
                 initialData={editItemData}
-                onSuccess={handleEditSuccess}
-                onError={handleEditError}
-                className="max-w-none"
-                redirectOnSuccess={false}
+                onSuccess={(data) => {
+                  handleEditSuccess(data);
+                }}
+                onCancel={handleEditCancel}
+                submitButtonText={currentLanguage === 'mm' ? 'သိမ်းမည်' : 'Save'}
+                cancelButtonText={currentLanguage === 'mm' ? 'ပိတ်မည်' : 'Cancel'}
               />
             ) : editingItemId ? (
               <div className="text-center py-8">
@@ -577,6 +611,41 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title={currentLanguage === "mm" ? "ဖျက်လိုသည်လား?" : "Delete Item"}
+        description={currentLanguage === "mm" 
+          ? "ဤ item ကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။"
+          : "Are you sure you want to delete this item? This action cannot be undone."
+        }
+        confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
+        cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
+        onConfirm={executeDelete}
+        destructive={true}
+        icon="Trash2"
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={bulkDeleteConfirmOpen}
+        onOpenChange={setBulkDeleteConfirmOpen}
+        title={currentLanguage === "mm" 
+          ? `${selectedItems.length} ခု ဖျက်မည်` 
+          : `Delete ${selectedItems.length} Items`
+        }
+        description={currentLanguage === "mm" 
+          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။`
+          : `Are you sure you want to delete ${selectedItems.length} selected items? This action cannot be undone.`
+        }
+        confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete All"}
+        cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
+        onConfirm={executeBulkDelete}
+        destructive={true}
+        icon="Trash2"
+      />
     </div>
   );
 }

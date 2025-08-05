@@ -1,6 +1,6 @@
 // Simplified server-side authentication using refactored core
 import { cache } from 'react';
-import { cookies, headers } from 'next/headers';
+import { getSafeCookies, getSafeHeaders } from '../../utils/server/headers-compat';
 import { validateRequest } from '../core';
 import { COOKIE_NAMES } from '@repo/utils/common/constants';
 import type { 
@@ -28,8 +28,8 @@ export const getAuthenticationStatus = cache(async (
   requestHeaders?: Headers
 ): Promise<AuthenticationResult> => {
   try {
-    const cookieStore = requestHeaders ? null : await cookies();
-    const headerStore = requestHeaders || await headers();
+    const cookieStore = requestHeaders ? null : await getSafeCookies();
+    const headerStore = requestHeaders || await getSafeHeaders();
 
     // Get tenant ID from headers (set by middleware)
     const tenantId = headerStore.get('x-tenant-id');

@@ -8,7 +8,20 @@ import { getCurrentUser } from "@repo/auth/server/server";
 import { NextRequest, NextResponse } from "next/server";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { headers } from "next/headers";
+
+// Conditional import for next/headers to avoid client-side errors
+const getHeaders = async () => {
+  if (typeof window !== 'undefined') {
+    return { get: () => null };
+  }
+  
+  try {
+    const { headers } = await import('next/headers');
+    return await headers();
+  } catch (error) {
+    return { get: () => null };
+  }
+};
 import { API_ENDPOINTS } from "@repo/utils/common/constants";
 import { createHttpClient } from "@repo/api/client";
 import type { UnifiedCache } from "@repo/cache";

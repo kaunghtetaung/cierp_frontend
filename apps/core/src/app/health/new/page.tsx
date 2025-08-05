@@ -1,15 +1,16 @@
 import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
-import { SimpleForm } from "@/components/forms/SimpleForm";
+import { ReactHookFormWrapper } from "@/components/forms/ReactHookFormWrapper";
+import { ReactHookWizardFormWrapper } from "@/components/forms/ReactHookWizardFormWrapper";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
 import { generateZodSchema } from "@/lib/form-schema";
 import { enableCommonMultilangFields } from "@/lib/enable-multilang";
 import type { ModuleSchema } from "@repo/types";
 
 interface ModuleNewPageProps {
-  params: {
+  params: Promise<{
     module: string;
-  };
+  }>;
 }
 
 export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
@@ -32,29 +33,16 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
   // Enable multilanguage support for common fields
   const moduleWithMultilang = enableCommonMultilangFields(module);
 
+  // Choose form component based on layout type
+  const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
+  const FormComponent = isWizardForm ? ReactHookWizardFormWrapper : ReactHookFormWrapper;
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <SimpleForm
+      <FormComponent
         module={moduleWithMultilang}
         action="create"
-        serverAction={async (formData: FormData) => {
-          "use server";
-          
-          const validationSchema = generateZodSchema(moduleWithMultilang.formFields);
-          const result = await submitModuleForm(
-            module.slug,
-            formData,
-            validationSchema,
-            "create"
-          );
-          
-          // The server action handles redirect on success
-          // and returns errors if validation fails
-          if (!result.success) {
-            throw new Error(result.error || "Failed to create item");
-          }
-        }}
-        currentLanguage="en" // TODO: Get from context
+        moduleSlug={module.slug}
       />
     </div>
   );

@@ -83,6 +83,7 @@ export interface ApiRequestConfig extends RequestOptions {
   readonly userSessionId?: string;
   readonly userId?: string;
   readonly withAuth?: boolean;
+  readonly language?: string;
 }
 
 export interface TokenRefreshResponse {

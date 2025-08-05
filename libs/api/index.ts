@@ -1,13 +1,19 @@
-// Main exports from api package
-export * from './clients/client';
+// Main exports from api package - client-safe only
+// For server-side exports, use '@repo/api/server-only'
 
-// Re-export commonly used utilities
-export {
-  HttpClient,
-  ApiError,
-  httpClient,
-  createHttpClient
-} from './clients/client';
+// Client-safe type exports only
+export type { ApiResponse } from '@repo/types';
+export type { HttpMethod, ApiRequestConfig } from '@repo/types';
+
+// Export error handling utilities (client-safe)
+export * from './messages/error-messages';
+
+// Export HTTP client creation function
+export { createHttpClient } from './clients/client';
+export type { HttpClient } from './clients/client';
+
+// Export cached HTTP client creation function (for server-side usage)
+export { createCachedHttpClient } from './clients/cached-client';
 
 // Server-side API utilities (import only on server-side)
 export type { ServerApiClient, ServerApiConfig, ServerApiError } from './server/server';

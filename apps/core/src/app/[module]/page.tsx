@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
 import { getModuleList } from "@repo/app-modules";
-import { ModuleDataTable } from "@/components/modules/ModuleDataTable";
+import { ModuleDataTableWrapper } from "@/components/modules/ModuleDataTableWrapper";
 import type { ModuleSchema } from "@repo/types";
 
 interface ModulePageProps {
-  params: {
+  params: Promise<{
     module: string;
-  };
-  searchParams: Record<string, string>;
+  }>;
+  searchParams: Promise<Record<string, string>>;
 }
 
 // Generate static params for all known module slugs
@@ -45,15 +45,15 @@ export default async function ModulePage({
   }
 
   // Fetch data directly in Server Component
-  const awaitedSearchParams = await searchParams;
+  const resolvedSearchParams = await searchParams;
   const moduleData = await getModuleList(
     resolvedParams.module,
-    awaitedSearchParams
+    resolvedSearchParams
   );
 
   return (
-    <div className="w-full min-w-0">
-      <ModuleDataTable module={module} data={moduleData} />
+    <div className="w-full min-w-0 overflow-hidden">
+      <ModuleDataTableWrapper module={module} initialData={moduleData} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // Server-side API client for API gateway calls
-import { headers } from 'next/headers';
+import { getSafeHeaders } from '../../utils/server/headers-compat';
 import type { ApiResponse, ApiError } from '@repo/types';
 import { getApiEndpoint } from '../../utils/common/url';
 
@@ -54,7 +54,7 @@ export class ServerApiClient {
       let finalTenantId = tenantId;
       if (!finalTenantId) {
         try {
-          const headerStore = await headers();
+          const headerStore = await getSafeHeaders();
           finalTenantId = headerStore.get('x-tenant-id') || undefined;
         } catch {
           // Headers not available in this context
@@ -71,7 +71,7 @@ export class ServerApiClient {
         // If no baseUrl configured, use dynamic URL generation
         if (!baseUrl) {
           try {
-            const headerStore = await headers();
+            const headerStore = await getSafeHeaders();
             const host = headerStore.get('host');
             const protocol = headerStore.get('x-forwarded-proto') || 'http';
             

@@ -3,6 +3,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { IconComponent } from '@repo/ui/components/icons'
+import { getLocalizedErrorMessage } from '@repo/api/messages'
+import { useLanguage } from '@repo/language'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -13,9 +15,10 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: ReactNode
-  fallback?: (error: Error, errorInfo: ErrorInfo, retry: () => void) => ReactNode
+  fallback?: (error: Error, errorInfo: ErrorInfo, retry: () => void, language?: 'en' | 'mm') => ReactNode
   onError?: (error: Error, errorInfo: ErrorInfo) => void
   isolate?: boolean // Whether to isolate this boundary from parent boundaries
+  language?: 'en' | 'mm' // Language for error messages
 }
 
 /**
@@ -114,7 +117,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback(
           this.state.error, 
           this.state.errorInfo!, 
-          this.retry
+          this.retry,
+          this.props.language
         )
       }
 
@@ -132,12 +136,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             {/* Error Title */}
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Component Error
+              {this.props.language === 'mm' ? 'ကွန်ပိုနန့် အမှားအယွင်း' : 'Component Error'}
             </h3>
 
             {/* Error Description */}
             <p className="text-sm text-muted-foreground mb-6">
-              A component error occurred. Please try refreshing this section.
+              {getLocalizedErrorMessage('COMPONENT_LOAD_FAILED', this.props.language || 'en')}
             </p>
 
             {/* Error Details (Development only) */}
@@ -171,7 +175,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 className="w-full"
               >
                 <IconComponent name="RotateCcw" className="w-4 h-4 mr-2" />
-                Try Again
+                {this.props.language === 'mm' ? 'ထပ်မံကြိုးစားပါ' : 'Try Again'}
               </Button>
 
               <Button 
@@ -181,7 +185,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 className="w-full"
               >
                 <IconComponent name="RefreshCw" className="w-4 h-4 mr-2" />
-                Reload Page
+                {this.props.language === 'mm' ? 'စာမျက်နှာကို ပြန်ရှင်းသန့်စေပါ' : 'Reload Page'}
               </Button>
             </div>
           </div>
@@ -244,17 +248,20 @@ export function AsyncErrorBoundary({ children, onError }: {
   children: ReactNode
   onError?: (error: Error) => void 
 }) {
+  const { currentLanguage } = useLanguage()
+  
   return (
     <ErrorBoundary
+      language={currentLanguage as 'en' | 'mm'}
       onError={onError}
-      fallback={(error, errorInfo, retry) => (
+      fallback={(error, errorInfo, retry, language) => (
         <div className="p-4 text-center">
           <IconComponent name="Loader" className="w-6 h-6 mx-auto mb-2 text-muted-foreground animate-spin" />
           <p className="text-sm text-muted-foreground mb-3">
-            Loading failed. Please try again.
+            {getLocalizedErrorMessage('DATA_LOAD_FAILED', language || 'en')}
           </p>
           <Button onClick={retry} size="sm" variant="outline">
-            Retry
+            {language === 'mm' ? 'ထပ်မံကြိုးစားပါ' : 'Retry'}
           </Button>
         </div>
       )}
@@ -266,19 +273,24 @@ export function AsyncErrorBoundary({ children, onError }: {
 
 // Error boundary for form components
 export function FormErrorBoundary({ children }: { children: ReactNode }) {
+  const { currentLanguage } = useLanguage()
+  
   return (
     <ErrorBoundary
-      fallback={(error, errorInfo, retry) => (
+      language={currentLanguage as 'en' | 'mm'}
+      fallback={(error, errorInfo, retry, language) => (
         <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
           <div className="flex items-center gap-2 mb-2">
             <IconComponent name="AlertCircle" className="w-5 h-5 text-destructive" />
-            <h4 className="font-semibold text-destructive">Form Error</h4>
+            <h4 className="font-semibold text-destructive">
+              {language === 'mm' ? 'ဖောင်း အမှားအယွင်း' : 'Form Error'}
+            </h4>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            The form encountered an error. Your data is safe.
+            {getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', language || 'en')}
           </p>
           <Button onClick={retry} size="sm" variant="outline">
-            Reset Form
+            {language === 'mm' ? 'ဖောင်းကို ပြန်ရှင်းလင်းမည်' : 'Reset Form'}
           </Button>
         </div>
       )}

@@ -18,6 +18,9 @@ export interface ApplicationError {
   readonly cause?: Error;
   readonly statusCode?: number;
   readonly retryable: boolean;
+  readonly severity: ErrorSeverity;
+  readonly category: ErrorCategory;
+  toJSON(): Record<string, any>;
 }
 
 export type ErrorType = 

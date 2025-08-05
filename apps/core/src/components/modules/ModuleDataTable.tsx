@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
+import { useLanguage } from "@repo/language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/ui/data-table";
@@ -15,24 +18,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { IconComponent } from "@repo/ui/components/icons";
 import {
-  deleteModuleItem,
-  bulkModuleOperation,
-  submitModuleForm,
-} from "@repo/app-modules/server-actions";
-import { SimpleForm } from "../forms/SimpleForm";
+  useDeleteModuleItem,
+  useHardDeleteModuleItem,
+  useBulkModuleOperation,
+} from "@/hooks/use-module-query";
 import { DynamicSearch } from "./DynamicSearch";
 import { Pagination } from "@/components/ui/pagination";
 import { ExtraActionModal } from "./ExtraActionModal";
 import { generateZodSchema } from "@/lib/form-schema";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { DeleteConfirmationDialog } from "@/components/common/delete-confirmation-dialog";
 import type { ModuleSchema, DataTableColumn, ExtraAction } from "@repo/types";
+import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface ModuleDataTableProps {
@@ -48,8 +47,15 @@ export function ModuleDataTable({
   data,
   totalItems = data.length,
   totalPages = 1,
-  currentLanguage = "en",
-}: ModuleDataTableProps) {
+}: Omit<ModuleDataTableProps, 'currentLanguage'>) {
+  const { currentLanguage } = useLanguage();
+  const router = useRouter();
+  
+  // React Query mutations for delete operations
+  const deleteItemMutation = useDeleteModuleItem(module.slug);
+  const hardDeleteItemMutation = useHardDeleteModuleItem(module.slug);
+  const bulkOperationMutation = useBulkModuleOperation(module.slug);
+  
   // Debug: Log the actions configuration
   console.log("ModuleDataTable actions config:", {
     hasActions: !!module.dataTableSchema.actions,
@@ -59,11 +65,18 @@ export function ModuleDataTable({
     view: module.dataTableSchema.actions?.view,
   });
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeExtraAction, setActiveExtraAction] =
     useState<ExtraAction | null>(null);
   const [isExtraActionModalOpen, setIsExtraActionModalOpen] = useState(false);
+  
+  // Confirmation dialog states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [extraActionConfirmOpen, setExtraActionConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteType, setPendingDeleteType] = useState<'soft' | 'hard'>('soft');
+  const [bulkDeleteType, setBulkDeleteType] = useState<'soft' | 'hard'>('soft');
+  const [pendingExtraAction, setPendingExtraAction] = useState<ExtraAction | null>(null);
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: module.dataTableSchema.pagination?.defaultLimit || 10,
@@ -73,9 +86,107 @@ export function ModuleDataTable({
     filters: {} as Record<string, Record<string, any>>,
   });
 
+  // Helper function to get raw nested field values (without language filtering)
+  const getRawNestedValue = (obj: any, path: string) => {
+    return path.split(".").reduce((current, key) => current?.[key], obj);
+  };
+
+  // Function to detect which languages a column supports
+  const detectColumnLanguageSupport = (column: DataTableColumn) => {
+    const fieldName = column.fieldName;
+    
+    // Check if this is a language-specific field path
+    const isEnglishField = fieldName.includes('.en') || fieldName.endsWith('.en');
+    const isMyanmarField = fieldName.includes('.mm') || fieldName.endsWith('.mm');
+    
+    let hasEnglish = true;
+    let hasMyanmar = true;
+    let isLanguageSpecific = false;
+    
+    if (isEnglishField) {
+      // This is an English-specific field
+      hasEnglish = true;
+      hasMyanmar = false;
+      isLanguageSpecific = true;
+    } else if (isMyanmarField) {
+      // This is a Myanmar-specific field
+      hasEnglish = false;
+      hasMyanmar = true;
+      isLanguageSpecific = true;
+    } else {
+      // Check if there's data in the field (non-language-specific)
+      // These fields support all languages
+      hasEnglish = true;
+      hasMyanmar = true;
+      isLanguageSpecific = false;
+    }
+    
+    // Removed excessive logging to prevent performance issues
+    
+    return { hasEnglish, hasMyanmar, isLanguageSpecific };
+  };
+
+  // Function to calculate column visibility based on current language
+  const calculateLanguageBasedVisibility = (columns: DataTableColumn[], currentLanguage: string) => {
+    const visibility: Record<string, boolean> = {};
+    
+    // Always show selection column if present
+    if (module.dataTableSchema.layout === "withCheckbox") {
+      visibility["select"] = true;
+    }
+    
+    // Always show actions column if present
+    if (module.dataTableSchema.actions) {
+      visibility["actions"] = true;
+    }
+    
+    // Calculate visibility for data columns
+    columns.forEach(column => {
+      const { hasEnglish, hasMyanmar, isLanguageSpecific } = detectColumnLanguageSupport(column);
+      
+      if (currentLanguage === 'en') {
+        visibility[column.fieldName] = hasEnglish;
+      } else if (currentLanguage === 'mm') {
+        visibility[column.fieldName] = hasMyanmar;
+      } else {
+        // Default: show all columns for unknown languages
+        visibility[column.fieldName] = true;
+      }
+    });
+    
+    return visibility;
+  };
+
+  // Hook to detect screen size
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Calculate column visibility based on current language
+  const columnVisibility = useMemo(() => {
+    const visibility = calculateLanguageBasedVisibility(module.dataTableSchema.columns, currentLanguage);
+    return visibility;
+  }, [currentLanguage]); // Removed module.dataTableSchema.columns dependency to prevent excessive recalculation
+  
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   // Helper function to get nested field values
   const getNestedValue = (obj: any, path: string) => {
-    return path.split(".").reduce((current, key) => current?.[key], obj);
+    const value = path.split(".").reduce((current, key) => current?.[key], obj);
+    
+    // If the value is a multilingual object, return the current language value
+    if (isMultilingualText(value)) {
+      return value[currentLanguage] || value.en || '';
+    }
+    
+    return value;
   };
 
   const handleSort = (sortBy: string) => {
@@ -89,21 +200,10 @@ export function ModuleDataTable({
   };
 
   const handleEdit = (id: string) => {
-    setEditingItemId(id);
-    setIsEditModalOpen(true);
+    // Navigate to dedicated edit page using Next.js router for client-side navigation
+    router.push(`/${module.slug}/${id}`);
   };
 
-  const handleEditSuccess = () => {
-    setIsEditModalOpen(false);
-    setEditingItemId(null);
-    // In a real app, this would trigger a refetch
-    window.location.reload();
-  };
-
-  const handleEditCancel = () => {
-    setIsEditModalOpen(false);
-    setEditingItemId(null);
-  };
 
   const handleExtraAction = (action: ExtraAction) => {
     if (action.type === "modal") {
@@ -112,10 +212,8 @@ export function ModuleDataTable({
     } else if (action.type === "api") {
       // Handle API action directly
       if (action.confirmMessage) {
-        if (confirm(getLocalizedText(action.confirmMessage, currentLanguage))) {
-          console.log(`Executing API action: ${action.actionKey}`);
-          // Here you would call the API
-        }
+        setPendingExtraAction(action);
+        setExtraActionConfirmOpen(true);
       } else {
         console.log(`Executing API action: ${action.actionKey}`);
         // Here you would call the API
@@ -124,60 +222,88 @@ export function ModuleDataTable({
     // Page type actions are handled by Link navigation
   };
 
-  const handleExtraActionSuccess = () => {
-    setIsExtraActionModalOpen(false);
-    setActiveExtraAction(null);
-    window.location.reload(); // In a real app, this would trigger a refetch
-  };
-
-  const handleDelete = async (id: string) => {
-    if (
-      confirm(
-        currentLanguage === "mm"
-          ? "ဖျက်လိုသည်လား?"
-          : "Are you sure you want to delete this item?"
-      )
-    ) {
-      try {
-        const result = await deleteModuleItem(module.slug, id);
-        if (result.success) {
-          window.location.reload();
-        } else {
-          console.error("Delete failed:", result.error);
-          alert(result.error || "Failed to delete item");
-        }
-      } catch (error) {
-        console.error("Failed to delete item:", error);
-        alert("Failed to delete item");
-      }
+  const executeExtraAction = () => {
+    if (pendingExtraAction) {
+      console.log(`Executing API action: ${pendingExtraAction.actionKey}`);
+      // Here you would call the API
+      setPendingExtraAction(null);
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleExtraActionSuccess = () => {
+    setIsExtraActionModalOpen(false);
+    setActiveExtraAction(null);
+    // Note: The ExtraActionModal already shows success toasts
+    // Data refetching is handled by the individual mutations in the modal
+  };
+
+  const handleDelete = (id: string) => {
+    setPendingDeleteId(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!pendingDeleteId) return;
+    
+    try {
+      await deleteItemMutation.mutateAsync(pendingDeleteId);
+      
+      // Show success toast
+      const successMessage = currentLanguage === "mm"
+        ? `${getLocalizedText(module.name, currentLanguage)} အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
+        : `${getLocalizedText(module.name, currentLanguage)} deleted successfully!`;
+      
+      toastSuccess(successMessage);
+      
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      
+      // Show error toast
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (currentLanguage === "mm" 
+          ? "ဖျက်ခြင်း မအောင်မြင်ပါ"
+          : "Failed to delete item");
+      
+      toastError(errorMessage);
+    } finally {
+      setPendingDeleteId(null);
+    }
+  };
+
+  const handleBulkDelete = () => {
     if (selectedItems.length === 0) return;
+    setBulkDeleteConfirmOpen(true);
+  };
 
-    if (
-      confirm(
-        currentLanguage === "mm"
-          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်လား?`
-          : `Are you sure you want to delete ${selectedItems.length} selected items?`
-      )
-    ) {
-      try {
-        const ids = selectedItems.map((item) => item._id || item.id);
-        const result = await bulkModuleOperation(module.slug, "delete", ids);
+  const executeBulkDelete = async () => {
+    try {
+      const ids = selectedItems.map((item) => item._id || item.id);
+      await bulkOperationMutation.mutateAsync({
+        operation: "delete",
+        ids: ids,
+      });
 
-        if (result.success) {
-          setSelectedItems([]);
-          window.location.reload();
-        } else {
-          console.error("Bulk delete failed:", result.error);
-          alert(result.error || "Failed to delete items");
-        }
-      } catch (error) {
-        console.error("Failed to delete items:", error);
-        alert("Failed to delete items");
-      }
+      // Clear selection and show success toast
+      setSelectedItems([]);
+      
+      const successMessage = currentLanguage === "mm"
+        ? `${selectedItems.length} ခု အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
+        : `${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''} deleted successfully!`;
+      
+      toastSuccess(successMessage);
+      
+    } catch (error) {
+      console.error("Failed to delete items:", error);
+      
+      // Show error toast
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (currentLanguage === "mm" 
+          ? "အစုလိုက် ဖျက်ခြင်း မအောင်မြင်ပါ"
+          : "Failed to delete items");
+      
+      toastError(errorMessage);
     }
   };
 
@@ -189,6 +315,9 @@ export function ModuleDataTable({
     if (module.dataTableSchema.layout === "withCheckbox") {
       cols.push({
         id: "select",
+        size: 40, // Fixed width for checkbox column
+        minSize: 40,
+        maxSize: 40,
         header: ({ table }) => (
           <Checkbox
             checked={
@@ -218,6 +347,9 @@ export function ModuleDataTable({
       cols.push({
         id: column.fieldName,
         accessorFn: (row) => getNestedValue(row, column.fieldName),
+        size: 150, // Set default column width
+        minSize: 100, // Minimum width
+        maxSize: 300, // Maximum width
         header: ({ column: tableColumn }) => {
           return column.sortable ? (
             <Button
@@ -305,7 +437,10 @@ export function ModuleDataTable({
           }
 
           return (
-            <div className="font-medium max-w-[200px] truncate" title={fieldValue || "-"}>
+            <div
+              className="font-medium truncate max-w-[250px]"
+              title={fieldValue || "-"}
+            >
               {fieldValue || "-"}
             </div>
           );
@@ -421,12 +556,9 @@ export function ModuleDataTable({
     return cols;
   }, [module.dataTableSchema, currentLanguage, queryParams]);
 
-  const editItemData = data.find(
-    (item) => (item._id || item.id) === editingItemId
-  );
 
   return (
-    <div className="space-y-6 max-w-full overflow-hidden">
+    <div className="space-y-6 w-full min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -437,10 +569,10 @@ export function ModuleDataTable({
             />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-xl sm:text-2xl font-bold">
               {getLocalizedText(module.name, currentLanguage)}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground hidden md:block">
               {getLocalizedText(module.description, currentLanguage)}
             </p>
           </div>
@@ -448,8 +580,13 @@ export function ModuleDataTable({
 
         <Link href={`/${module.slug}/new`}>
           <Button>
-            <IconComponent name="Plus" className="w-4 h-4 mr-2" />
-            {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
+            <IconComponent name="Plus" className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">
+              {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
+            </span>
+            <span className="sm:hidden">
+              {currentLanguage === "mm" ? "အသစ်" : "New"}
+            </span>
           </Button>
         </Link>
       </div>
@@ -526,26 +663,231 @@ export function ModuleDataTable({
           </div>
         )}
 
-      {/* Data Table */}
+      {/* Data Table - Responsive: Cards for mobile and small tablets, Table for large screens */}
       <div className="w-full min-w-0">
-        <DataTable
-          columns={columns}
-          data={data}
-          searchKey={
-            module.dataTableSchema.filtering?.searchFields?.[0] ||
-            module.dataTableSchema.columns[0]?.fieldName
-          }
-          searchPlaceholder={
-            currentLanguage === "mm"
-              ? `${
-                  module.dataTableSchema.filtering?.searchFields?.[0] || "ဒေတာ"
-                } ရှာဖွေမည်...`
-              : `Search ${
-                  module.dataTableSchema.filtering?.searchFields?.[0] || "data"
-                }...`
-          }
-          onRowSelectionChange={setSelectedItems}
-        />
+        {/* Mobile Card View - Show on mobile, iPad Mini and iPad Air */}
+        <div className="xl:hidden space-y-4">
+          {data.map((item, index) => (
+            <div
+              key={item._id || item.id || index}
+              className="bg-card border border-border rounded-lg p-4 space-y-3"
+            >
+              {/* Selection checkbox for mobile cards */}
+              {module.dataTableSchema.layout === "withCheckbox" && (
+                <div className="flex items-center space-x-2 pb-2 border-b border-border">
+                  <Checkbox
+                    checked={selectedItems.some(
+                      (selected) =>
+                        (selected._id || selected.id) === (item._id || item.id)
+                    )}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedItems((prev) => [...prev, item]);
+                      } else {
+                        setSelectedItems((prev) =>
+                          prev.filter(
+                            (selected) =>
+                              (selected._id || selected.id) !== (item._id || item.id)
+                          )
+                        );
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {currentLanguage === "mm" ? "ရွေးချယ်မည်" : "Select"}
+                  </span>
+                </div>
+              )}
+
+              {/* Card content - each column as a row */}
+              {module.dataTableSchema.columns.map((column: DataTableColumn) => {
+                const fieldValue = getNestedValue(item, column.fieldName);
+                let displayValue = fieldValue;
+
+                // Format the value based on column type
+                if (column.type === "date" && fieldValue) {
+                  displayValue = new Date(fieldValue).toLocaleDateString();
+                } else if (column.type === "boolean") {
+                  displayValue = (
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        fieldValue
+                          ? "bg-success/20 text-success border border-success/30"
+                          : "bg-muted text-muted-foreground border border-border"
+                      }`}
+                    >
+                      {fieldValue
+                        ? currentLanguage === "mm"
+                          ? "ရှိ"
+                          : "Yes"
+                        : currentLanguage === "mm"
+                        ? "မရှိ"
+                        : "No"}
+                    </span>
+                  );
+                } else if (column.type === "status") {
+                  displayValue = (
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        fieldValue === "Active"
+                          ? "bg-success/20 text-success border border-success/30"
+                          : "bg-muted text-muted-foreground border border-border"
+                      }`}
+                    >
+                      {fieldValue === "Active"
+                        ? currentLanguage === "mm"
+                          ? "အသုံးပြုနေသည်"
+                          : "Active"
+                        : currentLanguage === "mm"
+                        ? "အသုံးပြုမနေ"
+                        : "Inactive"}
+                    </span>
+                  );
+                } else if (column.type === "icon" && fieldValue) {
+                  displayValue = (
+                    <div className="flex items-center">
+                      <IconComponent name={fieldValue} size={20} />
+                    </div>
+                  );
+                } else if (column.type === "number" && fieldValue) {
+                  displayValue = (
+                    <span className="font-medium">
+                      {fieldValue.toLocaleString()}
+                    </span>
+                  );
+                }
+
+                return (
+                  <div key={column.fieldName} className="flex flex-col space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground text-left">
+                      {getLocalizedText(column.label, currentLanguage)}
+                    </span>
+                    <div className="text-sm text-foreground ml-4">
+                      {displayValue || "-"}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Actions for mobile cards */}
+              {module.dataTableSchema.actions && (
+                <div className="pt-3 border-t border-border">
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {/* View Action */}
+                    {module.dataTableSchema.actions.view && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/${module.slug}/${item._id || item.id}/view`}>
+                          <IconComponent name="Eye" className="mr-2 h-4 w-4" />
+                          {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
+                        </Link>
+                      </Button>
+                    )}
+
+                    {/* Edit Action */}
+                    {module.dataTableSchema.actions.edit !== false && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(item._id || item.id)}
+                      >
+                        <IconComponent name="Edit" className="mr-2 h-4 w-4" />
+                        {currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Edit"}
+                      </Button>
+                    )}
+
+                    {/* Delete Action */}
+                    {module.dataTableSchema.actions.delete !== false && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(item._id || item.id)}
+                        className="text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <IconComponent name="Trash2" className="mr-2 h-4 w-4" />
+                        {currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
+                      </Button>
+                    )}
+
+                    {/* Extra Actions */}
+                    {module.dataTableSchema.actions.extraActions?.map((action) =>
+                      action.type === "page" ? (
+                        <Button key={action.actionKey} variant="outline" size="sm" asChild>
+                          <Link
+                            href={`/${module.slug}/${
+                              item._id || item.id
+                            }/actions/${action.actionKey}`}
+                          >
+                            <IconComponent
+                              name={action.icon}
+                              className="mr-2 h-4 w-4"
+                            />
+                            {getLocalizedText(action.label, currentLanguage)}
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button
+                          key={action.actionKey}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExtraAction(action)}
+                        >
+                          <IconComponent
+                            name={action.icon}
+                            className="mr-2 h-4 w-4"
+                          />
+                          {getLocalizedText(action.label, currentLanguage)}
+                        </Button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Empty state for mobile */}
+          {data.length === 0 && (
+            <div className="text-center py-8">
+              <IconComponent
+                name="Database"
+                className="w-12 h-12 text-muted-foreground mx-auto mb-4"
+              />
+              <p className="text-lg font-medium mb-2">
+                {currentLanguage === "mm" ? "ဒေတာမရှိပါ" : "No data found"}
+              </p>
+              <p className="text-muted-foreground">
+                {currentLanguage === "mm" 
+                  ? "ဒေတာများထည့်ရန် အသစ်ထည့်မည်ကို နှိပ်ပါ" 
+                  : "Click 'Add New' to create your first entry"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View - Only show on extra large screens (1280px+) */}
+        <div className="hidden xl:block w-full min-w-0 overflow-hidden">
+          <div className="module-data-table">
+            <DataTable
+              columns={columns}
+              data={data}
+              searchKey={
+                module.dataTableSchema.filtering?.searchFields?.[0] ||
+                module.dataTableSchema.columns[0]?.fieldName
+              }
+              searchPlaceholder={
+                currentLanguage === "mm"
+                  ? `${
+                      module.dataTableSchema.filtering?.searchFields?.[0] || "ဒေတာ"
+                    } ရှာဖွေမည်...`
+                  : `Search ${
+                      module.dataTableSchema.filtering?.searchFields?.[0] || "data"
+                    }...`
+              }
+              onRowSelectionChange={setSelectedItems}
+              initialColumnVisibility={columnVisibility}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -564,80 +906,6 @@ export function ModuleDataTable({
         />
       )}
 
-      {/* Edit Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>
-              {currentLanguage === "mm" ? "တည်းဖြတ်မည်" : "Edit"}{" "}
-              {getLocalizedText(module.name, currentLanguage)}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto pr-2">
-            {editItemData ? (
-              <SimpleForm
-                module={module}
-                action="update"
-                initialData={editItemData}
-                serverAction={async (formData: FormData) => {
-                  try {
-                    const validationSchema = generateZodSchema(
-                      module.formFields
-                    );
-                    const result = await submitModuleForm(
-                      module.slug,
-                      formData,
-                      validationSchema,
-                      "update",
-                      editingItemId || undefined
-                    );
-
-                    if (result.success) {
-                      handleEditSuccess();
-                    } else {
-                      console.error(
-                        "Update failed:",
-                        result.error || result.errors
-                      );
-                      // Handle validation errors
-                      if (result.errors) {
-                        // Show validation errors to user
-                        const errorMessages = Object.entries(result.errors)
-                          .map(
-                            ([field, messages]) =>
-                              `${field}: ${messages.join(", ")}`
-                          )
-                          .join("\n");
-                        alert(`Validation errors:\n${errorMessages}`);
-                      } else {
-                        alert(result.error || "Failed to update item");
-                      }
-                    }
-                  } catch (error) {
-                    console.error("Form submission error:", error);
-                    alert("Failed to update item");
-                  }
-                }}
-                currentLanguage={currentLanguage}
-              />
-            ) : (
-              <div className="text-center py-8">
-                <IconComponent
-                  name="AlertCircle"
-                  className="w-12 h-12 text-muted-foreground mx-auto mb-4"
-                />
-                <p className="text-lg font-medium mb-2">
-                  {currentLanguage === "mm" ? "မရှိပါ" : "No data found"}
-                </p>
-                <Button onClick={handleEditCancel} variant="outline">
-                  {currentLanguage === "mm" ? "ပိတ်မည်" : "Close"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Extra Action Modal */}
       {activeExtraAction && (
@@ -655,6 +923,55 @@ export function ModuleDataTable({
           }}
           onSuccess={handleExtraActionSuccess}
           currentLanguage={currentLanguage}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title={currentLanguage === "mm" ? "ဖျက်လိုသည်လား?" : "Delete Item"}
+        description={currentLanguage === "mm" 
+          ? "ဤ item ကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။"
+          : "Are you sure you want to delete this item? This action cannot be undone."
+        }
+        confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
+        cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
+        onConfirm={executeDelete}
+        destructive={true}
+        icon="Trash2"
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={bulkDeleteConfirmOpen}
+        onOpenChange={setBulkDeleteConfirmOpen}
+        title={currentLanguage === "mm" 
+          ? `${selectedItems.length} ခု ဖျက်မည်` 
+          : `Delete ${selectedItems.length} Items`
+        }
+        description={currentLanguage === "mm" 
+          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။`
+          : `Are you sure you want to delete ${selectedItems.length} selected items? This action cannot be undone.`
+        }
+        confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete All"}
+        cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
+        onConfirm={executeBulkDelete}
+        destructive={true}
+        icon="Trash2"
+      />
+
+      {/* Extra Action Confirmation Dialog */}
+      {pendingExtraAction && (
+        <ConfirmationDialog
+          open={extraActionConfirmOpen}
+          onOpenChange={setExtraActionConfirmOpen}
+          title={getLocalizedText(pendingExtraAction.label, currentLanguage)}
+          description={getLocalizedText(pendingExtraAction.confirmMessage!, currentLanguage)}
+          confirmText={currentLanguage === "mm" ? "ရှေ့ဆက်မည်" : "Continue"}
+          cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
+          onConfirm={executeExtraAction}
+          icon={pendingExtraAction.icon}
         />
       )}
     </div>

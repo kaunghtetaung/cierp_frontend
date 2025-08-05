@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getLocalizedText } from '@repo/utils'
 import { Button } from '@/components/ui/button'
 import { IconComponent } from '@repo/ui/components/icons'
-import { deleteModuleItem } from '@repo/app-modules/server-actions'
+import { deleteModuleItemAction } from '@repo/app-modules/server-actions'
 import type { ModuleSchema, DataTableColumn } from '@repo/types'
 
 interface SimpleModuleListProps {
@@ -135,7 +135,7 @@ export function SimpleModuleList({ module, data }: SimpleModuleListProps) {
                         
                         {/* Delete Action */}
                         {module.dataTableSchema?.actions?.delete && (
-                          <form action={deleteModuleItem.bind(null, module.slug, item._id || item.id)}>
+                          <form action={deleteModuleItemAction.bind(null, module.slug, item._id || item.id)}>
                             <Button variant="outline" size="sm" type="submit" title="Delete">
                               <IconComponent name="Trash" className="w-4 h-4" />
                             </Button>

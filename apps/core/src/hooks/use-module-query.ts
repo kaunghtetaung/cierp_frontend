@@ -2,15 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getModuleListAction,
   getModuleItemAction,
-  deleteModuleItem,
-  bulkModuleOperation,
+  deleteModuleItemAction,
+  hardDeleteModuleItemAction,
+  restoreModuleItemAction,
+  getDeletedModuleItemsAction,
+  bulkModuleOperationAction,
   submitModuleForm,
 } from "@repo/app-modules/server-actions";
 import type {
   ModuleListParams,
   BulkOperationParams,
 } from "@repo/app-modules/types";
-import { z } from "zod";
 
 // Query Keys
 export const moduleKeys = {
@@ -76,15 +78,12 @@ export function useModuleItem<T = any>(
   });
 }
 
-export function useCreateModuleItem(
-  module: string,
-  validationSchema: z.ZodSchema
-) {
+export function useCreateModuleItem(module: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: FormData) =>
-      submitModuleForm(module, data, validationSchema, "create"),
+      submitModuleForm(module, data, "create"),
     onSuccess: async () => {
       // Invalidate all queries for this specific module
       await queryClient.invalidateQueries({ 
@@ -95,15 +94,12 @@ export function useCreateModuleItem(
   });
 }
 
-export function useUpdateModuleItem(
-  module: string,
-  validationSchema: z.ZodSchema
-) {
+export function useUpdateModuleItem(module: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: FormData }) =>
-      submitModuleForm(module, data, validationSchema, "update", id),
+      submitModuleForm(module, data, "update", id),
     onSuccess: async (_, { id }) => {
       // Invalidate all list queries for this module
       await queryClient.invalidateQueries({ 
@@ -122,7 +118,7 @@ export function useDeleteModuleItem(module: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => deleteModuleItem(module, id),
+    mutationFn: (id: string) => deleteModuleItemAction(module, id),
     onSuccess: async () => {
       // Invalidate all list queries for this module
       await queryClient.invalidateQueries({ 
@@ -133,23 +129,93 @@ export function useDeleteModuleItem(module: string) {
   });
 }
 
-export function useBulkModuleOperation(module: string) {
+export function useHardDeleteModuleItem(module: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: BulkOperationParams) =>
-      bulkModuleOperation(
-        module,
-        params.operation,
-        params.ids,
-        params.data
-      ),
+    mutationFn: (id: string) => hardDeleteModuleItemAction(module, id),
     onSuccess: async () => {
       // Invalidate all list queries for this module
       await queryClient.invalidateQueries({ 
         queryKey: [...moduleKeys.lists(), module],
         exact: false 
       });
+      // Also invalidate deleted items list
+      await queryClient.invalidateQueries({ 
+        queryKey: [...moduleKeys.all, module, "deleted"],
+        exact: false 
+      });
+    },
+  });
+}
+
+export function useRestoreModuleItem(module: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => restoreModuleItemAction(module, id),
+    onSuccess: async () => {
+      // Invalidate both main list and deleted items list
+      await queryClient.invalidateQueries({ 
+        queryKey: [...moduleKeys.lists(), module],
+        exact: false 
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: [...moduleKeys.all, module, "deleted"],
+        exact: false 
+      });
+    },
+  });
+}
+
+export function useDeletedModuleItems<T = any>(
+  module: string,
+  options?: {
+    enabled?: boolean;
+    staleTime?: number;
+    refetchInterval?: number;
+  }
+) {
+  return useQuery({
+    queryKey: [...moduleKeys.all, module, "deleted"],
+    queryFn: async () => {
+      const result = await getDeletedModuleItemsAction<T>(module);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch deleted items");
+      }
+      return result.data;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes
+    refetchInterval: options?.refetchInterval,
+  });
+}
+
+export function useBulkModuleOperation(module: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: BulkOperationParams) =>
+      bulkModuleOperationAction(
+        module,
+        params.operation,
+        params.ids,
+        params.data
+      ),
+    onSuccess: async (data, variables) => {
+      // Invalidate all list queries for this module
+      await queryClient.invalidateQueries({ 
+        queryKey: [...moduleKeys.lists(), module],
+        exact: false 
+      });
+      
+      // If operation affects deleted items, also invalidate deleted items list
+      if (variables.operation === 'restore' || variables.operation === 'hard-delete') {
+        await queryClient.invalidateQueries({ 
+          queryKey: [...moduleKeys.all, module, "deleted"],
+          exact: false 
+        });
+      }
     },
   });
 }

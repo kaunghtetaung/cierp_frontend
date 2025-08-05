@@ -24,7 +24,7 @@ export interface ModuleListResponse<T = any> {
 }
 
 export interface BulkOperationParams {
-  operation: 'delete' | 'update'
+  operation: 'delete' | 'hard-delete' | 'restore' | 'update'
   ids: string[]
   data?: any
 }

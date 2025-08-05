@@ -3,6 +3,7 @@ import { fetchLayoutData, generatePageMetadata } from "@/lib/layout-data";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ThemeScript } from "@/components/theme-script";
+import { Toaster } from "@/components/ui/sonner";
 import type { RootLayoutProps } from "@/types/layout";
 
 import "./globals.css";
@@ -55,6 +56,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <AppLayout tenant={tenant} appSchemaData={appSchemaData}>
             {children}
           </AppLayout>
+          <Toaster />
         </AppProviders>
       </body>
     </html>

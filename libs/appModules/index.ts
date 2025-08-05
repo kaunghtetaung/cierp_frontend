@@ -7,9 +7,13 @@ export {
   getModuleListAction,
   getModuleItemAction,
   submitModuleForm,
-  deleteModuleItem,
-  bulkModuleOperation,
-  executeExtraAction,
+  deleteModuleItemAction,
+  hardDeleteModuleItemAction,
+  restoreModuleItemAction,
+  getDeletedModuleItemsAction,
+  bulkModuleOperationAction,
+  executeExtraActionAction,
+  getModuleReferenceAction,
 } from "./server-actions";
 export type { ActionResponse } from "./server-actions";
 

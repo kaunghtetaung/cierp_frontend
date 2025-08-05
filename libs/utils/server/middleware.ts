@@ -1,6 +1,6 @@
 // Middleware utility functions - reusable across projects
-import { headers, cookies } from "next/headers";
 import { MIDDLEWARE_HEADERS, MIDDLEWARE_COOKIES } from "../common/constants";
+import { getSafeHeaders, getSafeCookies } from "./headers-compat";
 import {
   isValidTenantId,
   hasTenantId,
@@ -16,7 +16,7 @@ import {
  */
 export async function getTenantIdFromHeaders(): Promise<string | null> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     return headerStore.get(MIDDLEWARE_HEADERS.TENANT_ID) || null;
   } catch (error) {
     console.error("Failed to get tenant ID from headers:", error);
@@ -29,7 +29,7 @@ export async function getTenantIdFromHeaders(): Promise<string | null> {
  */
 export async function getLanguageFromHeaders(): Promise<string> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     return headerStore.get(MIDDLEWARE_HEADERS.LANGUAGE) || "en";
   } catch (error) {
     console.error("Failed to get language from headers:", error);
@@ -42,7 +42,7 @@ export async function getLanguageFromHeaders(): Promise<string> {
  */
 export async function getRequestIdFromHeaders(): Promise<string | null> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     return headerStore.get(MIDDLEWARE_HEADERS.REQUEST_ID) || null;
   } catch (error) {
     console.error("Failed to get request ID from headers:", error);
@@ -55,7 +55,7 @@ export async function getRequestIdFromHeaders(): Promise<string | null> {
  */
 export async function getHostnameFromHeaders(): Promise<string | null> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     return headerStore.get(MIDDLEWARE_HEADERS.HOSTNAME) || null;
   } catch (error) {
     console.error("Failed to get hostname from headers:", error);
@@ -68,7 +68,7 @@ export async function getHostnameFromHeaders(): Promise<string | null> {
  */
 export async function getProtocolFromHeaders(): Promise<string> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     return headerStore.get(MIDDLEWARE_HEADERS.PROTOCOL) || "https";
   } catch (error) {
     console.error("Failed to get protocol from headers:", error);
@@ -81,7 +81,7 @@ export async function getProtocolFromHeaders(): Promise<string> {
  */
 export async function getAppIdFromHeaders(): Promise<string | null> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     return headerStore.get(MIDDLEWARE_HEADERS.APP_ID) || null;
   } catch (error) {
     console.error("Failed to get app ID from headers:", error);
@@ -132,7 +132,7 @@ export async function getMiddlewareDataFromHeaders(): Promise<{
   appConfig?: any;
 }> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     
     // Get basic middleware data
     const tenantId = headerStore.get(MIDDLEWARE_HEADERS.TENANT_ID) || null;
@@ -181,7 +181,7 @@ export async function getMiddlewareDataFromHeaders(): Promise<{
  */
 export async function getTenantIdFromCookies(): Promise<string | null> {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = await getSafeCookies();
     return cookieStore.get(MIDDLEWARE_COOKIES.TENANT_ID)?.value || null;
   } catch (error) {
     console.error("Failed to get tenant ID from cookies:", error);
@@ -194,7 +194,7 @@ export async function getTenantIdFromCookies(): Promise<string | null> {
  */
 export async function getLanguageFromCookies(): Promise<string> {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = await getSafeCookies();
     return cookieStore.get(MIDDLEWARE_COOKIES.LANGUAGE)?.value || "en";
   } catch (error) {
     console.error("Failed to get language from cookies:", error);
@@ -207,7 +207,7 @@ export async function getLanguageFromCookies(): Promise<string> {
  */
 export async function getRequestIdFromCookies(): Promise<string | null> {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = await getSafeCookies();
     return cookieStore.get(MIDDLEWARE_COOKIES.REQUEST_ID)?.value || null;
   } catch (error) {
     console.error("Failed to get request ID from cookies:", error);
@@ -224,7 +224,7 @@ export async function getMiddlewareDataFromCookies(): Promise<{
   requestId: string | null;
 }> {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = await getSafeCookies();
 
     return {
       tenantId: cookieStore.get(MIDDLEWARE_COOKIES.TENANT_ID)?.value || null,

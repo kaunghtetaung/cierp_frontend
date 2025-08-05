@@ -7,15 +7,20 @@
   "exports": {
     ".": "./index.ts",
     "./client": "./clients/client.ts",
+    "./clients/cached-client": "./clients/cached-client.ts",
     "./server": "./server/server.ts",
     "./auth-interceptor": "./interceptors/auth-interceptor.ts",
     "./validation-interceptor": "./interceptors/validation-interceptor.ts",
+    "./error-interceptor": "./interceptors/error-interceptor.ts",
     "./response-handler": "./handlers/response-handler.ts",
     "./retry-strategy": "./handlers/retry-strategy.ts",
     "./header-builder": "./builders/header-builder.ts",
     "./url-builder": "./builders/url-builder.ts",
     "./http-executor": "./executors/http-executor.ts",
     "./http-types": "./types/http-types.ts",
+    "./messages/error-messages": "./messages/error-messages.ts",
+    "./messages": "./messages/error-messages.ts",
+    "./server-only": "./server-only.ts",
     "./examples": "./examples/examples.ts"
   },
   "scripts": {

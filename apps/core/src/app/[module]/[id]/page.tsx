@@ -2,16 +2,17 @@ import { notFound } from 'next/navigation'
 import { fetchLayoutData } from '@/lib/layout-data'
 import { getModuleItem } from '@repo/app-modules'
 import { submitModuleForm } from '@repo/app-modules/server-actions'
-import { SimpleForm } from '@/components/forms/SimpleForm'
+import { ReactHookFormWrapper } from '@/components/forms/ReactHookFormWrapper'
+import { ReactHookWizardFormWrapper } from '@/components/forms/ReactHookWizardFormWrapper'
 import { generateZodSchema } from '@/lib/form-schema'
 import { enableCommonMultilangFields } from '@/lib/enable-multilang'
 import type { ModuleSchema } from '@repo/types'
 
 interface ModuleDetailPageProps {
-  params: {
+  params: Promise<{
     module: string
     id: string
-  }
+  }>
 }
 
 export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
@@ -50,30 +51,18 @@ export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
   // Create validation schema for the module
   const validationSchema = generateZodSchema(moduleWithMultilang.formFields)
   
-  // Create server action for this specific module and mode
-  const serverAction = async (formData: FormData) => {
-    'use server'
-    const result = await submitModuleForm(
-      resolvedParams.module,
-      formData,
-      validationSchema,
-      isCreateMode ? 'create' : 'update',
-      isCreateMode ? undefined : resolvedParams.id
-    )
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Form submission failed')
-    }
-  }
+  // Choose form component based on layout type
+  const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
+  const FormComponent = isWizardForm ? ReactHookWizardFormWrapper : ReactHookFormWrapper;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <SimpleForm
+      <FormComponent
         module={moduleWithMultilang}
         action={isCreateMode ? 'create' : 'update'}
         initialData={initialData}
-        serverAction={serverAction}
-        currentLanguage="en" // You can get this from headers or context
+        moduleSlug={resolvedParams.module}
+        itemId={isCreateMode ? undefined : resolvedParams.id}
       />
     </div>
   )
@@ -81,6 +70,7 @@ export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
 
 export async function generateMetadata({ params }: ModuleDetailPageProps) {
   const { appSchemaData } = await fetchLayoutData()
+  const resolvedParams = await params
   
   if (!appSchemaData?.modules) {
     return {
@@ -90,7 +80,7 @@ export async function generateMetadata({ params }: ModuleDetailPageProps) {
   }
 
   const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === params.module
+    (mod: ModuleSchema) => mod.slug === resolvedParams.module
   )
 
   if (!module) {

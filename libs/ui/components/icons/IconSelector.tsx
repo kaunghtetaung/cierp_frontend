@@ -58,20 +58,27 @@ export function IconSelector({
   
   // Filter icons based on search and category
   const filteredIcons = useMemo(() => {
+    let icons: { iconName: string; category: IconCategory }[] = [];
+    
     if (searchQuery.trim()) {
-      return searchIcons(searchQuery);
-    }
-    
-    if (selectedCategory === 'all') {
-      return Object.entries(ICON_REGISTRY).flatMap(([category, icons]) =>
-        icons.map(iconName => ({ iconName, category: category as IconCategory }))
+      icons = searchIcons(searchQuery);
+    } else if (selectedCategory === 'all') {
+      icons = Object.entries(ICON_REGISTRY).flatMap(([category, iconNames]) =>
+        iconNames.map(iconName => ({ iconName, category: category as IconCategory }))
       );
+    } else {
+      icons = getIconsByCategory(selectedCategory).map(iconName => ({
+        iconName,
+        category: selectedCategory,
+      }));
     }
     
-    return getIconsByCategory(selectedCategory).map(iconName => ({
-      iconName,
-      category: selectedCategory,
-    }));
+    // Remove duplicates by iconName, keeping the first occurrence
+    const uniqueIcons = icons.filter((icon, index, array) => 
+      array.findIndex(item => item.iconName === icon.iconName) === index
+    );
+    
+    return uniqueIcons;
   }, [searchQuery, selectedCategory]);
   
   // Group icons by category for display
@@ -90,6 +97,8 @@ export function IconSelector({
   }, [filteredIcons, showCategories]);
   
   const handleIconSelect = (iconName: string) => {
+    console.log('🎯 IconSelector: Icon selected:', iconName);
+    console.log('🎯 IconSelector: onSelect function:', typeof onSelect);
     onSelect(iconName);
     setIsOpen(false);
     setSearchQuery('');
@@ -105,7 +114,12 @@ export function IconSelector({
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!disabled) {
+            console.log('🎯 IconSelector: Toggling dropdown, isOpen:', !isOpen);
+            setIsOpen(!isOpen);
+          }
+        }}
         disabled={disabled}
         className={`
           flex items-center justify-between gap-2 w-full px-3 py-2 
@@ -145,6 +159,14 @@ export function IconSelector({
         </div>
       </button>
       
+      {/* Backdrop to close dropdown */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 cursor-default"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      
       {/* Dropdown Panel */}
       {isOpen && (
         <div
@@ -152,9 +174,10 @@ export function IconSelector({
             absolute top-full left-0 right-0 z-50 mt-1
             border border-border rounded-md bg-popover text-popover-foreground
             shadow-lg max-h-[${maxHeight}px] overflow-hidden
-            flex flex-col
+            flex flex-col pointer-events-auto
           `}
           style={{ maxHeight: `${maxHeight}px` }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Search and Filter Header */}
           <div className="p-3 border-b border-border">
@@ -169,6 +192,9 @@ export function IconSelector({
                 placeholder="Search icons..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => console.log('🔍 IconSelector: Search input focused')}
+                onClick={() => console.log('🔍 IconSelector: Search input clicked')}
+                autoFocus
                 className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
             </div>
@@ -177,7 +203,7 @@ export function IconSelector({
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as IconCategory | 'all')}
-              className="w-full p-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="w-full p-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
             >
               <option value="all">All Categories</option>
               {Object.entries(ICON_CATEGORIES).map(([key, category]) => (
@@ -189,7 +215,7 @@ export function IconSelector({
           </div>
           
           {/* Icons Grid */}
-          <div className="flex-1 overflow-auto p-2">
+          <div className="flex-1 overflow-auto p-2 pointer-events-auto" style={{ scrollbarWidth: 'thin' }}>
             {Object.entries(groupedIcons).map(([categoryKey, icons]) => (
               <div key={categoryKey} className="mb-4">
                 {showCategories && categoryKey !== 'all' && (
@@ -208,19 +234,24 @@ export function IconSelector({
                     <button
                       key={iconName}
                       type="button"
-                      onClick={() => handleIconSelect(iconName)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🖱️ IconSelector: Button clicked for icon:', iconName);
+                        handleIconSelect(iconName);
+                      }}
                       title={iconName}
                       className={`
                         flex items-center justify-center p-2 min-h-[2.5rem]
                         border border-transparent rounded-md cursor-pointer
-                        transition-all duration-200 ease-in-out
+                        transition-all duration-200 ease-in-out pointer-events-auto
                         ${value === iconName 
                           ? 'bg-primary text-primary-foreground border-primary' 
                           : 'hover:bg-accent hover:text-accent-foreground hover:border-border'
                         }
                       `}
                     >
-                      <IconComponent name={iconName} size={20} />
+                      <IconComponent name={iconName} size={20} className="pointer-events-none" />
                     </button>
                   ))}
                 </div>
@@ -245,14 +276,6 @@ export function IconSelector({
             {filteredIcons.length} icon{filteredIcons.length !== 1 ? 's' : ''} available
           </div>
         </div>
-      )}
-      
-      {/* Backdrop to close dropdown */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
       )}
     </div>
   );

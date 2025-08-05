@@ -1,13 +1,13 @@
 // Server-side API utilities
-import { headers } from "next/headers";
 import { getAuthDomain } from "./domain";
+import { getSafeHeaders } from "./headers-compat";
 
 /**
  * Build internal API URL for server-side requests
  */
 export async function buildInternalApiUrl(endpoint: string): Promise<string> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     const host = headerStore.get("host");
     const protocol = headerStore.get("x-forwarded-proto") || "http";
 
@@ -32,7 +32,7 @@ export async function serverApiRequest<T>(
 ): Promise<T> {
   try {
     const url = await buildInternalApiUrl(endpoint);
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
 
     // Forward important headers
     const forwardHeaders: Record<string, string> = {
@@ -128,7 +128,7 @@ export async function createAuthRedirect(
  */
 async function getCurrentServerUrl(): Promise<string> {
   try {
-    const headerStore = await headers();
+    const headerStore = await getSafeHeaders();
     const host = headerStore.get("host");
     const protocol = headerStore.get("x-forwarded-proto") || "http";
     const pathname = headerStore.get("x-pathname") || "/";

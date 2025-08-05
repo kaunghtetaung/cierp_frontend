@@ -28,7 +28,7 @@ export const DEFAULT_CONFIG: MiddlewareConfig = {
     "/ping",
     //"/health",
   ],
-  enableLogging: true,
+  enableLogging: false,
 };
 
 export function mergeMiddlewareConfig(

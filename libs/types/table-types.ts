@@ -16,6 +16,9 @@ export type ActionType = 'modal' | 'page' | 'inline';
 // Form types for extra actions
 export type ExtraActionFormType = 'modal' | 'page' | 'drawer';
 
+// Extra action form approach
+export type ExtraActionFormApproach = 'schema-driven' | 'pre-built' | 'hybrid';
+
 // Table column configuration
 export interface TableColumn {
   fieldName: string;
@@ -82,6 +85,13 @@ export interface DataTableSchema {
   filtering?: FilteringConfig;
 }
 
+// Form validation configuration
+export interface FormValidationConfig {
+  validateOnChange?: boolean;
+  validateOnBlur?: boolean;
+  reValidateMode?: 'onChange' | 'onBlur' | 'onSubmit';
+}
+
 // Extra action form configuration for custom module operations
 export interface ExtraActionForm {
   actionKey: string; // Unique identifier for the action (e.g., 'resetPassword', 'assignRoles')
@@ -91,9 +101,23 @@ export interface ExtraActionForm {
   endpoint: string; // API endpoint for the action
   method: HttpMethod;
   formType: ExtraActionFormType;
-  formName: string; // Pre-built form component name for frontend (e.g., 'userPwdChangeForm', 'RoleAssignForm')
+  
+  // Form approach configuration
+  formApproach?: ExtraActionFormApproach; // Defaults to 'schema-driven' for backend compatibility
+  formName?: string; // Pre-built form component name (required for 'pre-built' approach)
+  formFields?: import('./form-types').FormField[]; // Schema-driven form fields (required for 'schema-driven' approach)
+  formLayout?: import('./form-types').FormLayout; // Form layout for schema-driven forms
+  formValidation?: FormValidationConfig; // Validation configuration
+  
+  // UI configuration
+  submitButtonText?: MultilingualText; // Custom submit button text
+  cancelButtonText?: MultilingualText; // Custom cancel button text
+  formWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'full'; // Modal/drawer width
+  showProgress?: boolean; // Show progress indicator during submission
+  
+  // Behavior configuration
   requiresSelection?: boolean; // Whether this action requires selecting items first
-  confirmMessage?: MultilingualText;
+  confirmMessage?: MultilingualText; // Confirmation message before executing action
   permission?: string; // Required permission to access this action
-  buttonStyle?: ButtonStyle;
+  buttonStyle?: ButtonStyle; // Visual style of the action button (primary, secondary, warning, etc.)
 }

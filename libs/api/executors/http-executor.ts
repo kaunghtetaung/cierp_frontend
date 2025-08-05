@@ -21,8 +21,26 @@ export class StandardHttpExecutor implements HttpExecutor {
     context: HttpRequestContext,
     attempt: number
   ): Promise<HttpResponseContext<T>> {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🚀 StandardHttpExecutor: Executing request (attempt ${attempt}):`, {
+        url: context.url,
+        method: context.method,
+        headers: context.headers,
+        hasBody: !!context.body
+      });
+    }
+
     try {
       const response = await fetch(context.url, context.options);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ StandardHttpExecutor: Fetch completed:`, {
+          url: context.url,
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+      }
 
       return {
         request: context,
@@ -30,9 +48,24 @@ export class StandardHttpExecutor implements HttpExecutor {
         data: undefined // Will be populated by response handler
       };
     } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`❌ StandardHttpExecutor: Fetch failed:`, {
+          url: context.url,
+          attempt,
+          error: error instanceof Error ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          } : error
+        });
+      }
+
       // Check if we should retry
       if (this.retryStrategy.shouldRetry(error, attempt)) {
         const delay = this.retryStrategy.getDelay(attempt);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 StandardHttpExecutor: Retrying in ${delay}ms (attempt ${attempt + 1})`);
+        }
         await this.delay(delay);
         return this.executeWithRetry<T>(context, attempt + 1);
       }

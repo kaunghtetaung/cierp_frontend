@@ -1,4 +1,4 @@
-import { createHttpClient } from "@repo/api";
+import { getCachedServerHttpClient } from "@repo/api/server-only";
 import type {
   ModuleListParams,
   BulkOperationParams,
@@ -13,20 +13,24 @@ export class ModuleService {
   private tenantId?: string;
   private userSessionId?: string;
   private userId?: string;
+  private appName: string;
 
   constructor(
     baseURL: string,
-    options?: { tenantId?: string; userSessionId?: string; userId?: string }
+    options?: { 
+      tenantId?: string; 
+      userSessionId?: string; 
+      userId?: string;
+      appName?: string;
+    }
   ) {
-    this.httpClient = createHttpClient({
-      baseURL,
-      enableAuth: true,
-      enableCSRF: false,
-      timeout: 15000,
-    });
+    // Use cached HTTP client to prevent circular dependency issues
+    // This ensures the same client instance is reused across all module operations
+    this.httpClient = getCachedServerHttpClient(baseURL);
     this.tenantId = options?.tenantId;
     this.userSessionId = options?.userSessionId;
     this.userId = options?.userId;
+    this.appName = options?.appName || 'core'; // Default to 'core' for backward compatibility
   }
   /**
    * Fetch module list with pagination and filters
@@ -35,7 +39,7 @@ export class ModuleService {
     module: string,
     params: ModuleListParams = {}
   ): Promise<T[]> {
-    let endpoint = `/core/${module}`;
+    let endpoint = `/${this.appName}/${module}`;
 
     // Build query parameters
     const queryParams = new URLSearchParams();
@@ -79,7 +83,7 @@ export class ModuleService {
    * Fetch single module item by ID
    */
   async getItem<T = any>(module: string, id: string): Promise<T> {
-    const response = await this.httpClient.request<T>(`/core/${module}/${id}`, {
+    const response = await this.httpClient.request<T>(`/${this.appName}/${module}/${id}`, {
       method: "GET",
       tenantId: this.tenantId,
       userSessionId: this.userSessionId,
@@ -98,7 +102,7 @@ export class ModuleService {
    * Create new module item
    */
   async create<T = any>(module: string, data: any): Promise<T> {
-    const response = await this.httpClient.request<T>(`/core/${module}`, {
+    const response = await this.httpClient.request<T>(`/${this.appName}/${module}`, {
       method: "POST",
       body: data,
       tenantId: this.tenantId,
@@ -108,6 +112,19 @@ export class ModuleService {
     });
 
     if (!response.success) {
+      // Check if this is a validation error with detailed information
+      if (response.error && typeof response.error === 'string') {
+        try {
+          // Try to parse as JSON in case it contains structured error data
+          const errorData = JSON.parse(response.error);
+          if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
+            // Preserve the full error structure for the server action
+            throw new Error(JSON.stringify(errorData));
+          }
+        } catch (parseError) {
+          // Not JSON, treat as regular error
+        }
+      }
       throw new Error(response.error || "Failed to create module item");
     }
 
@@ -118,7 +135,7 @@ export class ModuleService {
    * Update existing module item
    */
   async update<T = any>(module: string, id: string, data: any): Promise<T> {
-    const response = await this.httpClient.request<T>(`/core/${module}/${id}`, {
+    const response = await this.httpClient.request<T>(`/${this.appName}/${module}/${id}`, {
       method: "PUT",
       body: data,
       tenantId: this.tenantId,
@@ -128,6 +145,19 @@ export class ModuleService {
     });
 
     if (!response.success) {
+      // Check if this is a validation error with detailed information
+      if (response.error && typeof response.error === 'string') {
+        try {
+          // Try to parse as JSON in case it contains structured error data
+          const errorData = JSON.parse(response.error);
+          if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
+            // Preserve the full error structure for the server action
+            throw new Error(JSON.stringify(errorData));
+          }
+        } catch (parseError) {
+          // Not JSON, treat as regular error
+        }
+      }
       throw new Error(response.error || "Failed to update module item");
     }
 
@@ -138,7 +168,7 @@ export class ModuleService {
    * Delete module item
    */
   async delete<T = any>(module: string, id: string): Promise<T> {
-    const response = await this.httpClient.request<T>(`/core/${module}/${id}`, {
+    const response = await this.httpClient.request<T>(`/${this.appName}/${module}/${id}`, {
       method: "DELETE",
       tenantId: this.tenantId,
       userSessionId: this.userSessionId,
@@ -154,18 +184,38 @@ export class ModuleService {
   }
 
   /**
-   * Bulk operations (delete/update multiple items)
+   * Bulk operations (delete/hard-delete/restore/update multiple items)
    */
   async bulkOperation<T = any>(
     module: string,
     params: BulkOperationParams
   ): Promise<T> {
-    const response = await this.httpClient.request<T>(`/core/${module}/bulk`, {
-      method: "POST",
+    // Map operations to correct endpoints
+    let endpoint: string;
+    let method: string = "POST";
+    
+    switch (params.operation) {
+      case 'delete':
+        endpoint = `/${this.appName}/${module}/bulk/soft-delete`;
+        break;
+      case 'hard-delete':
+        endpoint = `/${this.appName}/${module}/bulk/hard-delete`;
+        break;
+      case 'restore':
+        endpoint = `/${this.appName}/${module}/bulk/restore`;
+        break;
+      case 'update':
+        endpoint = `/${this.appName}/${module}/bulk`;
+        break;
+      default:
+        throw new Error(`Unsupported bulk operation: ${params.operation}`);
+    }
+
+    const response = await this.httpClient.request<T>(endpoint, {
+      method,
       body: {
-        operation: params.operation,
         ids: params.ids,
-        data: params.data,
+        ...(params.data && { data: params.data }),
       },
       tenantId: this.tenantId,
       userSessionId: this.userSessionId,
@@ -190,7 +240,7 @@ export class ModuleService {
     params: ExtraActionParams
   ): Promise<T> {
     const response = await this.httpClient.request<T>(
-      `/core/${module}/${params.id}/actions/${params.actionKey}`,
+      `/${this.appName}/${module}/${params.id}/actions/${params.actionKey}`,
       {
         method: "POST",
         body: params.data || {},
@@ -205,6 +255,46 @@ export class ModuleService {
       throw new Error(
         response.error || `Failed to execute ${params.actionKey}`
       );
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Fetch reference data for dropdowns (supports dependencies)
+   */
+  async getReference<T = any>(
+    module: string,
+    queryParams?: Record<string, string>
+  ): Promise<T[]> {
+    let endpoint = `/${this.appName}/${module}/ref`;
+
+    // Build query parameters
+    if (queryParams && Object.keys(queryParams).length > 0) {
+      const params = new URLSearchParams();
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          // Convert value to string to handle any type issues
+          params.set(key, String(value));
+        }
+      });
+      
+      if (params.toString()) {
+        endpoint += `?${params.toString()}`;
+      }
+    }
+
+
+    const response = await this.httpClient.request<T[]>(endpoint, {
+      method: "GET",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || `Failed to fetch ${module} reference data from ${endpoint}`);
     }
 
     return response.data;

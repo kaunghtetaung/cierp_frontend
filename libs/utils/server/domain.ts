@@ -1,5 +1,4 @@
 // Server-side domain helper utilities
-import { headers } from "next/headers";
 import { cache } from "react";
 import { 
   buildSubdomainUrl, 
@@ -8,12 +7,13 @@ import {
   getAppropriateProtocol,
   isDevelopmentEnvironment 
 } from '../common/url';
+import { getSafeHeaders } from './headers-compat';
 
 /**
  * Get domain URL with subdomain - simplified for standard port 80
  */
 async function getDomainUrl(subdomain: string): Promise<string> {
-  const headersList = await headers();
+  const headersList = await getSafeHeaders();
   const clientHost = headersList.get("host") || "localhost";
   const protocol = getAppropriateProtocol(headersList.get("x-forwarded-proto") || undefined);
 
@@ -40,7 +40,7 @@ export const getAuthDomain = cache(async function (): Promise<string> {
  * Get current hostname from headers
  */
 export async function getCurrentHostname(): Promise<string> {
-  const headersList = await headers();
+  const headersList = await getSafeHeaders();
   return headersList.get("host") || "localhost";
 }
 
@@ -48,7 +48,7 @@ export async function getCurrentHostname(): Promise<string> {
  * Get tenant ID from headers (direct header access)
  */
 export async function getTenantIdFromRequestHeaders(): Promise<string | null> {
-  const headersList = await headers();
+  const headersList = await getSafeHeaders();
   return headersList.get("x-tenant-id");
 }
 
@@ -63,7 +63,7 @@ export function isDevelopment(): boolean {
  * Get protocol from headers or environment
  */
 export async function getProtocol(): Promise<string> {
-  const headersList = await headers();
+  const headersList = await getSafeHeaders();
   return getAppropriateProtocol(headersList.get("x-forwarded-proto") || undefined);
 }
 

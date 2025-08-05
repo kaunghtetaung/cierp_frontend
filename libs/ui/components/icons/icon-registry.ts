@@ -182,7 +182,7 @@ export const ICON_REGISTRY: Record<IconCategory, string[]> = {
     'Pill', 'Syringe', 'Bandage', 'Cross', 'Plus', 'Minus',
     'Hospital', 'Ambulance', 'FirstAid', 'Shield', 'ShieldCheck',
     'UserCheck', 'Users', 'Baby', 'Accessibility', 'Wheelchair',
-    'Eye', 'EyeOff', 'Ear', 'Brain', 'Zap', 'Activity',
+    'Eye', 'EyeOff', 'Ear', 'Brain', 'Zap',
     'HeartHandshake', 'Smile', 'Frown', 'Meh', 'Timer',
     'Clock', 'Calendar', 'CalendarDays', 'FileText', 'Clipboard',
     'ClipboardCheck', 'ClipboardList', 'Scan', 'Search', 'TestTube',
@@ -266,11 +266,13 @@ export function getIconsByCategory(category: IconCategory): string[] {
 export function searchIcons(query: string): { iconName: string; category: IconCategory }[] {
   const lowerQuery = query.toLowerCase();
   const results: { iconName: string; category: IconCategory }[] = [];
+  const seenIcons = new Set<string>();
   
   Object.entries(ICON_REGISTRY).forEach(([category, icons]) => {
     icons.forEach(iconName => {
-      if (iconName.toLowerCase().includes(lowerQuery)) {
+      if (iconName.toLowerCase().includes(lowerQuery) && !seenIcons.has(iconName)) {
         results.push({ iconName, category: category as IconCategory });
+        seenIcons.add(iconName);
       }
     });
   });

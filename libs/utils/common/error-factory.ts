@@ -2,15 +2,15 @@
 import type { 
   ApplicationError, 
   ErrorContext, 
-  ErrorType,
-  ErrorSeverity,
-  ErrorCategory 
+  ErrorType
 } from './error-types';
 import { 
   ERROR_CODES, 
   HTTP_ERROR_MAPPINGS, 
   RETRYABLE_ERROR_CODES, 
-  ERROR_CONSTANTS 
+  ERROR_CONSTANTS,
+  ErrorSeverity,
+  ErrorCategory 
 } from './error-types';
 
 export class ApplicationErrorImpl implements ApplicationError {

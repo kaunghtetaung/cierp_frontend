@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
-import { SimpleForm } from "@/components/forms/SimpleForm";
+import React from "react";
+import { ReactHookForm } from "@/components/forms/ReactHookForm";
 import { sampleMultilangModule } from "@/lib/sample-multilang-module";
-import { Button } from "@/components/ui/button";
-import { IconComponent } from "@repo/ui/components/icons";
+import { useLanguage } from "@repo/language";
 
 export default function TestMultilangPage() {
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'mm'>('en');
+  const { currentLanguage } = useLanguage();
 
   const handleFormSubmit = async (formData: FormData) => {
     console.log('Form submitted with data:', formData);
@@ -16,8 +15,8 @@ export default function TestMultilangPage() {
     const entries = Array.from(formData.entries());
     console.log('Form entries:', entries);
     
-    // Show success message
-    alert(`Form submitted successfully! Check console for form data. Language: ${currentLanguage}`);
+    // Show success message with toast instead of alert
+    console.log(`Form submitted successfully! Language: ${currentLanguage}`);
   };
 
   return (
@@ -34,39 +33,19 @@ export default function TestMultilangPage() {
             </h1>
             <p className="text-muted-foreground">
               {currentLanguage === 'mm'
-                ? 'ဤစာမျက်နှာသည် အင်္ဂလိပ်နှင့် မြန်မာ ဘာသာနှစ်ခု ပံ့ပိုးသော ပုံစံများကို စမ်းသပ်ရန်အတွက် ဖြစ်သည်။'
-                : 'This page is for testing forms with English and Myanmar language support.'
+                ? 'ဤစာမျက်နှာသည် အင်္ဂလိပ်နှင့် မြန်မာ ဘာသာနှစ်ခု ပံ့ပိုးသော ပုံစံများကို စမ်းသပ်ရန်အတွက် ဖြစ်သည်။ ခေါင်းစီးတွင်ရှိ ဘာသာစကား ရွေးခြင်းကို အသုံးပြုပါ။'
+                : 'This page is for testing forms with English and Myanmar language support. Use the language selector in the header to switch languages.'
               }
             </p>
-          </div>
-
-          {/* Language Switcher */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={currentLanguage === 'en' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentLanguage('en')}
-            >
-              <IconComponent name="Globe" className="w-4 h-4 mr-1" />
-              English
-            </Button>
-            <Button
-              variant={currentLanguage === 'mm' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentLanguage('mm')}
-            >
-              <IconComponent name="Languages" className="w-4 h-4 mr-1" />
-              မြန်မာ
-            </Button>
           </div>
         </div>
 
         {/* Form */}
         <div className="bg-card border rounded-lg p-6">
-          <SimpleForm
+          <ReactHookForm
             module={sampleMultilangModule}
             action="create"
-            serverAction={handleFormSubmit}
+            moduleSlug="multilang-test"
             currentLanguage={currentLanguage}
           />
         </div>
