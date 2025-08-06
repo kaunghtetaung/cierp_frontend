@@ -26,9 +26,15 @@ export function DependentSelect({
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   
+  // Early validation
+  if (!field || !formField) {
+    console.error('DependentSelect: Invalid field or formField configuration')
+    return null
+  }
+  
   // Watch the dependent field values (now supports multiple dependencies)
   const dependsOn = field.dropdownConfig?.dependsOn || []
-  const dependentFieldValues = dependsOn.map(fieldName => watch(fieldName))
+  const dependentFieldValues = dependsOn.filter(Boolean).map(fieldName => watch(fieldName))
   
   // Extract module from endpoint
   const getModuleFromEndpoint = (endpoint: string) => {

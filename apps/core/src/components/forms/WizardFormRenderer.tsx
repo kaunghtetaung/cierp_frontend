@@ -47,7 +47,12 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   // Validate current step fields
   const validateStep = async (stepIndex: number) => {
     const step = steps[stepIndex]
-    const fieldsToValidate = step.fields
+    if (!step || !step.fields || !Array.isArray(step.fields)) {
+      console.error('WizardFormRenderer: Invalid step configuration', step)
+      return false
+    }
+    
+    const fieldsToValidate = step.fields.filter(fieldName => fieldName && typeof fieldName === 'string')
     
     if (fieldsToValidate.length === 0) return true
     
@@ -104,8 +109,13 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   
   // Get fields to display for current step
   const getCurrentStepFields = () => {
+    if (!currentStepData || !currentStepData.fields) {
+      console.error('WizardFormRenderer: Invalid step data', currentStepData)
+      return []
+    }
+    
     return module.formFields.filter(field => 
-      currentStepData.fields.includes(field.fieldName)
+      field && field.fieldName && currentStepData.fields.includes(field.fieldName)
     )
   }
   

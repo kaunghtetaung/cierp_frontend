@@ -21,6 +21,12 @@ export interface FormFieldRendererProps {
 export function FormFieldRenderer({ field, currentLanguage = 'en' }: FormFieldRendererProps) {
   const { control, watch } = useFormContext()
   
+  // Early validation - ensure field has required properties
+  if (!field || !field.fieldName) {
+    console.error('FormFieldRenderer: Invalid field configuration', field)
+    return null
+  }
+  
   // Get current label for the field
   const getFieldLabel = (field: SchemaFormField) => {
     if (typeof field.label === 'string') return field.label
