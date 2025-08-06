@@ -88,7 +88,14 @@ export function ModuleDataTable({
 
   // Helper function to get raw nested field values (without language filtering)
   const getRawNestedValue = (obj: any, path: string) => {
-    return path.split(".").reduce((current, key) => current?.[key], obj);
+    const value = path.split(".").reduce((current, key) => current?.[key], obj);
+    
+    // Handle fields with structure {id, value: {en, mm}} - return the entire object for raw access
+    if (value && typeof value === 'object' && value.hasOwnProperty('id') && value.hasOwnProperty('value')) {
+      return value; // Return the entire {id, value} object for raw access
+    }
+    
+    return value;
   };
 
   // Function to detect which languages a column supports
@@ -180,6 +187,16 @@ export function ModuleDataTable({
   // Helper function to get nested field values
   const getNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
+    
+    // Handle fields with structure {id, value: {en, mm}} 
+    if (value && typeof value === 'object' && value.hasOwnProperty('id') && value.hasOwnProperty('value')) {
+      // This is a reference field with id and multilingual value
+      if (isMultilingualText(value.value)) {
+        return value.value[currentLanguage] || value.value.en || '';
+      }
+      // If value is not multilingual, return the value directly
+      return value.value || '';
+    }
     
     // If the value is a multilingual object, return the current language value
     if (isMultilingualText(value)) {
@@ -383,6 +400,7 @@ export function ModuleDataTable({
         },
         cell: ({ row }) => {
           const fieldValue = getNestedValue(row.original, column.fieldName);
+          const rawValue = getRawNestedValue(row.original, column.fieldName);
 
           if (column.type === "date" && fieldValue) {
             return new Date(fieldValue).toLocaleDateString();
@@ -432,6 +450,21 @@ export function ModuleDataTable({
             return (
               <div className="font-medium text-right">
                 {fieldValue.toLocaleString()}
+              </div>
+            );
+          } else if (column.type === "reference" && rawValue && typeof rawValue === 'object' && rawValue.id) {
+            // Enhanced display for reference fields with {id, value: {en, mm}} structure
+            return (
+              <div className="font-medium truncate max-w-[250px] group relative">
+                <span title={fieldValue || rawValue.id}>
+                  {fieldValue || rawValue.id || "-"}
+                </span>
+                {/* Optional: Show ID on hover for debugging in development */}
+                {process.env.NODE_ENV === 'development' && rawValue.id && (
+                  <span className="invisible group-hover:visible absolute -top-8 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded z-10">
+                    ID: {rawValue.id}
+                  </span>
+                )}
               </div>
             );
           }
