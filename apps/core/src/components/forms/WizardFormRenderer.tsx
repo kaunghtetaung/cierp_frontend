@@ -21,8 +21,13 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(new Set())
   
   const wizardConfig = module.wizardConfig!
-  const steps = wizardConfig.steps
+  const steps = wizardConfig.steps || []
   const currentStepData = steps[currentStep]
+  
+  // Default configuration values
+  const validationConfig = wizardConfig.validation || {}
+  const navigationConfig = wizardConfig.navigation || {}
+  const themeConfig = wizardConfig.theme || {}
   
   // Calculate progress
   const progress = ((currentStep + 1) / steps.length) * 100
@@ -52,7 +57,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   
   // Handle next step
   const handleNext = async () => {
-    if (wizardConfig.validation.validateOnStepChange) {
+    if (validationConfig.validateOnStepChange) {
       const isValid = await validateStep(currentStep)
       if (!isValid) return
     }
@@ -67,21 +72,21 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   
   // Handle previous step
   const handlePrevious = () => {
-    if (wizardConfig.navigation.allowBackNavigation && currentStep > 0) {
+    if (navigationConfig.allowBackNavigation && currentStep > 0) {
       setCurrentStep(currentStep - 1)
     }
   }
   
   // Handle step click (if allowed)
   const handleStepClick = async (stepIndex: number) => {
-    if (!wizardConfig.navigation.allowSkipSteps) {
+    if (!navigationConfig.allowSkipSteps) {
       // Only allow going to previous steps or next immediate step
       if (stepIndex > currentStep + 1) return
-      if (stepIndex < currentStep && !wizardConfig.navigation.allowBackNavigation) return
+      if (stepIndex < currentStep && !navigationConfig.allowBackNavigation) return
     }
     
     // If going forward, validate intermediate steps
-    if (stepIndex > currentStep && wizardConfig.validation.validateOnStepChange) {
+    if (stepIndex > currentStep && validationConfig.validateOnStepChange) {
       for (let i = currentStep; i < stepIndex; i++) {
         const isValid = await validateStep(i)
         if (!isValid) return
@@ -107,7 +112,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   return (
     <div className="w-full space-y-6">
       {/* Progress bar */}
-      {wizardConfig.navigation.showProgressBar && (
+      {navigationConfig.showProgressBar && (
         <div className="space-y-2">
           <Progress value={progress} className="h-2" />
           <div className="text-sm text-muted-foreground text-center">
@@ -117,15 +122,15 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
       )}
       
       {/* Step navigation */}
-      {wizardConfig.navigation.showStepNumbers && (
-        <div className={`flex gap-2 ${wizardConfig.theme?.stepLayout === 'vertical' ? 'flex-col' : 'flex-row flex-wrap'}`}>
+      {navigationConfig.showStepNumbers && (
+        <div className={`flex gap-2 ${themeConfig.stepLayout === 'vertical' ? 'flex-col' : 'flex-row flex-wrap'}`}>
           {steps.map((step, index) => {
             const isActive = index === currentStep
             const isCompleted = completedSteps.has(index)
             const hasErrors = stepHasErrors(step)
-            const isClickable = wizardConfig.navigation.allowSkipSteps || 
+            const isClickable = navigationConfig.allowSkipSteps || 
                               index <= currentStep + 1 || 
-                              (index < currentStep && wizardConfig.navigation.allowBackNavigation)
+                              (index < currentStep && navigationConfig.allowBackNavigation)
             
             return (
               <Button
@@ -133,7 +138,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
                 variant={isActive ? 'default' : isCompleted ? 'secondary' : 'outline'}
                 size="sm"
                 className={`
-                  ${wizardConfig.theme?.stepLayout === 'vertical' ? 'justify-start' : ''}
+                  ${themeConfig.stepLayout === 'vertical' ? 'justify-start' : ''}
                   ${hasErrors ? 'border-red-500 text-red-500' : ''}
                   ${!isClickable ? 'cursor-not-allowed opacity-50' : ''}
                 `}
@@ -148,7 +153,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
                       {index + 1}
                     </span>
                   )}
-                  {wizardConfig.navigation.showStepTitles && (
+                  {navigationConfig.showStepTitles && (
                     <span>{getStepTitle(step)}</span>
                   )}
                 </div>
@@ -167,7 +172,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
             </Badge>
             {getStepTitle(currentStepData)}
           </CardTitle>
-          {wizardConfig.navigation.showStepDescription && getStepDescription(currentStepData) && (
+          {navigationConfig.showStepDescription && getStepDescription(currentStepData) && (
             <CardDescription>
               {getStepDescription(currentStepData)}
             </CardDescription>
@@ -190,7 +195,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
           type="button"
           variant="outline"
           onClick={handlePrevious}
-          disabled={currentStep === 0 || !wizardConfig.navigation.allowBackNavigation}
+          disabled={currentStep === 0 || !navigationConfig.allowBackNavigation}
           className="flex items-center gap-2"
         >
           <ChevronLeft className="w-4 h-4" />

@@ -467,6 +467,20 @@ export function ModuleDataTable({
                 {fieldValue.toLocaleString()}
               </div>
             );
+          } else if (column.type === "image" && fieldValue) {
+            return (
+              <div className="flex items-center justify-center">
+                <img 
+                  src={fieldValue} 
+                  alt="Image"
+                  className="w-8 h-8 rounded object-cover"
+                  onError={(e) => {
+                    // Fallback to placeholder if image fails to load
+                    (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                  }}
+                />
+              </div>
+            );
           } else if (column.populate && rawValue && typeof rawValue === 'object' && rawValue._id) {
             // Enhanced display for populated reference fields from backend
             const { displayField, isMultilingual } = column.populate;
@@ -829,6 +843,17 @@ export function ModuleDataTable({
                     <span className="font-medium">
                       {fieldValue.toLocaleString()}
                     </span>
+                  );
+                } else if (column.type === "image" && fieldValue) {
+                  displayValue = (
+                    <img 
+                      src={fieldValue} 
+                      alt="Image"
+                      className="w-6 h-6 rounded object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                      }}
+                    />
                   );
                 }
 

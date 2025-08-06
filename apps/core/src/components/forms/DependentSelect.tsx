@@ -26,8 +26,9 @@ export function DependentSelect({
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   
-  // Watch the dependent field value
-  const dependentFieldValue = watch(field.dataSource?.dependsOn || '')
+  // Watch the dependent field values (now supports multiple dependencies)
+  const dependsOn = field.dropdownConfig?.dependsOn || []
+  const dependentFieldValues = dependsOn.map(fieldName => watch(fieldName))
   
   // Extract module from endpoint
   const getModuleFromEndpoint = (endpoint: string) => {
@@ -55,23 +56,23 @@ export function DependentSelect({
   
   React.useEffect(() => {
     const loadOptions = async () => {
-      if (!field.dataSource) return
+      if (!field.dropdownConfig?.refPath) return
       
-      // Clear current selection when dependent value changes
-      if (formField.value && dependentFieldValue !== watch(field.dataSource.dependsOn || '')) {
+      // Clear current selection when dependent values change
+      if (formField.value && dependentFieldValues.some(val => val !== undefined)) {
         formField.onChange('')
       }
       
-      // Don't load if no dependent value is selected
-      if (!dependentFieldValue) {
+      // Don't load if no dependent values are selected
+      if (!dependentFieldValues.some(val => val !== undefined && val !== '')) {
         setOptions([])
         setError(null)
         return
       }
       
-      const module = getModuleFromEndpoint(field.dataSource.endpoint)
+      const module = getModuleFromEndpoint(field.dropdownConfig.refPath)
       if (!module) {
-        setError('Invalid endpoint configuration')
+        setError('Invalid refPath configuration')
         return
       }
       
@@ -79,11 +80,25 @@ export function DependentSelect({
       setError(null)
       
       try {
-        const params = buildParams(field.dataSource.params, dependentFieldValue)
+        // Build query parameters using dependentFieldValues and queryParams mapping
+        const params: Record<string, any> = {}
+        if (field.dropdownConfig.queryParams) {
+          field.dropdownConfig.queryParams.forEach((paramName, index) => {
+            if (dependentFieldValues[index] !== undefined) {
+              params[paramName] = dependentFieldValues[index]
+            }
+          })
+        } else {
+          // Default mapping: use field names as parameter names
+          dependsOn.forEach((fieldName, index) => {
+            if (dependentFieldValues[index] !== undefined) {
+              params[fieldName] = dependentFieldValues[index]
+            }
+          })
+        }
         
         const result = await getModuleReferenceAction(module, {
-          dependsOn: field.dataSource.dependsOn,
-          parentValue: dependentFieldValue,
+          dependsOn: dependsOn,
           ...params
         })
         
@@ -100,7 +115,7 @@ export function DependentSelect({
     }
     
     loadOptions()
-  }, [dependentFieldValue, field.dataSource, formField, watch])
+  }, [dependentFieldValues, field.dropdownConfig, formField, dependsOn])
   
   if (error) {
     return (
@@ -110,12 +125,13 @@ export function DependentSelect({
     )
   }
   
-  // Show message if no dependent value selected
-  if (!dependentFieldValue) {
+  // Show message if no dependent values selected
+  if (!dependentFieldValues.some(val => val !== undefined && val !== '')) {
+    const dependencyNames = dependsOn.map(name => name.replace(/Id$/, '')).join(', ')
     return (
       <Select disabled>
         <SelectTrigger className="bg-muted">
-          <SelectValue placeholder={`Please select ${field.dataSource?.dependsOn?.replace(/Id$/, '')} first`} />
+          <SelectValue placeholder={`Please select ${dependencyNames} first`} />
         </SelectTrigger>
         <SelectContent>
           {/* Empty content */}

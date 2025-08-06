@@ -276,7 +276,7 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
       )
     
     case 'dynamicSelect':
-      if (!field.dataSource) return <div>Error: No data source configured</div>
+      if (!field.dropdownConfig) return <div>Error: No dropdown configuration</div>
       return (
         <DynamicSelect
           field={field}
@@ -287,7 +287,7 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
       )
     
     case 'dependentSelect':
-      if (!field.dataSource) return <div>Error: No data source configured</div>
+      if (!field.dropdownConfig) return <div>Error: No dropdown configuration</div>
       return (
         <DependentSelect
           field={field}
