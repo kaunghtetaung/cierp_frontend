@@ -8,7 +8,7 @@ import { MultilingualText, LucideIconName, ButtonStyle, HttpMethod } from './mod
 export type TableLayout = 'withCheckbox' | 'withSelect' | 'standard';
 
 // Table column types
-export type TableColumnType = 'text' | 'date' | 'boolean' | 'number' | 'image' | 'status';
+export type TableColumnType = 'text' | 'date' | 'boolean' | 'number' | 'image' | 'status' | 'icon' | 'reference';
 
 // Action types for table operations
 export type ActionType = 'modal' | 'page' | 'inline';
@@ -19,6 +19,14 @@ export type ExtraActionFormType = 'modal' | 'page' | 'drawer';
 // Extra action form approach
 export type ExtraActionFormApproach = 'schema-driven' | 'pre-built' | 'hybrid';
 
+// Populate configuration for reference fields
+export interface PopulateConfig {
+  path: string; // Reference field to populate
+  select: string; // Fields to select from referenced document
+  displayField: string; // Specific field to display from populated data
+  isMultilingual: boolean; // Whether the display field supports multiple languages
+}
+
 // Table column configuration
 export interface TableColumn {
   fieldName: string;
@@ -28,6 +36,7 @@ export interface TableColumn {
   width?: string;
   type?: TableColumnType;
   format?: string; // For date formatting, etc.
+  populate?: PopulateConfig; // Configuration for populated reference fields
 }
 
 // Base table action configuration

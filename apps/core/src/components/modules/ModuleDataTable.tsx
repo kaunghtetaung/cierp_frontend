@@ -30,7 +30,7 @@ import { ExtraActionModal } from "./ExtraActionModal";
 import { generateZodSchema } from "@/lib/form-schema";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DeleteConfirmationDialog } from "@/components/common/delete-confirmation-dialog";
-import type { ModuleSchema, DataTableColumn, ExtraAction } from "@repo/types";
+import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -90,16 +90,16 @@ export function ModuleDataTable({
   const getRawNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
     
-    // Handle fields with structure {id, value: {en, mm}} - return the entire object for raw access
-    if (value && typeof value === 'object' && value.hasOwnProperty('id') && value.hasOwnProperty('value')) {
-      return value; // Return the entire {id, value} object for raw access
+    // For populated fields and complex objects, return the entire object for raw access
+    if (value && typeof value === 'object') {
+      return value; // Return the entire object for raw access
     }
     
     return value;
   };
 
   // Function to detect which languages a column supports
-  const detectColumnLanguageSupport = (column: DataTableColumn) => {
+  const detectColumnLanguageSupport = (column: TableColumn) => {
     const fieldName = column.fieldName;
     
     // Check if this is a language-specific field path
@@ -134,7 +134,7 @@ export function ModuleDataTable({
   };
 
   // Function to calculate column visibility based on current language
-  const calculateLanguageBasedVisibility = (columns: DataTableColumn[], currentLanguage: string) => {
+  const calculateLanguageBasedVisibility = (columns: TableColumn[], currentLanguage: string) => {
     const visibility: Record<string, boolean> = {};
     
     // Always show selection column if present
@@ -188,7 +188,22 @@ export function ModuleDataTable({
   const getNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
     
-    // Handle fields with structure {id, value: {en, mm}} 
+    // Handle populated reference fields with structure {_id, displayName: {en, mm}, ...}
+    if (value && typeof value === 'object' && value._id && value.displayName) {
+      // This is a populated reference field from backend
+      if (isMultilingualText(value.displayName)) {
+        return value.displayName[currentLanguage] || value.displayName.en || '';
+      }
+      // If displayName is not multilingual, return it directly
+      return value.displayName || value._id || '';
+    }
+    
+    // Handle populated reference fields with fullName fallback
+    if (value && typeof value === 'object' && value._id && value.fullName && !value.displayName) {
+      return value.fullName || value._id || '';
+    }
+    
+    // Handle fields with structure {id, value: {en, mm}} (legacy support)
     if (value && typeof value === 'object' && value.hasOwnProperty('id') && value.hasOwnProperty('value')) {
       // This is a reference field with id and multilingual value
       if (isMultilingualText(value.value)) {
@@ -360,7 +375,7 @@ export function ModuleDataTable({
     }
 
     // Data columns
-    module.dataTableSchema.columns.forEach((column: DataTableColumn) => {
+    module.dataTableSchema.columns.forEach((column: TableColumn) => {
       cols.push({
         id: column.fieldName,
         accessorFn: (row) => getNestedValue(row, column.fieldName),
@@ -452,8 +467,35 @@ export function ModuleDataTable({
                 {fieldValue.toLocaleString()}
               </div>
             );
+          } else if (column.populate && rawValue && typeof rawValue === 'object' && rawValue._id) {
+            // Enhanced display for populated reference fields from backend
+            const { displayField, isMultilingual } = column.populate;
+            let displayValue = fieldValue;
+            
+            // If no display value was extracted, try to get it from the populated data
+            if (!displayValue && rawValue[displayField]) {
+              if (isMultilingual && typeof rawValue[displayField] === 'object') {
+                displayValue = rawValue[displayField][currentLanguage] || rawValue[displayField].en || '';
+              } else {
+                displayValue = rawValue[displayField];
+              }
+            }
+            
+            return (
+              <div className="font-medium truncate max-w-[250px] group relative">
+                <span title={displayValue || rawValue._id}>
+                  {displayValue || rawValue._id || "-"}
+                </span>
+                {/* Show ID on hover for debugging in development */}
+                {process.env.NODE_ENV === 'development' && rawValue._id && (
+                  <span className="invisible group-hover:visible absolute -top-8 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded z-10 whitespace-nowrap">
+                    ID: {rawValue._id}
+                  </span>
+                )}
+              </div>
+            );
           } else if (column.type === "reference" && rawValue && typeof rawValue === 'object' && rawValue.id) {
-            // Enhanced display for reference fields with {id, value: {en, mm}} structure
+            // Legacy support for reference fields with {id, value: {en, mm}} structure
             return (
               <div className="font-medium truncate max-w-[250px] group relative">
                 <span title={fieldValue || rawValue.id}>
@@ -733,7 +775,7 @@ export function ModuleDataTable({
               )}
 
               {/* Card content - each column as a row */}
-              {module.dataTableSchema.columns.map((column: DataTableColumn) => {
+              {module.dataTableSchema.columns.map((column: TableColumn) => {
                 const fieldValue = getNestedValue(item, column.fieldName);
                 let displayValue = fieldValue;
 
