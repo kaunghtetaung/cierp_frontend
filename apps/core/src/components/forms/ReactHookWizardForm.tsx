@@ -35,6 +35,36 @@ interface LocalWizardStep {
   stepNumber: number;
 }
 
+// Validate and filter fields to prevent React Hook Form Controller errors
+function validateAndFilterFields(fields: FormField[]): FormField[] {
+  if (!Array.isArray(fields)) {
+    console.error('validateAndFilterFields: fields is not an array', fields);
+    return [];
+  }
+  
+  return fields.filter((field) => {
+    // Check if field exists
+    if (!field) {
+      console.warn('validateAndFilterFields: Found null/undefined field');
+      return false;
+    }
+    
+    // Check if field has a valid fieldName
+    if (!field.fieldName || typeof field.fieldName !== 'string' || field.fieldName.trim() === '') {
+      console.warn('validateAndFilterFields: Invalid fieldName', { field, fieldName: field.fieldName });
+      return false;
+    }
+    
+    // Check if field has a valid fieldType
+    if (!field.fieldType || typeof field.fieldType !== 'string') {
+      console.warn('validateAndFilterFields: Invalid fieldType', { field, fieldType: field.fieldType });
+      return false;
+    }
+    
+    return true;
+  });
+}
+
 // Generate HTML5 validation attributes from schema
 function getValidationProps(field: FormField) {
   const props: Record<string, any> = {};
@@ -711,7 +741,8 @@ export function ReactHookWizardForm({
   }, [initialData, reset, hasLoadedFromStorage]);
 
   // Group fields by wizard steps - supports both backend steps and logical grouping
-  const visibleFields = module.formFields.filter((f) => !f.hidden);
+  const rawVisibleFields = module.formFields.filter((f) => !f.hidden);
+  const visibleFields = validateAndFilterFields(rawVisibleFields);
   
   const groupFieldsForWizard = (fields: FormField[]): LocalWizardStep[] => {
     // Use backend steps configuration if available (new schema)
@@ -719,8 +750,9 @@ export function ReactHookWizardForm({
       return module.steps
         .sort((a, b) => (a.order || 0) - (b.order || 0))
         .map((step, index) => {
-          // Find fields that belong to this step
-          const stepFields = fields.filter(field => field.stepId === step.stepId);
+          // Find fields that belong to this step and validate them
+          const rawStepFields = fields.filter(field => field.stepId === step.stepId);
+          const stepFields = validateAndFilterFields(rawStepFields);
           
           return {
             id: step.stepId,
@@ -796,48 +828,74 @@ export function ReactHookWizardForm({
     const steps = [];
     
     if (basicInfo.length > 0) {
-      steps.push({
-        id: 'basic-info',
-        title: currentLanguage === "mm" ? "အခြေခံအချက်အလက်" : "Basic Information",
-        description: currentLanguage === "mm" ? "အမည်နှင့် အကြောင်းအရာများ" : "Names and descriptions",
-        icon: 'User',
-        fields: basicInfo,
-        stepNumber: steps.length + 1,
-      });
+      const validBasicInfo = validateAndFilterFields(basicInfo);
+      if (validBasicInfo.length > 0) {
+        steps.push({
+          id: 'basic-info',
+          title: currentLanguage === "mm" ? "အခြေခံအချက်အလက်" : "Basic Information",
+          description: currentLanguage === "mm" ? "အမည်နှင့် အကြောင်းအရာများ" : "Names and descriptions",
+          icon: 'User',
+          fields: validBasicInfo,
+          stepNumber: steps.length + 1,
+        });
+      }
     }
     
     if (contentFields.length > 0) {
-      steps.push({
-        id: 'content-details',
-        title: currentLanguage === "mm" ? "အကြောင်းအရာ" : "Content Details", 
-        description: currentLanguage === "mm" ? "အမျိုးအစားနှင့် ရက်စွဲများ" : "Categories and dates",
-        icon: 'FileText',
-        fields: contentFields,
-        stepNumber: steps.length + 1,
-      });
+      const validContentFields = validateAndFilterFields(contentFields);
+      if (validContentFields.length > 0) {
+        steps.push({
+          id: 'content-details',
+          title: currentLanguage === "mm" ? "အကြောင်းအရာ" : "Content Details", 
+          description: currentLanguage === "mm" ? "အမျိုးအစားနှင့် ရက်စွဲများ" : "Categories and dates",
+          icon: 'FileText',
+          fields: validContentFields,
+          stepNumber: steps.length + 1,
+        });
+      }
     }
     
     if (settingsFields.length > 0) {
-      steps.push({
-        id: 'settings',
-        title: currentLanguage === "mm" ? "ဆက်တင်များ" : "Settings",
-        description: currentLanguage === "mm" ? "အခြားရွေးချယ်မှုများ" : "Additional options",
-        icon: 'Settings',
-        fields: settingsFields,
-        stepNumber: steps.length + 1,
+      const validSettingsFields = validateAndFilterFields(settingsFields);
+      if (validSettingsFields.length > 0) {
+        steps.push({
+          id: 'settings',
+          title: currentLanguage === "mm" ? "ဆက်တင်များ" : "Settings",
+          description: currentLanguage === "mm" ? "အခြားရွေးချယ်မှုများ" : "Additional options",
+          icon: 'Settings',
+          fields: validSettingsFields,
+          stepNumber: steps.length + 1,
       });
     }
     
     // If we have too few fields, combine them
     if (steps.length === 1 && visibleFields.length <= 3) {
-      return [{
-        id: 'form-details',
-        title: currentLanguage === "mm" ? "အချက်အလက်များ" : "Form Details",
-        description: currentLanguage === "mm" ? "လိုအပ်သော အချက်အလက်များ ဖြည့်သွင်းပါ" : "Fill in the required information",
-        icon: 'ClipboardList',
-        fields: visibleFields,
-        stepNumber: 1,
-      }];
+      const validVisibleFields = validateAndFilterFields(visibleFields);
+      if (validVisibleFields.length > 0) {
+        return [{
+          id: 'form-details',
+          title: currentLanguage === "mm" ? "အချက်အလက်များ" : "Form Details",
+          description: currentLanguage === "mm" ? "လိုအပ်သော အချက်အလက်များ ဖြည့်သွင်းပါ" : "Fill in the required information",
+          icon: 'ClipboardList',
+          fields: validVisibleFields,
+          stepNumber: 1,
+        }];
+      }
+    }
+    
+    // Ensure we always have at least one step with valid fields
+    if (steps.length === 0 && visibleFields.length > 0) {
+      const validVisibleFields = validateAndFilterFields(visibleFields);
+      if (validVisibleFields.length > 0) {
+        steps.push({
+          id: 'fallback-step',
+          title: currentLanguage === "mm" ? "ဖောင်" : "Form",
+          description: currentLanguage === "mm" ? "လိုအပ်သော အချက်အလက်များ ဖြည့်သွင်းပါ" : "Fill in the required information",
+          icon: 'ClipboardList',
+          fields: validVisibleFields,
+          stepNumber: 1,
+        });
+      }
     }
     
     return steps;
@@ -849,12 +907,16 @@ export function ReactHookWizardForm({
   
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
+    const invalidFields = rawVisibleFields.filter(f => !validateAndFilterFields([f]).length);
     console.log('🧙 ReactHookWizardForm Debug:', {
-      visibleFieldsCount: visibleFields.length,
+      rawVisibleFieldsCount: rawVisibleFields.length,
+      validVisibleFieldsCount: visibleFields.length,
+      invalidFieldsCount: invalidFields.length,
+      invalidFields: invalidFields.map(f => ({ fieldName: f?.fieldName, fieldType: f?.fieldType, issues: !f ? 'null field' : !f.fieldName ? 'missing fieldName' : !f.fieldType ? 'missing fieldType' : 'other' })),
       stepsCount: steps.length,
-      steps: steps.map(s => ({ id: s.id, title: s.title, fieldsCount: s.fields.length })),
+      steps: steps.map(s => ({ id: s.id, title: s.title, fieldsCount: s.fields.length, fieldNames: s.fields.map(f => f.fieldName) })),
       moduleSteps: module.steps?.map(s => ({ stepId: s.stepId, title: s.title })),
-      fieldStepIds: visibleFields.map(f => ({ fieldName: f.fieldName, stepId: f.stepId }))
+      backendSchemaType: module.steps ? 'new (backend steps)' : 'legacy (logical grouping)'
     });
   }
   
@@ -1088,15 +1150,41 @@ export function ReactHookWizardForm({
                 : "grid grid-cols-1 md:grid-cols-2 gap-6" // Multi-column for wizard-horizontal
             }`}
           >
-            {steps[currentStep]?.fields?.map((field) =>
-              renderField(field, control, currentLanguage, isVerticalLayout, errors, watch)
-            ) || (
-              <div className="text-center py-8 text-muted-foreground">
-                {currentLanguage === "mm" 
-                  ? "ဤအဆင့်တွင် ဖြည့်စရာ မရှိပါ"
-                  : "No fields in this step"}
-              </div>
-            )}
+{(() => {
+              // Validate and filter fields before rendering
+              const currentStepFields = steps[currentStep]?.fields || [];
+              const validFields = validateAndFilterFields(currentStepFields);
+              
+              if (validFields.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {currentLanguage === "mm" 
+                      ? "ဤအဆင့်တွင် ဖြည့်စရာ မရှိပါ"
+                      : "No fields in this step"}
+                  </div>
+                );
+              }
+              
+              return validFields.map((field, index) => {
+                try {
+                  // Use fieldName as key, fallback to index if needed
+                  const key = field.fieldName || `field-${index}`;
+                  
+                  return (
+                    <div key={key}>
+                      {renderField(field, control, currentLanguage, isVerticalLayout, errors, watch)}
+                    </div>
+                  );
+                } catch (error) {
+                  console.error('Error rendering field:', { field, error });
+                  return (
+                    <div key={field.fieldName || `error-field-${index}`} className="text-red-500 text-sm p-2 border border-red-300 rounded">
+                      Error rendering field: {field.fieldName || 'unknown'}
+                    </div>
+                  );
+                }
+              });
+            })()}
           </div>
 
           {/* Auto-save Indicator */}
