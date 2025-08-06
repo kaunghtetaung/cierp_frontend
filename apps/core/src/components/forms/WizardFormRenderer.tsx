@@ -20,9 +20,26 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
   const [currentStep, setCurrentStep] = React.useState(0)
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(new Set())
   
-  const wizardConfig = module.wizardConfig!
+  // Early validation for wizard configuration
+  if (!module || !module.wizardConfig) {
+    console.error('WizardFormRenderer: Missing wizard configuration', module)
+    return <div>Error: Invalid wizard configuration</div>
+  }
+  
+  const wizardConfig = module.wizardConfig
   const steps = wizardConfig.steps || []
+  
+  if (steps.length === 0) {
+    console.error('WizardFormRenderer: No steps defined in wizard configuration', wizardConfig)
+    return <div>Error: No wizard steps configured</div>
+  }
+  
   const currentStepData = steps[currentStep]
+  
+  if (!currentStepData) {
+    console.error('WizardFormRenderer: Invalid current step', { currentStep, steps })
+    return <div>Error: Invalid wizard step</div>
+  }
   
   // Default configuration values
   const validationConfig = wizardConfig.validation || {}
@@ -189,13 +206,21 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {getCurrentStepFields().map((field) => (
-            <FormFieldRenderer 
-              key={field.fieldName} 
-              field={field}
-              currentLanguage={currentLanguage}
-            />
-          ))}
+          {getCurrentStepFields().map((field) => {
+            // Add extra safety check for wizard forms
+            if (!field || !field.fieldName) {
+              console.error('WizardFormRenderer: Invalid field in step', { field, step: currentStepData })
+              return null
+            }
+            
+            return (
+              <FormFieldRenderer 
+                key={field.fieldName} 
+                field={field}
+                currentLanguage={currentLanguage}
+              />
+            )
+          })}
         </CardContent>
       </Card>
       

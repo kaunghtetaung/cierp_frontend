@@ -49,6 +49,16 @@ export function FormFieldRenderer({ field, currentLanguage = 'en' }: FormFieldRe
   const isRequired = field.validationRule?.required ?? false
   const isReadonly = field.readonly ?? false
   
+  // Additional validation before rendering
+  if (!field.fieldName || typeof field.fieldName !== 'string') {
+    console.error('FormFieldRenderer: fieldName must be a non-empty string', { field, fieldName: field.fieldName })
+    return (
+      <div className="text-red-500 text-sm p-2 border border-red-300 rounded">
+        Error: Invalid field name configuration
+      </div>
+    )
+  }
+
   return (
     <FormField
       control={control}

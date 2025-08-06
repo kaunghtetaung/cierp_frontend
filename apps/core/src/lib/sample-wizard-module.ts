@@ -215,7 +215,8 @@ export const sampleWizardModule: ModuleSchema = {
   wizardConfig: {
     steps: [
       {
-        id: 'personal-info',
+        stepNumber: 1,
+        stepKey: 'personal-info',
         title: {
           en: 'Personal Information',
           mm: 'ကိုယ်ရေးအချက်အလက်များ'
@@ -224,12 +225,11 @@ export const sampleWizardModule: ModuleSchema = {
           en: 'Enter your basic personal details and bio',
           mm: 'သင့်၏ အခြေခံကိုယ်ရေးအချက်အလက်နှင့် အကျဉ်းချုပ်ကို ထည့်သွင်းပါ'
         },
-        icon: 'User',
-        order: 1,
-        fields: personalInfoFields
+        fields: ['firstName', 'lastName', 'bio']
       },
       {
-        id: 'contact-info',
+        stepNumber: 2,
+        stepKey: 'contact-info',
         title: {
           en: 'Contact & Work Details',
           mm: 'ဆက်သွယ်ရေးနှင့် အလုပ်အချက်အလက်များ'
@@ -238,12 +238,11 @@ export const sampleWizardModule: ModuleSchema = {
           en: 'Provide your contact information and work preferences',
           mm: 'သင့်ဆက်သွယ်ရေးအချက်အလက်နှင့် အလုပ်ရွေးချယ်မှုများကို ပေးပါ'
         },
-        icon: 'Mail',
-        order: 2,
-        fields: contactInfoFields
+        fields: ['email', 'phoneNumber', 'department', 'startDate']
       },
       {
-        id: 'preferences',
+        stepNumber: 3,
+        stepKey: 'preferences',
         title: {
           en: 'Account Preferences',
           mm: 'အကောင့်ရွေးချယ်မှုများ'
@@ -252,11 +251,28 @@ export const sampleWizardModule: ModuleSchema = {
           en: 'Configure your account settings and notifications',
           mm: 'သင့်အကောင့်ဆက်တင်များနှင့် အကြောင်းကြားချက်များကို ပြင်ဆင်ပါ'
         },
-        icon: 'Settings',
-        order: 3,
-        fields: preferencesFields
+        fields: ['isActive', 'notifications']
       }
-    ]
+    ],
+    navigation: {
+      showStepNumbers: true,
+      showProgressBar: true,
+      allowSkipSteps: false,
+      showStepTitles: true,
+      allowBackNavigation: true,
+      showStepDescription: true
+    },
+    validation: {
+      validateOnStepChange: true,
+      requiredStepsToComplete: [1, 2],
+      allowPartialSave: true,
+      saveOnEachStep: false
+    },
+    theme: {
+      stepConnectorType: 'line',
+      progressType: 'bar',
+      stepLayout: 'horizontal'
+    }
   },
   formFields: [...personalInfoFields, ...contactInfoFields, ...preferencesFields],
   dataTableSchema: {
