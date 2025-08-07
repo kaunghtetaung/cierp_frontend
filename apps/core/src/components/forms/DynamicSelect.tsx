@@ -34,10 +34,12 @@ interface LocalSelectOption {
 }
 
 interface ApiOption {
-  _id: string;
+  _id?: string;
+  id?: string;
   label?: any;
   displayName?: any;
   name?: any;
+  value?: any;
   [key: string]: any;
 }
 
@@ -133,21 +135,49 @@ export function DynamicSelect({
 
   // Extract label from API response
   const getApiLabel = (item: ApiOption, language: string): string => {
-    // Try different possible label fields
+    // Handle string labels first (common case)
+    if (item.label && typeof item.label === "string") {
+      return item.label;
+    }
+    
+    // Handle multilingual object labels
     if (item.label && typeof item.label === "object") {
-      return item.label[language] || item.label.en || "";
+      const labelText = item.label[language] || item.label.en || item.label.mm || "";
+      if (labelText) return labelText;
+    }
+    
+    // Try displayName (string first, then object)
+    if (item.displayName && typeof item.displayName === "string") {
+      return item.displayName;
     }
     
     if (item.displayName && typeof item.displayName === "object") {
-      return item.displayName[language] || item.displayName.en || "";
+      const displayText = item.displayName[language] || item.displayName.en || item.displayName.mm || "";
+      if (displayText) return displayText;
+    }
+    
+    // Try name (string first, then object)
+    if (item.name && typeof item.name === "string") {
+      return item.name;
     }
     
     if (item.name && typeof item.name === "object") {
-      return item.name[language] || item.name.en || "";
+      const nameText = item.name[language] || item.name.en || item.name.mm || "";
+      if (nameText) return nameText;
     }
     
-    // Fallback to string values
-    return item.label || item.displayName || item.name || item._id || "";
+    // Final fallbacks
+    const stringLabel = item.title || item._id || item.id || item.value || "";
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 DynamicSelect: getApiLabel for ${language}:`, {
+        item,
+        result: stringLabel,
+        labelType: typeof item.label
+      });
+    }
+    
+    return String(stringLabel);
   };
 
   // Fetch options using proper backend integration
@@ -172,17 +202,17 @@ export function DynamicSelect({
       // Build query parameters for dependent dropdowns
       const queryParams: Record<string, string> = {};
       
-      if (dropdownConfig.dependsOn && dropdownConfig.queryParams) {
+      if (dropdownConfig.dependsOn && dropdownConfig.dependsOn.length > 0) {
         if (process.env.NODE_ENV === 'development') {
           console.log(`🔍 DynamicSelect: Building query params for "${field.fieldName}":`, {
             dependsOn: dropdownConfig.dependsOn,
-            queryParams: dropdownConfig.queryParams,
             dependencyValues
           });
         }
         
         dropdownConfig.dependsOn.forEach((fieldName, index) => {
-          const paramName = dropdownConfig.queryParams![index] || fieldName;
+          // Use dependentFieldValue as the parameter name for backend compatibility
+          const paramName = "dependentFieldValue";
           const paramValue = dependencyValues[fieldName];
           
           if (process.env.NODE_ENV === 'development') {
@@ -229,20 +259,33 @@ export function DynamicSelect({
 
       // Handle different response formats
       const responseData = result.data as any;
-      const data = Array.isArray(responseData) ? responseData : (responseData?.items || []);
+      const data = Array.isArray(responseData) 
+        ? responseData 
+        : (responseData?.data || responseData?.items || []);
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ DynamicSelect: Loaded ${data.length} options for "${field.fieldName}"`);
+        console.log(`✅ DynamicSelect: Loaded ${data.length} options for "${field.fieldName}"`, data);
       }
       
       // Transform API response to LocalSelectOption format
-      const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => ({
-        value: String(item._id || item.id || item.value || `missing-id-${index}`),
-        label: {
-          en: getApiLabel(item, "en"),
-          mm: getApiLabel(item, "mm"),
-        },
-      }));
+      const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => {
+        const transformedOption = {
+          value: String(item._id || item.id || item.value || `missing-id-${index}`),
+          label: {
+            en: getApiLabel(item, "en"),
+            mm: getApiLabel(item, "mm"),
+          },
+        };
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 DynamicSelect: Transformed option for "${field.fieldName}":`, {
+            original: item,
+            transformed: transformedOption
+          });
+        }
+        
+        return transformedOption;
+      });
       
       setOptions(transformedOptions);
       setError(null);
@@ -305,16 +348,12 @@ export function DynamicSelect({
       return;
     }
 
-    // Determine if we need to fetch
+    // Determine if we need to fetch - only fetch when absolutely necessary
     const shouldFetch = (
       // First time initialization
       !hasInitialized.current ||
-      // Preload data is enabled
-      dropdownConfig.preloadData ||
-      // Dependencies have changed
-      lastFetchedDependencyKey.current !== dependencyKey ||
-      // We have a value but no options (edit mode scenario)
-      (value && options.length === 0)
+      // Dependencies have changed (e.g., organization changed for department dropdown)
+      lastFetchedDependencyKey.current !== dependencyKey
     );
 
     if (process.env.NODE_ENV === 'development') {
@@ -337,11 +376,9 @@ export function DynamicSelect({
   }, [
     // Only include stable dependencies that actually affect fetching logic
     dropdownConfig.type,
-    dropdownConfig.preloadData,
     dropdownConfig.refPath,
     dependenciesSatisfied,
     dependencyKey,
-    Boolean(value && options.length === 0), // Only care about this specific condition
     fetchOptions
   ]);
 
@@ -500,31 +537,49 @@ export function DynamicSelect({
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-full max-h-60 overflow-auto">
+        <DropdownMenuContent 
+          className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-h-60"
+          sideOffset={4}
+        >
           {filteredOptions.length === 0 ? (
             <div className="px-2 py-1.5 text-sm text-muted-foreground">
               {currentLanguage === "mm" ? "ရွေးချယ်စရာ မရှိပါ" : "No options found"}
             </div>
           ) : (
-            filteredOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onSelect={() => handleSelect(option.value)}
-                className="flex items-center"
-              >
-                <IconComponent
-                  name="Check"
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    (isMultiple && Array.isArray(value) && value.includes(option.value)) ||
-                    (!isMultiple && value === option.value)
-                      ? "opacity-100"
-                      : "opacity-0"
-                  )}
-                />
-                {typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage)}
-              </DropdownMenuItem>
-            ))
+            filteredOptions.map((option) => {
+              const labelText = typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage);
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`🎨 DynamicSelect: Rendering option for "${field.fieldName}":`, {
+                  value: option.value,
+                  originalLabel: option.label,
+                  labelText,
+                  currentLanguage
+                });
+              }
+              
+              return (
+                <DropdownMenuItem
+                  key={option.value}
+                  onSelect={() => handleSelect(option.value)}
+                  className="flex items-center"
+                >
+                  <IconComponent
+                    name="Check"
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      (isMultiple && Array.isArray(value) && value.includes(option.value)) ||
+                      (!isMultiple && value === option.value)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    )}
+                  />
+                  <span className="flex-1 truncate">
+                    {labelText || option.value}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })
           )}
         </DropdownMenuContent>
       </DropdownMenu>
@@ -580,19 +635,43 @@ export function DynamicSelect({
         </p>
       )}
 
-      {/* Clear button */}
-      {dropdownConfig.clearable && value && !field.readonly && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mt-1 h-6 px-2 text-xs"
-          onClick={handleClear}
-        >
-          <IconComponent name="X" className="h-3 w-3 mr-1" />
-          {currentLanguage === "mm" ? "ရှင်းလင်းမည်" : "Clear"}
-        </Button>
-      )}
+      {/* Action buttons */}
+      <div className="flex gap-1 mt-1">
+        {/* Clear button */}
+        {dropdownConfig.clearable && value && !field.readonly && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={handleClear}
+          >
+            <IconComponent name="X" className="h-3 w-3 mr-1" />
+            {currentLanguage === "mm" ? "ရှင်းလင်းမည်" : "Clear"}
+          </Button>
+        )}
+        
+        {/* Refresh button for dynamic dropdowns */}
+        {dropdownConfig.type === "dynamic" && dropdownConfig.refPath && !field.readonly && dependenciesSatisfied && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => {
+              lastFetchedDependencyKey.current = ""; // Force refetch
+              fetchOptions();
+            }}
+            disabled={loading}
+          >
+            <IconComponent 
+              name={loading ? "Loader2" : "RefreshCw"} 
+              className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} 
+            />
+            {currentLanguage === "mm" ? "ပြန်ရယူ" : "Refresh"}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

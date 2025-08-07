@@ -91,19 +91,12 @@ export function ModuleDetailPage({ module, id, mode, initialData }: ModuleDetail
       {/* React Hook Form */}
       <div className="bg-card rounded-lg p-6">
         <ReactHookForm
-          fields={module.formFields}
+          module={module}
+          action={mode as "create" | "update"}
           initialData={initialData}
-          onSuccess={(data) => {
-            handleSuccess(data);
-            // Navigate back to list after successful create/update
-            router.push(`/${module.slug}`);
-          }}
-          onCancel={handleCancel}
-          submitButtonText={mode === 'create' 
-            ? (currentLanguage === 'mm' ? 'ထည့်မည်' : 'Create')
-            : (currentLanguage === 'mm' ? 'သိမ်းမည်' : 'Save')
-          }
-          cancelButtonText={currentLanguage === 'mm' ? 'ပြန်သွားမည်' : 'Cancel'}
+          moduleSlug={module.slug}
+          itemId={id}
+          currentLanguage={currentLanguage}
         />
       </div>
     </div>

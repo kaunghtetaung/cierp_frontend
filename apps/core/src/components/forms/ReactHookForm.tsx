@@ -59,6 +59,99 @@ function getValidationProps(field: FormField) {
   return props;
 }
 
+// Auto-configure dropdownConfig for common organizational fields
+function autoConfigureDropdown(field: FormField): FormField {
+  // Skip if already has dropdownConfig
+  if (field.dropdownConfig) {
+    return field;
+  }
+
+  // Auto-configure organization fields
+  if (field.fieldName === 'organizationId' || 
+      field.fieldName === 'organization' ||
+      field.fieldName.toLowerCase().includes('organization')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/organizations/ref",
+        searchable: true,
+        clearable: false,
+        preloadData: true
+      }
+    };
+  }
+
+  // Auto-configure department fields (dependent on organization)
+  if (field.fieldName === 'departmentId' || 
+      field.fieldName === 'department' ||
+      field.fieldName.toLowerCase().includes('department')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/departments/ref",
+        dependsOn: ["organizationId", "organization"],
+        searchable: true,
+        clearable: true,
+        preloadData: false
+      }
+    };
+  }
+
+  // Auto-configure user fields
+  if (field.fieldName === 'userId' || 
+      field.fieldName === 'user' ||
+      field.fieldName === 'assignedTo' ||
+      field.fieldName.toLowerCase().includes('user')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/users/ref",
+        searchable: true,
+        clearable: true,
+        preloadData: false
+      }
+    };
+  }
+
+  // Return original field if no auto-configuration applies
+  return field;
+}
+
+// Convert dataSource configuration to dropdownConfig for backward compatibility
+function convertDataSourceToDropdownConfig(field: FormField): FormField {
+  // Skip if already has dropdownConfig
+  if (field.dropdownConfig) {
+    return field;
+  }
+
+  // Handle fields with dataSource configuration
+  if (field.dataSource) {
+    const dropdownConfig: any = {
+      type: "dynamic",
+      refPath: field.dataSource.endpoint,
+      searchable: true,
+      clearable: true,
+      preloadData: field.fieldType === "dynamicSelect" ? true : false
+    };
+
+    // Handle dependent fields
+    if (field.fieldType === "dependentSelect" && field.dataSource.dependentField) {
+      dropdownConfig.dependsOn = [field.dataSource.dependentField];
+    }
+
+    return {
+      ...field,
+      fieldType: field.fieldType === "multiDependentSelect" ? "multiSelect" : "select",
+      dropdownConfig
+    };
+  }
+
+  return field;
+}
+
 // Icon field component with React Hook Form integration
 function IconFieldComponent({
   field,
@@ -327,8 +420,19 @@ function renderField(
 
     case "select":
     case "multiSelect":
+    case "dynamicSelect":
+    case "dependentSelect":
+    case "multiDependentSelect":
+      // Convert dataSource to dropdownConfig if needed
+      let configuredField = convertDataSourceToDropdownConfig(field);
+      
+      // Auto-configure common organizational dropdowns if no dataSource
+      if (!field.dataSource) {
+        configuredField = autoConfigureDropdown(configuredField);
+      }
+      
       // Use new DynamicSelect component for advanced dropdown functionality
-      if (field.dropdownConfig) {
+      if (configuredField.dropdownConfig) {
         return (
           <div key={field.fieldName} className={containerClasses}>
             <div className={labelContainerClasses}>
@@ -348,7 +452,7 @@ function renderField(
                 control={control}
                 render={({ field: { onChange, value } }) => (
                   <DynamicSelect
-                    field={field}
+                    field={configuredField}
                     value={value}
                     onChange={onChange}
                     currentLanguage={currentLanguage}

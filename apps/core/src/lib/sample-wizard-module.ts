@@ -110,12 +110,32 @@ const contactInfoFields: FormField[] = [
     isMultiLang: false
   },
   {
-    fieldName: 'department',
+    fieldName: 'organizationId',
+    fieldType: 'select',
+    label: {
+      en: 'Organization',
+      mm: 'အဖွဲ့အစည်း'
+    },
+    placeHolder: 'Select organization',
+    validationRule: {
+      required: true,
+      errorMessage: {
+        en: 'Please select an organization',
+        mm: 'အဖွဲ့အစည်းတစ်ခုကို ရွေးချယ်ပါ'
+      }
+    },
+    readonly: false,
+    hidden: false,
+    isMultiLang: false
+  },
+  {
+    fieldName: 'departmentId',
     fieldType: 'select',
     label: {
       en: 'Department',
       mm: 'ဌာန'
     },
+    placeHolder: 'Select department',
     validationRule: {
       required: true,
       errorMessage: {
@@ -125,20 +145,7 @@ const contactInfoFields: FormField[] = [
     },
     readonly: false,
     hidden: false,
-    options: [
-      {
-        value: 'engineering',
-        label: { en: 'Engineering', mm: 'အင်ဂျင်နီယာ' }
-      },
-      {
-        value: 'marketing',
-        label: { en: 'Marketing', mm: 'စျေးကွက်ရှာဖွေရေး' }
-      },
-      {
-        value: 'hr',
-        label: { en: 'Human Resources', mm: 'လူ့စွမ်းအား' }
-      }
-    ]
+    isMultiLang: false
   },
   {
     fieldName: 'startDate',
@@ -238,7 +245,7 @@ export const sampleWizardModule: ModuleSchema = {
           en: 'Provide your contact information and work preferences',
           mm: 'သင့်ဆက်သွယ်ရေးအချက်အလက်နှင့် အလုပ်ရွေးချယ်မှုများကို ပေးပါ'
         },
-        fields: ['email', 'phoneNumber', 'department', 'startDate']
+        fields: ['email', 'phoneNumber', 'organizationId', 'departmentId', 'startDate']
       },
       {
         stepNumber: 3,

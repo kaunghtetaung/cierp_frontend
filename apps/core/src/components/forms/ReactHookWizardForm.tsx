@@ -100,6 +100,99 @@ function getValidationProps(field: FormField) {
   return props;
 }
 
+// Auto-configure dropdownConfig for common organizational fields
+function autoConfigureDropdown(field: FormField): FormField {
+  // Skip if already has dropdownConfig
+  if (field.dropdownConfig) {
+    return field;
+  }
+
+  // Auto-configure organization fields
+  if (field.fieldName === 'organizationId' || 
+      field.fieldName === 'organization' ||
+      field.fieldName.toLowerCase().includes('organization')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/organizations/ref",
+        searchable: true,
+        clearable: false,
+        preloadData: true
+      }
+    };
+  }
+
+  // Auto-configure department fields (dependent on organization)
+  if (field.fieldName === 'departmentId' || 
+      field.fieldName === 'department' ||
+      field.fieldName.toLowerCase().includes('department')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/departments/ref",
+        dependsOn: ["organizationId", "organization"],
+        searchable: true,
+        clearable: true,
+        preloadData: false
+      }
+    };
+  }
+
+  // Auto-configure user fields
+  if (field.fieldName === 'userId' || 
+      field.fieldName === 'user' ||
+      field.fieldName === 'assignedTo' ||
+      field.fieldName.toLowerCase().includes('user')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/users/ref",
+        searchable: true,
+        clearable: true,
+        preloadData: false
+      }
+    };
+  }
+
+  // Return original field if no auto-configuration applies
+  return field;
+}
+
+// Convert dataSource configuration to dropdownConfig for backward compatibility
+function convertDataSourceToDropdownConfig(field: FormField): FormField {
+  // Skip if already has dropdownConfig
+  if (field.dropdownConfig) {
+    return field;
+  }
+
+  // Handle fields with dataSource configuration
+  if (field.dataSource) {
+    const dropdownConfig: any = {
+      type: "dynamic",
+      refPath: field.dataSource.endpoint,
+      searchable: true,
+      clearable: true,
+      preloadData: field.fieldType === "dynamicSelect" ? true : false
+    };
+
+    // Handle dependent fields
+    if (field.fieldType === "dependentSelect" && field.dataSource.dependentField) {
+      dropdownConfig.dependsOn = [field.dataSource.dependentField];
+    }
+
+    return {
+      ...field,
+      fieldType: field.fieldType === "multiDependentSelect" ? "multiSelect" : "select",
+      dropdownConfig
+    };
+  }
+
+  return field;
+}
+
 // Icon field component with React Hook Form integration
 function IconFieldComponent({
   field,
@@ -376,8 +469,19 @@ function renderField(
 
     case "select":
     case "multiSelect":
+    case "dynamicSelect":
+    case "dependentSelect":
+    case "multiDependentSelect":
+      // Convert dataSource to dropdownConfig if needed
+      let configuredField = convertDataSourceToDropdownConfig(field);
+      
+      // Auto-configure common organizational dropdowns if no dataSource
+      if (!field.dataSource) {
+        configuredField = autoConfigureDropdown(configuredField);
+      }
+      
       // Use new DynamicSelect component for advanced dropdown functionality
-      if (field.dropdownConfig) {
+      if (configuredField.dropdownConfig) {
         return (
           <div key={field.fieldName} className={containerClasses}>
             <div className={labelContainerClasses}>
@@ -397,7 +501,7 @@ function renderField(
                 control={control}
                 render={({ field: { onChange, value } }) => (
                   <DynamicSelect
-                    field={field}
+                    field={configuredField}
                     value={value}
                     onChange={onChange}
                     currentLanguage={currentLanguage}
@@ -636,29 +740,85 @@ export function ReactHookWizardForm({
   initialData,
   moduleSlug,
   itemId,
-  currentLanguage,
+  currentLanguage = 'en',
   userId,
 }: ReactHookWizardFormProps) {
+  // Debug logging
+  console.log('🧙 ReactHookWizardForm received props:', {
+    module: module ? {
+      id: module.id,
+      name: module.name,
+      slug: module.slug,
+      formLayout: module.formLayout,
+      formFieldsCount: module.formFields?.length || 0,
+      wizardConfig: module.wizardConfig ? 'present' : 'missing',
+      steps: module.steps ? `${module.steps.length} steps` : 'no steps'
+    } : 'null module',
+    action,
+    moduleSlug,
+    itemId,
+    currentLanguage
+  });
+
+  // Early validation
+  if (!module) {
+    console.error('🧙 ReactHookWizardForm: module is required');
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6">
+        <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-4">
+          <div className="flex items-center">
+            <span className="font-medium">Error: Module configuration is required</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!module.formFields || module.formFields.length === 0) {
+    console.error('🧙 ReactHookWizardForm: module has no form fields');
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6">
+        <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-4">
+          <div className="flex items-center">
+            <span className="font-medium">Error: No form fields defined in module</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('🧙 ReactHookWizardForm: Initializing hooks...');
+  
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [pendingStoredData, setPendingStoredData] = useState<Record<string, any> | null>(null);
+  
+  console.log('🧙 ReactHookWizardForm: Hooks initialized, setting up wizard storage...');
 
   // Initialize wizard storage with stable config
-  const wizardStorageConfig = useMemo(() => ({
-    moduleName: module.slug,
-    userId,
-    action,
-    itemId,
-  }), [module.slug, userId, action, itemId]);
+  const wizardStorageConfig = useMemo(() => {
+    console.log('🧙 ReactHookWizardForm: Creating wizard storage config...');
+    return {
+      moduleName: module.slug,
+      userId,
+      action,
+      itemId,
+    };
+  }, [module.slug, userId, action, itemId]);
 
+  console.log('🧙 ReactHookWizardForm: Calling useWizardStorage...');
   const wizardStorage = useWizardStorage(wizardStorageConfig);
+  console.log('🧙 ReactHookWizardForm: useWizardStorage completed');
 
   // Generate Zod schema for validation
+  console.log('🧙 ReactHookWizardForm: Generating Zod schema...');
   const validationSchema = generateZodSchema(module.formFields);
+  console.log('🧙 ReactHookWizardForm: Zod schema generated');
 
   // Initialize React Hook Form
+  console.log('🧙 ReactHookWizardForm: Initializing useForm...');
   const {
     control,
     handleSubmit,
@@ -671,10 +831,13 @@ export function ReactHookWizardForm({
     defaultValues: initialData || {},
     mode: "onChange", // Validate on change for better UX in wizard
   });
+  console.log('🧙 ReactHookWizardForm: useForm initialized');
 
   // Load data from storage on mount
   useEffect(() => {
+    console.log('🧙 ReactHookWizardForm: useEffect for storage loading...');
     if (!hasLoadedFromStorage && !wizardStorage.isLoading) {
+      console.log('🧙 ReactHookWizardForm: Loading stored data...');
       const storedData = wizardStorage.loadStoredData();
       
       if (storedData && Object.keys(storedData).length > 0) {
@@ -741,12 +904,20 @@ export function ReactHookWizardForm({
   }, [initialData, reset, hasLoadedFromStorage]);
 
   // Group fields by wizard steps - supports both backend steps and logical grouping
+  console.log('🧙 ReactHookWizardForm: Processing form fields...');
   const rawVisibleFields = module.formFields.filter((f) => !f.hidden);
+  console.log('🧙 ReactHookWizardForm: Raw visible fields:', rawVisibleFields.length);
   const visibleFields = validateAndFilterFields(rawVisibleFields);
+  console.log('🧙 ReactHookWizardForm: Valid visible fields:', visibleFields.length);
   
   const groupFieldsForWizard = (fields: FormField[]): LocalWizardStep[] => {
+    console.log('🧙 groupFieldsForWizard called with', fields.length, 'fields');
+    console.log('🧙 module.steps:', module.steps ? `${module.steps.length} steps` : 'no steps');
+    console.log('🧙 module.wizardConfig:', module.wizardConfig ? 'present' : 'missing');
+    
     // Use backend steps configuration if available (new schema)
     if (module.steps && module.steps.length > 0) {
+      console.log('🧙 Using backend steps configuration');
       return module.steps
         .sort((a, b) => (a.order || 0) - (b.order || 0))
         .map((step, index) => {
@@ -769,15 +940,26 @@ export function ReactHookWizardForm({
     // Fallback to explicit wizard configuration if available (legacy)
     if (module.wizardConfig?.steps && module.wizardConfig.steps.length > 0) {
       return module.wizardConfig.steps
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .map((step, index) => ({
-          id: step.id,
-          title: getLocalizedText(step.title, currentLanguage),
-          description: step.description ? getLocalizedText(step.description, currentLanguage) : '',
-          icon: step.icon,
-          fields: step.fields,
-          stepNumber: index + 1,
-        }));
+        .sort((a, b) => (a.stepNumber || 0) - (b.stepNumber || 0))
+        .map((step, index) => {
+          // Map field names to actual FormField objects
+          const stepFields = step.fields
+            .map(fieldName => fields.find(f => f.fieldName === fieldName))
+            .filter(field => field !== undefined) as FormField[];
+          
+          // Validate the fields
+          const validStepFields = validateAndFilterFields(stepFields);
+          
+          return {
+            id: step.stepKey || `step-${index}`,
+            title: getLocalizedText(step.title, currentLanguage),
+            description: step.description ? getLocalizedText(step.description, currentLanguage) : '',
+            icon: 'FileText', // Default icon since wizardConfig doesn't specify icons
+            fields: validStepFields,
+            stepNumber: step.stepNumber || index + 1,
+          };
+        })
+        .filter(step => step.fields.length > 0); // Only include steps that have valid fields
     }
 
     // Check if any fields have stepId - if so, use stepId-based grouping
@@ -817,7 +999,7 @@ export function ReactHookWizardForm({
       // Group by field type and purpose
       if (field.fieldType === 'text' || field.fieldType === 'textArea' || field.fieldName.includes('name') || field.fieldName.includes('title')) {
         basicInfo.push(field);
-      } else if (field.fieldType === 'select' || field.fieldType === 'multiSelect' || field.fieldType === 'date') {
+      } else if (field.fieldType === 'select' || field.fieldType === 'multiSelect' || field.fieldType === 'dynamicSelect' || field.fieldType === 'dependentSelect' || field.fieldType === 'multiDependentSelect' || field.fieldType === 'date') {
         contentFields.push(field);
       } else {
         settingsFields.push(field);
@@ -825,18 +1007,18 @@ export function ReactHookWizardForm({
     });
     
     // Create steps based on available fields
-    const steps = [];
+    const wizardSteps = [];
     
     if (basicInfo.length > 0) {
       const validBasicInfo = validateAndFilterFields(basicInfo);
       if (validBasicInfo.length > 0) {
-        steps.push({
+        wizardSteps.push({
           id: 'basic-info',
           title: currentLanguage === "mm" ? "အခြေခံအချက်အလက်" : "Basic Information",
           description: currentLanguage === "mm" ? "အမည်နှင့် အကြောင်းအရာများ" : "Names and descriptions",
           icon: 'User',
           fields: validBasicInfo,
-          stepNumber: steps.length + 1,
+          stepNumber: wizardSteps.length + 1,
         });
       }
     }
@@ -844,13 +1026,13 @@ export function ReactHookWizardForm({
     if (contentFields.length > 0) {
       const validContentFields = validateAndFilterFields(contentFields);
       if (validContentFields.length > 0) {
-        steps.push({
+        wizardSteps.push({
           id: 'content-details',
           title: currentLanguage === "mm" ? "အကြောင်းအရာ" : "Content Details", 
           description: currentLanguage === "mm" ? "အမျိုးအစားနှင့် ရက်စွဲများ" : "Categories and dates",
           icon: 'FileText',
           fields: validContentFields,
-          stepNumber: steps.length + 1,
+          stepNumber: wizardSteps.length + 1,
         });
       }
     }
@@ -858,18 +1040,19 @@ export function ReactHookWizardForm({
     if (settingsFields.length > 0) {
       const validSettingsFields = validateAndFilterFields(settingsFields);
       if (validSettingsFields.length > 0) {
-        steps.push({
+        wizardSteps.push({
           id: 'settings',
           title: currentLanguage === "mm" ? "ဆက်တင်များ" : "Settings",
           description: currentLanguage === "mm" ? "အခြားရွေးချယ်မှုများ" : "Additional options",
           icon: 'Settings',
           fields: validSettingsFields,
-          stepNumber: steps.length + 1,
-      });
+          stepNumber: wizardSteps.length + 1,
+        });
+      }
     }
     
     // If we have too few fields, combine them
-    if (steps.length === 1 && visibleFields.length <= 3) {
+    if (wizardSteps.length === 1 && visibleFields.length <= 3) {
       const validVisibleFields = validateAndFilterFields(visibleFields);
       if (validVisibleFields.length > 0) {
         return [{
@@ -884,10 +1067,10 @@ export function ReactHookWizardForm({
     }
     
     // Ensure we always have at least one step with valid fields
-    if (steps.length === 0 && visibleFields.length > 0) {
+    if (wizardSteps.length === 0 && visibleFields.length > 0) {
       const validVisibleFields = validateAndFilterFields(visibleFields);
       if (validVisibleFields.length > 0) {
-        steps.push({
+        wizardSteps.push({
           id: 'fallback-step',
           title: currentLanguage === "mm" ? "ဖောင်" : "Form",
           description: currentLanguage === "mm" ? "လိုအပ်သော အချက်အလက်များ ဖြည့်သွင်းပါ" : "Fill in the required information",
@@ -898,12 +1081,39 @@ export function ReactHookWizardForm({
       }
     }
     
-    return steps;
+    return wizardSteps;
   };
   
-  const steps = groupFieldsForWizard(visibleFields);
+  let steps: LocalWizardStep[];
+  try {
+    steps = groupFieldsForWizard(visibleFields);
+  } catch (error) {
+    console.error('🧙 Error generating wizard steps:', error);
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6">
+        <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-4">
+          <div className="flex items-center">
+            <span className="font-medium">Error: Failed to generate wizard steps</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   const isVerticalLayout = module.formLayout === "wizard-vertical";
   const totalSteps = steps.length;
+  
+  console.log('🧙 Steps generated:', {
+    stepsCount: steps.length,
+    rawVisibleFieldsCount: rawVisibleFields.length,
+    validVisibleFieldsCount: visibleFields.length,
+    steps: steps.map(s => ({ id: s.id, title: s.title, fieldsCount: s.fields.length })),
+    module: {
+      hasWizardConfig: !!module.wizardConfig,
+      hasSteps: !!module.steps,
+      formLayout: module.formLayout
+    }
+  });
   
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
@@ -922,6 +1132,7 @@ export function ReactHookWizardForm({
   
   // Safety check: if no steps, return error state
   if (steps.length === 0) {
+    console.error('🧙 No steps generated - returning error state');
     return (
       <div className="w-full max-w-4xl mx-auto p-6">
         <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-4">
@@ -1150,12 +1361,11 @@ export function ReactHookWizardForm({
                 : "grid grid-cols-1 md:grid-cols-2 gap-6" // Multi-column for wizard-horizontal
             }`}
           >
-{(() => {
-              // Validate and filter fields before rendering
+            {(() => {
+              // Get fields for current step (already validated when steps were created)
               const currentStepFields = steps[currentStep]?.fields || [];
-              const validFields = validateAndFilterFields(currentStepFields);
               
-              if (validFields.length === 0) {
+              if (currentStepFields.length === 0) {
                 return (
                   <div className="text-center py-8 text-muted-foreground">
                     {currentLanguage === "mm" 
@@ -1165,7 +1375,7 @@ export function ReactHookWizardForm({
                 );
               }
               
-              return validFields.map((field, index) => {
+              return currentStepFields.map((field, index) => {
                 try {
                   // Use fieldName as key, fallback to index if needed
                   const key = field.fieldName || `field-${index}`;
@@ -1252,7 +1462,7 @@ export function ReactHookWizardForm({
               </Button>
             )}
           </div>
-        </div>
+          </div>
         </form>
       </div>
 

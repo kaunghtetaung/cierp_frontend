@@ -585,14 +585,12 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
               </div>
             ) : editItemData ? (
               <ReactHookForm
-                fields={module.formFields}
+                module={module}
+                action="update"
                 initialData={editItemData}
-                onSuccess={(data) => {
-                  handleEditSuccess(data);
-                }}
-                onCancel={handleEditCancel}
-                submitButtonText={currentLanguage === 'mm' ? 'သိမ်းမည်' : 'Save'}
-                cancelButtonText={currentLanguage === 'mm' ? 'ပိတ်မည်' : 'Cancel'}
+                moduleSlug={module.slug}
+                itemId={editingItemId!}
+                currentLanguage={currentLanguage}
               />
             ) : editingItemId ? (
               <div className="text-center py-8">
