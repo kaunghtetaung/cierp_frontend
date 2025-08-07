@@ -108,8 +108,96 @@ export async function submitModuleForm(
   try {
     console.log(`🚀 Starting ${action} operation for module: ${module}`);
     
-    // Convert FormData to object
-    const data = Object.fromEntries(formData);
+    // Convert FormData to object - manually process to avoid toString() calls on client references
+    const data: Record<string, any> = {};
+    console.log("🔍 Debug: Starting FormData processing...");
+    
+    let entryCount = 0;
+    for (const [key, value] of formData.entries()) {
+      entryCount++;
+      console.log(`🔍 Debug: Processing entry ${entryCount}:`, {
+        key,
+        valueType: typeof value,
+        valueConstructor: value?.constructor?.name,
+        isFile: value instanceof File,
+        isString: typeof value === 'string',
+        hasToString: typeof value?.toString === 'function',
+        valuePreview: value instanceof File ? `File(${value.name})` : String(value).substring(0, 100)
+      });
+      
+      try {
+        // Enhanced client-safe value conversion
+        if (value instanceof File) {
+          // Handle File objects specially
+          data[key] = value.name;
+          console.log(`✅ Debug: Successfully converted File entry ${entryCount} for key "${key}": "${value.name}"`);
+        } else if (typeof value === 'string') {
+          // Strings are safe to use directly
+          data[key] = value;
+          console.log(`✅ Debug: Successfully converted string entry ${entryCount} for key "${key}"`);
+        } else if (value === null || value === undefined) {
+          // Handle null/undefined values
+          data[key] = "";
+          console.log(`✅ Debug: Successfully converted null/undefined entry ${entryCount} for key "${key}"`);
+        } else {
+          // For all other types, try safe conversion methods
+          // First check if it's a potential client reference by checking for React symbols
+          const isClientRef = (value as any)?.$$typeof === Symbol.for('react.client.reference') || 
+                            (value as any)?.$$typeof === Symbol.for('react.element') ||
+                            (typeof value === 'object' && value && (value as any).constructor?.name?.includes('Client'));
+          
+          if (isClientRef) {
+            console.warn(`🚨 Debug: Detected potential client reference in entry ${entryCount} for key "${key}" - using safe fallback`);
+            data[key] = "[CLIENT_REFERENCE]";
+            console.log(`✅ Debug: Safely handled client reference for key "${key}"`);
+          } else {
+            // Try safe primitive conversion without toString()
+            if (typeof value === 'number' || typeof value === 'boolean') {
+              data[key] = String(value);
+              console.log(`✅ Debug: Successfully converted primitive entry ${entryCount} for key "${key}"`);
+            } else if (typeof value === 'object' && value !== null) {
+              // For objects, try JSON.stringify as it's safer than toString()
+              try {
+                data[key] = JSON.stringify(value);
+                console.log(`✅ Debug: Successfully converted object entry ${entryCount} for key "${key}" via JSON`);
+              } catch (jsonError) {
+                // If JSON fails, use a safe fallback
+                data[key] = "[COMPLEX_OBJECT]";
+                console.log(`✅ Debug: Used object fallback for key "${key}" (JSON serialization failed)`);
+              }
+            } else {
+              // Last resort - use String() but with error handling
+              data[key] = String(value);
+              console.log(`✅ Debug: Successfully converted entry ${entryCount} for key "${key}" via String()`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Debug: Error converting entry ${entryCount} for key "${key}":`, {
+          error: error instanceof Error ? error.message : String(error),
+          errorName: error instanceof Error ? error.name : 'Unknown',
+          errorStack: error instanceof Error ? error.stack : undefined,
+          valueType: typeof value,
+          valueConstructor: value?.constructor?.name
+        });
+        
+        // Ultimate fallback - categorize the error
+        const isToStringError = error instanceof Error && 
+          error.message.includes('Cannot access toString on the server');
+        const isClientReferenceError = error instanceof Error && 
+          error.message.includes('client reference');
+        
+        if (isToStringError || isClientReferenceError) {
+          data[key] = "[CLIENT_REFERENCE_ERROR]";
+          console.log(`🛡️ Debug: Used client reference error fallback for key "${key}"`);
+        } else {
+          data[key] = "[CONVERSION_FAILED]";
+          console.log(`🛡️ Debug: Used general conversion error fallback for key "${key}"`);
+        }
+      }
+    }
+    
+    console.log(`🔍 Debug: Processed ${entryCount} FormData entries`);
     console.log("📝 Raw form data:", data);
 
     // Handle nested object fields (e.g., displayName.en)
@@ -165,12 +253,29 @@ export async function submitModuleForm(
       try {
         // Try to parse the error message as JSON (from HTTP client)
         const errorData = JSON.parse(error.message);
+        
+        // Handle various backend error types that should show user-friendly messages
         if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
           console.log("🔍 Backend validation error detected:", errorData);
           return {
             success: false,
             error: errorData.message,
             fieldErrors: errorData.extra?.fieldErrors || [],
+            traceId: errorData.traceId,
+          };
+        } else if (errorData.errorCode === 'BAD_REQUEST_FORMAT') {
+          console.log("🔍 Bad request format error detected:", errorData);
+          return {
+            success: false,
+            error: errorData.message || "The request format is invalid",
+            traceId: errorData.traceId,
+          };
+        } else if (errorData.statusCode >= 400 && errorData.statusCode < 500) {
+          // Handle other client errors (4xx) with user-friendly messages
+          console.log("🔍 Client error detected:", errorData);
+          return {
+            success: false,
+            error: errorData.message || `Request failed with status ${errorData.statusCode}`,
             traceId: errorData.traceId,
           };
         }
@@ -377,8 +482,86 @@ export async function executeExtraActionAction(
   formData?: FormData
 ): Promise<ActionResponse> {
   try {
-    // Convert FormData to object if provided
-    const data = formData ? Object.fromEntries(formData) : {};
+    // Convert FormData to object if provided - manually process to avoid toString() calls on client references
+    const data: Record<string, any> = {};
+    if (formData) {
+      console.log("🔍 Debug (Extra Action): Starting FormData processing...");
+      let entryCount = 0;
+      
+      for (const [key, value] of formData.entries()) {
+        entryCount++;
+        console.log(`🔍 Debug (Extra Action): Processing entry ${entryCount}:`, {
+          key,
+          valueType: typeof value,
+          valueConstructor: value?.constructor?.name,
+          isFile: value instanceof File,
+          isString: typeof value === 'string',
+          hasToString: typeof value?.toString === 'function',
+          valuePreview: value instanceof File ? `File(${value.name})` : String(value).substring(0, 100)
+        });
+        
+        try {
+          // Enhanced client-safe value conversion (same logic as main form submission)
+          if (value instanceof File) {
+            data[key] = value.name;
+            console.log(`✅ Debug (Extra Action): Successfully converted File entry ${entryCount} for key "${key}": "${value.name}"`);
+          } else if (typeof value === 'string') {
+            data[key] = value;
+            console.log(`✅ Debug (Extra Action): Successfully converted string entry ${entryCount} for key "${key}"`);
+          } else if (value === null || value === undefined) {
+            data[key] = "";
+            console.log(`✅ Debug (Extra Action): Successfully converted null/undefined entry ${entryCount} for key "${key}"`);
+          } else {
+            const isClientRef = (value as any)?.$$typeof === Symbol.for('react.client.reference') || 
+                              (value as any)?.$$typeof === Symbol.for('react.element') ||
+                              (typeof value === 'object' && value && (value as any).constructor?.name?.includes('Client'));
+            
+            if (isClientRef) {
+              console.warn(`🚨 Debug (Extra Action): Detected potential client reference in entry ${entryCount} for key "${key}" - using safe fallback`);
+              data[key] = "[CLIENT_REFERENCE]";
+              console.log(`✅ Debug (Extra Action): Safely handled client reference for key "${key}"`);
+            } else if (typeof value === 'number' || typeof value === 'boolean') {
+              data[key] = String(value);
+              console.log(`✅ Debug (Extra Action): Successfully converted primitive entry ${entryCount} for key "${key}"`);
+            } else if (typeof value === 'object' && value !== null) {
+              try {
+                data[key] = JSON.stringify(value);
+                console.log(`✅ Debug (Extra Action): Successfully converted object entry ${entryCount} for key "${key}" via JSON`);
+              } catch (jsonError) {
+                data[key] = "[COMPLEX_OBJECT]";
+                console.log(`✅ Debug (Extra Action): Used object fallback for key "${key}" (JSON serialization failed)`);
+              }
+            } else {
+              data[key] = String(value);
+              console.log(`✅ Debug (Extra Action): Successfully converted entry ${entryCount} for key "${key}" via String()`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Debug (Extra Action): Error converting entry ${entryCount} for key "${key}":`, {
+            error: error instanceof Error ? error.message : String(error),
+            errorName: error instanceof Error ? error.name : 'Unknown',
+            errorStack: error instanceof Error ? error.stack : undefined,
+            valueType: typeof value,
+            valueConstructor: value?.constructor?.name
+          });
+          
+          const isToStringError = error instanceof Error && 
+            error.message.includes('Cannot access toString on the server');
+          const isClientReferenceError = error instanceof Error && 
+            error.message.includes('client reference');
+          
+          if (isToStringError || isClientReferenceError) {
+            data[key] = "[CLIENT_REFERENCE_ERROR]";
+            console.log(`🛡️ Debug (Extra Action): Used client reference error fallback for key "${key}"`);
+          } else {
+            data[key] = "[CONVERSION_FAILED]";
+            console.log(`🛡️ Debug (Extra Action): Used general conversion error fallback for key "${key}"`);
+          }
+        }
+      }
+      
+      console.log(`🔍 Debug (Extra Action): Processed ${entryCount} FormData entries`);
+    }
 
     const result = await executeModuleExtraAction(module, {
       actionKey,

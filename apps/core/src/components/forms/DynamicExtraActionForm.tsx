@@ -495,9 +495,11 @@ export function DynamicExtraActionForm({
             formData.append(`${key}.mm`, value.mm || "");
           } else if (Array.isArray(value)) {
             // Handle array values (multi-select)
-            value.forEach((item) => formData.append(key, item));
+            value.forEach((item) => formData.append(key, String(item)));
           } else {
-            formData.append(key, value.toString());
+            // Safe serialization - use String() constructor instead of .toString() method
+            // This avoids client/server boundary issues with client references
+            formData.append(key, String(value));
           }
         }
       });

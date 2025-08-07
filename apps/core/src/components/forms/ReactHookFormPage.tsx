@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft } from 'lucide-react'
 import { ReactHookFormWrapper } from './ReactHookFormWrapper'
-import { toast } from '@/lib/toast'
+import { toastSuccess, toastError } from '@repo/utils'
 import type { ModuleSchema } from '@repo/types'
 
 export interface ReactHookFormPageProps {
@@ -55,14 +55,14 @@ export function ReactHookFormPage({
       
       await onSubmit(formData)
       
-      toast.success(
+      toastSuccess(
         isCreateMode 
           ? `${module.name.en} created successfully!`
           : `${module.name.en} updated successfully!`
       )
     } catch (error) {
       console.error('Form submission error:', error)
-      toast.error(
+      toastError(
         error instanceof Error 
           ? error.message 
           : 'An error occurred while saving. Please try again.'

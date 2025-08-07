@@ -10,15 +10,11 @@ import { toast as sonnerToast } from "sonner";
 export interface ToastOptions {
   /** Duration in milliseconds (default: success=4000, error=5000, warning=4000, info=3000) */
   duration?: number;
-  /** Position of the toast (default: "top-right") */
-  position?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top-center" | "bottom-center";
   /** Custom action button */
   action?: {
     label: string;
     onClick: () => void;
   };
-  /** Whether the toast can be dismissed by clicking */
-  dismissible?: boolean;
   /** Custom ID for the toast */
   id?: string;
 }
@@ -29,13 +25,25 @@ export interface ToastOptions {
  * @param options - Additional toast options
  */
 export const toastSuccess = (message: string, options: ToastOptions = {}) => {
-  return sonnerToast.success(message, {
-    duration: options.duration ?? 4000,
-    position: options.position ?? "top-right",
-    action: options.action,
-    dismissible: options.dismissible ?? true,
-    id: options.id,
+  // Generate unique ID for debugging if not provided
+  const toastId = options.id ?? `success-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  
+  // Log for debugging
+  console.log("🍞 toastSuccess called:", {
+    message,
+    toastId,
+    timestamp: new Date().toISOString(),
+    options
   });
+  
+  const result = sonnerToast.success(message, {
+    duration: options.duration ?? 4000,
+    action: options.action,
+    id: toastId,
+  });
+  
+  console.log("🍞 toastSuccess result:", result);
+  return result;
 };
 
 /**
@@ -44,13 +52,25 @@ export const toastSuccess = (message: string, options: ToastOptions = {}) => {
  * @param options - Additional toast options
  */
 export const toastError = (message: string, options: ToastOptions = {}) => {
-  return sonnerToast.error(message, {
-    duration: options.duration ?? 5000,
-    position: options.position ?? "top-right",
-    action: options.action,
-    dismissible: options.dismissible ?? true,
-    id: options.id,
+  // Generate unique ID for debugging if not provided
+  const toastId = options.id ?? `error-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  
+  // Log for debugging
+  console.log("🍞 toastError called:", {
+    message,
+    toastId,
+    timestamp: new Date().toISOString(),
+    options
   });
+  
+  const result = sonnerToast.error(message, {
+    duration: options.duration ?? 7000, // Longer duration for errors
+    action: options.action,
+    id: toastId,
+  });
+  
+  console.log("🍞 toastError result:", result);
+  return result;
 };
 
 /**
@@ -59,13 +79,25 @@ export const toastError = (message: string, options: ToastOptions = {}) => {
  * @param options - Additional toast options
  */
 export const toastWarning = (message: string, options: ToastOptions = {}) => {
-  return sonnerToast.warning(message, {
-    duration: options.duration ?? 4000,
-    position: options.position ?? "top-right",
-    action: options.action,
-    dismissible: options.dismissible ?? true,
-    id: options.id,
+  // Generate unique ID for debugging if not provided
+  const toastId = options.id ?? `warning-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  
+  // Log for debugging
+  console.log("🍞 toastWarning called:", {
+    message,
+    toastId,
+    timestamp: new Date().toISOString(),
+    options
   });
+  
+  const result = sonnerToast.warning(message, {
+    duration: options.duration ?? 5000, // Slightly longer for warnings
+    action: options.action,
+    id: toastId,
+  });
+  
+  console.log("🍞 toastWarning result:", result);
+  return result;
 };
 
 /**
@@ -76,9 +108,7 @@ export const toastWarning = (message: string, options: ToastOptions = {}) => {
 export const toastInfo = (message: string, options: ToastOptions = {}) => {
   return sonnerToast.info(message, {
     duration: options.duration ?? 3000,
-    position: options.position ?? "top-right",
     action: options.action,
-    dismissible: options.dismissible ?? true,
     id: options.id,
   });
 };
@@ -91,9 +121,7 @@ export const toastInfo = (message: string, options: ToastOptions = {}) => {
 export const toastDefault = (message: string, options: ToastOptions = {}) => {
   return sonnerToast(message, {
     duration: options.duration ?? 3000,
-    position: options.position ?? "top-right",
     action: options.action,
-    dismissible: options.dismissible ?? true,
     id: options.id,
   });
 };
@@ -119,9 +147,7 @@ export const toastPromise = <T>(
     success: messages.success,
     error: messages.error,
     duration: options.duration,
-    position: options.position ?? "top-right",
     action: options.action,
-    dismissible: options.dismissible ?? true,
     id: options.id,
   });
 };

@@ -14,6 +14,7 @@ export type FieldType =
   | 'multiSelect'
   | 'dynamicSelect'
   | 'dependentSelect'
+  | 'multiDependentSelect'
   | 'checkbox' 
   | 'boolean'
   | 'date' 
@@ -116,6 +117,16 @@ export interface FormField {
   
   // Advanced dropdown configuration (for select, dynamicSelect, dependentSelect)
   dropdownConfig?: DropdownConfig; // Preferred configuration for all select-type fields
+  
+  // Data source configuration (backend format)
+  dataSource?: {
+    endpoint: string;
+    method?: 'GET' | 'POST';
+    dependentField?: string;
+    labelField?: string;
+    valueField?: string;
+    [key: string]: any;
+  };
   
   // Field-specific configurations
   multiple?: boolean; // For select fields that allow multiple selection (deprecated - use dropdownConfig.multiple)

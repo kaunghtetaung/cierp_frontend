@@ -1150,6 +1150,8 @@ export function ReactHookWizardForm({
   }
 
   const handleNext = async () => {
+    console.log('🧙 handleNext called with currentStep:', currentStep, 'totalSteps:', totalSteps);
+    
     // Safety check
     if (!steps[currentStep] || !steps[currentStep].fields) {
       console.error('Invalid step or fields not found');
@@ -1159,9 +1161,14 @@ export function ReactHookWizardForm({
     // Validate current step fields before proceeding
     const currentStepFields = steps[currentStep].fields.map(f => f.fieldName);
     const isValid = await trigger(currentStepFields);
+    console.log('🧙 Step validation result:', isValid);
     
     if (isValid && currentStep < totalSteps - 1) {
+      console.log('🧙 Moving to next step:', currentStep + 1);
       setCurrentStep(currentStep + 1);
+    } else if (currentStep === totalSteps - 1) {
+      console.log('🧙 On final step - user must manually click Create button to submit');
+      // No auto-submit - user must click the Create button
     }
   };
 
@@ -1172,38 +1179,138 @@ export function ReactHookWizardForm({
   };
 
   const onSubmit = async (data: FieldValues) => {
+    console.log('🧙 onSubmit called - manual submission via Create button click');
+    console.log('🧙 Current step:', currentStep, 'Total steps:', totalSteps);
     try {
       // Convert form data to FormData for server action
       const formData = new FormData();
       
-      Object.entries(data).forEach(([key, value]) => {
+      console.log("🔍 Client Debug (Wizard): Processing form data entries...", data);
+      Object.entries(data).forEach(([key, value], index) => {
+        console.log(`🔍 Client Debug (Wizard): Processing field ${index + 1}:`, {
+          key,
+          value,
+          valueType: typeof value,
+          valueConstructor: value?.constructor?.name,
+          isNull: value === null,
+          isUndefined: value === undefined,
+          isObject: typeof value === "object",
+          isArray: Array.isArray(value),
+          hasEnProperty: typeof value === "object" && value !== null && "en" in value
+        });
+        
         if (value !== null && value !== undefined) {
-          if (typeof value === "object" && value.en !== undefined) {
-            // Handle multi-language fields
-            formData.append(`${key}.en`, value.en || "");
-            formData.append(`${key}.mm`, value.mm || "");
-          } else if (Array.isArray(value)) {
-            // Handle array values (multi-select)
-            value.forEach((item) => formData.append(key, item));
-          } else {
-            formData.append(key, value.toString());
+          try {
+            if (typeof value === "object" && value.en !== undefined) {
+              // Handle multi-language fields
+              console.log(`🔍 Client Debug (Wizard): Adding multilang field "${key}":`, { en: value.en, mm: value.mm });
+              formData.append(`${key}.en`, value.en || "");
+              formData.append(`${key}.mm`, value.mm || "");
+            } else if (Array.isArray(value)) {
+              // Handle array values (multi-select)
+              console.log(`🔍 Client Debug (Wizard): Adding array field "${key}" with ${value.length} items:`, value);
+              value.forEach((item, itemIndex) => {
+                console.log(`🔍 Client Debug (Wizard): Adding array item ${itemIndex}:`, { item, itemType: typeof item });
+                formData.append(key, String(item));
+              });
+            } else {
+              // Safe serialization - use String() constructor instead of .toString() method
+              // This avoids client/server boundary issues with client references
+              console.log(`🔍 Client Debug (Wizard): Adding regular field "${key}":`, { value, type: typeof value });
+              formData.append(key, String(value));
+            }
+            console.log(`✅ Client Debug (Wizard): Successfully processed field "${key}"`);
+          } catch (error) {
+            console.error(`❌ Client Debug (Wizard): Error processing field "${key}":`, {
+              error: error instanceof Error ? error.message : String(error),
+              errorName: error instanceof Error ? error.name : 'Unknown',
+              key,
+              value,
+              valueType: typeof value
+            });
           }
+        } else {
+          console.log(`⏭️ Client Debug (Wizard): Skipping null/undefined field "${key}"`);
         }
       });
+      
+      console.log("🔍 Client Debug (Wizard): Final FormData entries:");
+      let formDataCount = 0;
+      for (const [key, value] of formData.entries()) {
+        formDataCount++;
+        console.log(`  ${formDataCount}. ${key} = ${value} (${typeof value})`);
+      }
 
-      // Generate validation schema for server action
-      const validationSchema = generateZodSchema(module.formFields);
+      console.log("🔍 Client Debug (Wizard): Calling submitModuleForm with params:", {
+        moduleSlug,
+        action,
+        itemId,
+        formDataEntryCount: Array.from(formData.entries()).length
+      });
       
       const result = await submitModuleForm(
         moduleSlug,
         formData,
-        validationSchema,
         action,
-        itemId
+        itemId,
+        true // skipRedirect - we want to handle redirect manually for better UX
       );
       
+      console.log("🧙 Wizard form server action result:", result);
+      
       if (!result.success) {
-        throw new Error(result.error || 'Form submission failed');
+        console.log("🧙 Wizard form result.success is false. Analyzing error structure:", {
+          hasFieldErrors: !!(result.fieldErrors && result.fieldErrors.length > 0),
+          fieldErrors: result.fieldErrors,
+          hasErrors: !!result.errors,
+          errors: result.errors,
+          error: result.error,
+          traceId: result.traceId
+        });
+        
+        if (result.fieldErrors && result.fieldErrors.length > 0) {
+          // Handle backend field validation errors
+          console.log("🔍 Wizard backend field validation errors:", result.fieldErrors);
+          const fieldErrorsText = result.fieldErrors.join("\n");
+          const mainError = result.error || (currentLanguage === "mm" 
+            ? "ဖောင်း validation မအောင်မြင်ပါ" 
+            : "Form submission failed");
+          const traceInfo = result.traceId ? `\n\nTrace ID: ${result.traceId}` : '';
+          const errorMessage = `${mainError}\n\nField errors:\n${fieldErrorsText}${traceInfo}`;
+          
+          // Show error toast for immediate feedback
+          console.log("🧙 CALLING toastError for field validation errors:", mainError);
+          toastError(mainError);
+          console.log("🧙 toastError called successfully");
+          
+          throw new Error(errorMessage);
+        } else if (result.errors) {
+          // Handle other validation errors (legacy format)
+          const errorMessages = Object.entries(result.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
+            .join("\n");
+          
+          // Show error toast for immediate feedback
+          const toastErrorMessage = result.error || (currentLanguage === "mm" 
+            ? "ဖောင်း validation မအောင်မြင်ပါ" 
+            : "Form submission failed");
+          console.log("🧙 CALLING toastError for legacy validation errors:", toastErrorMessage);
+          toastError(toastErrorMessage);
+          console.log("🧙 toastError called successfully");
+          
+          throw new Error(errorMessages);
+        } else {
+          const errorMessage = result.error || (currentLanguage === "mm" 
+            ? "ဖောင်း ပေးပို့မှု မအောင်မြင်ပါ"
+            : "Form submission failed");
+          
+          // Show error toast for immediate feedback
+          console.log("🧙 CALLING toastError for general error:", errorMessage);
+          toastError(errorMessage);
+          console.log("🧙 toastError called successfully");
+          
+          throw new Error(errorMessage);
+        }
       }
       
       // Clear stored draft after successful submission
@@ -1220,21 +1327,39 @@ export function ReactHookWizardForm({
       
       toastSuccess(successMessage);
       
-      // Redirect after successful submission
+      // Controlled redirect with user-friendly delay
       if (action === 'create') {
-        router.push(`/${moduleSlug}`);
+        console.log('🧙 Scheduling redirect to module list after successful creation');
+        setTimeout(() => {
+          router.push(`/${moduleSlug}`);
+        }, 1500); // Give user time to see success message
       }
     } catch (error) {
-      console.error("Form submission error:", error);
+      console.error("🧙 Wizard form submission error:", error);
       
-      // Show error toast
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (currentLanguage === "mm" 
+      // Debug the error structure
+      console.log("🧙 Catch block - error analysis:", {
+        isError: error instanceof Error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        includesFormSubmissionFailed: error instanceof Error ? error.message.includes("Form submission failed") : false,
+        includesFieldErrors: error instanceof Error ? error.message.includes("Field errors:") : false,
+        includesTraceID: error instanceof Error ? error.message.includes("Trace ID:") : false
+      });
+      
+      // Only show additional error toast if this is not a handled error
+      // (handled errors already showed their own toast above)
+      if (error instanceof Error && error.message.includes("Form submission failed") && 
+          !error.message.includes("Field errors:") && !error.message.includes("Trace ID:")) {
+        // This is likely a network or unexpected error, show user-friendly message
+        const errorMessage = currentLanguage === "mm" 
           ? "ဖောင်း ပေးပို့မှု မအောင်မြင်ပါ"
-          : "Form submission failed");
-      
-      toastError(errorMessage);
+          : "Form submission failed";
+        console.log("🧙 CALLING toastError in catch block:", errorMessage);
+        toastError(errorMessage);
+        console.log("🧙 toastError called successfully in catch block");
+      } else {
+        console.log("🧙 Skipping catch block toastError - error already handled above");
+      }
       
       // Keep the draft if submission fails
     }
@@ -1250,7 +1375,7 @@ export function ReactHookWizardForm({
             className="w-5 h-5 text-primary"
           />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-semibold">
             {action === "create" ? "Create" : "Update"}{" "}
             {getLocalizedText(module.name, currentLanguage)}
@@ -1405,6 +1530,7 @@ export function ReactHookWizardForm({
             </div>
           )}
 
+
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-6 border-t">
           <div>
@@ -1436,12 +1562,24 @@ export function ReactHookWizardForm({
 
           <div>
             {currentStep < totalSteps - 1 ? (
-              <Button type="button" size="lg" onClick={handleNext} disabled={isSubmitting}>
+              <Button 
+                type="button" 
+                size="lg" 
+                onClick={handleNext} 
+                disabled={isSubmitting || currentStep >= totalSteps - 1}
+              >
                 {currentLanguage === "mm" ? "ရှေ့သို့" : "Next"}
                 <IconComponent name="ArrowRight" className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button type="submit" size="lg" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                size="lg" 
+                disabled={isSubmitting}
+                onClick={() => {
+                  console.log('🧙 Create button clicked - user manually submitting form');
+                }}
+              >
                 {isSubmitting ? (
                   <>
                     <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />

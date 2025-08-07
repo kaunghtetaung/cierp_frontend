@@ -687,9 +687,11 @@ export function ReactHookForm({
             formData.append(`${key}.mm`, value.mm || "");
           } else if (Array.isArray(value)) {
             // Handle array values (multi-select)
-            value.forEach((item) => formData.append(key, item));
+            value.forEach((item) => formData.append(key, String(item)));
           } else {
-            formData.append(key, value.toString());
+            // Safe serialization - use String() constructor instead of .toString() method
+            // This avoids client/server boundary issues with client references
+            formData.append(key, String(value));
           }
         }
       });
@@ -714,15 +716,25 @@ export function ReactHookForm({
           const mainError = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
           const traceInfo = result.traceId ? `\n\nTrace ID: ${result.traceId}` : '';
           setSubmitError(`${mainError}\n\nField errors:\n${fieldErrorsText}${traceInfo}`);
+          
+          // Show error toast for immediate feedback
+          toastError(mainError);
         } else if (result.errors) {
           // Handle other validation errors (legacy format)
           const errorMessages = Object.entries(result.errors)
             .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
             .join("\n");
           setSubmitError(errorMessages);
+          
+          // Show error toast for immediate feedback
+          const toastErrorMessage = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
+          toastError(toastErrorMessage);
         } else {
           const errorMessage = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
           setSubmitError(errorMessage);
+          
+          // Show error toast for immediate feedback
+          toastError(errorMessage);
         }
         return;
       }
@@ -828,6 +840,46 @@ export function ReactHookForm({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Debug Toast Test Buttons */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="flex flex-wrap gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed">
+            <span className="text-xs text-muted-foreground mr-2">Debug Toast Tests:</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                console.log("🧪 Testing toastSuccess");
+                toastSuccess("Test success message!");
+              }}
+            >
+              Success
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                console.log("🧪 Testing toastError");
+                toastError("Test error message!");
+              }}
+            >
+              Error
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                console.log("🧪 Testing BAD_REQUEST_FORMAT simulation");
+                toastError("The request format is invalid");
+              }}
+            >
+              BAD_REQUEST_FORMAT
+            </Button>
           </div>
         )}
 

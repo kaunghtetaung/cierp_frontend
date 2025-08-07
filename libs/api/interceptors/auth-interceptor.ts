@@ -1,6 +1,7 @@
 // Auth Interceptor - Single Responsibility: Authentication token refresh
 import { HTTP_STATUS } from "@repo/utils/common/constants";
-import { TokenManager } from "@repo/auth/token-manager";
+import { TokenManager } from "../../auth/managers/token-manager";
+import { handleTokenRefreshFailure } from "../../auth/auth-error-handler";
 import type { ResponseInterceptor, HttpResponseContext } from '../types/http-types';
 
 export class AuthResponseInterceptor implements ResponseInterceptor {
@@ -64,6 +65,16 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
             error: error instanceof Error ? error : new Error('Retry failed')
           };
         }
+      } else {
+        // Token refresh failed - delegate to centralized auth error handler
+        console.log("🔐 AuthResponseInterceptor: Token refresh failed, delegating to AuthErrorHandler");
+        
+        handleTokenRefreshFailure({
+          url: context.request.url,
+          userLanguage: this.getCurrentLanguage()
+        }).catch(authError => {
+          console.error('🔐 AuthResponseInterceptor: Auth error handling failed:', authError);
+        });
       }
     }
 
@@ -99,6 +110,39 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
     } finally {
       this.refreshPromise = null;
     }
+  }
+
+  /**
+   * Get current language from various sources
+   */
+  private getCurrentLanguage(): 'en' | 'mm' {
+    try {
+      if (typeof window !== 'undefined') {
+        // Try URL path first
+        const pathLang = window.location.pathname.split('/')[1];
+        if (pathLang === 'en' || pathLang === 'mm') {
+          return pathLang;
+        }
+        
+        // Try localStorage
+        const storedLang = localStorage.getItem('language');
+        if (storedLang === 'en' || storedLang === 'mm') {
+          return storedLang;
+        }
+        
+        // Try cookie
+        const cookieLang = document.cookie.split(';')
+          .find(c => c.trim().startsWith('x-lang='))
+          ?.split('=')[1];
+        if (cookieLang === 'en' || cookieLang === 'mm') {
+          return cookieLang;
+        }
+      }
+    } catch (error) {
+      // Ignore errors in language detection
+    }
+    
+    return 'en'; // Default fallback
   }
 
   /**

@@ -112,17 +112,19 @@ export class ModuleService {
     });
 
     if (!response.success) {
-      // Check if this is a validation error with detailed information
+      // Check if this is a structured error with detailed information
       if (response.error && typeof response.error === 'string') {
         try {
           // Try to parse as JSON in case it contains structured error data
           const errorData = JSON.parse(response.error);
-          if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
-            // Preserve the full error structure for the server action
+          // Preserve the full error structure for ALL structured errors (not just FORM_VALIDATION_FAIL)
+          if (errorData.errorCode || errorData.statusCode) {
+            console.log("🔍 ModuleService.create: Preserving structured error data:", errorData);
             throw new Error(JSON.stringify(errorData));
           }
         } catch (parseError) {
           // Not JSON, treat as regular error
+          console.log("🔍 ModuleService.create: Error is not structured JSON, using plain message");
         }
       }
       throw new Error(response.error || "Failed to create module item");
@@ -145,17 +147,19 @@ export class ModuleService {
     });
 
     if (!response.success) {
-      // Check if this is a validation error with detailed information
+      // Check if this is a structured error with detailed information
       if (response.error && typeof response.error === 'string') {
         try {
           // Try to parse as JSON in case it contains structured error data
           const errorData = JSON.parse(response.error);
-          if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
-            // Preserve the full error structure for the server action
+          // Preserve the full error structure for ALL structured errors (not just FORM_VALIDATION_FAIL)
+          if (errorData.errorCode || errorData.statusCode) {
+            console.log("🔍 ModuleService.update: Preserving structured error data:", errorData);
             throw new Error(JSON.stringify(errorData));
           }
         } catch (parseError) {
           // Not JSON, treat as regular error
+          console.log("🔍 ModuleService.update: Error is not structured JSON, using plain message");
         }
       }
       throw new Error(response.error || "Failed to update module item");

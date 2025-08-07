@@ -12,11 +12,15 @@ import {
   getPublicUrlClient,
   getCurrentUrlClient,
 } from "@repo/utils/client/domain";
+import { getAuthErrorHandler } from "../auth-error-handler";
+import { toastWarning, toastInfo, toastSuccess, toastError } from "@repo/utils";
 import type { User, AuthSession } from "@repo/types";
 
 export interface AuthContextValue extends UseAuthReturn {
   // Additional context-specific properties
   initializing: boolean;
+  sessionExpiringInMinutes: number | null;
+  extendSession: () => Promise<boolean>;
 }
 
 export interface AuthProviderProps {
@@ -43,30 +47,205 @@ export function AuthProvider({
 }: AuthProviderProps) {
   const [initializing, setInitializing] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [sessionExpiringInMinutes, setSessionExpiringInMinutes] = useState<number | null>(null);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
 
-  // Enhanced options with provider-specific defaults
-  const authOptions: UseAuthOptions = {
+  // Initialize auth hook first
+  const auth = useAuth({
     autoRefresh: true,
     refreshThreshold: 5,
-    onAuthChange: (isAuthenticated, user) => {
-      DevUtils.logAuthEvent("AUTH_CONTEXT_CHANGED", {
-        isAuthenticated,
-        user: user?.email,
-      });
-      options.onAuthChange?.(isAuthenticated, user);
-    },
-    onSessionExpiring: (minutesRemaining) => {
-      DevUtils.logAuthEvent("SESSION_EXPIRING", { minutesRemaining });
-      options.onSessionExpiring?.(minutesRemaining);
-    },
-    onError: (error) => {
-      DevUtils.logAuthEvent("AUTH_CONTEXT_ERROR", error);
-      options.onError?.(error);
-    },
     ...options,
+  });
+
+  // Function to extend session
+  const extendSession = async (): Promise<boolean> => {
+    try {
+      DevUtils.logAuthEvent("SESSION_EXTEND_REQUESTED", {});
+      
+      // Try to refresh the token/session
+      if (auth.refreshToken) {
+        const success = await auth.refreshToken();
+        if (success) {
+          setHasShownWarning(false);
+          setSessionExpiringInMinutes(null);
+          
+          // Enhanced success feedback with prominent styling
+          const language = getCurrentLanguage();
+          toastSuccess(
+            language === 'mm'
+              ? '🎉 အကောင့်ဝင်ခွင့် သက်တမ်းတိုးပြီးပါပြီ'
+              : '🎉 Session extended successfully',
+            {
+              duration: 5000,
+              description: language === 'mm'
+                ? 'သင့်အကောင့်ကို ဆက်လက်အသုံးပြုနိုင်ပါပြီ'
+                : 'You can continue working without interruption'
+            }
+          );
+          
+          DevUtils.logAuthEvent("SESSION_EXTENDED", { success: true });
+          return true;
+        }
+      }
+      
+      // Enhanced error handling for extension failure
+      const language = getCurrentLanguage();
+      toastError(
+        language === 'mm'
+          ? 'အကောင့်ဝင်ခွင့် သက်တမ်းတိုးမှု မအောင်မြင်ပါ'
+          : 'Failed to extend session',
+        {
+          duration: 8000,
+          description: language === 'mm'
+            ? 'ကျေးဇူးပြု၍ အကောင့်ဝင်ရန် ပြန်လည်လော့ဂ်အင်လုပ်ပါ'
+            : 'Please log in again to continue',
+          action: {
+            label: language === 'mm' ? 'လော့ဂ်အင်' : 'Login',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+              }
+            }
+          }
+        }
+      );
+      
+      DevUtils.logAuthEvent("SESSION_EXTEND_FAILED", {});
+      return false;
+    } catch (error) {
+      console.error("Failed to extend session:", error);
+      
+      // Enhanced error handling with better user guidance
+      const language = getCurrentLanguage();
+      toastError(
+        language === 'mm'
+          ? '⚠️ အကောင့်ဝင်ခွင့် သက်တမ်းတိုးရာတွင် ပြဿနာတွေ့ရှိပါသည်'
+          : '⚠️ Session extension failed',
+        {
+          duration: 10000,
+          description: language === 'mm'
+            ? 'ကွန်ယက်ချိတ်ဆက်မှုကို စစ်ဆေးပြီး ထပ်မံကြိုးစားပါ သို့မဟုတ် ပြန်လည်လော့ဂ်အင်လုပ်ပါ'
+            : 'Please check your connection and try again, or log in again',
+          action: {
+            label: language === 'mm' ? 'ထပ်စမ်း' : 'Retry',
+            onClick: extendSession
+          }
+        }
+      );
+      
+      DevUtils.logAuthEvent("SESSION_EXTEND_ERROR", error);
+      return false;
+    }
   };
 
-  const auth = useAuth(authOptions);
+  // Get current language for notifications
+  const getCurrentLanguage = (): 'en' | 'mm' => {
+    try {
+      if (typeof window !== 'undefined') {
+        const pathLang = window.location.pathname.split('/')[1];
+        if (pathLang === 'en' || pathLang === 'mm') {
+          return pathLang;
+        }
+        const storedLang = localStorage.getItem('language');
+        if (storedLang === 'en' || storedLang === 'mm') {
+          return storedLang;
+        }
+      }
+    } catch (error) {
+      // Ignore errors
+    }
+    return 'en';
+  };
+
+  // Use effects to handle auth state changes and session monitoring
+  useEffect(() => {
+    // Handle auth state changes
+    DevUtils.logAuthEvent("AUTH_CONTEXT_CHANGED", {
+      isAuthenticated: auth.isAuthenticated,
+      user: auth.user?.email,
+    });
+    
+    // Reset warning state when authentication state changes
+    if (!auth.isAuthenticated) {
+      setHasShownWarning(false);
+      setSessionExpiringInMinutes(null);
+    }
+    
+    options.onAuthChange?.(auth.isAuthenticated, auth.user);
+  }, [auth.isAuthenticated, auth.user]);
+
+  // Session expiring monitoring
+  useEffect(() => {
+    if (auth.session?.expiresAt) {
+      const checkSessionExpiration = () => {
+        const expiresAt = new Date(auth.session!.expiresAt).getTime();
+        const now = Date.now();
+        const minutesRemaining = Math.floor((expiresAt - now) / (1000 * 60));
+        
+        if (minutesRemaining > 0 && minutesRemaining <= 5) {
+          DevUtils.logAuthEvent("SESSION_EXPIRING", { minutesRemaining });
+          setSessionExpiringInMinutes(minutesRemaining);
+          
+          // Show warning notification at 5 minutes and 1 minute
+          if ((minutesRemaining === 5 || minutesRemaining === 1) && !hasShownWarning) {
+            setHasShownWarning(true);
+            const language = getCurrentLanguage();
+            
+            toastWarning(
+              language === 'mm'
+                ? `⚠️ သင့်အကောင့်ဝင်ခွင့် ${minutesRemaining} မိနစ်အတွင်း သက်တမ်းကုန်မည်`
+                : `⚠️ Your session will expire in ${minutesRemaining} minute${minutesRemaining > 1 ? 's' : ''}`,
+              {
+                duration: minutesRemaining === 1 ? 15000 : 10000, // Longer duration for critical 1-minute warning
+                description: language === 'mm'
+                  ? minutesRemaining === 1 
+                    ? 'ချက်ချင်းအရေးယူရန်လိုအပ်သည်!'
+                    : 'သင့်အလုပ်ကို မဆုံးရှုံးစေရန် သက်တမ်းတိုးပါ'
+                  : minutesRemaining === 1
+                    ? 'Immediate action required!'
+                    : 'Extend now to avoid losing your work',
+                action: {
+                  label: language === 'mm' ? '🔄 သက်တမ်းတိုး' : '🔄 Extend',
+                  onClick: extendSession
+                }
+              }
+            );
+            
+            // Reset warning flag after some time so we can show it again
+            setTimeout(() => setHasShownWarning(false), 30000);
+          }
+          
+          options.onSessionExpiring?.(minutesRemaining);
+        }
+      };
+      
+      // Check immediately and then every minute
+      checkSessionExpiration();
+      const interval = setInterval(checkSessionExpiration, 60000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [auth.session?.expiresAt, hasShownWarning]);
+
+  // Error handling
+  useEffect(() => {
+    if (auth.error) {
+      DevUtils.logAuthEvent("AUTH_CONTEXT_ERROR", auth.error);
+      
+      // Use centralized auth error handler for authentication errors
+      const errorHandler = getAuthErrorHandler();
+      if (!errorHandler.isHandling()) {
+        errorHandler.handleAuthError(auth.error, {
+          url: typeof window !== 'undefined' ? window.location.href : undefined,
+          userLanguage: getCurrentLanguage()
+        }).catch(authError => {
+          console.error('AuthProvider: Auth error handling failed:', authError);
+        });
+      }
+      
+      options.onError?.(auth.error);
+    }
+  }, [auth.error]);
 
   // Handle initialization
   useEffect(() => {
@@ -102,6 +281,8 @@ export function AuthProvider({
   const contextValue: AuthContextValue = {
     ...auth,
     initializing,
+    sessionExpiringInMinutes,
+    extendSession,
   };
 
   // Show fallback during initialization

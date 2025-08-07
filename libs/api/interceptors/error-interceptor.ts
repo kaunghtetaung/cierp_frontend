@@ -12,6 +12,7 @@ import {
   getLocalizedRecoveryActions,
   frontendErrorMessages 
 } from '../messages/error-messages';
+import { handleAuthError } from '../../auth/auth-error-handler';
 
 /**
  * API Error Categories for structured error handling
@@ -78,6 +79,22 @@ export class GlobalErrorInterceptor implements ErrorInterceptor {
 
     // Categorize and enhance the error
     const enhancedError = this.categorizeError(context.error, context);
+    
+    // Handle authentication errors with centralized handler
+    if (enhancedError.category === ApiErrorCategory.AUTHENTICATION || 
+        enhancedError.category === ApiErrorCategory.AUTHORIZATION) {
+      
+      console.log('🔐 GlobalErrorInterceptor: Detected auth error, delegating to AuthErrorHandler');
+      
+      // Use centralized auth error handler for logout and redirection
+      // This runs in the background - we don't wait for it
+      handleAuthError(enhancedError, {
+        url: context.request?.url,
+        userLanguage: enhancedError.language
+      }).catch(authError => {
+        console.error('🔐 GlobalErrorInterceptor: Auth error handling failed:', authError);
+      });
+    }
     
     // Log error for monitoring
     this.logError(enhancedError, context);
