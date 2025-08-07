@@ -337,7 +337,11 @@ export function withAuth<P extends object>(
       if (!isAuthenticated) {
         setIsAuthorized(false);
         if (redirect) {
-          window.location.href = "/login";
+          // Check if already on login page to prevent infinite redirect loop
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('/login')) {
+            window.location.href = "/login";
+          }
         }
         return;
       }
@@ -406,12 +410,22 @@ export function AuthGuard({
       useEffect(() => {
         const publicWebUrl = getPublicUrlClient();
         const currentUrl = getCurrentUrlClient();
-        const redirectUrl = encodeURIComponent(currentUrl);
-
-        // Redirect to publicWeb login page
-        window.location.href = `${publicWebUrl}/login?redirect_url=${redirectUrl}`;
+        
+        // Check if already on login page to prevent infinite redirect loop
+        const isLoginPage = currentUrl.includes('/login');
+        
+        if (!isLoginPage) {
+          const redirectUrl = encodeURIComponent(currentUrl);
+          // Redirect to publicWeb login page
+          window.location.href = `${publicWebUrl}/login?redirect_url=${redirectUrl}`;
+        }
       }, []);
-      return null;
+      
+      // Check if we're on login page
+      const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+      if (!currentUrl.includes('/login')) {
+        return null;
+      }
     }
     return <>{loginFallback || <div>Please log in</div>}</>;
   }

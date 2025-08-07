@@ -1149,7 +1149,12 @@ export function ReactHookWizardForm({
     );
   }
 
-  const handleNext = async () => {
+  const handleNext = async (e?: React.FormEvent) => {
+    // Prevent default form submission if called from form submit
+    if (e) {
+      e.preventDefault();
+    }
+    
     console.log('🧙 handleNext called with currentStep:', currentStep, 'totalSteps:', totalSteps);
     
     // Safety check
@@ -1478,7 +1483,16 @@ export function ReactHookWizardForm({
       <div className="bg-card border rounded-lg p-6 mb-6">
         
         {/* Form Fields */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={currentStep < totalSteps - 1 ? handleNext : handleSubmit(onSubmit)} 
+          className="space-y-6"
+          onKeyDown={(e) => {
+            // Prevent form submission on Enter key press in input fields
+            if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
+              e.preventDefault();
+            }
+          }}
+        >
           <div
             className={`${
               isVerticalLayout
@@ -1563,9 +1577,8 @@ export function ReactHookWizardForm({
           <div>
             {currentStep < totalSteps - 1 ? (
               <Button 
-                type="button" 
+                type="submit" 
                 size="lg" 
-                onClick={handleNext} 
                 disabled={isSubmitting || currentStep >= totalSteps - 1}
               >
                 {currentLanguage === "mm" ? "ရှေ့သို့" : "Next"}

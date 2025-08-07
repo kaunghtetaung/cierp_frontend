@@ -52,7 +52,7 @@ export const getAuthenticationStatus = cache(async (
         user: null,
         session: null,
         tenantId,
-        error: 'No session cookie found'
+        error: null // No error - just not authenticated
       };
     }
 

@@ -411,7 +411,7 @@ export async function handleSessionStatus(
         user: null,
         session: null,
         tenantId: tenantIdFromHeaders,
-        error: "No session cookie found",
+        error: null, // No error - just not authenticated
       });
     }
 

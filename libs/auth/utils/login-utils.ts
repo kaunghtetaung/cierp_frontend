@@ -49,13 +49,17 @@ export async function initiateLogout(): Promise<void> {
     if (response.redirected) {
       window.location.href = response.url;
     } else {
-      // Fallback: redirect to login page
-      window.location.href = '/login';
+      // Fallback: redirect to public web login page
+      const { getPublicUrlClient } = await import('@repo/utils/client/domain');
+      const publicUrl = getPublicUrlClient();
+      window.location.href = `${publicUrl}/login`;
     }
   } catch (error) {
     console.error('Logout failed:', error);
-    // Fallback: redirect to login page
-    window.location.href = '/login';
+    // Fallback: redirect to public web login page
+    const { getPublicUrlClient } = await import('@repo/utils/client/domain');
+    const publicUrl = getPublicUrlClient();
+    window.location.href = `${publicUrl}/login`;
   }
 }
 
@@ -196,7 +200,10 @@ export function getRemainingSessionTime(session: AuthSession | null): number {
  * Create login URL with return URL
  */
 export function createLoginUrl(returnUrl?: string): string {
-  const url = new URL('/login', window.location.origin);
+  // Import dynamically to avoid circular dependencies
+  const { getPublicUrlClient } = require('@repo/utils/client/domain');
+  const publicUrl = getPublicUrlClient();
+  const url = new URL('/login', publicUrl);
   if (returnUrl) {
     url.searchParams.set('returnUrl', returnUrl);
   }
@@ -207,7 +214,7 @@ export function createLoginUrl(returnUrl?: string): string {
  * Get current return URL for login redirect
  */
 export function getCurrentReturnUrl(): string {
-  return window.location.pathname + window.location.search;
+  return window.location.href; // Use full URL instead of just path
 }
 
 /**
