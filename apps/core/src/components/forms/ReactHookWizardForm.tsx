@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { IconComponent, IconSelector } from "@repo/ui/components/icons";
 import { MultiLanguageInput } from "./MultiLanguageInput";
 import { DynamicSelect } from "./DynamicSelect";
+import { PasswordField } from "./PasswordField";
 import { generateZodSchema } from "@/lib/form-schema";
 import { useWizardStorage } from "@/hooks/use-wizard-storage";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
@@ -317,7 +318,6 @@ function renderField(
   switch (field.fieldType) {
     case "text":
     case "email":
-    case "password":
     case "number":
     case "date":
       return (
@@ -354,9 +354,7 @@ function renderField(
                   <input
                     ref={inputRef}
                     type={
-                      field.fieldType === "password"
-                        ? "password"
-                        : field.fieldType === "email"
+                      field.fieldType === "email"
                         ? "email"
                         : field.fieldType === "date"
                         ? "date"
@@ -386,6 +384,103 @@ function renderField(
                 {errors[field.fieldName]?.message}
               </p>
             )}
+            {field.validationRule?.errorMessage && !errors[field.fieldName] && (
+              <p className="text-xs text-muted-foreground">
+                {getLocalizedText(
+                  field.validationRule.errorMessage,
+                  currentLanguage
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+
+    case "password":
+      return (
+        <div key={field.fieldName} className={containerClasses}>
+          <div className={labelContainerClasses}>
+            <label
+              htmlFor={field.fieldName}
+              className="block text-sm font-medium"
+            >
+              {label}{" "}
+              {field.validationRule?.required && (
+                <span className="text-red-500">*</span>
+              )}
+            </label>
+          </div>
+          <div className={inputContainerClasses}>
+            <Controller
+              name={field.fieldName}
+              control={control}
+              render={({ field: { onChange, value, name } }) => {
+                // Check if password strength indicator is enabled
+                if (field.validationRule?.showStrengthIndicator) {
+                  return (
+                    <>
+                      <PasswordField
+                        value={value || ""}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        className="w-full"
+                        readOnly={field.readonly}
+                        strengthConfig={field.validationRule.strengthMeterConfig}
+                        currentLanguage={currentLanguage}
+                        showStrengthIndicator={true}
+                        validationProps={validationProps}
+                      />
+                      {errors[field.fieldName] && (
+                        <p className="text-xs text-destructive mt-1 flex items-center">
+                          <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
+                          {errors[field.fieldName]?.message}
+                        </p>
+                      )}
+                    </>
+                  );
+                } else {
+                  // Regular password input without strength indicator
+                  const inputRef = useRef<HTMLInputElement>(null);
+                  const hasError = errors[field.fieldName];
+                  
+                  // Auto-focus on validation error
+                  useEffect(() => {
+                    if (hasError && inputRef.current) {
+                      setTimeout(() => {
+                        inputRef.current?.focus();
+                      }, 100);
+                    }
+                  }, [hasError]);
+
+                  return (
+                    <>
+                      <input
+                        ref={inputRef}
+                        type="password"
+                        id={field.fieldName}
+                        name={name}
+                        value={value || ""}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        disabled={field.readonly}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                          hasError 
+                            ? "border-destructive focus:ring-destructive bg-destructive/5" 
+                            : "border-input focus:ring-primary"
+                        } ${field.readonly ? "bg-muted cursor-not-allowed" : ""}`}
+                        {...validationProps}
+                      />
+                      {errors[field.fieldName] && (
+                        <p className="text-xs text-destructive mt-1 flex items-center">
+                          <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
+                          {errors[field.fieldName]?.message}
+                        </p>
+                      )}
+                    </>
+                  );
+                }
+              }}
+            />
             {field.validationRule?.errorMessage && !errors[field.fieldName] && (
               <p className="text-xs text-muted-foreground">
                 {getLocalizedText(

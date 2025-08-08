@@ -19,6 +19,7 @@ interface PasswordFieldProps {
   strengthConfig?: PasswordStrengthConfig
   currentLanguage?: string
   showStrengthIndicator?: boolean
+  validationProps?: Record<string, any>
 }
 
 export function PasswordField({
@@ -30,7 +31,8 @@ export function PasswordField({
   readOnly = false,
   strengthConfig,
   currentLanguage = 'en',
-  showStrengthIndicator = true
+  showStrengthIndicator = true,
+  validationProps = {}
 }: PasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   
@@ -83,6 +85,7 @@ export function PasswordField({
           className={cn('pr-10', className)}
           disabled={disabled}
           readOnly={readOnly}
+          {...validationProps}
         />
         <Button
           type="button"
