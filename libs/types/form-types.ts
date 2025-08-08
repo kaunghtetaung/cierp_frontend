@@ -54,6 +54,10 @@ export interface ValidationRule {
   alphanumeric?: boolean; // Only letters and numbers
   numeric?: boolean; // Only numbers
   noWhitespace?: boolean; // No whitespace allowed
+  
+  // Password strength options
+  showStrengthIndicator?: boolean; // Show password strength meter for password fields
+  strengthMeterConfig?: PasswordStrengthConfig; // Custom strength requirements
 }
 
 // Select field option
@@ -202,4 +206,43 @@ export interface WizardFormConfig {
   validation?: WizardValidationConfig; // Validation behavior
   navigation?: WizardNavigationConfig; // Navigation behavior  
   theme?: WizardThemeConfig; // Theme and styling
+}
+
+// Password strength configuration
+export interface PasswordStrengthConfig {
+  minLength?: number; // Minimum password length (default: 8)
+  requireUppercase?: boolean; // Require uppercase letters (default: true)
+  requireLowercase?: boolean; // Require lowercase letters (default: true)
+  requireNumbers?: boolean; // Require numbers (default: true)
+  requireSpecialChars?: boolean; // Require special characters (default: true)
+  specialChars?: string; // Custom special characters set (default: @$!%*?&)
+  showRequirements?: boolean; // Show detailed requirements list (default: true)
+  showStrengthMeter?: boolean; // Show visual strength meter (default: true)
+  strengthLabels?: {
+    weak: MultilingualText;
+    medium: MultilingualText;
+    strong: MultilingualText;
+  };
+  requirementMessages?: {
+    minLength: MultilingualText;
+    uppercase: MultilingualText;
+    lowercase: MultilingualText;
+    numbers: MultilingualText;
+    specialChars: MultilingualText;
+  };
+}
+
+// Password strength validation result
+export interface PasswordStrengthResult {
+  score: number; // 0-100 strength score
+  level: 'weak' | 'medium' | 'strong'; // Strength level
+  requirements: {
+    minLength: boolean;
+    uppercase: boolean;
+    lowercase: boolean;
+    numbers: boolean;
+    specialChars: boolean;
+  };
+  errors: string[]; // List of validation errors
+  isValid: boolean; // Overall validation result
 }

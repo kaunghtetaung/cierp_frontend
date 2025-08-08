@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { DynamicSelect } from './DynamicSelect'
 import { DependentSelect } from './DependentSelect'
+import { PasswordField } from './PasswordField'
 import type { FormField as SchemaFormField } from '@repo/types'
 
 export interface FormFieldRendererProps {
@@ -121,6 +122,23 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
       )
     
     case 'password':
+      // Use enhanced PasswordField if strength indicator is enabled
+      if (field.validationRule?.showStrengthIndicator) {
+        return (
+          <PasswordField
+            value={formField.value || ''}
+            onChange={formField.onChange}
+            placeholder={field.placeHolder}
+            className={isReadonly ? 'bg-muted' : ''}
+            readOnly={isReadonly}
+            strengthConfig={field.validationRule.strengthMeterConfig}
+            currentLanguage={currentLanguage}
+            showStrengthIndicator={true}
+          />
+        )
+      }
+      
+      // Fallback to basic password input
       return (
         <Input
           {...formField}
