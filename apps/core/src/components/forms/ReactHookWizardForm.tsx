@@ -70,6 +70,13 @@ function validateAndFilterFields(fields: FormField[]): FormField[] {
 function getValidationProps(field: FormField) {
   const props: Record<string, any> = {};
 
+  // Skip HTML5 validation for password fields with strength indicators
+  // This prevents dual validation conflicts where custom validation shows "Strong" 
+  // but HTML5 validation still fails, causing form submission issues
+  if (field.fieldType === "password" && field.validationRule?.showStrengthIndicator) {
+    return props; // Return empty props (no HTML5 validation)
+  }
+
   if (field.fieldType === "email") {
     props.type = "email";
   }

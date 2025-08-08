@@ -140,8 +140,8 @@ export function PasswordField({
         </div>
       )}
 
-      {/* Requirements List */}
-      {showStrengthIndicator && value && config.showRequirements && (
+      {/* Requirements List - Hidden to avoid redundancy with HTML5 validation */}
+      {false && showStrengthIndicator && value && config.showRequirements && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">
             {currentLanguage === 'mm' ? 'လိုအပ်ချက်များ' : 'Requirements'}:
