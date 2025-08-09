@@ -62,30 +62,30 @@ export function AuthProvider({
     try {
       DevUtils.logAuthEvent("SESSION_EXTEND_REQUESTED", {});
       
-      // Try to refresh the token/session
-      if (auth.refreshToken) {
-        const success = await auth.refreshToken();
-        if (success) {
-          setHasShownWarning(false);
-          setSessionExpiringInMinutes(null);
-          
-          // Enhanced success feedback with prominent styling
-          const language = getCurrentLanguage();
-          toastSuccess(
-            language === 'mm'
-              ? '🎉 အကောင့်ဝင်ခွင့် သက်တမ်းတိုးပြီးပါပြီ'
-              : '🎉 Session extended successfully',
-            {
-              duration: 5000,
-              description: language === 'mm'
-                ? 'သင့်အကောင့်ကို ဆက်လက်အသုံးပြုနိုင်ပါပြီ'
-                : 'You can continue working without interruption'
-            }
-          );
-          
-          DevUtils.logAuthEvent("SESSION_EXTENDED", { success: true });
-          return true;
-        }
+      // Try to refresh the session (refreshSession throws on error, doesn't return boolean)
+      if (auth.refreshSession) {
+        await auth.refreshSession();
+        
+        // If we reach here, the refresh was successful
+        setHasShownWarning(false);
+        setSessionExpiringInMinutes(null);
+        
+        // Enhanced success feedback with prominent styling
+        const language = getCurrentLanguage();
+        toastSuccess(
+          language === 'mm'
+            ? '🎉 အကောင့်ဝင်ခွင့် သက်တမ်းတိုးပြီးပါပြီ'
+            : '🎉 Session extended successfully',
+          {
+            duration: 5000,
+            description: language === 'mm'
+              ? 'သင့်အကောင့်ကို ဆက်လက်အသုံးပြုနိုင်ပါပြီ'
+              : 'You can continue working without interruption'
+          }
+        );
+        
+        DevUtils.logAuthEvent("SESSION_EXTENDED", { success: true });
+        return true;
       }
       
       // Enhanced error handling for extension failure

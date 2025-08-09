@@ -853,8 +853,7 @@ export function ReactHookWizardForm({
       slug: module.slug,
       formLayout: module.formLayout,
       formFieldsCount: module.formFields?.length || 0,
-      wizardConfig: module.wizardConfig ? 'present' : 'missing',
-      steps: module.steps ? `${module.steps.length} steps` : 'no steps'
+      wizardConfig: module.wizardConfig ? 'present' : 'missing'
     } : 'null module',
     action,
     moduleSlug,
@@ -1014,33 +1013,11 @@ export function ReactHookWizardForm({
   
   const groupFieldsForWizard = (fields: FormField[]): LocalWizardStep[] => {
     console.log('🧙 groupFieldsForWizard called with', fields.length, 'fields');
-    console.log('🧙 module.steps:', module.steps ? `${module.steps.length} steps` : 'no steps');
     console.log('🧙 module.wizardConfig:', module.wizardConfig ? 'present' : 'missing');
     
-    // Use backend steps configuration if available (new schema)
-    if (module.steps && module.steps.length > 0) {
-      console.log('🧙 Using backend steps configuration');
-      return module.steps
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .map((step, index) => {
-          // Find fields that belong to this step and validate them
-          const rawStepFields = fields.filter(field => field.stepId === step.stepId);
-          const stepFields = validateAndFilterFields(rawStepFields);
-          
-          return {
-            id: step.stepId,
-            title: getLocalizedText(step.title, currentLanguage),
-            description: step.description ? getLocalizedText(step.description, currentLanguage) : '',
-            icon: step.iconName || step.icon,
-            fields: stepFields,
-            stepNumber: index + 1,
-          };
-        })
-        .filter(step => step.fields.length > 0); // Only include steps that have fields
-    }
-    
-    // Fallback to explicit wizard configuration if available (legacy)
+    // Use wizard configuration if available (current version)
     if (module.wizardConfig?.steps && module.wizardConfig.steps.length > 0) {
+      console.log('🧙 Using wizardConfig steps');
       return module.wizardConfig.steps
         .sort((a, b) => (a.stepNumber || 0) - (b.stepNumber || 0))
         .map((step, index) => {
@@ -1093,61 +1070,98 @@ export function ReactHookWizardForm({
     }
     
     // Fall back to logical grouping
-    const basicInfo: FormField[] = [];
-    const contentFields: FormField[] = [];
-    const settingsFields: FormField[] = [];
+    const organizationDetails: FormField[] = [];
+    const contactInfo: FormField[] = [];
+    const additionalFields: FormField[] = [];
     
     fields.forEach((field) => {
-      // Group by field type and purpose
-      if (field.fieldType === 'text' || field.fieldType === 'textArea' || field.fieldName.includes('name') || field.fieldName.includes('title')) {
-        basicInfo.push(field);
-      } else if (field.fieldType === 'select' || field.fieldType === 'multiSelect' || field.fieldType === 'dynamicSelect' || field.fieldType === 'dependentSelect' || field.fieldType === 'multiDependentSelect' || field.fieldType === 'date') {
-        contentFields.push(field);
-      } else {
-        settingsFields.push(field);
+      // Group by field purpose and type
+      const fieldName = field.fieldName.toLowerCase();
+      
+      // Organization/identity fields
+      if (fieldName.includes('name') || 
+          fieldName.includes('title') || 
+          fieldName.includes('slug') ||
+          fieldName.includes('description') ||
+          field.fieldType === 'icon') {
+        organizationDetails.push(field);
+      }
+      // Contact and address fields
+      else if (field.fieldType === 'email' || 
+               field.fieldType === 'textArea' ||
+               fieldName.includes('email') || 
+               fieldName.includes('phone') || 
+               fieldName.includes('address') ||
+               fieldName.includes('domain') ||
+               fieldName.includes('url') ||
+               fieldName.includes('website')) {
+        contactInfo.push(field);
+      }
+      // Selection fields and other types
+      else if (field.fieldType === 'select' || 
+               field.fieldType === 'multiSelect' || 
+               field.fieldType === 'dynamicSelect' || 
+               field.fieldType === 'dependentSelect' || 
+               field.fieldType === 'multiDependentSelect' || 
+               field.fieldType === 'date' ||
+               field.fieldType === 'checkbox' ||
+               field.fieldType === 'boolean') {
+        additionalFields.push(field);
+      }
+      // Default: text fields and others
+      else {
+        // Determine by field name if it's not already categorized
+        if (fieldName.includes('contact') || fieldName.includes('location')) {
+          contactInfo.push(field);
+        } else {
+          organizationDetails.push(field);
+        }
       }
     });
     
     // Create steps based on available fields
     const wizardSteps = [];
     
-    if (basicInfo.length > 0) {
-      const validBasicInfo = validateAndFilterFields(basicInfo);
-      if (validBasicInfo.length > 0) {
+    // Step 1: Organization/Entity Details
+    if (organizationDetails.length > 0) {
+      const validOrgDetails = validateAndFilterFields(organizationDetails);
+      if (validOrgDetails.length > 0) {
         wizardSteps.push({
-          id: 'basic-info',
-          title: currentLanguage === "mm" ? "အခြေခံအချက်အလက်" : "Basic Information",
+          id: 'organization-details',
+          title: currentLanguage === "mm" ? "အဖွဲ့အစည်း အချက်အလက်" : "Organization Details",
           description: currentLanguage === "mm" ? "အမည်နှင့် အကြောင်းအရာများ" : "Names and descriptions",
-          icon: 'User',
-          fields: validBasicInfo,
+          icon: 'Building',
+          fields: validOrgDetails,
           stepNumber: wizardSteps.length + 1,
         });
       }
     }
     
-    if (contentFields.length > 0) {
-      const validContentFields = validateAndFilterFields(contentFields);
-      if (validContentFields.length > 0) {
+    // Step 2: Contact Information
+    if (contactInfo.length > 0) {
+      const validContactInfo = validateAndFilterFields(contactInfo);
+      if (validContactInfo.length > 0) {
         wizardSteps.push({
-          id: 'content-details',
-          title: currentLanguage === "mm" ? "အကြောင်းအရာ" : "Content Details", 
-          description: currentLanguage === "mm" ? "အမျိုးအစားနှင့် ရက်စွဲများ" : "Categories and dates",
-          icon: 'FileText',
-          fields: validContentFields,
+          id: 'contact-info',
+          title: currentLanguage === "mm" ? "ဆက်သွယ်ရန် အချက်အလက်" : "Contact Information", 
+          description: currentLanguage === "mm" ? "လိပ်စာနှင့် ဆက်သွယ်ရန်" : "Address and contact details",
+          icon: 'MapPin',
+          fields: validContactInfo,
           stepNumber: wizardSteps.length + 1,
         });
       }
     }
     
-    if (settingsFields.length > 0) {
-      const validSettingsFields = validateAndFilterFields(settingsFields);
-      if (validSettingsFields.length > 0) {
+    // Step 3: Additional Configuration
+    if (additionalFields.length > 0) {
+      const validAdditionalFields = validateAndFilterFields(additionalFields);
+      if (validAdditionalFields.length > 0) {
         wizardSteps.push({
-          id: 'settings',
-          title: currentLanguage === "mm" ? "ဆက်တင်များ" : "Settings",
-          description: currentLanguage === "mm" ? "အခြားရွေးချယ်မှုများ" : "Additional options",
+          id: 'additional-config',
+          title: currentLanguage === "mm" ? "အခြား သတ်မှတ်ချက်များ" : "Additional Configuration",
+          description: currentLanguage === "mm" ? "ထပ်တိုး ရွေးချယ်မှုများ" : "Additional options and settings",
           icon: 'Settings',
-          fields: validSettingsFields,
+          fields: validAdditionalFields,
           stepNumber: wizardSteps.length + 1,
         });
       }
@@ -1212,7 +1226,6 @@ export function ReactHookWizardForm({
     steps: steps.map(s => ({ id: s.id, title: s.title, fieldsCount: s.fields.length })),
     module: {
       hasWizardConfig: !!module.wizardConfig,
-      hasSteps: !!module.steps,
       formLayout: module.formLayout
     }
   });
@@ -1227,8 +1240,7 @@ export function ReactHookWizardForm({
       invalidFields: invalidFields.map(f => ({ fieldName: f?.fieldName, fieldType: f?.fieldType, issues: !f ? 'null field' : !f.fieldName ? 'missing fieldName' : !f.fieldType ? 'missing fieldType' : 'other' })),
       stepsCount: steps.length,
       steps: steps.map(s => ({ id: s.id, title: s.title, fieldsCount: s.fields.length, fieldNames: s.fields.map(f => f.fieldName) })),
-      moduleSteps: module.steps?.map(s => ({ stepId: s.stepId, title: s.title })),
-      backendSchemaType: module.steps ? 'new (backend steps)' : 'legacy (logical grouping)'
+      schemaType: module.wizardConfig ? 'wizardConfig' : 'automatic grouping'
     });
   }
   
