@@ -80,10 +80,6 @@ export function ReactHookForm({
         if (initialData.version !== undefined) {
           formData.append("version", String(initialData.version));
         }
-        // Include _id if present
-        if (initialData._id) {
-          formData.append("_id", String(initialData._id));
-        }
       }
       
       Object.entries(data).forEach(([key, value]) => {
@@ -119,28 +115,29 @@ export function ReactHookForm({
           const fieldErrorsText = result.fieldErrors.join("\n");
           const mainError = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
           const traceInfo = result.traceId ? `\n\nTrace ID: ${result.traceId}` : '';
-          setSubmitError(`${mainError}\n\nField errors:\n${fieldErrorsText}${traceInfo}`);
+          const errorMessage = `${mainError}\n\nField errors:\n${fieldErrorsText}${traceInfo}`;
           
           // Show error toast for immediate feedback
           toastError(mainError);
+          
+          throw new Error(errorMessage);
         } else if (result.errors) {
           // Handle other validation errors (legacy format)
           const errorMessages = Object.entries(result.errors)
             .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
             .join("\n");
-          setSubmitError(errorMessages);
-          
           // Show error toast for immediate feedback
           const toastErrorMessage = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
           toastError(toastErrorMessage);
+          
+          throw new Error(errorMessages);
         } else {
           const errorMessage = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
-          setSubmitError(errorMessage);
-          
           // Show error toast for immediate feedback
           toastError(errorMessage);
+          
+          throw new Error(errorMessage);
         }
-        return;
       }
       
       // Success - show toast and handle client-side navigation
@@ -157,9 +154,10 @@ export function ReactHookForm({
       
       toastSuccess(successMessage);
       
-      if (result.redirectTo) {
-        router.push(result.redirectTo);
-      }
+      // Redirect to module datatable page with user-friendly delay
+      setTimeout(() => {
+        router.push(`/${moduleSlug}`);
+      }, 1500); // Give user time to see success message
       
     } catch (error) {
       console.error("Form submission error:", error);
@@ -168,7 +166,7 @@ export function ReactHookForm({
         : getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
       setSubmitError(errorMessage);
       
-      // Also show error toast for immediate feedback
+      // Show error toast for immediate feedback
       toastError(errorMessage);
       
     } finally {

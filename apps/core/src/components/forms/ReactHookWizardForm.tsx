@@ -1233,11 +1233,6 @@ export function ReactHookWizardForm({
           formData.append("version", String(initialData.version));
           console.log(`🔍 Client Debug (Wizard): Adding version field: ${initialData.version}`);
         }
-        // Include _id if present
-        if (initialData._id) {
-          formData.append("_id", String(initialData._id));
-          console.log(`🔍 Client Debug (Wizard): Adding _id field: ${initialData._id}`);
-        }
       }
       
       console.log("🔍 Client Debug (Wizard): Processing form data entries...", data);
