@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { useFormContext, Controller } from 'react-hook-form'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -12,15 +12,128 @@ import { Label } from '@/components/ui/label'
 import { DynamicSelect } from './DynamicSelect'
 import { DependentSelect } from './DependentSelect'
 import { PasswordField } from './PasswordField'
+import { MultiLanguageInput } from './MultiLanguageInput'
+import { IconComponent, IconSelector } from '@repo/ui/components/icons'
 import type { FormField as SchemaFormField } from '@repo/types'
+
+// Auto-configure dropdownConfig for common organizational fields
+function autoConfigureDropdown(field: SchemaFormField): SchemaFormField {
+  // Skip if already has dropdownConfig
+  if (field.dropdownConfig) {
+    return field;
+  }
+
+  // Auto-configure organization fields
+  if (field.fieldName === 'organizationId' || 
+      field.fieldName === 'organization' ||
+      field.fieldName.toLowerCase().includes('organization')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/organizations/ref",
+        searchable: true,
+        clearable: false,
+        preloadData: true
+      }
+    };
+  }
+
+  // Auto-configure department fields (dependent on organization)
+  if (field.fieldName === 'departmentId' || 
+      field.fieldName === 'department' ||
+      field.fieldName.toLowerCase().includes('department')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/departments/ref",
+        dependsOn: ["organizationId", "organization"],
+        searchable: true,
+        clearable: true,
+        preloadData: false
+      }
+    };
+  }
+
+  // Auto-configure user fields
+  if (field.fieldName === 'userId' || 
+      field.fieldName === 'user' ||
+      field.fieldName === 'assignedTo' ||
+      field.fieldName.toLowerCase().includes('user')) {
+    return {
+      ...field,
+      dropdownConfig: {
+        type: "dynamic",
+        refPath: "/users/ref",
+        searchable: true,
+        clearable: true,
+        preloadData: false
+      }
+    };
+  }
+
+  // Return original field if no auto-configuration applies
+  return field;
+}
+
+// Convert dataSource configuration to dropdownConfig for backward compatibility
+function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormField {
+  // Skip if already has dropdownConfig
+  if (field.dropdownConfig) {
+    return field;
+  }
+
+  // Handle fields with dataSource configuration
+  if (field.dataSource) {
+    const dropdownConfig: any = {
+      type: "dynamic",
+      refPath: field.dataSource.endpoint,
+      searchable: true,
+      clearable: true,
+      preloadData: field.fieldType === "dynamicSelect" ? true : false
+    };
+
+    // Handle dependent fields
+    if (field.fieldType === "dependentSelect" && field.dataSource.dependentField) {
+      dropdownConfig.dependsOn = [field.dataSource.dependentField];
+    }
+
+    return {
+      ...field,
+      fieldType: field.fieldType === "multiDependentSelect" ? "multiSelect" : "select",
+      dropdownConfig
+    };
+  }
+
+  return field;
+}
 
 export interface FormFieldRendererProps {
   field: SchemaFormField
   currentLanguage?: string
+  isVerticalLayout?: boolean
+  errors?: any
+  watch?: any
+  onValueChange?: (value: any) => void
 }
 
-export function FormFieldRenderer({ field, currentLanguage = 'en' }: FormFieldRendererProps) {
+export function FormFieldRenderer({ 
+  field: originalField, 
+  currentLanguage = 'en',
+  isVerticalLayout = false,
+  errors = {},
+  watch: watchProp,
+  onValueChange
+}: FormFieldRendererProps) {
   const { control, watch } = useFormContext()
+  const watchFunction = watchProp || watch
+  
+  // Apply auto-configuration and backward compatibility
+  let field = convertDataSourceToDropdownConfig(originalField);
+  if (!originalField.dataSource) {
+    field = autoConfigureDropdown(field);
+  }
   
   // Early validation - ensure field has required properties
   if (!field || !field.fieldName) {
@@ -46,6 +159,61 @@ export function FormFieldRenderer({ field, currentLanguage = 'en' }: FormFieldRe
     return null
   }
   
+  // Handle multi-language fields
+  if (field.isMultiLang && (field.fieldType === "text" || field.fieldType === "textArea")) {
+    const containerClasses = isVerticalLayout
+      ? "flex items-start gap-2 sm:gap-4"
+      : "space-y-2";
+    const labelContainerClasses = isVerticalLayout
+      ? "flex-shrink-0 w-24 sm:w-32 md:w-48 pt-2"
+      : "";
+    const inputContainerClasses = isVerticalLayout
+      ? "flex-1 min-w-0 space-y-1"
+      : "";
+
+    return (
+      <div className={containerClasses}>
+        {isVerticalLayout ? (
+          <div className={labelContainerClasses}>
+            <label className="block text-xs sm:text-sm font-medium">
+              {getFieldLabel(field)}{" "}
+              {field.validationRule?.required && (
+                <span className="text-red-500">*</span>
+              )}
+            </label>
+          </div>
+        ) : (
+          <label className="block text-sm font-medium">
+            {getFieldLabel(field)}{" "}
+            {field.validationRule?.required && (
+              <span className="text-red-500">*</span>
+            )}
+          </label>
+        )}
+        <div className={inputContainerClasses}>
+          <Controller
+            name={field.fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <MultiLanguageInput
+                field={field}
+                defaultValue={value}
+                currentLanguage={currentLanguage}
+                isVerticalLayout={isVerticalLayout}
+                onValueChange={(newValue) => {
+                  onChange(newValue);
+                  onValueChange?.(newValue);
+                }}
+                errors={errors}
+              />
+            )}
+          />
+        </div>
+      </div>
+    );
+  }
+
+
   const label = getFieldLabel(field)
   const isRequired = field.validationRule?.required ?? false
   const isReadonly = field.readonly ?? false
@@ -60,29 +228,50 @@ export function FormFieldRenderer({ field, currentLanguage = 'en' }: FormFieldRe
     )
   }
 
+  // Container classes for layout support
+  const containerClasses = isVerticalLayout
+    ? "flex items-start gap-2 sm:gap-4"
+    : "space-y-2";
+
   return (
-    <FormField
-      control={control}
-      name={field.fieldName}
-      render={({ field: formField, fieldState }) => (
-        <FormItem>
-          <FormLabel className={isRequired ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''}>
-            {label}
-          </FormLabel>
-          <FormControl>
-            <FormFieldInput 
-              field={field}
-              formField={formField}
-              isReadonly={isReadonly}
-              currentLanguage={currentLanguage}
-            />
-          </FormControl>
-          {fieldState.error && (
-            <FormMessage>{fieldState.error.message || getErrorMessage(field)}</FormMessage>
-          )}
-        </FormItem>
-      )}
-    />
+    <div className={containerClasses}>
+      <FormField
+        control={control}
+        name={field.fieldName}
+        render={({ field: formField, fieldState }) => (
+          <FormItem className={isVerticalLayout ? "flex-1 min-w-0" : ""}>
+            <FormLabel className={`${isRequired ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''} ${
+              isVerticalLayout ? "text-xs sm:text-sm" : "text-sm"
+            }`}>
+              {label}
+            </FormLabel>
+            <FormControl>
+              <FormFieldInput 
+                field={field}
+                formField={formField}
+                isReadonly={isReadonly}
+                currentLanguage={currentLanguage}
+                errors={errors}
+                watchFunction={watchFunction}
+                onValueChange={onValueChange}
+              />
+            </FormControl>
+            {fieldState.error && (
+              <FormMessage className="flex items-center gap-1">
+                <IconComponent name="AlertCircle" className="w-3 h-3" />
+                {fieldState.error.message || getErrorMessage(field)}
+              </FormMessage>
+            )}
+            {errors[field.fieldName] && !fieldState.error && (
+              <p className="text-xs text-destructive mt-1 flex items-center">
+                <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
+                {errors[field.fieldName]?.message}
+              </p>
+            )}
+          </FormItem>
+        )}
+      />
+    </div>
   )
 }
 
@@ -91,21 +280,59 @@ interface FormFieldInputProps {
   formField: any
   isReadonly: boolean
   currentLanguage: string
+  errors?: any
+  watchFunction?: any
+  onValueChange?: (value: any) => void
 }
 
-function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormFieldInputProps) {
+function FormFieldInput({ 
+  field, 
+  formField, 
+  isReadonly, 
+  currentLanguage,
+  errors = {},
+  watchFunction,
+  onValueChange
+}: FormFieldInputProps) {
   const { control, watch } = useFormContext()
+  const watchFunc = watchFunction || watch
   
   switch (field.fieldType) {
     case 'text':
     case 'email':
       return (
-        <Input
-          {...formField}
-          type={field.fieldType}
-          placeholder={field.placeHolder}
-          readOnly={isReadonly}
-          className={isReadonly ? 'bg-muted' : ''}
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: { onChange, value, name } }) => {
+            const inputRef = useRef<HTMLInputElement>(null);
+            const hasError = errors[field.fieldName];
+            
+            // Auto-focus on validation error
+            useEffect(() => {
+              if (hasError && inputRef.current) {
+                setTimeout(() => {
+                  inputRef.current?.focus();
+                }, 100);
+              }
+            }, [hasError]);
+
+            return (
+              <Input
+                ref={inputRef}
+                type={field.fieldType}
+                name={name}
+                value={value || ''}
+                onChange={(e) => {
+                  onChange(e);
+                  onValueChange?.(e.target.value);
+                }}
+                placeholder={field.placeHolder}
+                readOnly={isReadonly}
+                className={`${isReadonly ? 'bg-muted' : ''} ${hasError ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+              />
+            );
+          }}
         />
       )
     
@@ -116,8 +343,12 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           type="number"
           placeholder={field.placeHolder}
           readOnly={isReadonly}
-          className={isReadonly ? 'bg-muted' : ''}
-          onChange={(e) => formField.onChange(e.target.valueAsNumber || '')}
+          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          onChange={(e) => {
+            const numValue = e.target.valueAsNumber || '';
+            formField.onChange(numValue);
+            onValueChange?.(numValue);
+          }}
         />
       )
     
@@ -127,9 +358,12 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
         return (
           <PasswordField
             value={formField.value || ''}
-            onChange={formField.onChange}
+            onChange={(value) => {
+              formField.onChange(value);
+              onValueChange?.(value);
+            }}
             placeholder={field.placeHolder}
-            className={isReadonly ? 'bg-muted' : ''}
+            className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
             readOnly={isReadonly}
             strengthConfig={field.validationRule.strengthMeterConfig}
             currentLanguage={currentLanguage}
@@ -145,7 +379,11 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           type="password"
           placeholder={field.placeHolder}
           readOnly={isReadonly}
-          className={isReadonly ? 'bg-muted' : ''}
+          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          onChange={(e) => {
+            formField.onChange(e);
+            onValueChange?.(e.target.value);
+          }}
         />
       )
     
@@ -156,18 +394,45 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           placeholder={field.placeHolder}
           readOnly={isReadonly}
           rows={field.rows || 3}
-          className={isReadonly ? 'bg-muted' : ''}
+          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          onChange={(e) => {
+            formField.onChange(e);
+            onValueChange?.(e.target.value);
+          }}
         />
       )
     
     case 'select':
+    case 'dynamicSelect':
+    case 'dependentSelect':
+      // Use DynamicSelect for advanced dropdown functionality if dropdownConfig exists
+      if (field.dropdownConfig) {
+        return (
+          <DynamicSelect
+            field={field}
+            value={formField.value}
+            onChange={(newValue) => {
+              formField.onChange(newValue);
+              onValueChange?.(newValue);
+            }}
+            currentLanguage={currentLanguage}
+            watch={watchFunc}
+            errors={errors}
+          />
+        );
+      }
+
+      // Fallback to regular select
       return (
         <Select 
           value={formField.value || ''}
-          onValueChange={formField.onChange}
+          onValueChange={(value) => {
+            formField.onChange(value);
+            onValueChange?.(value);
+          }}
           disabled={isReadonly}
         >
-          <SelectTrigger className={isReadonly ? 'bg-muted' : ''}>
+          <SelectTrigger className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive' : ''}`}>
             <SelectValue placeholder={field.placeHolder} />
           </SelectTrigger>
           <SelectContent>
@@ -188,7 +453,7 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           control={control}
           name={field.fieldName}
           render={({ field: controllerField }) => (
-            <div className="space-y-2">
+            <div className={`space-y-2 ${errors[field.fieldName] ? 'border border-destructive/20 bg-destructive/5 rounded p-2' : ''}`}>
               {field.options?.map((option) => (
                 <div key={String(option.value)} className="flex items-center space-x-2">
                   <Checkbox
@@ -199,7 +464,8 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
                       const newValue = checked
                         ? [...currentValue, String(option.value)]
                         : currentValue.filter((v: string) => v !== String(option.value))
-                      controllerField.onChange(newValue)
+                      controllerField.onChange(newValue);
+                      onValueChange?.(newValue);
                     }}
                     disabled={isReadonly}
                   />
@@ -223,8 +489,12 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           render={({ field: controllerField }) => (
             <RadioGroup
               value={controllerField.value}
-              onValueChange={controllerField.onChange}
+              onValueChange={(value) => {
+                controllerField.onChange(value);
+                onValueChange?.(value);
+              }}
               disabled={isReadonly}
+              className={errors[field.fieldName] ? 'border border-destructive/20 bg-destructive/5 rounded p-2' : ''}
             >
               {field.options?.map((option) => (
                 <div key={String(option.value)} className="flex items-center space-x-2">
@@ -250,11 +520,14 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           control={control}
           name={field.fieldName}
           render={({ field: controllerField }) => (
-            <div className="flex items-center space-x-2">
+            <div className={`flex items-center space-x-2 ${errors[field.fieldName] ? 'text-destructive' : ''}`}>
               <Checkbox
                 id={field.fieldName}
                 checked={controllerField.value}
-                onCheckedChange={controllerField.onChange}
+                onCheckedChange={(checked) => {
+                  controllerField.onChange(checked);
+                  onValueChange?.(checked);
+                }}
                 disabled={isReadonly}
               />
               <Label htmlFor={field.fieldName}>
@@ -273,10 +546,14 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           render={({ field: controllerField }) => (
             <Select 
               value={controllerField.value === undefined ? '' : String(controllerField.value)}
-              onValueChange={(value) => controllerField.onChange(value === 'true')}
+              onValueChange={(value) => {
+                const boolValue = value === 'true';
+                controllerField.onChange(boolValue);
+                onValueChange?.(boolValue);
+              }}
               disabled={isReadonly}
             >
-              <SelectTrigger className={isReadonly ? 'bg-muted' : ''}>
+              <SelectTrigger className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive' : ''}`}>
                 <SelectValue placeholder={field.placeHolder} />
               </SelectTrigger>
               <SelectContent>
@@ -294,7 +571,11 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           {...formField}
           type="date"
           readOnly={isReadonly}
-          className={isReadonly ? 'bg-muted' : ''}
+          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          onChange={(e) => {
+            formField.onChange(e);
+            onValueChange?.(e.target.value);
+          }}
         />
       )
     
@@ -304,30 +585,12 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           type="file"
           accept={field.accept}
           readOnly={isReadonly}
-          onChange={(e) => formField.onChange(e.target.files?.[0])}
-          className={isReadonly ? 'bg-muted' : ''}
-        />
-      )
-    
-    case 'dynamicSelect':
-      if (!field.dropdownConfig) return <div>Error: No dropdown configuration</div>
-      return (
-        <DynamicSelect
-          field={field}
-          formField={formField}
-          isReadonly={isReadonly}
-          currentLanguage={currentLanguage}
-        />
-      )
-    
-    case 'dependentSelect':
-      if (!field.dropdownConfig) return <div>Error: No dropdown configuration</div>
-      return (
-        <DependentSelect
-          field={field}
-          formField={formField}
-          isReadonly={isReadonly}
-          currentLanguage={currentLanguage}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            formField.onChange(file);
+            onValueChange?.(file);
+          }}
+          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive' : ''}`}
         />
       )
     
@@ -338,7 +601,25 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           placeholder={field.placeHolder}
           readOnly={isReadonly}
           rows={field.rows || 5}
-          className={`${isReadonly ? 'bg-muted' : ''} font-mono text-sm`}
+          className={`${isReadonly ? 'bg-muted' : ''} font-mono text-sm ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          onChange={(e) => {
+            formField.onChange(e);
+            onValueChange?.(e.target.value);
+          }}
+        />
+      )
+    
+    case 'icon':
+      return (
+        <IconSelector
+          value={formField.value || ""}
+          onSelect={(iconName) => {
+            formField.onChange(iconName);
+            onValueChange?.(iconName);
+          }}
+          placeholder={field.placeHolder || "Select an icon..."}
+          disabled={isReadonly}
+          className="w-full"
         />
       )
     
@@ -348,7 +629,11 @@ function FormFieldInput({ field, formField, isReadonly, currentLanguage }: FormF
           {...formField}
           placeholder={field.placeHolder}
           readOnly={isReadonly}
-          className={isReadonly ? 'bg-muted' : ''}
+          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          onChange={(e) => {
+            formField.onChange(e);
+            onValueChange?.(e.target.value);
+          }}
         />
       )
   }

@@ -138,7 +138,7 @@ export class ModuleService {
    */
   async update<T = any>(module: string, id: string, data: any): Promise<T> {
     const response = await this.httpClient.request<T>(`/${this.appName}/${module}/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       body: data,
       tenantId: this.tenantId,
       userSessionId: this.userSessionId,

@@ -7,9 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { Button } from "@/components/ui/button";
-import { IconComponent, IconSelector } from "@repo/ui/components/icons";
-import { MultiLanguageInput } from "./MultiLanguageInput";
-import { DynamicSelect } from "./DynamicSelect";
+import { Form } from "@/components/ui/form";
+import { IconComponent } from "@repo/ui/components/icons";
+import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@/lib/form-schema";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
 import { getLocalizedErrorMessage } from "@repo/api/messages";
@@ -24,616 +24,9 @@ interface ReactHookFormProps {
   currentLanguage: string;
 }
 
-// Generate HTML5 validation attributes from schema
-function getValidationProps(field: FormField) {
-  const props: Record<string, any> = {};
 
-  if (field.fieldType === "email") {
-    props.type = "email";
-  }
 
-  if (field.fieldType === "number") {
-    props.type = "number";
-    if (field.validationRule?.min !== undefined)
-      props.min = field.validationRule.min;
-    if (field.validationRule?.max !== undefined)
-      props.max = field.validationRule.max;
-  }
 
-  if (field.fieldType === "date") {
-    props.type = "date";
-  }
-
-  if (field.validationRule?.minLength) {
-    props.minLength = field.validationRule.minLength;
-  }
-
-  if (field.validationRule?.maxLength) {
-    props.maxLength = field.validationRule.maxLength;
-  }
-
-  if (field.validationRule?.pattern) {
-    props.pattern = field.validationRule.pattern;
-  }
-
-  return props;
-}
-
-// Auto-configure dropdownConfig for common organizational fields
-function autoConfigureDropdown(field: FormField): FormField {
-  // Skip if already has dropdownConfig
-  if (field.dropdownConfig) {
-    return field;
-  }
-
-  // Auto-configure organization fields
-  if (field.fieldName === 'organizationId' || 
-      field.fieldName === 'organization' ||
-      field.fieldName.toLowerCase().includes('organization')) {
-    return {
-      ...field,
-      dropdownConfig: {
-        type: "dynamic",
-        refPath: "/organizations/ref",
-        searchable: true,
-        clearable: false,
-        preloadData: true
-      }
-    };
-  }
-
-  // Auto-configure department fields (dependent on organization)
-  if (field.fieldName === 'departmentId' || 
-      field.fieldName === 'department' ||
-      field.fieldName.toLowerCase().includes('department')) {
-    return {
-      ...field,
-      dropdownConfig: {
-        type: "dynamic",
-        refPath: "/departments/ref",
-        dependsOn: ["organizationId", "organization"],
-        searchable: true,
-        clearable: true,
-        preloadData: false
-      }
-    };
-  }
-
-  // Auto-configure user fields
-  if (field.fieldName === 'userId' || 
-      field.fieldName === 'user' ||
-      field.fieldName === 'assignedTo' ||
-      field.fieldName.toLowerCase().includes('user')) {
-    return {
-      ...field,
-      dropdownConfig: {
-        type: "dynamic",
-        refPath: "/users/ref",
-        searchable: true,
-        clearable: true,
-        preloadData: false
-      }
-    };
-  }
-
-  // Return original field if no auto-configuration applies
-  return field;
-}
-
-// Convert dataSource configuration to dropdownConfig for backward compatibility
-function convertDataSourceToDropdownConfig(field: FormField): FormField {
-  // Skip if already has dropdownConfig
-  if (field.dropdownConfig) {
-    return field;
-  }
-
-  // Handle fields with dataSource configuration
-  if (field.dataSource) {
-    const dropdownConfig: any = {
-      type: "dynamic",
-      refPath: field.dataSource.endpoint,
-      searchable: true,
-      clearable: true,
-      preloadData: field.fieldType === "dynamicSelect" ? true : false
-    };
-
-    // Handle dependent fields
-    if (field.fieldType === "dependentSelect" && field.dataSource.dependentField) {
-      dropdownConfig.dependsOn = [field.dataSource.dependentField];
-    }
-
-    return {
-      ...field,
-      fieldType: field.fieldType === "multiDependentSelect" ? "multiSelect" : "select",
-      dropdownConfig
-    };
-  }
-
-  return field;
-}
-
-// Icon field component with React Hook Form integration
-function IconFieldComponent({
-  field,
-  control,
-  currentLanguage,
-  isVerticalLayout = false,
-  errors,
-}: {
-  field: FormField;
-  control: any;
-  currentLanguage: string;
-  isVerticalLayout?: boolean;
-  errors: any;
-}) {
-  const containerClasses = isVerticalLayout
-    ? "flex items-start gap-2 sm:gap-4"
-    : "space-y-2";
-  const labelClasses = isVerticalLayout
-    ? "flex-shrink-0 w-24 sm:w-32 md:w-48 pt-2"
-    : "";
-  const inputClasses = isVerticalLayout ? "flex-1 min-w-0 space-y-1" : "";
-
-  return (
-    <div key={field.fieldName} className={containerClasses}>
-      {isVerticalLayout ? (
-        <div className={labelClasses}>
-          <label className="block text-xs sm:text-sm font-medium">
-            {getLocalizedText(field.label, currentLanguage)}{" "}
-            {field.validationRule?.required && (
-              <span className="text-red-500">*</span>
-            )}
-          </label>
-        </div>
-      ) : (
-        <label htmlFor={field.fieldName} className="block text-sm font-medium">
-          {getLocalizedText(field.label, currentLanguage)}{" "}
-          {field.validationRule?.required && (
-            <span className="text-red-500">*</span>
-          )}
-        </label>
-      )}
-      <div className={inputClasses}>
-        <Controller
-          name={field.fieldName}
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <IconSelector
-              value={value || ""}
-              onSelect={(iconName) => {
-                console.log('🔄 ReactHookForm: Icon changing from', value, 'to', iconName);
-                console.log('🔄 ReactHookForm: Field readonly?', field.readonly);
-                console.log('🔄 ReactHookForm: Controller onChange type:', typeof onChange);
-                onChange(iconName);
-              }}
-              placeholder={field.placeHolder || "Select an icon..."}
-              disabled={field.readonly}
-              className="w-full"
-            />
-          )}
-        />
-        {errors[field.fieldName] && (
-          <p className="text-xs text-destructive mt-1 flex items-center">
-            <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
-            {errors[field.fieldName]?.message || getLocalizedErrorMessage('CLIENT_VALIDATION_FAILED', currentLanguage as 'en' | 'mm')}
-          </p>
-        )}
-        {field.validationRule?.errorMessage && !errors[field.fieldName] && (
-          <p className="text-xs text-muted-foreground">
-            {getLocalizedText(field.validationRule.errorMessage, currentLanguage)}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Render form field based on type with React Hook Form integration
-function renderField(
-  field: FormField,
-  control: any,
-  currentLanguage: string,
-  isVerticalLayout: boolean = false,
-  errors: any = {},
-  watch?: any
-) {
-  // Skip hidden fields
-  if (field.hidden) return null;
-
-  // Use MultiLanguageInput for multilanguage fields
-  if (
-    field.isMultiLang &&
-    (field.fieldType === "text" || field.fieldType === "textArea")
-  ) {
-    return (
-      <Controller
-        key={field.fieldName}
-        name={field.fieldName}
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <MultiLanguageInput
-            field={field}
-            defaultValue={value}
-            currentLanguage={currentLanguage}
-            isVerticalLayout={isVerticalLayout}
-            onValueChange={onChange}
-            errors={errors}
-          />
-        )}
-      />
-    );
-  }
-
-  const validationProps = getValidationProps(field);
-  const label = getLocalizedText(field.label, currentLanguage);
-  const placeholder = field.placeHolder || "";
-
-  // Container classes for vertical layout
-  const containerClasses = isVerticalLayout
-    ? "flex items-start gap-2 sm:gap-4"
-    : "space-y-2";
-  const labelContainerClasses = isVerticalLayout
-    ? "flex-shrink-0 w-24 sm:w-32 md:w-48 pt-2"
-    : "";
-  const inputContainerClasses = isVerticalLayout
-    ? "flex-1 min-w-0 space-y-1"
-    : "";
-
-  // Handle different field types
-  switch (field.fieldType) {
-    case "text":
-    case "email":
-    case "password":
-    case "number":
-    case "date":
-      return (
-        <div key={field.fieldName} className={containerClasses}>
-          <div className={labelContainerClasses}>
-            <label
-              htmlFor={field.fieldName}
-              className="block text-sm font-medium"
-            >
-              {label}{" "}
-              {field.validationRule?.required && (
-                <span className="text-red-500">*</span>
-              )}
-            </label>
-          </div>
-          <div className={inputContainerClasses}>
-            <Controller
-              name={field.fieldName}
-              control={control}
-              render={({ field: { onChange, value, name } }) => {
-                const inputRef = useRef<HTMLInputElement>(null);
-                const hasError = errors[field.fieldName];
-                
-                // Auto-focus on validation error
-                useEffect(() => {
-                  if (hasError && inputRef.current) {
-                    setTimeout(() => {
-                      inputRef.current?.focus();
-                    }, 100);
-                  }
-                }, [hasError]);
-
-                return (
-                  <input
-                    ref={inputRef}
-                    type={
-                      field.fieldType === "password"
-                        ? "password"
-                        : field.fieldType === "email"
-                        ? "email"
-                        : field.fieldType === "date"
-                        ? "date"
-                        : field.fieldType === "number"
-                        ? "number"
-                        : "text"
-                    }
-                    id={field.fieldName}
-                    name={name}
-                    value={value || ""}
-                    onChange={onChange}
-                    placeholder={placeholder}
-                    disabled={field.readonly}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      hasError 
-                        ? "border-destructive focus:ring-destructive bg-destructive/5" 
-                        : "border-input focus:ring-primary"
-                    } ${field.readonly ? "bg-muted cursor-not-allowed" : ""}`}
-                    {...validationProps}
-                  />
-                );
-              }}
-            />
-            {errors[field.fieldName] && (
-              <p className="text-xs text-destructive mt-1 flex items-center">
-                <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
-                {errors[field.fieldName]?.message}
-              </p>
-            )}
-            {field.validationRule?.errorMessage && !errors[field.fieldName] && (
-              <p className="text-xs text-muted-foreground">
-                {getLocalizedText(
-                  field.validationRule.errorMessage,
-                  currentLanguage
-                )}
-              </p>
-            )}
-          </div>
-        </div>
-      );
-
-    case "textArea":
-      return (
-        <div key={field.fieldName} className={containerClasses}>
-          <div className={labelContainerClasses}>
-            <label
-              htmlFor={field.fieldName}
-              className="block text-sm font-medium"
-            >
-              {label}{" "}
-              {field.validationRule?.required && (
-                <span className="text-red-500">*</span>
-              )}
-            </label>
-          </div>
-          <div className={inputContainerClasses}>
-            <Controller
-              name={field.fieldName}
-              control={control}
-              render={({ field: { onChange, value, name } }) => (
-                <textarea
-                  id={field.fieldName}
-                  name={name}
-                  value={value || ""}
-                  onChange={onChange}
-                  placeholder={placeholder}
-                  disabled={field.readonly}
-                  rows={field.rows || 4}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    errors[field.fieldName] 
-                      ? "border-destructive focus:ring-destructive bg-destructive/5" 
-                      : "border-input focus:ring-primary"
-                  } ${field.readonly ? "bg-muted cursor-not-allowed" : ""}`}
-                  {...validationProps}
-                />
-              )}
-            />
-            {errors[field.fieldName] && (
-              <p className="text-xs text-destructive mt-1 flex items-center">
-                <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
-                {errors[field.fieldName]?.message}
-              </p>
-            )}
-            {field.validationRule?.errorMessage && !errors[field.fieldName] && (
-              <p className="text-xs text-muted-foreground">
-                {getLocalizedText(
-                  field.validationRule.errorMessage,
-                  currentLanguage
-                )}
-              </p>
-            )}
-          </div>
-        </div>
-      );
-
-    case "select":
-    case "multiSelect":
-    case "dynamicSelect":
-    case "dependentSelect":
-    case "multiDependentSelect":
-      // Convert dataSource to dropdownConfig if needed
-      let configuredField = convertDataSourceToDropdownConfig(field);
-      
-      // Auto-configure common organizational dropdowns if no dataSource
-      if (!field.dataSource) {
-        configuredField = autoConfigureDropdown(configuredField);
-      }
-      
-      // Use new DynamicSelect component for advanced dropdown functionality
-      if (configuredField.dropdownConfig) {
-        return (
-          <div key={field.fieldName} className={containerClasses}>
-            <div className={labelContainerClasses}>
-              <label
-                htmlFor={field.fieldName}
-                className="block text-sm font-medium"
-              >
-                {label}{" "}
-                {field.validationRule?.required && (
-                  <span className="text-red-500">*</span>
-                )}
-              </label>
-            </div>
-            <div className={inputContainerClasses}>
-              <Controller
-                name={field.fieldName}
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                  <DynamicSelect
-                    field={configuredField}
-                    value={value}
-                    onChange={onChange}
-                    currentLanguage={currentLanguage}
-                    watch={watch}
-                    errors={errors}
-                  />
-                )}
-              />
-            </div>
-          </div>
-        );
-      }
-
-      // Fallback to regular select for backward compatibility
-      return (
-        <div key={field.fieldName} className={containerClasses}>
-          <div className={labelContainerClasses}>
-            <label
-              htmlFor={field.fieldName}
-              className="block text-sm font-medium"
-            >
-              {label}{" "}
-              {field.validationRule?.required && (
-                <span className="text-red-500">*</span>
-              )}
-            </label>
-          </div>
-          <div className={inputContainerClasses}>
-            <Controller
-              name={field.fieldName}
-              control={control}
-              render={({ field: { onChange, value, name } }) => (
-                <>
-                  <select
-                    id={field.fieldName}
-                    name={name}
-                    value={value || ""}
-                    onChange={onChange}
-                    disabled={field.readonly}
-                    multiple={field.fieldType === "multiSelect"}
-                    className={`w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
-                      field.readonly ? "bg-muted cursor-not-allowed" : ""
-                    } ${field.fieldType === "multiSelect" ? "min-h-[100px]" : ""}`}
-                  >
-                    <option value="">
-                      {currentLanguage === "mm" ? "ရွေးချယ်ပါ" : "Select option"}
-                    </option>
-                    {field.options?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {getLocalizedText(option.label, currentLanguage)}
-                      </option>
-                    ))}
-                  </select>
-                  {field.fieldType === "multiSelect" && (
-                    <p className="text-xs text-muted-foreground">
-                      {currentLanguage === "mm"
-                        ? "Ctrl ကိုနှိပ်ပြီး မျိုးမျိုးရွေးချယ်နိုင်သည်"
-                        : "Hold Ctrl to select multiple options"}
-                    </p>
-                  )}
-                </>
-              )}
-            />
-            {errors[field.fieldName] && (
-              <p className="text-xs text-destructive mt-1 flex items-center">
-                <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
-                {errors[field.fieldName]?.message}
-              </p>
-            )}
-            {field.validationRule?.errorMessage && !errors[field.fieldName] && (
-              <p className="text-xs text-muted-foreground">
-                {getLocalizedText(
-                  field.validationRule.errorMessage,
-                  currentLanguage
-                )}
-              </p>
-            )}
-          </div>
-        </div>
-      );
-
-    case "boolean":
-    case "checkbox":
-      return (
-        <div key={field.fieldName} className="flex items-center space-x-2">
-          <Controller
-            name={field.fieldName}
-            control={control}
-            render={({ field: { onChange, value, name } }) => (
-              <input
-                type="checkbox"
-                id={field.fieldName}
-                name={name}
-                checked={value === true || value === "true"}
-                onChange={(e) => onChange(e.target.checked)}
-                disabled={field.readonly}
-                className="w-4 h-4 text-primary border-input rounded focus:ring-primary disabled:cursor-not-allowed"
-              />
-            )}
-          />
-          <label htmlFor={field.fieldName} className="text-sm font-medium">
-            {label}
-            {field.validationRule?.required && (
-              <span className="text-red-500 ml-1">*</span>
-            )}
-          </label>
-          {errors[field.fieldName] && (
-            <p className="text-xs text-destructive ml-2 flex items-center">
-              <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
-              {errors[field.fieldName]?.message || getLocalizedErrorMessage('CLIENT_VALIDATION_FAILED', currentLanguage as 'en' | 'mm')}
-            </p>
-          )}
-        </div>
-      );
-
-    case "icon":
-      return (
-        <IconFieldComponent
-          key={field.fieldName}
-          field={field}
-          control={control}
-          currentLanguage={currentLanguage}
-          isVerticalLayout={isVerticalLayout}
-          errors={errors}
-        />
-      );
-
-    default:
-      return (
-        <div key={field.fieldName} className={containerClasses}>
-          <div className={labelContainerClasses}>
-            <label
-              htmlFor={field.fieldName}
-              className="block text-sm font-medium"
-            >
-              {label}{" "}
-              {field.validationRule?.required && (
-                <span className="text-red-500">*</span>
-              )}
-            </label>
-          </div>
-          <div className={inputContainerClasses}>
-            <Controller
-              name={field.fieldName}
-              control={control}
-              render={({ field: { onChange, value, name } }) => (
-                <input
-                  type="text"
-                  id={field.fieldName}
-                  name={name}
-                  value={value || ""}
-                  onChange={onChange}
-                  placeholder={placeholder}
-                  disabled={field.readonly}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    errors[field.fieldName] 
-                      ? "border-destructive focus:ring-destructive bg-destructive/5" 
-                      : "border-input focus:ring-primary"
-                  } ${field.readonly ? "bg-muted cursor-not-allowed" : ""}`}
-                />
-              )}
-            />
-            {errors[field.fieldName] && (
-              <p className="text-xs text-destructive mt-1 flex items-center">
-                <IconComponent name="AlertCircle" className="w-3 h-3 mr-1" />
-                {errors[field.fieldName]?.message}
-              </p>
-            )}
-            {field.validationRule?.errorMessage && !errors[field.fieldName] && (
-              <p className="text-xs text-muted-foreground">
-                {getLocalizedText(
-                  field.validationRule.errorMessage,
-                  currentLanguage
-                )}
-              </p>
-            )}
-          </div>
-        </div>
-      );
-  }
-}
 
 export function ReactHookForm({
   module,
@@ -651,16 +44,18 @@ export function ReactHookForm({
   const validationSchema = generateZodSchema(module.formFields);
 
   // Initialize React Hook Form
+  const form = useForm<FieldValues>({
+    resolver: zodResolver(validationSchema),
+    defaultValues: initialData || {},
+  });
+
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<FieldValues>({
-    resolver: zodResolver(validationSchema),
-    defaultValues: initialData || {},
-  });
+  } = form;
 
   // Reset form when initialData changes
   useEffect(() => {
@@ -679,12 +74,23 @@ export function ReactHookForm({
       // Convert form data to FormData for server action
       const formData = new FormData();
       
+      // For update operations, include version and other metadata fields
+      if (action === "update" && initialData) {
+        // Include version for optimistic concurrency control
+        if (initialData.version !== undefined) {
+          formData.append("version", String(initialData.version));
+        }
+        // Include _id if present
+        if (initialData._id) {
+          formData.append("_id", String(initialData._id));
+        }
+      }
+      
       Object.entries(data).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (typeof value === "object" && value.en !== undefined) {
-            // Handle multi-language fields
-            formData.append(`${key}.en`, value.en || "");
-            formData.append(`${key}.mm`, value.mm || "");
+            // Handle multi-language fields - send as nested JSON object
+            formData.append(key, JSON.stringify(value));
           } else if (Array.isArray(value)) {
             // Handle array values (multi-select)
             value.forEach((item) => formData.append(key, String(item)));
@@ -695,8 +101,6 @@ export function ReactHookForm({
           }
         }
       });
-
-      console.log("Submitting form data:", Object.fromEntries(formData));
 
       const result = await submitModuleForm(
         moduleSlug,
@@ -794,20 +198,28 @@ export function ReactHookForm({
       </div>
 
       {/* Form Fields */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div
-          className={`${
-            isVerticalLayout
-              ? "space-y-6" // Single column for vertical
-              : "grid grid-cols-1 md:grid-cols-2 gap-6" // Multi-column for horizontal
-          }`}
-        >
-          {module.formFields
-            .filter((field) => !field.hidden)
-            .map((field) =>
-              renderField(field, control, currentLanguage, isVerticalLayout, errors, watch)
-            )}
-        </div>
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div
+            className={`${
+              isVerticalLayout
+                ? "space-y-6" // Single column for vertical
+                : "grid grid-cols-1 md:grid-cols-2 gap-6" // Multi-column for horizontal
+            }`}
+          >
+            {module.formFields
+              .filter((field) => !field.hidden)
+              .map((field) => (
+                <FormFieldRenderer
+                  key={field.fieldName}
+                  field={field}
+                  currentLanguage={currentLanguage}
+                  isVerticalLayout={isVerticalLayout}
+                  errors={errors}
+                  watch={watch}
+                />
+              ))}
+          </div>
 
         {/* Error Display */}
         {submitError && (
@@ -843,45 +255,6 @@ export function ReactHookForm({
           </div>
         )}
 
-        {/* Debug Toast Test Buttons */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="flex flex-wrap gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed">
-            <span className="text-xs text-muted-foreground mr-2">Debug Toast Tests:</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                console.log("🧪 Testing toastSuccess");
-                toastSuccess("Test success message!");
-              }}
-            >
-              Success
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                console.log("🧪 Testing toastError");
-                toastError("Test error message!");
-              }}
-            >
-              Error
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                console.log("🧪 Testing BAD_REQUEST_FORMAT simulation");
-                toastError("The request format is invalid");
-              }}
-            >
-              BAD_REQUEST_FORMAT
-            </Button>
-          </div>
-        )}
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-3 pt-6 border-t">
@@ -915,7 +288,8 @@ export function ReactHookForm({
             )}
           </Button>
         </div>
-      </form>
+        </form>
+      </Form>
     </div>
   );
 }

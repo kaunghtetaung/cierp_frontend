@@ -7,10 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toastSuccess, toastError, toastWarning, toastInfo } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { Button } from "@/components/ui/button";
-import { IconComponent, IconSelector } from "@repo/ui/components/icons";
-import { MultiLanguageInput } from "./MultiLanguageInput";
-import { DynamicSelect } from "./DynamicSelect";
-import { PasswordField } from "./PasswordField";
+import { IconComponent } from "@repo/ui/components/icons";
+import { Form } from "@/components/ui/form";
+import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@/lib/form-schema";
 import { useWizardStorage } from "@/hooks/use-wizard-storage";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
@@ -201,75 +200,6 @@ function convertDataSourceToDropdownConfig(field: FormField): FormField {
   return field;
 }
 
-// Icon field component with React Hook Form integration
-function IconFieldComponent({
-  field,
-  control,
-  currentLanguage,
-  isVerticalLayout = false,
-  errors,
-}: {
-  field: FormField;
-  control: any;
-  currentLanguage: string;
-  isVerticalLayout?: boolean;
-  errors: any;
-}) {
-  const containerClasses = isVerticalLayout
-    ? "flex items-start gap-2 sm:gap-4"
-    : "space-y-2";
-  const labelClasses = isVerticalLayout
-    ? "flex-shrink-0 w-24 sm:w-32 md:w-48 pt-2"
-    : "";
-  const inputClasses = isVerticalLayout ? "flex-1 min-w-0 space-y-1" : "";
-
-  return (
-    <div key={field.fieldName} className={containerClasses}>
-      {isVerticalLayout ? (
-        <div className={labelClasses}>
-          <label className="block text-xs sm:text-sm font-medium">
-            {getLocalizedText(field.label, currentLanguage)}{" "}
-            {field.validationRule?.required && (
-              <span className="text-red-500">*</span>
-            )}
-          </label>
-        </div>
-      ) : (
-        <label htmlFor={field.fieldName} className="block text-sm font-medium">
-          {getLocalizedText(field.label, currentLanguage)}{" "}
-          {field.validationRule?.required && (
-            <span className="text-red-500">*</span>
-          )}
-        </label>
-      )}
-      <div className={inputClasses}>
-        <Controller
-          name={field.fieldName}
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <IconSelector
-              value={value || ""}
-              onSelect={onChange}
-              placeholder={field.placeHolder || "Select an icon..."}
-              disabled={field.readonly}
-              className="w-full"
-            />
-          )}
-        />
-        {errors[field.fieldName] && (
-          <p className="text-xs text-red-500">
-            {errors[field.fieldName]?.message}
-          </p>
-        )}
-        {field.validationRule?.errorMessage && !errors[field.fieldName] && (
-          <p className="text-xs text-muted-foreground">
-            {getLocalizedText(field.validationRule.errorMessage, currentLanguage)}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // Render form field based on type with React Hook Form integration
 function renderField(
@@ -754,17 +684,6 @@ function renderField(
         </div>
       );
 
-    case "icon":
-      return (
-        <IconFieldComponent
-          key={field.fieldName}
-          field={field}
-          control={control}
-          currentLanguage={currentLanguage}
-          isVerticalLayout={isVerticalLayout}
-          errors={errors}
-        />
-      );
 
     default:
       return (
@@ -920,6 +839,12 @@ export function ReactHookWizardForm({
 
   // Initialize React Hook Form
   console.log('🧙 ReactHookWizardForm: Initializing useForm...');
+  const form = useForm<FieldValues>({
+    resolver: zodResolver(validationSchema),
+    defaultValues: initialData || {},
+    mode: "onChange", // Validate on change for better UX in wizard
+  });
+  
   const {
     control,
     handleSubmit,
@@ -927,11 +852,8 @@ export function ReactHookWizardForm({
     formState: { errors, isSubmitting, isDirty },
     reset,
     trigger,
-  } = useForm<FieldValues>({
-    resolver: zodResolver(validationSchema),
-    defaultValues: initialData || {},
-    mode: "onChange", // Validate on change for better UX in wizard
-  });
+  } = form;
+  
   console.log('🧙 ReactHookWizardForm: useForm initialized');
 
   // Load data from storage on mount
@@ -1304,6 +1226,20 @@ export function ReactHookWizardForm({
       // Convert form data to FormData for server action
       const formData = new FormData();
       
+      // For update operations, include version and other metadata fields
+      if (action === "update" && initialData) {
+        // Include version for optimistic concurrency control
+        if (initialData.version !== undefined) {
+          formData.append("version", String(initialData.version));
+          console.log(`🔍 Client Debug (Wizard): Adding version field: ${initialData.version}`);
+        }
+        // Include _id if present
+        if (initialData._id) {
+          formData.append("_id", String(initialData._id));
+          console.log(`🔍 Client Debug (Wizard): Adding _id field: ${initialData._id}`);
+        }
+      }
+      
       console.log("🔍 Client Debug (Wizard): Processing form data entries...", data);
       Object.entries(data).forEach(([key, value], index) => {
         console.log(`🔍 Client Debug (Wizard): Processing field ${index + 1}:`, {
@@ -1321,10 +1257,9 @@ export function ReactHookWizardForm({
         if (value !== null && value !== undefined) {
           try {
             if (typeof value === "object" && value.en !== undefined) {
-              // Handle multi-language fields
+              // Handle multi-language fields - send as nested JSON object
               console.log(`🔍 Client Debug (Wizard): Adding multilang field "${key}":`, { en: value.en, mm: value.mm });
-              formData.append(`${key}.en`, value.en || "");
-              formData.append(`${key}.mm`, value.mm || "");
+              formData.append(key, JSON.stringify(value));
             } else if (Array.isArray(value)) {
               // Handle array values (multi-select)
               console.log(`🔍 Client Debug (Wizard): Adding array field "${key}" with ${value.length} items:`, value);
@@ -1597,16 +1532,17 @@ export function ReactHookWizardForm({
       <div className="bg-card border rounded-lg p-6 mb-6">
         
         {/* Form Fields */}
-        <form 
-          onSubmit={currentStep < totalSteps - 1 ? handleNext : handleSubmit(onSubmit)} 
-          className="space-y-6"
-          onKeyDown={(e) => {
-            // Prevent form submission on Enter key press in input fields
-            if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
-              e.preventDefault();
-            }
-          }}
-        >
+        <Form {...form}>
+          <form 
+            onSubmit={currentStep < totalSteps - 1 ? handleNext : handleSubmit(onSubmit)} 
+            className="space-y-6"
+            onKeyDown={(e) => {
+              // Prevent form submission on Enter key press in input fields
+              if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
+                e.preventDefault();
+              }
+            }}
+          >
           <div
             className={`${
               isVerticalLayout
@@ -1635,7 +1571,13 @@ export function ReactHookWizardForm({
                   
                   return (
                     <div key={key}>
-                      {renderField(field, control, currentLanguage, isVerticalLayout, errors, watch)}
+                      <FormFieldRenderer
+                        field={field}
+                        currentLanguage={currentLanguage}
+                        isVerticalLayout={isVerticalLayout}
+                        errors={errors}
+                        watch={watch}
+                      />
                     </div>
                   );
                 } catch (error) {
@@ -1728,7 +1670,8 @@ export function ReactHookWizardForm({
             )}
           </div>
           </div>
-        </form>
+          </form>
+        </Form>
       </div>
 
       {/* Draft Restore Confirmation Dialog */}

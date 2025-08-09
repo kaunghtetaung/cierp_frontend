@@ -182,11 +182,7 @@ export function IconSelector({
           {/* Search and Filter Header */}
           <div className="p-3 border-b border-border">
             {/* Search Input */}
-            <div className="relative mb-2">
-              <Search 
-                size={16} 
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-              />
+            <div className="mb-2">
               <input
                 type="text"
                 placeholder="Search icons..."
@@ -195,7 +191,7 @@ export function IconSelector({
                 onFocus={() => console.log('🔍 IconSelector: Search input focused')}
                 onClick={() => console.log('🔍 IconSelector: Search input clicked')}
                 autoFocus
-                className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
             </div>
             
