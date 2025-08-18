@@ -84,15 +84,32 @@ export function ReactHookForm({
       
       Object.entries(data).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
+          // Debug logging to understand the issue
+          console.log(`🔍 Processing field "${key}":`, {
+            value,
+            type: typeof value,
+            isObject: typeof value === "object",
+            hasEn: typeof value === "object" && value?.en !== undefined,
+            isStringWithEn: typeof value === "string" && value.startsWith('{"en":'),
+            valuePreview: typeof value === "string" ? value.substring(0, 50) : value
+          });
+          
           if (typeof value === "object" && value.en !== undefined) {
             // Handle multi-language fields - send as nested JSON object
+            console.log(`✅ Serializing object multi-lang field "${key}":`, value);
             formData.append(key, JSON.stringify(value));
+          } else if (typeof value === "string" && value.startsWith('{"en":')) {
+            // Handle pre-serialized multi-language fields - don't double-stringify
+            console.log(`✅ Using pre-serialized multi-lang field "${key}":`, value);
+            formData.append(key, value);
           } else if (Array.isArray(value)) {
             // Handle array values (multi-select)
+            console.log(`✅ Processing array field "${key}":`, value);
             value.forEach((item) => formData.append(key, String(item)));
           } else {
             // Safe serialization - use String() constructor instead of .toString() method
             // This avoids client/server boundary issues with client references
+            console.log(`✅ Processing regular field "${key}":`, value);
             formData.append(key, String(value));
           }
         }

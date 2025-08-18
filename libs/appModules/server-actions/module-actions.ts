@@ -199,6 +199,17 @@ export async function submitModuleForm(
     
     console.log(`🔍 Debug: Processed ${entryCount} FormData entries`);
     console.log("📝 Raw form data:", data);
+    
+    // Debug multi-language fields specifically
+    Object.entries(data).forEach(([key, value]) => {
+      if (typeof value === "string" && (value.includes('"en":') || value.includes('"mm":'))) {
+        console.log(`🌍 Multi-lang field "${key}":`, {
+          value,
+          isAlreadyString: typeof value === "string",
+          needsParsing: typeof value === "string" && value.startsWith('{')
+        });
+      }
+    });
 
     // Handle nested object fields (e.g., displayName.en)
     const processedData: Record<string, any> = {};

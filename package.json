@@ -27,6 +27,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "class-variance-authority": "^0.7.1",
     "ioredis": "^5.6.1",
+    "libphonenumber-js": "^1.12.10",
     "lucide-react": "^0.525.0",
     "tailwindcss": "^4.1.11",
     "tldts": "^6.1.59",

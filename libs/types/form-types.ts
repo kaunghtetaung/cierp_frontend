@@ -10,6 +10,7 @@ export type FieldType =
   | 'email' 
   | 'password' 
   | 'number'
+  | 'phone'
   | 'select' 
   | 'multiSelect'
   | 'dynamicSelect'
@@ -54,6 +55,11 @@ export interface ValidationRule {
   alphanumeric?: boolean; // Only letters and numbers
   numeric?: boolean; // Only numbers
   noWhitespace?: boolean; // No whitespace allowed
+  
+  // Phone-specific validation options
+  e164?: boolean; // Require E.164 format (+[country][number])
+  phoneCountry?: string; // Default country for phone validation (e.g., 'US', 'MM')
+  allowInternational?: boolean; // Allow international phone numbers (default: true)
   
   // Password strength options
   showStrengthIndicator?: boolean; // Show password strength meter for password fields
@@ -105,6 +111,21 @@ export interface DropdownConfig {
   filterOptions?: string; // Function name to filter options
 }
 
+// Phone field configuration
+export interface PhoneFieldConfig {
+  defaultCountry?: string; // Default country code (e.g., 'US', 'MM')
+  preferredCountries?: string[]; // Countries to show at top of dropdown
+  onlyCountries?: string[]; // Restrict to specific countries
+  excludeCountries?: string[]; // Countries to exclude
+  showDialingCode?: boolean; // Show country dialing code (default: true)
+  showCountryFlag?: boolean; // Show country flag (default: true)
+  placeholder?: string; // Custom placeholder text
+  format?: 'international' | 'national' | 'e164'; // Display format (default: 'international')
+  autoFormat?: boolean; // Auto-format as user types (default: true)
+  validateOnChange?: boolean; // Validate on every change (default: false)
+  enableSearch?: boolean; // Enable country search (default: true)
+}
+
 // Form field configuration
 export interface FormField {
   fieldName: string;
@@ -131,6 +152,9 @@ export interface FormField {
     valueField?: string;
     [key: string]: any;
   };
+  
+  // Phone field configuration (for fieldType: 'phone')
+  phoneConfig?: PhoneFieldConfig; // Configuration for phone input fields
   
   // Field-specific configurations
   multiple?: boolean; // For select fields that allow multiple selection (deprecated - use dropdownConfig.multiple)

@@ -114,11 +114,22 @@ export function hasRequestId(requestId: string | null): requestId is string {
 }
 
 /**
- * Validate phone number (basic international format)
+ * Validate phone number using libphonenumber-js for accurate validation
+ * @deprecated Use validatePhoneNumber from phone-validation.ts for more comprehensive validation
  */
 export function isValidPhoneNumber(phone: string): boolean {
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-  return phoneRegex.test(phone.replace(/[\s()-]/g, ""));
+  if (!phone || typeof phone !== 'string') return false;
+  
+  try {
+    // Import the new validation function
+    const { validatePhoneNumber } = require('./phone-validation');
+    const result = validatePhoneNumber(phone);
+    return result.isValid;
+  } catch {
+    // Fallback to basic regex if import fails
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    return phoneRegex.test(phone.replace(/[\s()-]/g, ""));
+  }
 }
 
 /**

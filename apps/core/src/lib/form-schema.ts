@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { FormField, ValidationRule } from '@/types/module-schema'
+import { validatePhoneNumber, isValidE164 } from '@repo/utils/common/phone-validation'
 
 /**
  * Generate Zod schema from form fields
@@ -17,6 +18,21 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         break
       case 'password':
         fieldSchema = z.string().min(8, field.validationRule.errorMessage.en)
+        break
+      case 'phone':
+        fieldSchema = z.string().refine((val) => {
+          if (!val) return true // Let required validation handle empty values
+          
+          const validation = validatePhoneNumber(val, {
+            defaultCountry: field.validationRule?.phoneCountry,
+            requireE164: field.validationRule?.e164 || false,
+            allowInternational: field.validationRule?.allowInternational !== false
+          })
+          
+          return validation.isValid
+        }, {
+          message: field.validationRule?.errorMessage?.en || 'Invalid phone number format'
+        })
         break
       case 'number':
         fieldSchema = z.number()
@@ -47,7 +63,7 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         fieldSchema = z.string()
     }
 
-    // Apply validation rules
+    // Apply validation rules (exclude phone fields as they have custom validation)
     if (field.fieldType === 'text' || field.fieldType === 'textArea' || field.fieldType === 'email' || field.fieldType === 'password') {
       if (field.validationRule.minLength) {
         fieldSchema = (fieldSchema as z.ZodString).min(

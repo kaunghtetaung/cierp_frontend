@@ -13,6 +13,7 @@ import { DynamicSelect } from './DynamicSelect'
 import { DependentSelect } from './DependentSelect'
 import { PasswordField } from './PasswordField'
 import { MultiLanguageInput } from './MultiLanguageInput'
+import { PhoneInput } from './PhoneInput'
 import { IconComponent, IconSelector } from '@repo/ui/components/icons'
 import type { FormField as SchemaFormField } from '@repo/types'
 
@@ -298,6 +299,25 @@ function FormFieldInput({
   const watchFunc = watchFunction || watch
   
   switch (field.fieldType) {
+    case 'phone':
+      return (
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: { onChange, value, name } }) => (
+            <PhoneInput
+              value={value || ''}
+              onChange={onChange}
+              disabled={isReadonly}
+              config={field.phoneConfig}
+              error={!!errors[field.fieldName]}
+              currentLanguage={currentLanguage}
+              placeholder={field.placeHolder}
+            />
+          )}
+        />
+      )
+    
     case 'text':
     case 'email':
       return (
