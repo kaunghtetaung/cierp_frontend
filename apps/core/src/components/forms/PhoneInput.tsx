@@ -245,8 +245,8 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     ...props 
   }, ref) => {
     const {
-      defaultCountry = 'US',
-      preferredCountries = ['US', 'MM', 'GB'],
+      defaultCountry = 'MM',
+      preferredCountries = ['MM', 'US', 'GB'],
       onlyCountries,
       excludeCountries = [],
       showDialingCode = true,
@@ -298,28 +298,37 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       }
     }, [selectedCountry])
 
-    // Detect country from phone number
+    // Sync internal phone number state with external value prop
     useEffect(() => {
-      if (value && !selectedCountry) {
+      setPhoneNumber(value || '')
+    }, [value])
+
+    // Detect country from phone number (prioritize this over default country)
+    useEffect(() => {
+      if (value) {
         const validation = validatePhoneNumber(value)
         if (validation.country) {
           const country = availableCountries.find(c => c.code === validation.country)
           if (country) {
+            // Always update if we can detect a country from the phone number
+            console.log(`🌍 PhoneInput: Detected country ${country.code} (${country.name}) from phone number: ${value}`)
             setSelectedCountry(country)
+            return
           }
+        } else {
+          console.log(`⚠️ PhoneInput: Could not detect country from phone number: ${value}`)
         }
       }
-    }, [value, availableCountries, selectedCountry])
-
-    // Set default country
-    useEffect(() => {
-      if (!selectedCountry && defaultCountry) {
+      
+      // Only fall back to default country if no phone number and no country is currently selected
+      if (!value && defaultCountry) {
         const country = availableCountries.find(c => c.code === defaultCountry)
         if (country) {
-          setSelectedCountry(country)
+          console.log(`🇲🇲 PhoneInput: Using default country ${country.code} (${country.name})`)
+          setSelectedCountry(prevSelected => prevSelected || country)
         }
       }
-    }, [defaultCountry, availableCountries, selectedCountry])
+    }, [value, availableCountries, defaultCountry])
 
     // Handle phone number input
     const handlePhoneChange = (inputValue: string) => {
@@ -332,6 +341,18 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       }
 
       setPhoneNumber(formattedValue)
+
+      // Auto-detect country when user types a phone number
+      if (formattedValue) {
+        const validation = validatePhoneNumber(formattedValue)
+        if (validation.country) {
+          const detectedCountry = availableCountries.find(c => c.code === validation.country)
+          if (detectedCountry && detectedCountry.code !== selectedCountry?.code) {
+            console.log(`🔄 PhoneInput: Country changed from ${selectedCountry?.code} to ${detectedCountry.code} while typing`)
+            setSelectedCountry(detectedCountry)
+          }
+        }
+      }
 
       // Validate if enabled
       if (validateOnChange) {

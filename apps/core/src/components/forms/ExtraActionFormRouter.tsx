@@ -104,6 +104,14 @@ export function ExtraActionFormRouter({
   if (formApproach === 'pre-built' && action.formName) {
     const PreBuiltComponent = PreBuiltFormComponents[action.formName];
     
+    console.log(`🎭 ExtraActionFormRouter: Pre-built form lookup`, {
+      actionKey: action.actionKey,
+      formName: action.formName,
+      componentFound: !!PreBuiltComponent,
+      availableComponents: Object.keys(PreBuiltFormComponents),
+      onSubmitType: typeof onSubmit
+    });
+    
     if (!PreBuiltComponent) {
       return (
         <div className="p-4 text-center">
@@ -122,7 +130,17 @@ export function ExtraActionFormRouter({
           action={action}
           selectedItems={selectedItems}
           currentLanguage={currentLanguage}
-          onSubmit={onSubmit}
+          onSubmit={async (formData: FormData) => {
+            console.log(`🎭 ExtraActionFormRouter: onSubmit called from pre-built component`, {
+              actionKey: action.actionKey,
+              formName: action.formName,
+              formDataEntries: Array.from(formData.entries())
+            });
+            console.log(`🎭 ExtraActionFormRouter: About to call parent onSubmit`);
+            const result = await onSubmit(formData);
+            console.log(`🎭 ExtraActionFormRouter: Parent onSubmit completed with result:`, result);
+            return result;
+          }}
           onCancel={onCancel}
           hideHeader={hideHeader}
         />

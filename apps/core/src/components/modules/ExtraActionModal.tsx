@@ -24,6 +24,7 @@ interface ExtraActionModalProps {
   module: ModuleSchema;
   selectedItems: any[];
   isOpen: boolean;
+  isRowAction?: boolean; // Indicates if action was triggered from a row
   onClose: () => void;
   onSuccess: () => void;
   currentLanguage?: string;
@@ -35,12 +36,14 @@ export function ExtraActionModal({
   module,
   selectedItems,
   isOpen,
+  isRowAction = false,
   onClose,
   onSuccess,
   currentLanguage = 'en'
 }: ExtraActionModalProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
 
   // Debug logging when modal opens
   React.useEffect(() => {
@@ -52,20 +55,27 @@ export function ExtraActionModal({
         hasFormFields: !!actionForm?.formFields?.length,
         formFieldsCount: actionForm?.formFields?.length,
         selectedItemsCount: selectedItems.length,
+        isRowAction,
+        requiresSelection: actionForm?.requiresSelection,
         moduleSlug: module.slug,
       });
     }
-  }, [isOpen, action.actionKey, actionForm, selectedItems.length, module.slug]);
+  }, [isOpen, action.actionKey, actionForm, selectedItems.length, module.slug, isRowAction]);
 
 
   const handleActionSubmit = async (formData: FormData) => {
     console.log(`🚀 ExtraActionModal: Starting action submission for "${action.actionKey}"`, {
       actionKey: action.actionKey,
       selectedItemsCount: selectedItems.length,
+      selectedItems,
       hasFormData: !!formData,
+      isRowAction,
+      formDataEntries: Array.from(formData.entries())
     });
 
     if (action.confirmMessage && !showConfirmDialog) {
+      console.log(`🚀 ExtraActionModal: Action has confirmMessage, storing FormData and showing confirmation`);
+      setPendingFormData(formData);
       setShowConfirmDialog(true);
       return;
     }
@@ -88,15 +98,31 @@ export function ExtraActionModal({
         });
       }
 
-      console.log(`🌐 ExtraActionModal: Calling executeExtraAction for "${action.actionKey}"`);
+      console.log(`🌐 ExtraActionModal: Calling executeExtraAction server action for "${action.actionKey}"`);
+      console.log(`🌐 ExtraActionModal: FormData being sent to server action:`, Array.from(formData.entries()));
       
       // Use the real server action
       const result = await executeExtraAction(formData);
       
       console.log(`📊 ExtraActionModal: Server action result for "${action.actionKey}":`, result);
+      console.log(`📊 ExtraActionModal: Result data details:`, {
+        hasData: !!result.data,
+        data: result.data,
+        hasNewPassword: !!result.data?.newPassword,
+        newPasswordLength: result.data?.newPassword?.length
+      });
       
       if (result.success) {
         console.log(`✅ ExtraActionModal: Action "${action.actionKey}" completed successfully`);
+        
+        // Store result data for components that need it (like generated passwords)
+        if (result.data) {
+          console.log(`📊 ExtraActionModal: Storing result data in window.lastExtraActionResult:`, {
+            hasNewPassword: !!result.data.newPassword,
+            dataKeys: Object.keys(result.data)
+          });
+          (window as any).lastExtraActionResult = result.data;
+        }
         
         // Show success toast with multilingual support
         const successMessage = currentLanguage === "mm"
@@ -104,6 +130,24 @@ export function ExtraActionModal({
           : `${getLocalizedText(action.label, currentLanguage)} completed successfully!`;
         
         toastSuccess(successMessage);
+        
+        // For password reset with generated password, keep modal open to show the password
+        if (action.actionKey === 'resetPassword' && result.data?.newPassword) {
+          console.log(`📊 ExtraActionModal: Keeping modal open for password reset with generated password`);
+          console.log(`📊 ExtraActionModal: Notifying form component about the generated password`);
+          
+          // Trigger a custom event to notify the form component
+          window.dispatchEvent(new CustomEvent('resetPasswordComplete', {
+            detail: {
+              success: true,
+              data: result.data,
+              generatedPassword: result.data.newPassword
+            }
+          }));
+          
+          onSuccess(); // Trigger any success callbacks but don't close modal
+          return; // Don't close the modal - let the form component handle the display
+        }
         
         onSuccess();
         onClose();
@@ -132,13 +176,21 @@ export function ExtraActionModal({
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    console.log(`🚀 ExtraActionModal: Confirmation confirmed, proceeding with stored FormData`);
     setShowConfirmDialog(false);
-    handleActionSubmit();
+    
+    if (pendingFormData) {
+      console.log(`🚀 ExtraActionModal: Using stored FormData:`, Array.from(pendingFormData.entries()));
+      await handleActionSubmit(pendingFormData);
+      setPendingFormData(null);
+    } else {
+      console.error(`🚀 ExtraActionModal: No pending FormData found!`);
+    }
   };
 
-  // If action requires selection but none are selected
-  if (actionForm?.requiresSelection && selectedItems.length === 0) {
+  // If action requires selection but none are selected (skip check for row actions since they inherently have selection)
+  if (actionForm?.requiresSelection && selectedItems.length === 0 && !isRowAction) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>

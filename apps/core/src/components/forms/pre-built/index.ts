@@ -1,7 +1,9 @@
-// Pre-built form component placeholders
-// These will be implemented as needed for complex business logic
+// Pre-built form components for complex business logic
 
-export const UserPasswordChangeForm = () => null;
+// User management forms
+export { UserPasswordChangeForm } from './UserPasswordChangeForm';
+
+// Placeholder components for future implementation
 export const RoleAssignForm = () => null;
 export const GroupAssignForm = () => null;
 export const BulkRoleAssignForm = () => null;

@@ -254,6 +254,30 @@ export function ModuleDataTable({
     // Page type actions are handled by Link navigation
   };
 
+  // Handle extra actions for single rows (automatically handle selection for actions that need it)
+  const handleExtraActionForRow = (action: ExtraAction, item: any) => {
+    const itemId = item._id || item.id;
+    console.log(`🎯 handleExtraActionForRow: Processing action "${action.actionKey}" for item ${itemId}`);
+    
+    // Set the selected item and immediately execute the action
+    // Since we're calling this directly for a single item, we can bypass the selection validation
+    setSelectedItems([itemId]);
+    
+    if (action.type === "modal") {
+      console.log(`🎭 handleExtraActionForRow: Opening modal for "${action.actionKey}" with preselected item ${itemId}`);
+      setActiveExtraAction(action);
+      setIsExtraActionModalOpen(true);
+    } else if (action.type === "api") {
+      if (action.confirmMessage) {
+        setPendingExtraAction(action);
+        setExtraActionConfirmOpen(true);
+      } else {
+        console.log(`Executing API action: ${action.actionKey} for item:`, itemId);
+        // Here you would call the API
+      }
+    }
+  };
+
   const executeExtraAction = () => {
     if (pendingExtraAction) {
       console.log(`Executing API action: ${pendingExtraAction.actionKey}`);
@@ -601,14 +625,27 @@ export function ModuleDataTable({
                     </DropdownMenuItem>
                   )}
 
-                  {/* Extra Actions */}
+                  {/* Extra Actions - All actions available from row menu with automatic selection handling */}
                   {module.dataTableSchema.actions.extraActions?.map((action) =>
-                    action.type === "page" ? (
-                      <DropdownMenuItem key={action.actionKey} asChild>
-                        <Link
-                          href={`/${module.slug}/${
-                            item._id || item.id
-                          }/actions/${action.actionKey}`}
+                      action.type === "page" ? (
+                        <DropdownMenuItem key={action.actionKey} asChild>
+                          <Link
+                            href={`/${module.slug}/${
+                              item._id || item.id
+                            }/actions/${action.actionKey}`}
+                            className="cursor-pointer"
+                          >
+                            <IconComponent
+                              name={action.icon}
+                              className="mr-2 h-4 w-4"
+                            />
+                            {getLocalizedText(action.label, currentLanguage)}
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          key={action.actionKey}
+                          onClick={() => handleExtraActionForRow(action, item)}
                           className="cursor-pointer"
                         >
                           <IconComponent
@@ -616,22 +653,9 @@ export function ModuleDataTable({
                             className="mr-2 h-4 w-4"
                           />
                           {getLocalizedText(action.label, currentLanguage)}
-                        </Link>
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        key={action.actionKey}
-                        onClick={() => handleExtraAction(action)}
-                        className="cursor-pointer"
-                      >
-                        <IconComponent
-                          name={action.icon}
-                          className="mr-2 h-4 w-4"
-                        />
-                        {getLocalizedText(action.label, currentLanguage)}
-                      </DropdownMenuItem>
-                    )
-                  )}
+                        </DropdownMenuItem>
+                      )
+                    )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -1017,6 +1041,7 @@ export function ModuleDataTable({
           module={module}
           selectedItems={selectedItems}
           isOpen={isExtraActionModalOpen}
+          isRowAction={selectedItems.length === 1} // Indicate this is a row action
           onClose={() => {
             setIsExtraActionModalOpen(false);
             setActiveExtraAction(null);

@@ -95,6 +95,12 @@ export function useExtraActionForm({
         : "Action completed successfully";
       
       onSuccess?.(result.message || successMessage);
+      
+      // Store result data for components that need it
+      if (result.data) {
+        (window as any).lastExtraActionResult = result.data;
+      }
+      
       closeForm();
       
       // Trigger page refresh or data refetch

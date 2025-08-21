@@ -40,8 +40,20 @@ export function ReactHookForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
-  // Generate Zod schema for validation
-  const validationSchema = generateZodSchema(module.formFields);
+  // Generate Zod schema for validation (exclude password fields in edit mode)
+  const filteredFormFields = module.formFields.filter((field) => {
+    // Filter out hidden fields
+    if (field.hidden) return false;
+    
+    // Filter out password fields in edit mode (use password reset action instead)
+    if (action === 'update' && field.fieldType === 'password') {
+      console.log(`🔒 ReactHookForm: Skipping password field "${field.fieldName}" in edit mode`);
+      return false;
+    }
+    
+    return true;
+  });
+  const validationSchema = generateZodSchema(filteredFormFields);
 
   // Initialize React Hook Form
   const form = useForm<FieldValues>({
@@ -222,8 +234,7 @@ export function ReactHookForm({
                 : "grid grid-cols-1 md:grid-cols-2 gap-6" // Multi-column for horizontal
             }`}
           >
-            {module.formFields
-              .filter((field) => !field.hidden)
+            {filteredFormFields
               .map((field) => (
                 <FormFieldRenderer
                   key={field.fieldName}

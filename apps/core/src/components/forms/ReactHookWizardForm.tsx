@@ -832,9 +832,24 @@ export function ReactHookWizardForm({
   const wizardStorage = useWizardStorage(wizardStorageConfig);
   console.log('🧙 ReactHookWizardForm: useWizardStorage completed');
 
+  // Filter form fields (exclude password fields in edit mode)
+  console.log('🧙 ReactHookWizardForm: Filtering form fields...');
+  const filteredFormFields = module.formFields.filter((f) => {
+    // Filter out hidden fields
+    if (f.hidden) return false;
+    
+    // Filter out password fields in edit mode (use password reset action instead)
+    if (action === 'update' && f.fieldType === 'password') {
+      console.log(`🔒 ReactHookWizardForm: Skipping password field "${f.fieldName}" in edit mode`);
+      return false;
+    }
+    
+    return true;
+  });
+
   // Generate Zod schema for validation
   console.log('🧙 ReactHookWizardForm: Generating Zod schema...');
-  const validationSchema = generateZodSchema(module.formFields);
+  const validationSchema = generateZodSchema(filteredFormFields);
   console.log('🧙 ReactHookWizardForm: Zod schema generated');
 
   // Initialize React Hook Form
@@ -856,10 +871,17 @@ export function ReactHookWizardForm({
   
   console.log('🧙 ReactHookWizardForm: useForm initialized');
 
-  // Load data from storage on mount
+  // Load data from storage on mount (only for create operations)
   useEffect(() => {
     console.log('🧙 ReactHookWizardForm: useEffect for storage loading...');
     if (!hasLoadedFromStorage && !wizardStorage.isLoading) {
+      // Skip localStorage loading for edit/update operations - always use fresh server data
+      if (action === 'update') {
+        console.log('🧙 ReactHookWizardForm: Skipping localStorage for edit operation');
+        setHasLoadedFromStorage(true);
+        return;
+      }
+      
       console.log('🧙 ReactHookWizardForm: Loading stored data...');
       const storedData = wizardStorage.loadStoredData();
       
@@ -871,7 +893,7 @@ export function ReactHookWizardForm({
         setHasLoadedFromStorage(true);
       }
     }
-  }, [hasLoadedFromStorage, wizardStorage.isLoading]);
+  }, [hasLoadedFromStorage, wizardStorage.isLoading, action]);
 
   const handleRestoreDraft = useCallback(() => {
     if (pendingStoredData) {
@@ -907,17 +929,18 @@ export function ReactHookWizardForm({
     setRestoreConfirmOpen(false);
   }, [wizardStorage, currentLanguage]);
 
-  // Auto-save to storage when form data changes
+  // Auto-save to storage when form data changes (only for create operations)
   const watchedValues = watch();
   useEffect(() => {
-    if (hasLoadedFromStorage && isDirty) {
+    // Skip auto-saving for edit/update operations - no need to save drafts of edits
+    if (hasLoadedFromStorage && isDirty && action === 'create') {
       const timeoutId = setTimeout(() => {
         wizardStorage.saveToStorage(watchedValues);
       }, 1000); // Debounce auto-save by 1 second
 
       return () => clearTimeout(timeoutId);
     }
-  }, [watchedValues, hasLoadedFromStorage, isDirty]);
+  }, [watchedValues, hasLoadedFromStorage, isDirty, action]);
 
   // Reset form when initialData changes
   useEffect(() => {
@@ -928,7 +951,7 @@ export function ReactHookWizardForm({
 
   // Group fields by wizard steps - supports both backend steps and logical grouping
   console.log('🧙 ReactHookWizardForm: Processing form fields...');
-  const rawVisibleFields = module.formFields.filter((f) => !f.hidden);
+  const rawVisibleFields = filteredFormFields; // Already filtered above
   console.log('🧙 ReactHookWizardForm: Raw visible fields:', rawVisibleFields.length);
   const visibleFields = validateAndFilterFields(rawVisibleFields);
   console.log('🧙 ReactHookWizardForm: Valid visible fields:', visibleFields.length);
@@ -1587,8 +1610,8 @@ export function ReactHookWizardForm({
             })()}
           </div>
 
-          {/* Auto-save Indicator */}
-          {hasLoadedFromStorage && isDirty && (
+          {/* Auto-save Indicator (only for create operations) */}
+          {hasLoadedFromStorage && isDirty && action === 'create' && (
             <div className="flex items-center justify-center text-xs text-muted-foreground py-2">
               <IconComponent name="CloudUpload" className="w-3 h-3 mr-1" />
               {currentLanguage === "mm" ? "အလိုအလျောက်သိမ်းထားသည်" : "Auto-saved to drafts"}
