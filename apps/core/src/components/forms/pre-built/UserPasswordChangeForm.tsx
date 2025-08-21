@@ -245,79 +245,138 @@ export function UserPasswordChangeForm({
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <div className="w-full">
       {!hideHeader && (
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
+        <div className="text-center pb-6">
+          <div className="flex items-center justify-center gap-2 text-lg font-semibold">
             <IconComponent name={action.iconName || "KeyRound"} className="w-5 h-5" />
             {getLocalizedText(action.title, currentLanguage)}
-          </CardTitle>
+          </div>
           {action.description && (
-            <CardDescription>
+            <p className="text-sm text-muted-foreground mt-2">
               {getLocalizedText(action.description, currentLanguage)}
-            </CardDescription>
+            </p>
           )}
           <div className="text-sm text-muted-foreground mt-2">
             {currentLanguage === "mm" ? "အသုံးပြုသူ: " : "User: "}
             <span className="font-mono">{getUserIdentifier()}</span>
           </div>
-        </CardHeader>
+        </div>
       )}
 
-      <CardContent className="space-y-6">
+      <div className="space-y-6">
         {/* Show result if available */}
         {submitResult && (
-          <Alert variant={submitResult.success ? "default" : "destructive"}>
+          <Alert 
+            variant={submitResult.success ? "default" : "destructive"}
+            className={submitResult.success && submitResult.generatedPassword 
+              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700" 
+              : ""
+            }
+          >
             <IconComponent
               name={submitResult.success ? "CheckCircle" : "AlertCircle"}
               className="w-4 h-4"
             />
             <AlertDescription>{submitResult.message}</AlertDescription>
-            {submitResult.success && submitResult.generatedPassword && (
-              <div className="mt-4 space-y-3">
-                <Label className="text-sm font-medium text-foreground">
-                  {currentLanguage === "mm" ? "ဖန်တီးထားသော စကားဝှက်" : "Generated Password"}
-                </Label>
-                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-border">
-                  <input
-                    type="text"
-                    value={submitResult.generatedPassword}
-                    readOnly
-                    className="flex-1 bg-transparent border-0 font-mono text-sm focus:outline-none select-all min-w-0"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={isCopied ? "default" : "outline"}
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(submitResult.generatedPassword || '');
-                        setIsCopied(true);
-                        setTimeout(() => setIsCopied(false), 2000);
-                      } catch (err) {
-                        console.error('Failed to copy password:', err);
-                      }
-                    }}
-                    className="shrink-0 min-w-fit"
-                  >
-                    <IconComponent name={isCopied ? "Check" : "Copy"} className="w-4 h-4 mr-1" />
-                    {isCopied 
-                      ? (currentLanguage === "mm" ? "ကူးယူပြီး" : "Copied!")
-                      : (currentLanguage === "mm" ? "ကူးယူ" : "Copy")
-                    }
-                  </Button>
-                </div>
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                  <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-                    {currentLanguage === "mm" 
-                      ? "ဤစကားဝှက်ကို လုံခြုံသောနေရာတွင် သိမ်းဆည်းပါ။ ထပ်မံ ပြသမည် မဟုတ်ပါ။"
-                      : "Please save this password in a secure location. It will not be shown again."
-                    }
-                  </p>
-                </div>
-              </div>
-            )}
           </Alert>
+        )}
+
+        {/* Generated Password Display - Separate from Alert */}
+        {submitResult?.success && submitResult?.generatedPassword && (
+          <div className="mt-6 space-y-4">
+            <div>
+              <h4 className="text-sm font-semibold text-green-800 dark:text-green-200 mb-2">
+                {currentLanguage === "mm" ? "ဖန်တီးထားသော စကားဝှက်" : "Generated Password"}
+              </h4>
+              <div className="bg-white dark:bg-gray-900 p-3 rounded border space-y-2">
+                <div
+                  className="text-lg font-mono text-gray-900 dark:text-gray-100 block cursor-pointer select-all break-all bg-gray-50 dark:bg-gray-800 p-3 rounded border-dashed border-2 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+                  onClick={(e) => {
+                    // Select all text when clicked
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(e.target as Node);
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                  }}
+                  title="Click to select all, then copy with Ctrl+C or Cmd+C"
+                >
+                  {submitResult.generatedPassword}
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {currentLanguage === "mm" 
+                    ? "👆 စကားဝှက်ပေါ်တွင် နှိပ်ပြီး Ctrl+C ဖြင့် ကူးယူပါ"
+                    : "👆 Click password above to select, then press Ctrl+C (or Cmd+C) to copy"
+                  }
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={async () => {
+                  const password = submitResult.generatedPassword;
+                  if (!password) return;
+                  
+                  // Check if we're in a secure context (HTTPS or localhost)
+                  const canUseClipboardAPI = window.isSecureContext && navigator.clipboard;
+                  
+                  if (canUseClipboardAPI) {
+                    try {
+                      await navigator.clipboard.writeText(password);
+                      console.log('✅ Password copied successfully via Clipboard API');
+                      setIsCopied(true);
+                      setTimeout(() => setIsCopied(false), 2000);
+                      return;
+                    } catch (err) {
+                      console.log('❌ Clipboard API failed:', err);
+                    }
+                  }
+                  
+                  // For HTTP mode, show instruction instead of trying execCommand
+                  alert(currentLanguage === "mm" 
+                    ? `ကူးယူရန် မအောင်မြင်ပါ။ ကျေးဇူးပြုပြီး စကားဝှက်ပေါ်တွင် နှိပ်ပြီး Ctrl+C ဖြင့် ကူးယူပါ: ${password}`
+                    : `Auto-copy failed. Please click the password above to select it, then press Ctrl+C (or Cmd+C) to copy: ${password}`
+                  );
+                }}
+                className={isCopied ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+              >
+                <IconComponent name={isCopied ? "Check" : "Copy"} className="w-4 h-4 mr-2" />
+                {isCopied 
+                  ? (currentLanguage === "mm" ? "ကူးယူပြီး!" : "Copied!") 
+                  : (currentLanguage === "mm" ? "စကားဝှက် ကူးယူမည်" : "Try Auto-Copy")
+                }
+              </Button>
+              
+              {/* HTTP mode instruction */}
+              {!window.isSecureContext && (
+                <p className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded border border-orange-200 dark:border-orange-700">
+                  <span className="font-semibold">
+                    {currentLanguage === "mm" ? "HTTP မုဒ်:" : "HTTP Mode:"}
+                  </span>{" "}
+                  {currentLanguage === "mm" 
+                    ? "အလိုအလျောက် ကူးယူခြင်း အလုပ်မလုပ်ပါ။ စကားဝှက်ပေါ်တွင် နှိပ်ပြီး manual ကူးယူပါ။"
+                    : "Auto-copy may not work. Click the password above to select it manually."
+                  }
+                </p>
+              )}
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded p-3">
+              <div className="flex items-start gap-2">
+                <IconComponent name="AlertTriangle" className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {currentLanguage === "mm" 
+                    ? "ဤစကားဝှက်ကို လုံခြုံသောနေရာတွင် သိမ်းဆည်းပါ။ ထပ်မံ ပြသမည် မဟုတ်ပါ။"
+                    : "Please save this password in a secure location. It will not be shown again."
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Form - Hide when password is successfully generated */}
@@ -484,7 +543,7 @@ export function UserPasswordChangeForm({
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
