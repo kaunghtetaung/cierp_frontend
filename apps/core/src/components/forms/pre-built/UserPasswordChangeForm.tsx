@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -102,18 +102,6 @@ export function UserPasswordChangeForm({
   hideHeader = false,
 }: PreBuiltFormProps) {
   
-  console.log(`🎯 UserPasswordChangeForm: Component rendered (render #${renderCountRef.current})`, {
-    actionKey: action?.actionKey,
-    selectedItems,
-    selectedItemsLength: selectedItems?.length,
-    hasOnSubmit: typeof onSubmit === 'function',
-    currentLanguage,
-    hideHeader,
-    hasSubmitResult: !!submitResult,
-    submitResultSuccess: submitResult?.success,
-    hasGeneratedPassword: !!submitResult?.generatedPassword,
-    generatedPasswordLength: submitResult?.generatedPassword?.length
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
     success: boolean;
@@ -122,22 +110,7 @@ export function UserPasswordChangeForm({
   } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   
-  // Create a ref to track the latest submitResult value
-  const submitResultRef = useRef(submitResult);
   
-  // Create a render counter to track re-renders
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
-  
-  // Update ref whenever submitResult changes
-  React.useEffect(() => {
-    submitResultRef.current = submitResult;
-    console.log(`🎯 PASSWORD FORM DEBUG: submitResult ref updated:`, {
-      newValue: submitResult,
-      hasSubmitResult: !!submitResult,
-      hasGeneratedPassword: !!submitResult?.generatedPassword
-    });
-  }, [submitResult]);
 
   // Create validation schema
   const passwordResetSchema = createPasswordResetSchema(currentLanguage);
@@ -152,27 +125,14 @@ export function UserPasswordChangeForm({
     mode: "onChange", // Enable real-time validation
   });
 
-  // Debug form state changes
-  React.useEffect(() => {
-    console.log(`🎯 FORM STATE DEBUG: Form state changed`, {
-      isValid: form.formState.isValid,
-      isSubmitting: form.formState.isSubmitting,
-      errors: form.formState.errors,
-      values: form.watch()
-    });
-  }, [form.formState.isValid, form.formState.isSubmitting, form.formState.errors]);
 
   // Listen for password reset completion event (for confirmation dialog flow)
   React.useEffect(() => {
     const handlePasswordResetComplete = (event: CustomEvent) => {
-      console.log(`🎯 PASSWORD FORM DEBUG: Received resetPasswordComplete event:`, event.detail);
-      
       const { success, generatedPassword } = event.detail;
       const currentFormValues = form.watch();
       
       if (success && currentFormValues.mode === 'generate' && generatedPassword) {
-        console.log(`🎯 PASSWORD FORM DEBUG: Setting generated password result from event`);
-        
         const newResult = {
           success: true,
           message:
@@ -182,24 +142,8 @@ export function UserPasswordChangeForm({
           generatedPassword: generatedPassword,
         };
         
-        console.log(`🎯 PASSWORD FORM DEBUG: About to set submitResult:`, newResult);
         setSubmitResult(newResult);
-        
-        console.log(`🎯 PASSWORD FORM DEBUG: About to set isSubmitting to false`);
         setIsSubmitting(false);
-        
-        // Force a re-render check by logging the updated state after a timeout
-        setTimeout(() => {
-          console.log(`🎯 PASSWORD FORM DEBUG: State after timeout (should be updated):`, {
-            hasSubmitResult: !!submitResultRef.current,
-            submitResultAfterUpdate: submitResultRef.current,
-            newResultWeJustSet: newResult,
-            stateMatch: JSON.stringify(submitResultRef.current) === JSON.stringify(newResult)
-          });
-        }, 100);
-        
-        // Don't clear the form yet - let user see the generated password first
-        console.log(`🎯 PASSWORD FORM DEBUG: Form state update completed`);
       }
     };
 
@@ -225,15 +169,7 @@ export function UserPasswordChangeForm({
 
   // Handle form submission
   const handleFormSubmit = async (data: PasswordResetFormData) => {
-    console.log(`🎯 PASSWORD FORM DEBUG: Form submission started`, {
-      selectedItems,
-      selectedItemsLength: selectedItems?.length,
-      actionKey: action.actionKey,
-      formData: data
-    });
-
     if (!selectedItems || selectedItems.length === 0) {
-      console.error(`🎯 PASSWORD FORM DEBUG: No selected items - cannot submit`);
       return;
     }
 
@@ -248,47 +184,21 @@ export function UserPasswordChangeForm({
       formData.append("actionKey", action.actionKey);
       formData.append("mode", data.mode);
 
-      console.log(`🎯 PASSWORD FORM DEBUG: Form data preparation`, {
-        actionKey: action.actionKey,
-        mode: data.mode,
-        selectedUserId: selectedItems[0],
-        hasCustomPassword: data.mode === "custom" && !!data.customPassword
-      });
-
       // Add custom password only if in custom mode
       if (data.mode === "custom" && data.customPassword) {
         formData.append("password", data.customPassword);
-        console.log(`🎯 PASSWORD FORM DEBUG: Custom password added to form data (length: ${data.customPassword.length})`);
-      } else if (data.mode === "custom") {
-        console.warn(`🎯 PASSWORD FORM DEBUG: Custom mode but no password provided`);
       }
 
       // Add selected user ID
       if (selectedItems.length > 0) {
         formData.append("id", selectedItems[0]);
-        console.log(`🎯 PASSWORD FORM DEBUG: User ID added to form data: ${selectedItems[0]}`);
       }
 
-      console.log(`🎯 PASSWORD FORM DEBUG: Calling onSubmit with form data`);
-      console.log(`🎯 PASSWORD FORM DEBUG: onSubmit function:`, onSubmit);
-      console.log(`🎯 PASSWORD FORM DEBUG: onSubmit type:`, typeof onSubmit);
-      
       // Submit to server action
       const result = await onSubmit(formData);
 
-      console.log(`🎯 PASSWORD FORM DEBUG: onSubmit completed successfully with result:`, result);
-
       // Check for result data from the server action
       const resultData = (window as any).lastExtraActionResult;
-      
-      console.log(`🎯 PASSWORD FORM DEBUG: Result data from server:`, {
-        resultData,
-        hasResultData: !!resultData,
-        hasNewPassword: !!resultData?.newPassword,
-        newPasswordLength: resultData?.newPassword?.length,
-        currentMode: data.mode,
-        willShowGeneratedPassword: data.mode === 'generate' && !!resultData?.newPassword
-      });
       
       // Show success message with generated password if available (only for generate mode)
       const successResult = {
@@ -300,21 +210,16 @@ export function UserPasswordChangeForm({
         generatedPassword: data.mode === 'generate' ? resultData?.newPassword : undefined,
       };
       
-      console.log(`🎯 PASSWORD FORM DEBUG: Setting success result:`, successResult);
       setSubmitResult(successResult);
 
       // Clear the stored result
       delete (window as any).lastExtraActionResult;
 
-      // Reset form
-      reset();
+      // Only reset form if we don't have a generated password to display
+      if (!(data.mode === 'generate' && resultData?.newPassword)) {
+        reset();
+      }
     } catch (error) {
-      console.error(`🎯 PASSWORD FORM DEBUG: Form submission error:`, {
-        error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined
-      });
-      
       const errorResult = {
         success: false,
         message:
@@ -325,11 +230,9 @@ export function UserPasswordChangeForm({
             : "An error occurred while resetting the password",
       };
       
-      console.log(`🎯 PASSWORD FORM DEBUG: Setting error result:`, errorResult);
       setSubmitResult(errorResult);
     } finally {
       setIsSubmitting(false);
-      console.log(`🎯 PASSWORD FORM DEBUG: Form submission completed (finally block)`);
     }
   };
 
@@ -363,17 +266,6 @@ export function UserPasswordChangeForm({
 
       <CardContent className="space-y-6">
         {/* Show result if available */}
-        {(() => {
-          console.log(`🎯 PASSWORD FORM UI DEBUG: Evaluating submitResult render condition`, {
-            hasSubmitResult: !!submitResult,
-            submitResultSuccess: submitResult?.success,
-            hasGeneratedPassword: !!submitResult?.generatedPassword,
-            generatedPassword: submitResult?.generatedPassword ? '[REDACTED]' : undefined,
-            willRenderAlert: !!submitResult,
-            willRenderPasswordUI: submitResult?.success && !!submitResult?.generatedPassword
-          });
-          return null;
-        })()}
         {submitResult && (
           <Alert variant={submitResult.success ? "default" : "destructive"}>
             <IconComponent
@@ -381,26 +273,17 @@ export function UserPasswordChangeForm({
               className="w-4 h-4"
             />
             <AlertDescription>{submitResult.message}</AlertDescription>
-            {(() => {
-              console.log(`🎯 PASSWORD FORM UI DEBUG: Evaluating generated password UI condition`, {
-                submitResultSuccess: submitResult?.success,
-                hasGeneratedPassword: !!submitResult?.generatedPassword,
-                generatedPasswordValue: submitResult?.generatedPassword ? '[REDACTED]' : undefined,
-                willRenderPasswordUI: submitResult?.success && !!submitResult?.generatedPassword
-              });
-              return null;
-            })()}
             {submitResult.success && submitResult.generatedPassword && (
-              <div className="mt-4 space-y-2">
-                <Label className="text-sm font-medium">
+              <div className="mt-4 space-y-3">
+                <Label className="text-sm font-medium text-foreground">
                   {currentLanguage === "mm" ? "ဖန်တီးထားသော စကားဝှက်" : "Generated Password"}
                 </Label>
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border">
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-border">
                   <input
                     type="text"
                     value={submitResult.generatedPassword}
                     readOnly
-                    className="flex-1 bg-transparent border-0 font-mono text-sm focus:outline-none select-all"
+                    className="flex-1 bg-transparent border-0 font-mono text-sm focus:outline-none select-all min-w-0"
                   />
                   <Button
                     type="button"
@@ -410,15 +293,12 @@ export function UserPasswordChangeForm({
                       try {
                         await navigator.clipboard.writeText(submitResult.generatedPassword || '');
                         setIsCopied(true);
-                        console.log('Password copied to clipboard');
-                        
-                        // Reset the copied state after 2 seconds
                         setTimeout(() => setIsCopied(false), 2000);
                       } catch (err) {
                         console.error('Failed to copy password:', err);
                       }
                     }}
-                    className="shrink-0"
+                    className="shrink-0 min-w-fit"
                   >
                     <IconComponent name={isCopied ? "Check" : "Copy"} className="w-4 h-4 mr-1" />
                     {isCopied 
@@ -427,12 +307,14 @@ export function UserPasswordChangeForm({
                     }
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {currentLanguage === "mm" 
-                    ? "ဤစကားဝှက်ကို လုံခြုံသောနေရာတွင် သိမ်းဆည်းပါ။ ထပ်မံ ပြသမည် မဟုတ်ပါ။"
-                    : "Please save this password in a secure location. It will not be shown again."
-                  }
-                </p>
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                    {currentLanguage === "mm" 
+                      ? "ဤစကားဝှက်ကို လုံခြုံသောနေရာတွင် သိမ်းဆည်းပါ။ ထပ်မံ ပြသမည် မဟုတ်ပါ။"
+                      : "Please save this password in a secure location. It will not be shown again."
+                    }
+                  </p>
+                </div>
               </div>
             )}
           </Alert>
@@ -441,15 +323,7 @@ export function UserPasswordChangeForm({
         {/* Form - Hide when password is successfully generated */}
         {!(submitResult?.success && submitResult?.generatedPassword) && (
           <form 
-            onSubmit={(e) => {
-              console.log(`🎯 FORM DEBUG: Form onSubmit triggered`, {
-                event: e,
-                hasErrors: Object.keys(errors).length > 0,
-                errors,
-                formValues: watch()
-              });
-              handleSubmit(handleFormSubmit)(e);
-            }} 
+            onSubmit={handleSubmit(handleFormSubmit)} 
             className="space-y-4"
           >
           {/* Password Reset Mode Selection */}
@@ -560,15 +434,6 @@ export function UserPasswordChangeForm({
               disabled={isSubmitting}
               className="flex-1"
               variant={action.buttonStyle === "warning" ? "destructive" : "default"}
-              onClick={(e) => {
-                console.log(`🎯 BUTTON DEBUG: Submit button clicked`, {
-                  event: e,
-                  isSubmitting,
-                  formState: form.formState,
-                  isValid: form.formState.isValid,
-                  selectedItems
-                });
-              }}
             >
               {isSubmitting && <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />}
               {isSubmitting

@@ -133,9 +133,6 @@ export function ExtraActionModal({
         
         // For password reset with generated password, keep modal open to show the password
         if (action.actionKey === 'resetPassword' && result.data?.newPassword) {
-          console.log(`📊 ExtraActionModal: Keeping modal open for password reset with generated password`);
-          console.log(`📊 ExtraActionModal: Notifying form component about the generated password`);
-          
           // Trigger a custom event to notify the form component
           window.dispatchEvent(new CustomEvent('resetPasswordComplete', {
             detail: {
@@ -145,8 +142,9 @@ export function ExtraActionModal({
             }
           }));
           
-          onSuccess(); // Trigger any success callbacks but don't close modal
-          return; // Don't close the modal - let the form component handle the display
+          // Don't call onSuccess() because it might trigger actions that close the modal
+          // The modal should stay open to show the generated password
+          return; // Don't close the modal - let the user manually close it after copying password
         }
         
         onSuccess();
