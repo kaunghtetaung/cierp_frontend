@@ -184,15 +184,15 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         assignRolesData.roleId = roleId;
       }
 
-      const endpoint = `/core/${moduleSlug}/${targetId}/assign-roles`;
+      const endpoint = `/core/${moduleSlug}/${targetId}/roles`;
       console.log(`🎭 ASSIGN ROLES DEBUG: Calling API endpoint: ${endpoint}`);
       console.log(`🎭 ASSIGN ROLES DEBUG: Request body:`, assignRolesData);
 
-      // Make direct API call to assign roles endpoint
+      // Make direct API call to assign roles endpoint using PUT method
       const response = await moduleService['httpClient'].request(
         endpoint, 
         {
-          method: "PATCH",
+          method: "PUT",
           body: assignRolesData,
           tenantId: moduleService['tenantId'],
           userSessionId: moduleService['userSessionId'],

@@ -109,8 +109,8 @@ export function RoleAssignForm({
         success: true,
         message:
           currentLanguage === "mm"
-            ? "အခန်းကဏ္ဍ အောင်မြင်စွာ သတ်မှတ်ပြီးပါပြီ"
-            : "Role assigned successfully",
+            ? "အခန်းကဏ္ဍ အောင်မြင်စွာ ထပ်ထည့်ပြီးပါပြီ"
+            : "Role added successfully",
       };
       
       setSubmitResult(successResult);
@@ -122,8 +122,8 @@ export function RoleAssignForm({
           error instanceof Error
             ? error.message
             : currentLanguage === "mm"
-            ? "အခန်းကဏ္ဍ သတ်မှတ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်"
-            : "An error occurred while assigning role",
+            ? "အခန်းကဏ္ဍ ထပ်ထည့်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်"
+            : "An error occurred while adding role",
       };
       
       setSubmitResult(errorResult);
@@ -375,11 +375,11 @@ export function RoleAssignForm({
                 {isSubmitting && <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />}
                 {isSubmitting
                   ? currentLanguage === "mm"
-                    ? "သတ်မှတ်နေသည်..."
-                    : "Assigning..."
+                    ? "ထပ်ထည့်နေသည်..."
+                    : "Adding..."
                   : currentLanguage === "mm"
-                  ? "အခန်းကဏ္ဍ သတ်မှတ်မည်"
-                  : "Assign Role"}
+                  ? "အခန်းကဏ္ဍ ထပ်ထည့်မည်"
+                  : "Add Role"}
               </Button>
             </div>
           </form>
@@ -415,7 +415,7 @@ export function RoleAssignForm({
                 <>
                   <p className="mb-1">• Departments will load after selecting an organization</p>
                   <p className="mb-1">• Select "* All Departments" to assign organization-wide role</p>
-                  <p>• User will be notified via email after role assignment</p>
+                  <p>• New role will be added to user's existing roles</p>
                 </>
               )}
             </div>
