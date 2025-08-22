@@ -18,7 +18,7 @@ import type { FormField } from "@repo/types";
 interface RoleAssignFormData {
   organizationId: string;
   departmentId: string;
-  roleIds: string[];
+  roleId: string;
 }
 
 // Form validation schema  
@@ -34,10 +34,10 @@ const createRoleAssignSchema = (currentLanguage: string) =>
         ? "ဌာန ရွေးချယ်ရပါမည်"
         : "Department is required"
     ),
-    roleIds: z.array(z.string()).min(1, 
+    roleId: z.string().min(1, 
       currentLanguage === "mm" 
-        ? "အနည်းဆုံး တစ်ခုခု ရွေးချယ်ရပါမည်"
-        : "At least one role must be selected"
+        ? "အခန်းကဏ္ဍ ရွေးချယ်ရပါမည်"
+        : "Role is required"
     ),
   });
 
@@ -65,7 +65,7 @@ export function RoleAssignForm({
     defaultValues: {
       organizationId: "",
       departmentId: "",
-      roleIds: [],
+      roleId: "",
     },
     mode: "onChange",
   });
@@ -95,11 +95,7 @@ export function RoleAssignForm({
       formData.append("actionKey", action.actionKey);
       formData.append("organizationId", data.organizationId);
       formData.append("departmentId", data.departmentId);
-      
-      // Add role IDs
-      data.roleIds.forEach((roleId) => {
-        formData.append("roleIds", roleId);
-      });
+      formData.append("roleId", data.roleId);
 
       // Add selected user ID
       if (selectedItems.length > 0) {
@@ -113,8 +109,8 @@ export function RoleAssignForm({
         success: true,
         message:
           currentLanguage === "mm"
-            ? "အခန်းကဏ္ဍများ အောင်မြင်စွာ သတ်မှတ်ပြီးပါပြီ"
-            : "Roles assigned successfully",
+            ? "အခန်းကဏ္ဍ အောင်မြင်စွာ သတ်မှတ်ပြီးပါပြီ"
+            : "Role assigned successfully",
       };
       
       setSubmitResult(successResult);
@@ -127,7 +123,7 @@ export function RoleAssignForm({
             ? error.message
             : currentLanguage === "mm"
             ? "အခန်းကဏ္ဍ သတ်မှတ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်"
-            : "An error occurred while assigning roles",
+            : "An error occurred while assigning role",
       };
       
       setSubmitResult(errorResult);
@@ -210,18 +206,18 @@ export function RoleAssignForm({
   };
 
   const roleField: FormField = {
-    fieldName: "roleIds",
-    fieldType: "multiSelect", 
+    fieldName: "roleId",
+    fieldType: "select", 
     label: {
-      en: "Roles",
-      mm: "အခန်းကဏ္ဍများ"
+      en: "Role",
+      mm: "အခန်းကဏ္ဍ"
     },
-    placeHolder: currentLanguage === "mm" ? "အခန်းကဏ္ဍများ ရွေးချယ်ပါ" : "Select roles",
+    placeHolder: currentLanguage === "mm" ? "အခန်းကဏ္ဍ ရွေးချယ်ပါ" : "Select role",
     validationRule: {
       required: true,
       errorMessage: {
-        en: "At least one role must be selected",
-        mm: "အနည်းဆုံး တစ်ခုခု ရွေးချယ်ရပါမည်"
+        en: "Role is required",
+        mm: "အခန်းကဏ္ဍ ရွေးချယ်ရပါမည်"
       }
     },
     readonly: false,
@@ -231,8 +227,7 @@ export function RoleAssignForm({
       type: "dynamic",
       refPath: "/roles/ref",
       searchable: true,
-      clearable: true,
-      multiple: true,
+      clearable: false,
       preloadData: true,
       dependsOn: ["organizationId", "departmentId"]
     }
@@ -342,7 +337,7 @@ export function RoleAssignForm({
                 </span>
               </Label>
               <Controller
-                name="roleIds"
+                name="roleId"
                 control={control}
                 render={({ field }) => (
                   <DynamicSelect
@@ -355,8 +350,8 @@ export function RoleAssignForm({
                   />
                 )}
               />
-              {errors.roleIds && (
-                <p className="text-sm text-destructive">{errors.roleIds.message}</p>
+              {errors.roleId && (
+                <p className="text-sm text-destructive">{errors.roleId.message}</p>
               )}
             </div>
 
@@ -384,7 +379,7 @@ export function RoleAssignForm({
                     : "Assigning..."
                   : currentLanguage === "mm"
                   ? "အခန်းကဏ္ဍ သတ်မှတ်မည်"
-                  : "Assign Roles"}
+                  : "Assign Role"}
               </Button>
             </div>
           </form>
@@ -419,7 +414,7 @@ export function RoleAssignForm({
               ) : (
                 <>
                   <p className="mb-1">• Departments will load after selecting an organization</p>
-                  <p className="mb-1">• Select "* All Departments" to assign organization-wide roles</p>
+                  <p className="mb-1">• Select "* All Departments" to assign organization-wide role</p>
                   <p>• User will be notified via email after role assignment</p>
                 </>
               )}

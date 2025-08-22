@@ -166,13 +166,12 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       const assignRolesData: any = {};
       const organizationId = formData.get("organizationId") as string;
       const departmentId = formData.get("departmentId") as string;
-      const roleIds = formData.getAll("roleIds") as string[];
+      const roleId = formData.get("roleId") as string;
       
       console.log(`🎭 ASSIGN ROLES DEBUG: Role assignment data`, {
         organizationId,
         departmentId,
-        roleIds,
-        roleCount: roleIds.length
+        roleId
       });
       
       if (organizationId) {
@@ -181,8 +180,8 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       if (departmentId) {
         assignRolesData.departmentId = departmentId;
       }
-      if (roleIds && roleIds.length > 0) {
-        assignRolesData.roleIds = roleIds;
+      if (roleId) {
+        assignRolesData.roleId = roleId;
       }
 
       const endpoint = `/core/${moduleSlug}/${targetId}/assign-roles`;
