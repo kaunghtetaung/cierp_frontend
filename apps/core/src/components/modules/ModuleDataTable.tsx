@@ -68,6 +68,7 @@ export function ModuleDataTable({
   const [activeExtraAction, setActiveExtraAction] =
     useState<ExtraAction | null>(null);
   const [isExtraActionModalOpen, setIsExtraActionModalOpen] = useState(false);
+  const [rowActionItem, setRowActionItem] = useState<any>(null); // For row-specific actions
   
   // Confirmation dialog states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -239,6 +240,8 @@ export function ModuleDataTable({
 
   const handleExtraAction = (action: ExtraAction) => {
     if (action.type === "modal") {
+      // Clear row action item for bulk actions
+      setRowActionItem(null);
       setActiveExtraAction(action);
       setIsExtraActionModalOpen(true);
     } else if (action.type === "api") {
@@ -259,15 +262,16 @@ export function ModuleDataTable({
     const itemId = item._id || item.id;
     console.log(`🎯 handleExtraActionForRow: Processing action "${action.actionKey}" for item ${itemId}`);
     
-    // Set the selected item and immediately execute the action
-    // Since we're calling this directly for a single item, we can bypass the selection validation
-    setSelectedItems([itemId]);
-    
     if (action.type === "modal") {
       console.log(`🎭 handleExtraActionForRow: Opening modal for "${action.actionKey}" with preselected item ${itemId}`);
+      // Set the row action item and clear bulk selection
+      setRowActionItem(item);
+      setSelectedItems([]); // Clear any bulk selections
       setActiveExtraAction(action);
       setIsExtraActionModalOpen(true);
     } else if (action.type === "api") {
+      // For API actions, still use the selectedItems approach
+      setSelectedItems([itemId]);
       if (action.confirmMessage) {
         setPendingExtraAction(action);
         setExtraActionConfirmOpen(true);
@@ -289,6 +293,7 @@ export function ModuleDataTable({
   const handleExtraActionSuccess = () => {
     setIsExtraActionModalOpen(false);
     setActiveExtraAction(null);
+    setRowActionItem(null); // Clear row action item
     // Note: The ExtraActionModal already shows success toasts
     // Data refetching is handled by the individual mutations in the modal
   };
@@ -1039,12 +1044,13 @@ export function ModuleDataTable({
             (form) => form.actionKey === activeExtraAction.actionKey
           )}
           module={module}
-          selectedItems={selectedItems}
+          selectedItems={rowActionItem ? [rowActionItem._id || rowActionItem.id] : selectedItems}
           isOpen={isExtraActionModalOpen}
-          isRowAction={selectedItems.length === 1} // Indicate this is a row action
+          isRowAction={!!rowActionItem} // True if this is a row action
           onClose={() => {
             setIsExtraActionModalOpen(false);
             setActiveExtraAction(null);
+            setRowActionItem(null); // Clear row action item on close
           }}
           onSuccess={handleExtraActionSuccess}
           currentLanguage={currentLanguage}

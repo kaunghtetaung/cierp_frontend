@@ -187,8 +187,10 @@ export function ExtraActionModal({
     }
   };
 
-  // If action requires selection but none are selected (skip check for row actions since they inherently have selection)
-  if (actionForm?.requiresSelection && selectedItems.length === 0 && !isRowAction) {
+  // If action requires selection but none are selected
+  // For row actions, selectedItems should always have the row item
+  // For bulk actions, selectedItems should have the selected checkboxes
+  if (actionForm?.requiresSelection && selectedItems.length === 0) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>

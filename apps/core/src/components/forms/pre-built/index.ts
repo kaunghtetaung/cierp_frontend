@@ -3,8 +3,8 @@
 // User management forms
 export { UserPasswordChangeForm } from './UserPasswordChangeForm';
 
-// Placeholder components for future implementation
-export const RoleAssignForm = () => null;
+// Role assignment form
+export { RoleAssignForm } from './RoleAssignForm';
 export const GroupAssignForm = () => null;
 export const BulkRoleAssignForm = () => null;
 export const BulkGroupAssignForm = () => null;

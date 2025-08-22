@@ -156,6 +156,70 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       } else {
         console.log(`🔐 RESET PASSWORD DEBUG: No generated password in response`);
       }
+    } else if (actionKey === 'assignRoles') {
+      console.log(`🎭 ASSIGN ROLES DEBUG: Starting role assignment for user ${targetId}`);
+      
+      // For role assignment, use the specific endpoint with PATCH method
+      const moduleService = await createModuleService();
+      
+      // Prepare role assignment data
+      const assignRolesData: any = {};
+      const organizationId = formData.get("organizationId") as string;
+      const departmentId = formData.get("departmentId") as string;
+      const roleIds = formData.getAll("roleIds") as string[];
+      
+      console.log(`🎭 ASSIGN ROLES DEBUG: Role assignment data`, {
+        organizationId,
+        departmentId,
+        roleIds,
+        roleCount: roleIds.length
+      });
+      
+      if (organizationId) {
+        assignRolesData.organizationId = organizationId;
+      }
+      if (departmentId) {
+        assignRolesData.departmentId = departmentId;
+      }
+      if (roleIds && roleIds.length > 0) {
+        assignRolesData.roleIds = roleIds;
+      }
+
+      const endpoint = `/core/${moduleSlug}/${targetId}/assign-roles`;
+      console.log(`🎭 ASSIGN ROLES DEBUG: Calling API endpoint: ${endpoint}`);
+      console.log(`🎭 ASSIGN ROLES DEBUG: Request body:`, assignRolesData);
+
+      // Make direct API call to assign roles endpoint
+      const response = await moduleService['httpClient'].request(
+        endpoint, 
+        {
+          method: "PATCH",
+          body: assignRolesData,
+          tenantId: moduleService['tenantId'],
+          userSessionId: moduleService['userSessionId'],
+          userId: moduleService['userId'],
+          withAuth: true,
+        }
+      );
+
+      console.log(`🎭 ASSIGN ROLES DEBUG: API Response received:`, {
+        success: response.success,
+        status: response.status,
+        error: response.error,
+        data: response.data
+      });
+
+      if (!response.success) {
+        console.error(`🎭 ASSIGN ROLES DEBUG: API call failed:`, {
+          error: response.error,
+          status: response.status,
+          details: response
+        });
+        throw new Error(response.error || "Failed to assign roles");
+      }
+
+      console.log(`🎭 ASSIGN ROLES DEBUG: API call successful`);
+      result = response.data;
     } else {
       // Use standard PATCH method for other extra actions
       result = await updateModuleItem(moduleSlug, targetId, actionData);
