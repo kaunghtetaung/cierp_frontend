@@ -164,7 +164,16 @@ export function RoleAssignForm({
       refPath: "/organizations/ref",
       searchable: true,
       clearable: false,
-      preloadData: true
+      preloadData: true,
+      options: [
+        {
+          value: "*",
+          label: {
+            en: "* All Organizations",
+            mm: "* အဖွဲ့အစည်းအားလုံး"
+          }
+        }
+      ]
     }
   };
 
@@ -407,14 +416,14 @@ export function RoleAssignForm({
             <div className="text-xs text-muted-foreground">
               {currentLanguage === "mm" ? (
                 <>
-                  <p className="mb-1">• အဖွဲ့အစည်း ရွေးချယ်ပြီးနောက် ဌာနများ ပေါ်လာပါမည်</p>
-                  <p className="mb-1">• "* ဌာနအားလုံး" ရွေးချယ်လျှင် အဖွဲ့အစည်းလုံးဆိုင်ရာ အခန်းကဏ္ဍများ သတ်မှတ်ပါမည်</p>
-                  <p>• အသုံးပြုသူကို အီးမေးလ်ဖြင့် အကြောင်းကြားပါမည်</p>
+                  <p className="mb-1">• "* အဖွဲ့အစည်းအားလုံး" ရွေးချယ်လျှင် စနစ်လုံးဆိုင်ရာ အခန်းကဏ္ဍ သတ်မှတ်ပါမည်</p>
+                  <p className="mb-1">• "* ဌာနအားလုံး" ရွေးချယ်လျှင် အဖွဲ့အစည်းလုံးဆိုင်ရာ အခန်းကဏ္ဍ သတ်မှတ်ပါမည်</p>
+                  <p>• အသုံးပြုသူ၏ ရှိနေပြီးသား အခန်းကဏ္ဍများနှင့် ထပ်ထည့်ပါမည်</p>
                 </>
               ) : (
                 <>
-                  <p className="mb-1">• Departments will load after selecting an organization</p>
-                  <p className="mb-1">• Select "* All Departments" to assign organization-wide role</p>
+                  <p className="mb-1">• Select "* All Organizations" for system-wide role assignment</p>
+                  <p className="mb-1">• Select "* All Departments" for organization-wide role assignment</p>
                   <p>• New role will be added to user's existing roles</p>
                 </>
               )}
