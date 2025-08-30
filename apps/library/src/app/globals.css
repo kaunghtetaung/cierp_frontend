@@ -1,0 +1,320 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ======================================
+     GLOBAL THEME COLORS - Main Palette
+     ====================================== */
+  /* Primary Brand Colors */
+  --color-primary: hsl(105, 91%, 35%);
+  --color-primary-foreground: hsl(146, 33%, 96%);
+  --color-secondary: oklab(64.6% -0.15985 0.13205);
+  --color-secondary-foreground: hsl(240 5.9% 10%);
+  
+  /* Surface Colors */
+  --color-background: hsl(100, 36%, 95%);
+  --color-foreground: hsl(240 10% 3.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(240 10% 3.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(240 10% 3.9%);
+  
+  /* Accent & Muted Colors */
+  --color-muted: hsl(240 4.8% 95.9%);
+  --color-muted-foreground: hsl(240 3.8% 46.1%);
+  --color-accent: hsl(240 4.8% 95.9%);
+  --color-accent-foreground: hsl(240 5.9% 10%);
+  
+  /* Status Colors */
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-success: hsl(142.1 76.2% 36.3%);
+  --color-success-foreground: hsl(0 0% 98%);
+  --color-warning: hsl(32.1 94.6% 43.7%);
+  --color-warning-foreground: hsl(0 0% 98%);
+  --color-info: hsl(221.2 83.2% 53.3%);
+  --color-info-foreground: hsl(0 0% 98%);
+  --color-danger: hsl(0 84.2% 60.2%);
+  
+  /* Border & Form Colors */
+  --color-border: hsl(240 5.9% 90%);
+  --color-input: hsl(240 5.9% 90%);
+  --color-ring: hsl(240 5.9% 10%);
+  
+  /* Border Radius */
+  --radius: 0.5rem;
+  
+  /* ======================================
+     SIDEBAR SPECIFIC COLORS
+     ====================================== */
+  --sidebar: hsl(120, 2%, 37%); /* This is sidebar and the whole background Color*/
+  --sidebar-foreground: hsl(94, 81%, 56%); /* Foreground color for text in sidebar */
+  --sidebar-primary: hsl(240 5.9% 10%); /* Primary color for sidebar elements */
+  --sidebar-primary-foreground: hsl(0, 0%, 98%); /* Foreground color for primary elements in sidebar */
+  --sidebar-accent: hsl(110, 3%, 44%); /* Accent color for sidebar elements */
+  --sidebar-accent-foreground: hsl(110, 95%, 49%); /* Foreground color for accent elements in sidebar */
+  --sidebar-border: hsl(220 13% 91%); /* Border color for sidebar elements */
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@theme {
+  /* ======================================
+     TAILWIND THEME INTEGRATION
+     Using :root CSS variables for consistency
+     ====================================== */
+  
+  /* Primary Brand Colors - Reference :root variables */
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  
+  /* Surface Colors - Reference :root variables */
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-popover: var(--color-popover);
+  --color-popover-foreground: var(--color-popover-foreground);
+  
+  /* Accent & Muted Colors - Reference :root variables */
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-accent: var(--color-accent);
+  --color-accent-foreground: var(--color-accent-foreground);
+  
+  /* Status Colors - Reference :root variables */
+  --color-destructive: var(--color-destructive);
+  --color-destructive-foreground: var(--color-destructive-foreground);
+  --color-success: var(--color-success);
+  --color-success-foreground: var(--color-success-foreground);
+  --color-warning: var(--color-warning);
+  --color-warning-foreground: var(--color-warning-foreground);
+  --color-info: var(--color-info);
+  --color-info-foreground: var(--color-info-foreground);
+  --color-danger: var(--color-danger);
+  
+  /* Border & Form Colors - Reference :root variables */
+  --color-border: var(--color-border);
+  --color-input: var(--color-input);
+  --color-ring: var(--color-ring);
+
+  /* Sidebar colors - Reference :root variables */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Border radius - Reference :root variable */
+  --radius: var(--radius);
+
+  /* ======================================
+     CUSTOM GRADIENTS
+     Using referenced color variables
+     ====================================== */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  --gradient-secondary: linear-gradient(135deg, var(--color-secondary), var(--color-muted));
+  --gradient-success: linear-gradient(135deg, var(--color-success), var(--color-info));
+  --gradient-warm: linear-gradient(135deg, var(--color-warning), var(--color-accent));
+  --gradient-cool: linear-gradient(135deg, var(--color-info), var(--color-primary));
+  --gradient-hero: radial-gradient(ellipse at top, var(--color-primary), var(--color-accent));
+}
+
+/* ======================================
+   DARK THEME - Override :root variables
+   ====================================== */
+.dark {
+  /* Primary Brand Colors - Dark Mode */
+  --color-primary: hsl(105, 91%, 45%); /* Slightly brighter green for dark mode */
+  --color-primary-foreground: hsl(240 5.9% 10%);
+  --color-secondary: hsl(240 3.7% 15.9%);
+  --color-secondary-foreground: hsl(0 0% 98%);
+  
+  /* Surface Colors - Dark Mode */
+  --color-background: hsl(240, 52%, 9%);
+  --color-foreground: hsl(0 0% 98%);
+  --color-card: hsl(240 10% 3.9%);
+  --color-card-foreground: hsl(0 0% 98%);
+  --color-popover: hsl(240 10% 3.9%);
+  --color-popover-foreground: hsl(0 0% 98%);
+  
+  /* Accent & Muted Colors - Dark Mode */
+  --color-muted: hsl(240 3.7% 15.9%);
+  --color-muted-foreground: hsl(240 5% 64.9%);
+  --color-accent: hsl(240 3.7% 15.9%);
+  --color-accent-foreground: hsl(0 0% 98%);
+  
+  /* Status Colors - Dark Mode */
+  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-success: hsl(142.1 70% 45%); /* Adjusted for dark mode */
+  --color-success-foreground: hsl(0 0% 98%);
+  --color-warning: hsl(32.1 90% 50%); /* Adjusted for dark mode */
+  --color-warning-foreground: hsl(0 0% 98%);
+  --color-info: hsl(221.2 83.2% 60%); /* Adjusted for dark mode */
+  --color-info-foreground: hsl(0 0% 98%);
+  --color-danger: hsl(0 62.8% 30.6%);
+  
+  /* Border & Form Colors - Dark Mode */
+  --color-border: hsl(240 3.7% 15.9%);
+  --color-input: hsl(240 3.7% 15.9%);
+  --color-ring: hsl(240 4.9% 83.9%);
+
+  /* ======================================
+     SIDEBAR SPECIFIC - Dark Mode
+     ====================================== */
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+/* ======================================
+   TOAST STYLING - Sonner Toast Types
+   ====================================== */
+.toaster[data-theme="light"] {
+  /* Success toast styling */
+  --success-bg: var(--color-success);
+  --success-border: var(--color-success);
+  --success-text: var(--color-success-foreground);
+  
+  /* Error toast styling */
+  --error-bg: var(--color-destructive);
+  --error-border: var(--color-destructive);  
+  --error-text: var(--color-destructive-foreground);
+  
+  /* Warning toast styling */
+  --warning-bg: var(--color-warning);
+  --warning-border: var(--color-warning);
+  --warning-text: var(--color-warning-foreground);
+  
+  /* Info toast styling */
+  --info-bg: var(--color-info);
+  --info-border: var(--color-info);
+  --info-text: var(--color-info-foreground);
+  
+  /* Default toast styling */
+  --normal-bg: var(--color-popover);
+  --normal-border: var(--color-border);
+  --normal-text: var(--color-popover-foreground);
+}
+
+.toaster[data-theme="dark"] {
+  /* Success toast styling */
+  --success-bg: var(--color-success);
+  --success-border: var(--color-success);
+  --success-text: var(--color-success-foreground);
+  
+  /* Error toast styling */
+  --error-bg: var(--color-destructive);
+  --error-border: var(--color-destructive);
+  --error-text: var(--color-destructive-foreground);
+  
+  /* Warning toast styling */
+  --warning-bg: var(--color-warning);
+  --warning-border: var(--color-warning);
+  --warning-text: var(--color-warning-foreground);
+  
+  /* Info toast styling */
+  --info-bg: var(--color-info);
+  --info-border: var(--color-info);
+  --info-text: var(--color-info-foreground);
+  
+  /* Default toast styling */
+  --normal-bg: var(--color-popover);
+  --normal-border: var(--color-border);
+  --normal-text: var(--color-popover-foreground);
+}
+
+/* Additional styling for toast content */
+.toaster .toast {
+  border-width: 1px;
+  border-style: solid;
+}
+
+.toaster .toast[data-type="success"] {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.toaster .toast[data-type="error"] {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+.toaster .toast[data-type="warning"] {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+
+.toaster .toast[data-type="info"] {
+  background: var(--info-bg);
+  border-color: var(--info-border);
+  color: var(--info-text);
+}
+
+.toaster .toast[data-type="default"] {
+  background: var(--normal-bg);
+  border-color: var(--normal-border);
+  color: var(--normal-text);
+}
+
+/* Fix for table overflow issues */
+.module-data-table {
+  /* Override table whitespace-nowrap */
+  & th:not(:has([role="checkbox"])) {
+    white-space: normal !important;
+    word-break: break-word !important;
+    min-width: 100px;
+    max-width: 250px;
+  }
+  
+  & td:not(:has([role="checkbox"])) {
+    white-space: normal !important;
+    word-break: break-word !important;
+    min-width: 100px;
+    max-width: 250px;
+  }
+  
+  /* Fixed width for checkbox columns */
+  & th:has([role="checkbox"]),
+  & td:has([role="checkbox"]) {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 8px !important;
+  }
+  
+  /* Ensure table stays within bounds */
+  & table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+  
+  /* Ensure proper scrolling */
+  & [data-slot="table-container"] {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+}
