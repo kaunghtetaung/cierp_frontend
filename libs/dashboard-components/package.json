@@ -1,0 +1,43 @@
+{
+  "name": "@repo/dashboard-components",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./modules": "./modules/index.ts",
+    "./forms": "./forms/index.ts",
+    "./layout": "./layout/index.ts",
+    "./navigation": "./navigation/index.ts"
+  },
+  "dependencies": {
+    "@repo/ui": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/app-modules": "workspace:*",
+    "@repo/api": "workspace:*",
+    "@repo/language": "workspace:*",
+    "@repo/hooks": "workspace:*",
+    "@hookform/resolvers": "^3.9.1",
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-dropdown-menu": "^2.1.15",
+    "@radix-ui/react-select": "^2.2.5",
+    "@tanstack/react-table": "^8.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.0",
+    "next": "^15.4.3",
+    "zod": "^3.24.1",
+    "lucide-react": "^0.525.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "next": ">=15.0.0"
+  }
+}
