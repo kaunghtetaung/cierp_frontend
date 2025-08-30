@@ -45,13 +45,18 @@ export const DEV_HOSTNAME_MAPPINGS: HostnameMapping[] = [
   { hostname: 'school.crystal-image.net', appId: 'school', environment: 'development' },
   { hostname: 'content.crystal-image.net', appId: 'content', environment: 'development' },
   
-  // Localhost with different ports for development
+  // IP-based development hostnames
+  { hostname: '127.0.0.2:80', appId: 'publicWeb', environment: 'development' },
+  { hostname: '127.0.0.3:80', appId: 'core', environment: 'development' },
+  { hostname: '127.0.0.4:80', appId: 'library', environment: 'development' },
+  
+  // Localhost with different ports for development (legacy)
   { hostname: 'localhost:3000', appId: 'core', environment: 'development' },
   { hostname: 'localhost:3001', appId: 'library', environment: 'development' },
   { hostname: 'localhost:3002', appId: 'school', environment: 'development' },
   { hostname: 'localhost:3003', appId: 'content', environment: 'development' },
   
-  // 127.0.0.1 variants
+  // 127.0.0.1 variants (legacy)
   { hostname: '127.0.0.1:3000', appId: 'core', environment: 'development' },
   { hostname: '127.0.0.1:3001', appId: 'library', environment: 'development' },
   { hostname: '127.0.0.1:3002', appId: 'school', environment: 'development' },

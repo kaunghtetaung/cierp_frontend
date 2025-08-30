@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { Trash2, HardDriveIcon } from 'lucide-react'
 
 export interface DeleteConfirmationDialogProps {

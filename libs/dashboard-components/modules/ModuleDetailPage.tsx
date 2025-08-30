@@ -4,7 +4,7 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@repo/language'
 import { getLocalizedText } from '@repo/utils'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui/components/icons'
 // Server component - data will be passed as props
 import { ReactHookForm } from '../forms/ReactHookForm'

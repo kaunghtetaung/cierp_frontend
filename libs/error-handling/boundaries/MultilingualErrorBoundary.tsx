@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui/components/icons'
 import { getLocalizedErrorMessage, getLocalizedRecoveryActions } from '@repo/api/messages'
 

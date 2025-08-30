@@ -1,55 +1,34 @@
 "use client";
 
 import React from "react";
-import {
-  SidebarInset,
-  SidebarProvider,
-  useSidebar,
-} from "@/components/ui/sidebar";
 import { DashboardErrorBoundary } from "@repo/base-dashboard";
-import { AppSidebar } from "@/components/common/sidebar";
-import Header from "@/components/common/header";
-import type { AppLayoutProps } from "@/types/layout";
-import { cn } from "@repo/ui/lib/utils";
-/**
- * Content wrapper that adapts to sidebar state
- */
-function ContentWrapper({ children }: { children: React.ReactNode }) {
-  const { state, isMobile } = useSidebar();
-
-  return (
-    <div
-      className={cn(
-        "flex flex-1 flex-col transition-all duration-200 ease-linear",
-        !isMobile && state === "expanded" && "lg:pl-[var(--sidebar-width)]"
-      )}
-    >
-      {children}
-    </div>
-  );
-}
+import type { AppLayoutProps } from "@repo/types";
 
 /**
- * Core application layout component using baseDashboard architecture
- * Handles the sidebar, header, and main content area with error boundaries
+ * Simple application layout component
+ * Provides basic structure with error boundary
+ * TODO: Add full sidebar and navigation when components are ready
  */
 export function AppLayout({ children, tenant, appSchemaData }: AppLayoutProps) {
   return (
-    <SidebarProvider>
+    <div className="min-h-screen flex flex-col">
       <DashboardErrorBoundary>
-        <AppSidebar tenant={tenant} appSchemaData={appSchemaData} />
+        <header className="border-b bg-background p-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold">
+              {tenant?.displayName?.en || "Library System"}
+            </h1>
+            <div className="text-sm text-muted-foreground">
+              App ID: {appSchemaData?.appId || "library"}
+            </div>
+          </div>
+        </header>
       </DashboardErrorBoundary>
 
-      <SidebarInset>
-        <DashboardErrorBoundary>
-          <Header tenant={tenant} appSchemaData={appSchemaData} />
-        </DashboardErrorBoundary>
-
-        <DashboardErrorBoundary>
-          <main className="flex flex-1 flex-col p-4 min-w-0 overflow-hidden">{children}</main>
-        </DashboardErrorBoundary>
-      </SidebarInset>
-    </SidebarProvider>
+      <DashboardErrorBoundary>
+        <main className="flex-1 container mx-auto p-4">{children}</main>
+      </DashboardErrorBoundary>
+    </div>
   );
 }
 

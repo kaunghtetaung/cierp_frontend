@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Trash2, HardDriveIcon, MoreHorizontal, Recycle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,

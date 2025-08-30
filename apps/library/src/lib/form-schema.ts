@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { FormField, ValidationRule } from '@/types/module-schema'
+import type { FormField, ValidationRule } from '@repo/types'
 import { validatePhoneNumber, isValidE164 } from '@repo/utils/common/phone-validation'
 
 /**

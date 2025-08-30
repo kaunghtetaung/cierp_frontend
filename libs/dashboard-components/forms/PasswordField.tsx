@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { Eye, EyeOff, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePasswordValidation } from './hooks/usePasswordValidation'

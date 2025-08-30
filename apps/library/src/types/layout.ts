@@ -48,3 +48,12 @@ export interface PageMetadata {
 export interface RootLayoutProps {
   children: React.ReactNode
 }
+
+/**
+ * App layout component props
+ */
+export interface AppLayoutProps {
+  children: React.ReactNode
+  tenant: TenantSettings | null
+  appSchemaData: AppSchemaData | null
+}

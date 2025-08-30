@@ -141,7 +141,7 @@ export async function middleware(request: NextRequest) {
   const response = await createTenantMiddleware(
     request,
     middlewareConfig,
-    "Core",
+    "Library",
     middlewareOptions
   );
 

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { fetchLayoutData, generatePageMetadata } from "@/lib/layout-data";
-import { AppProviders } from "@/components/providers/AppProviders";
+import { AppProviders, ThemeScript } from "@repo/base-dashboard";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ThemeScript } from "@/components/theme-script";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 import type { RootLayoutProps } from "@/types/layout";
 
 import "./globals.css";

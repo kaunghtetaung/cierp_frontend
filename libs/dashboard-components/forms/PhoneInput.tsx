@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react'
 import { AsYouType, getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui/components/icons'
 import { 
   validatePhoneNumber, 

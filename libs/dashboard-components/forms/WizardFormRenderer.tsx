@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useFormContext } from 'react-hook-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
