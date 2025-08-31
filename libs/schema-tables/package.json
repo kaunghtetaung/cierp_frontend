@@ -1,0 +1,25 @@
+{
+  "name": "@repo/schema-tables",
+  "version": "1.0.0",
+  "description": "Schema-driven table components for dynamic dashboard applications",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@repo/language": "workspace:*",
+    "@tanstack/react-table": "*",
+    "react": "*",
+    "react-dom": "*",
+    "next": "*"
+  },
+  "devDependencies": {
+    "@types/react": "*",
+    "@types/react-dom": "*",
+    "typescript": "*"
+  }
+}

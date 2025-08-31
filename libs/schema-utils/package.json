@@ -1,0 +1,18 @@
+{
+  "name": "@repo/schema-utils",
+  "version": "1.0.0",
+  "description": "Utility functions for schema processing and validation",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}

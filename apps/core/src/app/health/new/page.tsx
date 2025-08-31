@@ -3,7 +3,7 @@ import { fetchLayoutData } from "@/lib/layout-data";
 import { ReactHookFormWrapper } from "@/components/forms/ReactHookFormWrapper";
 import { ReactHookWizardFormWrapper } from "@/components/forms/ReactHookWizardFormWrapper";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
-import { generateZodSchema } from "@/lib/form-schema";
+import { generateZodSchema } from "@repo/schema-utils";
 import { enableCommonMultilangFields } from "@/lib/enable-multilang";
 import type { ModuleSchema } from "@repo/types";
 

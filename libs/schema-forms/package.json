@@ -1,0 +1,28 @@
+{
+  "name": "@repo/schema-forms",
+  "version": "1.0.0",
+  "description": "Schema-driven form components for dynamic dashboard applications",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "*",
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@repo/language": "workspace:*",
+    "@repo/api": "workspace:*",
+    "react": "*",
+    "react-dom": "*",
+    "react-hook-form": "*",
+    "zod": "*",
+    "next": "*"
+  },
+  "devDependencies": {
+    "@types/react": "*",
+    "@types/react-dom": "*",
+    "typescript": "*"
+  }
+}

@@ -23,10 +23,10 @@ import {
   useDeleteModuleItem,
   useHardDeleteModuleItem,
   useBulkModuleOperation,
-} from "@repo/schema-hooks";
+} from "@/hooks/use-module-query";
 import { DynamicSearch } from "./DynamicSearch";
 import { Pagination } from "@/components/ui/pagination";
-import { ExtraActionModal } from "@repo/schema-forms";
+import { ExtraActionModal } from "@/components/forms/ExtraActionModal";
 import { generateZodSchema } from "@/lib/form-schema";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";

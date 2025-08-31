@@ -1,0 +1,25 @@
+{
+  "name": "@repo/schema-hooks",
+  "version": "1.0.0",
+  "description": "React hooks for schema-driven dashboard applications",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/api": "workspace:*",
+    "@repo/app-modules": "workspace:*",
+    "@tanstack/react-query": "*",
+    "react": "*",
+    "react-dom": "*",
+    "next": "*"
+  },
+  "devDependencies": {
+    "@types/react": "*",
+    "@types/react-dom": "*",
+    "typescript": "*"
+  }
+}

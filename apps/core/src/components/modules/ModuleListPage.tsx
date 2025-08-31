@@ -28,7 +28,7 @@ import {
   useModuleItem,
   useDeleteModuleItem,
   useBulkModuleOperation,
-} from "@/hooks/use-module-query";
+} from "@repo/schema-hooks";
 import { DynamicSearch } from "./DynamicSearch";
 import { ReactHookForm } from "../forms/ReactHookForm";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
