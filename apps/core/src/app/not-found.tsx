@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@repo/ui'
+import { Button } from '@/components/ui/button'
 import { IconComponent } from '@repo/ui/components/icons'
 import { useLanguage } from '@repo/language'
 import { getLocalizedText } from '@repo/utils'

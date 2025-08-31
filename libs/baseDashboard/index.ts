@@ -8,7 +8,6 @@ export { DashboardLoadingPage } from './components/LoadingPage'
 export { AppSelector } from './components/AppSelector'
 export { LanguageSelector } from './components/LanguageSelector'
 export { UserActionMenu } from './components/UserActionMenu'
-export { ThemeScript } from './components/theme-script'
 
 // Layouts
 export { FullDashboardLayout } from './layouts/FullDashboardLayout'
@@ -16,7 +15,6 @@ export { MinimalDashboardLayout } from './layouts/MinimalDashboardLayout'
 
 // Providers
 export { DashboardProviders } from './providers/DashboardProviders'
-export { AppProviders } from './providers/AppProviders'
 export { 
   createDashboardProviders, 
   createStandardDashboardProviders,

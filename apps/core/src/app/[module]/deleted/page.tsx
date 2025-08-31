@@ -7,7 +7,7 @@ import { toastSuccess, toastError } from '@repo/utils'
 import { useLanguage } from '@repo/language'
 import { getLocalizedText } from '@repo/utils'
 import Link from 'next/link'
-import { Button } from '@repo/ui'
+import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
 export default function DeletedItemsPage() {

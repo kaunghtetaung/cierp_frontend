@@ -6,7 +6,7 @@ import type { TenantSettings, TenantApplication } from "@repo/types";
 import { getLocalizedText } from "@repo/utils";
 import { extractBaseDomain } from "@repo/utils/common/url";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import { IconComponent } from "@repo/ui/components/icons";
+import { IconComponent } from "@repo/ui";
 
 import {
   DropdownMenu,
@@ -15,12 +15,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui";
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@repo/ui";
+} from "@/components/ui/sidebar";
 
 interface AppSelectorProps {
   tenant: TenantSettings | null;
