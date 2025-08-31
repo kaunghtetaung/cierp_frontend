@@ -2,8 +2,7 @@ import { notFound } from 'next/navigation'
 import { fetchLayoutData } from '@/lib/layout-data'
 import { getModuleItem } from '@repo/app-modules'
 import { submitModuleForm } from '@repo/app-modules/server-actions'
-import { ReactHookFormWrapper } from '@/components/forms/ReactHookFormWrapper'
-import { ReactHookWizardFormWrapper } from '@/components/forms/ReactHookWizardFormWrapper'
+import { FormWithLanguage } from '@/components/forms/FormWithLanguage'
 import { generateZodSchema } from '@/lib/form-schema'
 import { enableCommonMultilangFields } from '@/lib/enable-multilang'
 import type { ModuleSchema } from '@repo/types'
@@ -53,16 +52,16 @@ export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
   
   // Choose form component based on layout type
   const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
-  const FormComponent = isWizardForm ? ReactHookWizardFormWrapper : ReactHookFormWrapper;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <FormComponent
+      <FormWithLanguage
         module={moduleWithMultilang}
         action={isCreateMode ? 'create' : 'update'}
         initialData={initialData}
         moduleSlug={resolvedParams.module}
         itemId={isCreateMode ? undefined : resolvedParams.id}
+        isWizard={isWizardForm}
       />
     </div>
   )

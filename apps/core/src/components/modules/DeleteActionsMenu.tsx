@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { DeleteConfirmationDialog } from '@/components/common/delete-confirmation-dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { useLanguage } from '@repo/language'
 
 interface DeleteActionsMenuProps {
@@ -87,7 +87,7 @@ export function DeleteActionsMenu({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DeleteConfirmationDialog
+        <ConfirmationDialog
           open={deleteDialog.open}
           onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
           deleteType={deleteDialog.type}
@@ -128,7 +128,7 @@ export function DeleteActionsMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DeleteConfirmationDialog
+      <ConfirmationDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         deleteType={deleteDialog.type}

@@ -29,7 +29,6 @@ import { Pagination } from "@/components/ui/pagination";
 import { ExtraActionModal } from "./ExtraActionModal";
 import { generateZodSchema } from "@/lib/form-schema";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { DeleteConfirmationDialog } from "@/components/common/delete-confirmation-dialog";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";

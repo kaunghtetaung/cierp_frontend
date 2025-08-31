@@ -9,7 +9,7 @@ import { useLanguage } from '@repo/language'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DeleteConfirmationDialog } from '@/components/common/delete-confirmation-dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface EnhancedModuleListExampleProps {
   module: string
@@ -195,7 +195,7 @@ export function EnhancedModuleListExample({
         </CardContent>
       </Card>
 
-      <DeleteConfirmationDialog
+      <ConfirmationDialog
         open={bulkDeleteDialog}
         onOpenChange={setBulkDeleteDialog}
         deleteType="soft"

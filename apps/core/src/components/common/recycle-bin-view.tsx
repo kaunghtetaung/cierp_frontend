@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { DeleteConfirmationDialog } from './delete-confirmation-dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 export interface DeletedItem {
   id: string
@@ -267,7 +267,7 @@ export function RecycleBinView({
         </CardContent>
       </Card>
 
-      <DeleteConfirmationDialog
+      <ConfirmationDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         deleteType="hard"
