@@ -1,8 +1,7 @@
 // React Hook Form components
 export { ReactHookForm } from "./ReactHookForm";
-export { ReactHookFormWrapper } from "./ReactHookFormWrapper";
 export { ReactHookWizardForm } from "./ReactHookWizardForm";
-export { ReactHookWizardFormWrapper } from "./ReactHookWizardFormWrapper";
+export { FormWithLanguage } from "./FormWithLanguage";
 
 // Shared components
 export { DynamicSelect } from "./DynamicSelect";

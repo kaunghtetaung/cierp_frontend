@@ -15,9 +15,12 @@ interface ExtraActionFormRouterProps {
 
 // Pre-built form components registry
 const PreBuiltFormComponents: Record<string, React.ComponentType<any>> = {
-  // User management forms
+  // User management forms - support multiple naming conventions
   userPwdChangeForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.UserPasswordChangeForm }))),
+  userPasswordChangeForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.UserPasswordChangeForm }))),
+  UserPasswordChangeForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.UserPasswordChangeForm }))),
   RoleAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.RoleAssignForm }))),
+  roleAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.RoleAssignForm }))),
   GroupAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.GroupAssignForm }))),
   BulkRoleAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkRoleAssignForm }))),
   BulkGroupAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkGroupAssignForm }))),
