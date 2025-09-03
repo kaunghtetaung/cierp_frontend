@@ -91,7 +91,7 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
           handleTokenRefreshFailure({
             url: context.request.url,
             userLanguage: this.getCurrentLanguage()
-          }).catch(authError => {
+          }).catch((authError: any) => {
             console.error('🔐 AuthResponseInterceptor: Auth error handling failed:', authError);
           });
         }
@@ -182,14 +182,8 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
       
       console.log("🔄 Auth Interceptor - Starting token refresh", { tenantId, userId });
       
-      // CRITICAL FIX: Clear potentially expired tokens before refresh attempt
-      if (userId && tenantId) {
-        console.log("🧹 Auth Interceptor - Clearing expired user tokens before refresh");
-        await tokenManager.clearUserAccessToken(tenantId, userId);
-      } else if (tenantId) {
-        console.log("🧹 Auth Interceptor - Clearing expired tenant tokens before refresh");
-        await tokenManager.clearTenantTokens(tenantId);
-      }
+      // Don't preemptively clear tokens - only clear if refresh actually fails
+      // The 401 might be due to missing Authorization header, not expired tokens
       
       // Force token refresh instead of getting potentially cached expired token
       let newToken: string | null = null;
@@ -205,21 +199,23 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
         console.log("🔄 Auth Interceptor - Falling back to tenant token refresh");
         // Get tenant secrets for refresh
         try {
-          const { getTenantSecrets } = await import("@repo/tenant/wrapper");
-          const tenantSecrets = await getTenantSecrets(tenantId);
+          // const { getTenantSecrets } = await import("@repo/tenant/wrapper"); // Circular dependency - temporarily disabled
+          // const tenantSecrets = await getTenantSecrets(tenantId);
+          console.warn('getTenantSecrets temporarily disabled due to circular dependency');
+          const tenantSecrets = null; // Fallback
           
           let clientId: string | undefined;
           let clientSecret: string | undefined;
 
-          if (tenantSecrets?.clientId && tenantSecrets?.clientSecret) {
-            clientId = tenantSecrets.clientId;
-            clientSecret = tenantSecrets.clientSecret;
+          if ((tenantSecrets as any)?.clientId && (tenantSecrets as any)?.clientSecret) {
+            clientId = (tenantSecrets as any).clientId;
+            clientSecret = (tenantSecrets as any).clientSecret;
           } else if (
-            tenantSecrets?.apiAccess?.clientId &&
-            tenantSecrets?.apiAccess?.clientSecret
+            (tenantSecrets as any)?.apiAccess?.clientId &&
+            (tenantSecrets as any)?.apiAccess?.clientSecret
           ) {
-            clientId = tenantSecrets.apiAccess.clientId;
-            clientSecret = tenantSecrets.apiAccess.clientSecret;
+            clientId = (tenantSecrets as any).apiAccess.clientId;
+            clientSecret = (tenantSecrets as any).apiAccess.clientSecret;
           }
 
           if (clientId && clientSecret) {
@@ -237,6 +233,14 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
       }
       
       if (!newToken) {
+        // Clear tokens only after refresh fails - they are confirmed invalid
+        if (userId && tenantId) {
+          console.log("🧹 Auth Interceptor - Clearing confirmed invalid user tokens after refresh failure");
+          await tokenManager.clearUserAccessToken(tenantId, userId);
+        } else if (tenantId) {
+          console.log("🧹 Auth Interceptor - Clearing confirmed invalid tenant tokens after refresh failure");
+          await tokenManager.clearTenantTokens(tenantId);
+        }
         throw new Error("Failed to refresh token - all strategies exhausted");
       }
 

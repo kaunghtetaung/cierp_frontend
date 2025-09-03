@@ -69,7 +69,7 @@ export async function ContentPage({
         {/* Page Sections */}
         {sections.length > 0 && (
           <SectionRenderer
-            sections={sections}
+            sections={sections as any}
             currentLanguage={currentLanguage}
             className="page-sections"
           />

@@ -1,9 +1,10 @@
 // Initializer Token Strategy - Single Responsibility: System initialization token management
 import { CacheKeys, CacheTTL } from '@repo/cache';
+import { getClientCredentialsToken } from '../core/oidc';
+import { getAuthDomain } from '@repo/utils/server';
 import type { 
   TokenStrategy, 
   TokenCache, 
-  OIDCClient, 
   TOKEN_CONSTANTS 
 } from '../types/token-types';
 
@@ -26,8 +27,7 @@ interface StoredToken {
 
 export class InitializerTokenStrategy implements TokenStrategy {
   constructor(
-    private cache: TokenCache,
-    private oidcClient: OIDCClient
+    private cache: TokenCache
   ) {}
 
   async getToken(): Promise<string | null> {
@@ -65,12 +65,10 @@ export class InitializerTokenStrategy implements TokenStrategy {
 
     try {
 
-      const apiDomain = await this.oidcClient.getApiDomain();
-      const tokenData = await this.oidcClient.fetchClientCredentialsToken(
+      const tokenData = await getClientCredentialsToken(
         clientId,
         clientSecret,
-        "tenant:read",
-        apiDomain
+        "tenant:read"
       );
 
       const accessToken = tokenData.access_token;

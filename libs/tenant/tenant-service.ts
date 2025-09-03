@@ -100,7 +100,7 @@ export const validateTenant = cache(
   async (tenantId: string): Promise<boolean> => {
     try {
       const tenantSettings = await getTenantSetting(tenantId);
-      return tenantSettings.isActive;
+      return (tenantSettings as any).isActive ?? true;
     } catch (error) {
       console.error(`Failed to validate tenant ${tenantId}:`, error);
       return false;

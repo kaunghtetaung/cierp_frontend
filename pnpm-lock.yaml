@@ -271,6 +271,9 @@ importers:
       '@repo/api':
         specifier: workspace:*
         version: link:../../libs/api
+      '@repo/app-config':
+        specifier: workspace:*
+        version: link:../../libs/app-config
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
@@ -931,6 +934,9 @@ importers:
       lucide-react:
         specifier: ^0.460.0
         version: 0.460.0(react@19.1.0)
+      next:
+        specifier: 15.4.3
+        version: 15.4.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -959,9 +965,12 @@ importers:
         specifier: ^0.18.5
         version: 0.18.5
       zod:
-        specifier: ^4.1.5
-        version: 4.1.5
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@types/react':
         specifier: ^19.0.0
         version: 19.1.8
@@ -993,6 +1002,9 @@ importers:
         specifier: ^6.1.59
         version: 6.1.86
     devDependencies:
+      '@repo/app-config':
+        specifier: workspace:*
+        version: link:../app-config
       '@repo/types':
         specifier: workspace:*
         version: link:../types
@@ -3682,9 +3694,6 @@ packages:
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
-  zod@4.1.5:
-    resolution: {integrity: sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg==}
 
 snapshots:
 
@@ -6599,5 +6608,3 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   zod@3.25.76: {}
-
-  zod@4.1.5: {}

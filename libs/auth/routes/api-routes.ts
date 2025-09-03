@@ -282,7 +282,7 @@ export async function handleAuthCallback(
       name: userInfo.name || "",
       displayName: userInfo.name || "", // Backward compatibility
       roles: roles,
-      role: Array.isArray(roles) && roles.length > 0 ? roles[0].Role as any : undefined, // Backward compatibility
+      role: Array.isArray(roles) && roles.length > 0 ? roles[0] as any : undefined, // Backward compatibility
       permissions: userInfo.permissions || [],
       tenantId: tenantId,
       sub: userInfo.id, // Backward compatibility

@@ -11,7 +11,7 @@ import type {
   SessionContext,
   SessionCreateOptions,
   SessionError
-} from "@repo/security/types/session-types";
+} from "@repo/security/session-types";
 
 // Environment-configurable session security settings
 const getSessionSecurityConfig = () => ({

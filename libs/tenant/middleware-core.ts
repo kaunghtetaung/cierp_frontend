@@ -190,4 +190,4 @@ export { DEFAULT_CONFIG };
 /**
  * Export types
  */
-export type { MiddlewareConfig, MiddlewareOptions };
+export type { MiddlewareConfig };

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 80 --hostname 127.0.0.2",
+    "dev": "next dev --port 3002 --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start --port 80 --hostname 127.0.0.2",
+    "start": "next start --port 3002 --hostname 127.0.0.1",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
@@ -13,6 +13,7 @@
     "@radix-ui/react-navigation-menu": "^1.2.13",
     "@radix-ui/react-separator": "^1.1.7",
     "@repo/api": "workspace:*",
+    "@repo/app-config": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/language": "workspace:*",
     "@repo/page": "workspace:*",

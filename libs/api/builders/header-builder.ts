@@ -1,12 +1,33 @@
 // Header Builder Strategy - Single Responsibility: HTTP header construction
 import { getCookie } from "@repo/security/cookies";
 import { COOKIE_NAMES, MIDDLEWARE_HEADERS } from "@repo/utils/common/constants";
-import { getTokenForRequest } from "@repo/auth/core";
+// Using direct require to avoid circular dependency in imports
 import { getLanguageFromCookie } from "@repo/language/utils";
 import { getValidTenantId } from '../utils/tenant-resolver';
 import type { HeaderBuilder, HttpClientConfig } from '../types/http-types';
 import { HTTP_CONSTANTS } from '../types/http-types';
 import type { HttpMethod, ApiRequestConfig } from "@repo/types";
+
+// Direct token retrieval to avoid circular dependency
+async function getTokenForRequest(tenantId?: string, userId?: string): Promise<string | null> {
+  try {
+    // Try to get token from the simplified auth core functions
+    const { getTokenForRequest: coreGetToken } = require("../../auth/core/tokens");
+    return await coreGetToken(tenantId, userId);
+  } catch (error) {
+    console.warn('Failed to get token from core/tokens, falling back to TokenManager:', error);
+    
+    try {
+      // Fallback to TokenManager if core functions fail
+      const { TokenManager } = require("../../auth/managers/token-manager");
+      const tokenManager = TokenManager.getInstance();
+      return await tokenManager.getTokenForRequest(tenantId, userId);
+    } catch (managerError) {
+      console.error('Failed to get token from TokenManager as well:', managerError);
+      return null;
+    }
+  }
+}
 
 export class StandardHeaderBuilder implements HeaderBuilder {
   private csrfToken: string | null = null;

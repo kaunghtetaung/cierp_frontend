@@ -47,14 +47,14 @@ export const DEV_HOSTNAME_MAPPINGS: HostnameMapping[] = [
   
   // Localhost with different ports for development
   { hostname: 'localhost:3000', appId: 'core', environment: 'development' },
-  { hostname: 'localhost:3001', appId: 'library', environment: 'development' },
-  { hostname: 'localhost:3002', appId: 'school', environment: 'development' },
+  { hostname: 'localhost:3001', appId: 'core', environment: 'development' },
+  { hostname: 'localhost:3002', appId: 'core', environment: 'development' },
   { hostname: 'localhost:3003', appId: 'content', environment: 'development' },
   
   // 127.0.0.1 variants
   { hostname: '127.0.0.1:3000', appId: 'core', environment: 'development' },
-  { hostname: '127.0.0.1:3001', appId: 'library', environment: 'development' },
-  { hostname: '127.0.0.1:3002', appId: 'school', environment: 'development' },
+  { hostname: '127.0.0.1:3001', appId: 'core', environment: 'development' },
+  { hostname: '127.0.0.1:3002', appId: 'core', environment: 'development' },
   { hostname: '127.0.0.1:3003', appId: 'content', environment: 'development' }
 ];
 

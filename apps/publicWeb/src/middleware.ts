@@ -66,10 +66,27 @@ async function getValidLanguage(request: NextRequest) {
 }
 
 /**
- * Handle app detection for PublicWeb (always "publicweb")
+ * Handle app detection for PublicWeb (dynamically from x-app-id header or hostname)
  */
-function getAppInfo(request: NextRequest) {
-  const appId = "publicweb";
+async function getAppInfo(request: NextRequest) {
+  // Try to get app ID from x-app-id header first
+  const headerAppId = request.headers.get("x-app-id");
+  
+  let appId: string;
+  if (headerAppId) {
+    appId = headerAppId;
+  } else {
+    // Fallback to hostname detection
+    try {
+      const { getAppFromHostname } = await import("@repo/app-config");
+      const hostname = request.headers.get("host") || "";
+      appId = getAppFromHostname(hostname);
+    } catch (error) {
+      console.error("Failed to detect app from hostname:", error);
+      appId = "core"; // Default fallback
+    }
+  }
+  
   const currentAppCookie = request.cookies.get("x-app-id")?.value;
   
   return {
@@ -85,7 +102,7 @@ export async function middleware(request: NextRequest) {
   console.log("PublicWeb middleware triggered for:", request.nextUrl.pathname);
 
   // Get app information
-  const { appId, needsCookieUpdate: needsAppCookieUpdate } = getAppInfo(request);
+  const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppInfo(request);
 
   // Get language information
   const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(request);

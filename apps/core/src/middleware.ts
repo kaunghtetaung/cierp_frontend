@@ -63,28 +63,33 @@ const authConfig: Partial<MiddlewareConfig> = {
 };
 
 /**
- * Handle app detection from hostname
+ * Handle app detection from x-app-id header or hostname
  */
 async function getAppFromHostname(request: NextRequest) {
-  try {
-    const { getAppFromHostname } = await import("@repo/app-config");
-    const hostname = request.headers.get("host") || "";
-    const appId = getAppFromHostname(hostname);
-    
-    
-    return {
-      appId,
-      hostname,
-      needsCookieUpdate: request.cookies.get("x-app-id")?.value !== appId,
-    };
-  } catch (error) {
-    console.error("Failed to detect app from hostname:", error);
-    return {
-      appId: "core",
-      hostname: request.headers.get("host") || "",
-      needsCookieUpdate: false,
-    };
+  const hostname = request.headers.get("host") || "";
+  
+  // Try to get app ID from x-app-id header first
+  const headerAppId = request.headers.get("x-app-id");
+  
+  let appId: string;
+  if (headerAppId) {
+    appId = headerAppId;
+  } else {
+    // Fallback to hostname detection
+    try {
+      const { getAppFromHostname } = await import("@repo/app-config");
+      appId = getAppFromHostname(hostname);
+    } catch (error) {
+      console.error("Failed to detect app from hostname:", error);
+      appId = "core"; // Default fallback
+    }
   }
+  
+  return {
+    appId,
+    hostname,
+    needsCookieUpdate: request.cookies.get("x-app-id")?.value !== appId,
+  };
 }
 
 /**

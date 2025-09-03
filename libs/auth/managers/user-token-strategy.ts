@@ -1,9 +1,9 @@
 // User Token Strategy - Single Responsibility: User token management
 import { CacheKeys, CacheTTL } from '@repo/cache';
+import { refreshAccessToken } from '../core/oidc';
 import type { 
   TokenStrategy, 
   TokenCache, 
-  OIDCClient, 
   TokenValidationResult
 } from '../types/token-types';
 import { TOKEN_CONSTANTS } from '../types/token-types';
@@ -27,8 +27,7 @@ interface StoredToken {
 
 export class UserTokenStrategy implements TokenStrategy {
   constructor(
-    private cache: TokenCache,
-    private oidcClient: OIDCClient
+    private cache: TokenCache
   ) {}
 
   async getToken(tenantId?: string, userId?: string): Promise<string | null> {
@@ -58,7 +57,9 @@ export class UserTokenStrategy implements TokenStrategy {
 
     try {
       
-      const tokenData = await this.oidcClient.refreshUserToken(refreshToken);
+      const clientId = process.env.USER_CLIENT_ID || 'default-user-client';
+      const clientSecret = process.env.USER_CLIENT_SECRET || 'default-user-secret';
+      const tokenData = await refreshAccessToken(refreshToken, clientId, clientSecret);
       
 
       const accessToken = tokenData.access_token;

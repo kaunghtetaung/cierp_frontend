@@ -3,6 +3,9 @@ import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { ContentPage } from "../../../themes/default/templates/page/ContentPage";
 import { ErrorPage } from "../../../feature-components/error";
 
+// Force this page to be dynamic since it accesses runtime headers
+export const dynamic = 'force-dynamic';
+
 interface SlugPageProps {
   params: Promise<{
     slug: string;

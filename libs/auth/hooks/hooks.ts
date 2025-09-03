@@ -64,18 +64,29 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     session: null,
     isAuthenticated: false,
     isLoading: true,
+    loading: true, // Alias for isLoading for backward compatibility
     error: null,
     tenantId: null
   });
 
-  const refreshTimeoutRef = useRef<NodeJS.Timeout>();
-  const checkIntervalRef = useRef<NodeJS.Timeout>();
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const failureCountRef = useRef<number>(0);
   const maxFailures = 3; // Stop polling after 3 consecutive failures
 
   // Update state helper
   const updateState = useCallback((updates: Partial<AuthState>) => {
-    setState(prev => ({ ...prev, ...updates }));
+    setState(prev => {
+      const newState = { ...prev, ...updates };
+      // Keep loading and isLoading in sync
+      if ('isLoading' in updates) {
+        newState.loading = updates.isLoading!;
+      }
+      if ('loading' in updates) {
+        newState.isLoading = updates.loading!;
+      }
+      return newState;
+    });
   }, []);
 
   // Handle authentication errors

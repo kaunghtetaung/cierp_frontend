@@ -34,7 +34,7 @@ export function OrganizationStructureSection({
   } = section;
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
-    new Set(displayOptions.expandByDefault ? [structure?.id] : [])
+    new Set((displayOptions as any)?.expandByDefault ? [structure?.id] : [])
   );
 
   const headline = section.headline
@@ -80,7 +80,7 @@ export function OrganizationStructureSection({
     const shouldShowChildren =
       hasChildren &&
       isExpanded &&
-      (!displayOptions.maxDepth || depth < displayOptions.maxDepth);
+      (!(displayOptions as any)?.maxDepth || depth < (displayOptions as any)?.maxDepth);
 
     const cardClasses = {
       card: "bg-card border border-border rounded-lg p-4 shadow-lg hover:shadow-xl hover:border-primary transition-all duration-300",
@@ -114,7 +114,7 @@ export function OrganizationStructureSection({
 
             <div className="flex gap-4">
               {/* Photo */}
-              {displayOptions?.showPhotos && person.photo && (
+              {(displayOptions as any)?.showPhotos && person.photo && (
                 <div className="flex-shrink-0">
                   <img
                     src={person.photo}
@@ -130,7 +130,7 @@ export function OrganizationStructureSection({
                   {getLocalizedText(person.name, currentLanguage)}
                 </h3>
 
-                {displayOptions?.showTitles && person.title && (
+                {(displayOptions as any)?.showTitles && person.title && (
                   <p className="text-primary font-medium mb-2">
                     {getLocalizedText(person.title, currentLanguage)}
                   </p>
@@ -147,7 +147,7 @@ export function OrganizationStructureSection({
 
                 {/* Contact Info */}
                 <div className="flex flex-col gap-1">
-                  {displayOptions?.showEmails && person.email && (
+                  {(displayOptions as any)?.showEmails && person.email && (
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Mail className="w-4 h-4 text-primary" />
                       <a
@@ -159,7 +159,7 @@ export function OrganizationStructureSection({
                     </div>
                   )}
 
-                  {displayOptions?.showPhones && person.phone && (
+                  {(displayOptions as any)?.showPhones && person.phone && (
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Phone className="w-4 h-4 text-primary" />
                       <a

@@ -92,7 +92,7 @@ export function isOrganizationStructureSection(section: SectionData): section is
 }
 
 export function isStatusColorsShowcase(section: SectionData): boolean {
-  return section.type === 'statusColorsShowcase';
+  return (section as any).type === 'statusColorsShowcase';
 }
 
 /**

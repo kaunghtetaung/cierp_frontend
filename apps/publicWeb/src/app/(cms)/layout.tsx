@@ -1,6 +1,9 @@
 import React from "react";
 import { getTheme } from "@/themes";
 
+// Force all CMS pages to be dynamic to avoid header serialization issues
+export const dynamic = 'force-dynamic';
+
 interface CMSLayoutState {
   tenant: Record<string, any> | null;
   contentSettings: Record<string, any> | null;

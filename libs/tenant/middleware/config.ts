@@ -10,6 +10,10 @@ export const DEFAULT_CONFIG: MiddlewareConfig = {
     maxAge: 24 * 60 * 60, // 24 hours
     sameSite: "lax",
   },
+  security: {
+    csrf: true,
+    excludePaths: ["/health", "/ping"],
+  },
   headers: {
     tenantHeader: "x-tenant-id",
     langHeader: "x-lang",

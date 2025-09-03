@@ -52,7 +52,7 @@ export const getAuthenticationStatus = cache(async (
         user: null,
         session: null,
         tenantId,
-        error: null // No error - just not authenticated
+        error: undefined // No error - just not authenticated
       };
     }
 
@@ -90,7 +90,7 @@ export const getAuthenticationStatus = cache(async (
 
     return {
       isAuthenticated: true,
-      user: authResult.user || null,
+      user: authResult.user as any, // Type cast to resolve User interface mismatch
       session,
       tenantId: authResult.session?.tenantId || tenantId,
       error: undefined

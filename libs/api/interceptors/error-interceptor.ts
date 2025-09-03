@@ -185,9 +185,9 @@ export class GlobalErrorInterceptor implements ErrorInterceptor {
           retryable = true;
           break;
         default:
-          if (statusCode >= 400 && statusCode < 500) {
+          if (statusCode && statusCode >= 400 && statusCode < 500) {
             category = ApiErrorCategory.VALIDATION;
-          } else if (statusCode >= 500) {
+          } else if (statusCode && statusCode >= 500) {
             category = ApiErrorCategory.SERVER_ERROR;
             retryable = true;
           }

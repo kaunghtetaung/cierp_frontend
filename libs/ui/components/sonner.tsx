@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, ToasterProps } from "sonner"
-import { Z_INDEX } from "@repo/utils"
+import { Z_INDEX } from "../lib/utils"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
@@ -14,7 +14,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       expand={true}
       richColors={true}
       closeButton={true}
-      className={`toaster group ${Z_INDEX.TOAST}`}
+      className={`toaster group ${Z_INDEX.toast}`}
       toastOptions={{
         style: {
           position: 'relative',

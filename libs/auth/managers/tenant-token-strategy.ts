@@ -1,9 +1,9 @@
 // Tenant Token Strategy - Single Responsibility: Tenant token management
 import { CacheKeys } from '@repo/cache';
+import { getClientCredentialsToken } from '../core/oidc';
 import type { 
   TokenStrategy, 
   TokenCache, 
-  OIDCClient, 
   TOKEN_CONSTANTS 
 } from '../types/token-types';
 
@@ -26,8 +26,7 @@ interface StoredToken {
 
 export class TenantTokenStrategy implements TokenStrategy {
   constructor(
-    private cache: TokenCache,
-    private oidcClient: OIDCClient
+    private cache: TokenCache
   ) {}
 
   async getToken(tenantId?: string): Promise<string | null> {
@@ -49,15 +48,19 @@ export class TenantTokenStrategy implements TokenStrategy {
     return stored.token;
   }
 
-  async refreshToken(tenantId: string, clientId: string, clientSecret: string): Promise<string | null> {
+  async refreshToken(tenantId: string, userId?: string): Promise<string | null> {
+    // For tenant tokens, get from environment or use defaults
+    const clientId = process.env.TENANT_CLIENT_ID || 'default-tenant-client';
+    const clientSecret = process.env.TENANT_CLIENT_SECRET || 'default-tenant-secret';
+    return this.createTenantToken(tenantId, clientId, clientSecret);
+  }
+
+  async createTenantToken(tenantId: string, clientId: string, clientSecret: string): Promise<string | null> {
     try {
-      
-      const apiDomain = await this.oidcClient.getApiDomain();
-      const tokenData = await this.oidcClient.fetchClientCredentialsToken(
+      const tokenData = await getClientCredentialsToken(
         clientId,
         clientSecret,
-        "api.read",
-        apiDomain
+        "api.read"
       );
 
       const accessToken = tokenData.access_token;
@@ -97,7 +100,7 @@ export class TenantTokenStrategy implements TokenStrategy {
       }
 
       // No cached token, fetch new one
-      return await this.refreshToken(tenantId, clientId, clientSecret);
+      return await this.createTenantToken(tenantId, clientId, clientSecret);
     } catch (error) {
       console.error("Error obtaining tenant access token:", error);
       return null;

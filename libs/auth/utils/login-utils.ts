@@ -80,7 +80,7 @@ export async function getAuthStatus(): Promise<AuthenticationResult> {
           user: null,
           session: null,
           tenantId: null,
-          error: null
+          error: undefined
         };
       }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -96,7 +96,7 @@ export async function getAuthStatus(): Promise<AuthenticationResult> {
         user: null,
         session: null,
         tenantId: null,
-        error: null
+        error: undefined
       };
     }
     
@@ -335,7 +335,7 @@ export const DevUtils = {
       id: 'mock-user-id',
       email: 'user@example.com',
       name: 'Mock User',
-      roles: ['user'],
+      roles: ['user'] as any,
       permissions: ['read'],
       tenantId: 'mock-tenant',
       isActive: true,

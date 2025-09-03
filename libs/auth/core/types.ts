@@ -14,7 +14,7 @@ export type {
   SessionContext,
   SessionCreateOptions,
   SessionError
-} from '@repo/security/types/session-types';
+} from '@repo/security/session-types';
 
 export type { 
   OIDCConfig, 
@@ -56,7 +56,7 @@ export interface AuthenticationResult {
 // Auth context for middleware and components
 export interface AuthContext {
   user: User | null;
-  session: SessionData | null;
+  session: any | null; // Using any to avoid circular type issues
   isAuthenticated: boolean;
   isLoading: boolean;
   tenantId: string | null;
@@ -65,7 +65,7 @@ export interface AuthContext {
 // Auth options for configuration
 export interface AuthOptions {
   enableAuth?: boolean;
-  sessionConfig?: Partial<SessionConfig>;
+  sessionConfig?: Partial<any>; // Using any to avoid circular type issues
   autoRefresh?: boolean;
   refreshThreshold?: number;
 }
@@ -100,7 +100,7 @@ export interface RequestContext {
 // Auth middleware data
 export interface AuthMiddlewareData {
   user?: User;
-  session?: SessionData;
+  session?: import('@repo/security/session-types').SessionData;
   tenantId?: string;
   isAuthenticated: boolean;
 }

@@ -19,10 +19,21 @@ export async function ThemeLayout({
   className = "",
   tenantSetting,
 }: ThemeLayoutProps) {
-  // Get tenant and middleware data
-  const middlewareData = await getMiddlewareDataFromHeaders();
-  const tenantId = middlewareData.tenantId;
-  const currentLanguage = middlewareData.language as "en" | "mm";
+  // Get tenant and middleware data, with fallback for build time
+  let middlewareData;
+  let tenantId: string | null = null;
+  let currentLanguage: "en" | "mm" = "en";
+
+  try {
+    middlewareData = await getMiddlewareDataFromHeaders();
+    tenantId = middlewareData.tenantId;
+    currentLanguage = middlewareData.language as "en" | "mm";
+  } catch (error) {
+    // During build/static generation, headers aren't available
+    console.warn("Headers not available during build, using defaults");
+    tenantId = "default";
+    currentLanguage = "en";
+  }
 
   // TODO: Get authentication data from your auth system
   const isAuthenticated = false;

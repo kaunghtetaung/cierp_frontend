@@ -1,14 +1,4 @@
 // DOM utility functions with Next.js 15 compatibility
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-/**
- * Combine and merge Tailwind CSS classes
- * Enhanced version of the cn utility
- */
-export function cn(...inputs: ClassValue[]): string {
-  return twMerge(clsx(inputs));
-}
 
 /**
  * Check if code is running in browser

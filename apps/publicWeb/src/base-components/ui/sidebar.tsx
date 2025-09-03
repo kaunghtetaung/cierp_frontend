@@ -2,7 +2,7 @@ import * as React from "react";
 import { Slot } from "./slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@repo/utils/client/dom";
+import { cn } from "@repo/utils";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;

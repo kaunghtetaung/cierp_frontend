@@ -5,6 +5,9 @@ import { LoginPageContent } from "./login-page-content";
 import { ErrorPage } from "../../../feature-components/error";
 import { FullPageLoadingDisplay } from "../../../styled-components/ui/LoadingSpinners";
 
+// Force this page to be dynamic since it accesses runtime headers
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Login",
   description: "Sign in to your account",

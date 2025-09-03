@@ -10,6 +10,14 @@ import type {
   TokenCache,
   OIDCClient,
 } from "../types/token-types";
+
+// Re-export types
+export type { 
+  TokenType, 
+  TokenData, 
+  TokenMetadata, 
+  OIDCConfig 
+} from "../types/token-types";
 import { getTenantSecrets } from "@repo/tenant/wrapper";
 
 import { StandardOIDCClient } from "../clients/oidc-client";
@@ -43,11 +51,10 @@ export class TokenManager {
 
     // Initialize strategies with injected dependencies
     this.initializerStrategy = new InitializerTokenStrategy(
-      this.cache,
-      this.oidcClient
+      this.cache
     );
-    this.tenantStrategy = new TenantTokenStrategy(this.cache, this.oidcClient);
-    this.userStrategy = new UserTokenStrategy(this.cache, this.oidcClient);
+    this.tenantStrategy = new TenantTokenStrategy(this.cache);
+    this.userStrategy = new UserTokenStrategy(this.cache);
 
     // Initialize token health service
     tokenHealthService.initialize(this);
@@ -91,7 +98,7 @@ export class TokenManager {
     clientId: string,
     clientSecret: string
   ): Promise<string | null> {
-    return await this.tenantStrategy.refreshToken(
+    return await this.tenantStrategy.createTenantToken(
       tenantId,
       clientId,
       clientSecret

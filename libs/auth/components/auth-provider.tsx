@@ -77,10 +77,7 @@ export function AuthProvider({
             ? '🎉 အကောင့်ဝင်ခွင့် သက်တမ်းတိုးပြီးပါပြီ'
             : '🎉 Session extended successfully',
           {
-            duration: 5000,
-            description: language === 'mm'
-              ? 'သင့်အကောင့်ကို ဆက်လက်အသုံးပြုနိုင်ပါပြီ'
-              : 'You can continue working without interruption'
+            duration: 5000
           }
         );
         
@@ -96,9 +93,6 @@ export function AuthProvider({
           : 'Failed to extend session',
         {
           duration: 8000,
-          description: language === 'mm'
-            ? 'ကျေးဇူးပြု၍ အကောင့်ဝင်ရန် ပြန်လည်လော့ဂ်အင်လုပ်ပါ'
-            : 'Please log in again to continue',
           action: {
             label: language === 'mm' ? 'လော့ဂ်အင်' : 'Login',
             onClick: () => {
@@ -123,9 +117,6 @@ export function AuthProvider({
           : '⚠️ Session extension failed',
         {
           duration: 10000,
-          description: language === 'mm'
-            ? 'ကွန်ယက်ချိတ်ဆက်မှုကို စစ်ဆေးပြီး ထပ်မံကြိုးစားပါ သို့မဟုတ် ပြန်လည်လော့ဂ်အင်လုပ်ပါ'
-            : 'Please check your connection and try again, or log in again',
           action: {
             label: language === 'mm' ? 'ထပ်စမ်း' : 'Retry',
             onClick: extendSession
@@ -197,13 +188,6 @@ export function AuthProvider({
                 : `⚠️ Your session will expire in ${minutesRemaining} minute${minutesRemaining > 1 ? 's' : ''}`,
               {
                 duration: minutesRemaining === 1 ? 15000 : 10000, // Longer duration for critical 1-minute warning
-                description: language === 'mm'
-                  ? minutesRemaining === 1 
-                    ? 'ချက်ချင်းအရေးယူရန်လိုအပ်သည်!'
-                    : 'သင့်အလုပ်ကို မဆုံးရှုံးစေရန် သက်တမ်းတိုးပါ'
-                  : minutesRemaining === 1
-                    ? 'Immediate action required!'
-                    : 'Extend now to avoid losing your work',
                 action: {
                   label: language === 'mm' ? '🔄 သက်တမ်းတိုး' : '🔄 Extend',
                   onClick: extendSession
@@ -243,7 +227,7 @@ export function AuthProvider({
         });
       }
       
-      options.onError?.(auth.error);
+      options.onError?.(new Error(auth.error));
     }
   }, [auth.error]);
 

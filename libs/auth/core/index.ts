@@ -119,11 +119,8 @@ export async function validateRequest(
       tenantId: session.tenantId,
       email: userInfo.email || '',
       name: userInfo.name || '',
-      displayName: userInfo.name || '', // Backward compatibility
       roles: roles,
-      role: Array.isArray(roles) && roles.length > 0 ? roles[0].Role as any : undefined, // Backward compatibility
       permissions: userInfo.permissions || [],
-      sub: session.userId, // Backward compatibility
       isActive: true,
       createdAt: userInfo.createdAt || session.createdAt,
       updatedAt: new Date()
@@ -135,11 +132,8 @@ export async function validateRequest(
       tenantId: session.tenantId,
       email: '',
       name: '',
-      displayName: '', // Backward compatibility
       roles: [],
-      role: undefined, // Backward compatibility
       permissions: [],
-      sub: session.userId, // Backward compatibility
       isActive: true,
       createdAt: session.createdAt,
       updatedAt: session.lastActivityAt

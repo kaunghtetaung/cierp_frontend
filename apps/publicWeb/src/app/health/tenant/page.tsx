@@ -1,6 +1,9 @@
 // Quick test component to verify tenant resolution
 import { headers } from 'next/headers';
 
+// Force this page to be dynamic since it accesses runtime headers
+export const dynamic = 'force-dynamic';
+
 export default async function TestTenant() {
   const headersList = await headers();
   

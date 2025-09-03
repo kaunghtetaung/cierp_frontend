@@ -34,7 +34,8 @@ export type {
   ApiResponse,
   PaginatedResponse,
   ApiError,
-  HttpMethod
+  HttpMethod,
+  ApiRequestConfig
 } from './api';
 
 // Module schema types for server-side usage - handle MultilingualText conflict

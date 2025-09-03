@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { cn } from "@repo/utils";
+import { cn } from "../lib/utils";
 import { Button } from "./button";
 import { Input } from "./input";
 import * as XLSX from 'xlsx';

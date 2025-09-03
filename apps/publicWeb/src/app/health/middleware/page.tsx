@@ -1,6 +1,9 @@
 import { headers } from "next/headers";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 
+// Force this page to be dynamic since it accesses runtime headers
+export const dynamic = 'force-dynamic';
+
 export default async function TestMiddlewarePage() {
   const headersList = await headers();
   const middlewareData = await getMiddlewareDataFromHeaders();

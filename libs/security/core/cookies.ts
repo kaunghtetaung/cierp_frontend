@@ -327,7 +327,7 @@ export function createAuthCookie(
   tenantDomain?: string,
   maxAge: number = 30 * 60 // 30 minutes
 ): string {
-  const options = createSessionCookieOptions(tenantDomain, maxAge);
+  const options = createSessionCookieOptions(tenantDomain || '', maxAge);
   return serializeCookie(name, value, options);
 }
 
