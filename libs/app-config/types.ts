@@ -3,6 +3,7 @@
 export interface AppConfig {
   id: string;
   hostname: string;
+  basePath: string; // Path prefix for app routes (e.g., '/core', '/library')
   name: string;
   description: string;
   primaryColor: string;

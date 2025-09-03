@@ -42,20 +42,21 @@ export function AppProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [availableApps] = useState<AppConfig[]>(getAvailableApps());
 
-  // Initialize app context from hostname
+  // Initialize app context from hostname and path
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     try {
       const windowHostname = window.location.hostname;
-      const detectedAppId = getAppFromHostname(windowHostname);
+      const windowPathname = window.location.pathname;
+      const detectedAppId = getAppFromHostname(windowHostname, windowPathname);
       
       setHostname(windowHostname);
       
       // Only update if different from initial or current
       if (detectedAppId !== currentApp) {
         setCurrentApp(detectedAppId);
-        console.log(`🔧 App context initialized: ${detectedAppId} from hostname: ${windowHostname}`);
+        console.log(`🔧 App context initialized: ${detectedAppId} from hostname: ${windowHostname}, path: ${windowPathname}`);
       }
     } catch (error) {
       console.error('Failed to initialize app context:', error);
@@ -64,19 +65,19 @@ export function AppProvider({
     }
   }, [currentApp]);
 
-  // Update when hostname changes (for SPA navigation)
+  // Update when hostname or path changes (for SPA navigation)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleLocationChange = () => {
       const newHostname = window.location.hostname;
-      if (newHostname !== hostname) {
-        const newAppId = getAppFromHostname(newHostname);
-        if (newAppId !== currentApp) {
-          setCurrentApp(newAppId);
-          setHostname(newHostname);
-          console.log(`🔧 App context updated: ${newAppId} from hostname: ${newHostname}`);
-        }
+      const newPathname = window.location.pathname;
+      const newAppId = getAppFromHostname(newHostname, newPathname);
+      
+      if (newAppId !== currentApp) {
+        setCurrentApp(newAppId);
+        setHostname(newHostname);
+        console.log(`🔧 App context updated: ${newAppId} from hostname: ${newHostname}, path: ${newPathname}`);
       }
     };
 

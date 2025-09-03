@@ -4,7 +4,8 @@ import type { AppConfig, HostnameMapping } from './types';
 export const APP_CONFIGS: Record<string, AppConfig> = {
   'core': {
     id: 'core',
-    hostname: 'core.crystal-image.net',
+    hostname: 'app.crystal-image.net',
+    basePath: '/core',
     name: 'Core Management',
     description: 'Core system management and administration',
     primaryColor: '#0066cc',
@@ -13,7 +14,8 @@ export const APP_CONFIGS: Record<string, AppConfig> = {
   },
   'library': {
     id: 'library',
-    hostname: 'library.crystal-image.net',
+    hostname: 'app.crystal-image.net',
+    basePath: '/library',
     name: 'Library System',
     description: 'Library management and cataloging system',
     primaryColor: '#00aa44',
@@ -21,7 +23,8 @@ export const APP_CONFIGS: Record<string, AppConfig> = {
   },
   'school': {
     id: 'school',
-    hostname: 'school.crystal-image.net',
+    hostname: 'app.crystal-image.net',
+    basePath: '/school',
     name: 'School Management',
     description: 'School administration and student management',
     primaryColor: '#ff6600',
@@ -29,7 +32,8 @@ export const APP_CONFIGS: Record<string, AppConfig> = {
   },
   'content': {
     id: 'content',
-    hostname: 'content.crystal-image.net',
+    hostname: 'app.crystal-image.net',
+    basePath: '/content',
     name: 'Content Management',
     description: 'Content creation and publishing system',
     primaryColor: '#9333ea',
@@ -40,30 +44,24 @@ export const APP_CONFIGS: Record<string, AppConfig> = {
 // Development hostname mappings for local development
 export const DEV_HOSTNAME_MAPPINGS: HostnameMapping[] = [
   // Production hostnames (also work in dev with /etc/hosts)
-  { hostname: 'core.crystal-image.net', appId: 'core', environment: 'development' },
-  { hostname: 'library.crystal-image.net', appId: 'library', environment: 'development' },
-  { hostname: 'school.crystal-image.net', appId: 'school', environment: 'development' },
-  { hostname: 'content.crystal-image.net', appId: 'content', environment: 'development' },
+  { hostname: 'app.crystal-image.net', appId: 'core', environment: 'development' }, // Default to core for app domain
   
-  // Localhost with different ports for development
+  // Localhost with different ports for development - all point to unified app domain
   { hostname: 'localhost:3000', appId: 'core', environment: 'development' },
   { hostname: 'localhost:3001', appId: 'core', environment: 'development' },
   { hostname: 'localhost:3002', appId: 'core', environment: 'development' },
-  { hostname: 'localhost:3003', appId: 'content', environment: 'development' },
+  { hostname: 'localhost:3003', appId: 'core', environment: 'development' },
   
   // 127.0.0.1 variants
   { hostname: '127.0.0.1:3000', appId: 'core', environment: 'development' },
   { hostname: '127.0.0.1:3001', appId: 'core', environment: 'development' },
   { hostname: '127.0.0.1:3002', appId: 'core', environment: 'development' },
-  { hostname: '127.0.0.1:3003', appId: 'content', environment: 'development' }
+  { hostname: '127.0.0.1:3003', appId: 'core', environment: 'development' }
 ];
 
 // Production hostname mappings
 export const PROD_HOSTNAME_MAPPINGS: HostnameMapping[] = [
-  { hostname: 'core.crystal-image.net', appId: 'core', environment: 'production' },
-  { hostname: 'library.crystal-image.net', appId: 'library', environment: 'production' },
-  { hostname: 'school.crystal-image.net', appId: 'school', environment: 'production' },
-  { hostname: 'content.crystal-image.net', appId: 'content', environment: 'production' }
+  { hostname: 'app.crystal-image.net', appId: 'core', environment: 'production' } // Single domain, path-based routing
 ];
 
 // Get all hostname mappings based on environment

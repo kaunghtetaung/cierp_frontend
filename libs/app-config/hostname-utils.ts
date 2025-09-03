@@ -3,9 +3,42 @@ import { APP_CONFIGS, getHostnameMappings, getDefaultApp } from './configs';
 import type { AppConfig, AppContext, AppSwitchOptions } from './types';
 
 /**
- * Extract app ID from hostname
+ * Extract app ID from URL path
  */
-export function getAppFromHostname(hostname: string): string {
+export function getAppFromPath(pathname: string): string {
+  if (!pathname) {
+    return getDefaultApp().id;
+  }
+
+  // Clean pathname and split into segments
+  const cleanPath = pathname.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
+  const pathSegments = cleanPath.split('/').filter(Boolean);
+  
+  if (pathSegments.length === 0) {
+    return getDefaultApp().id;
+  }
+
+  const appId = pathSegments[0];
+  
+  // Check if it's a valid app ID
+  if (APP_CONFIGS[appId]) {
+    return appId;
+  }
+
+  // Default fallback
+  return getDefaultApp().id;
+}
+
+/**
+ * Extract app ID from hostname (legacy support)
+ * Now uses path-based detection as primary method
+ */
+export function getAppFromHostname(hostname: string, pathname?: string): string {
+  // If pathname is provided, use path-based detection
+  if (pathname) {
+    return getAppFromPath(pathname);
+  }
+
   if (!hostname) {
     return getDefaultApp().id;
   }
@@ -25,7 +58,7 @@ export function getAppFromHostname(hostname: string): string {
     return mapping.appId;
   }
 
-  // Fallback: try to extract subdomain
+  // Fallback: try to extract subdomain (legacy support)
   if (cleanHostname.includes('.crystal-image.net')) {
     const subdomain = cleanHostname.split('.crystal-image.net')[0];
     if (APP_CONFIGS[subdomain]) {
@@ -80,7 +113,7 @@ export function createAppContext(hostname: string): AppContext {
 }
 
 /**
- * Build URL for app switching
+ * Build URL for app switching with path-based routing
  */
 export function buildAppSwitchUrl(
   targetAppId: string, 
@@ -90,16 +123,23 @@ export function buildAppSwitchUrl(
 ): string {
   const { preservePath = true, preserveQuery = true } = options;
   
-  const targetHostname = getHostnameForApp(targetAppId);
+  const targetConfig = getAppConfig(targetAppId);
+  const targetHostname = targetConfig.hostname;
+  const targetBasePath = targetConfig.basePath;
+  
   const protocol = typeof window !== 'undefined' 
     ? window.location.protocol 
     : 'https:';
   
-  let url = `${protocol}//${targetHostname}`;
+  let url = `${protocol}//${targetHostname}${targetBasePath}`;
   
-  // Add path if preserving
+  // Add path if preserving (but remove current app prefix if it exists)
   if (preservePath && currentPath) {
-    url += currentPath.startsWith('/') ? currentPath : `/${currentPath}`;
+    // Clean current path - remove any existing app prefix
+    const cleanedPath = currentPath.replace(/^\/[^\/]+/, '') || '';
+    if (cleanedPath && cleanedPath !== '/') {
+      url += cleanedPath.startsWith('/') ? cleanedPath : `/${cleanedPath}`;
+    }
   }
   
   // Add query parameters if preserving
@@ -140,11 +180,14 @@ export function switchToApp(
 }
 
 /**
- * Check if current hostname matches app
+ * Check if current path matches app
  */
-export function isCurrentApp(appId: string, hostname?: string): boolean {
+export function isCurrentApp(appId: string, pathname?: string, hostname?: string): boolean {
+  const currentPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
   const currentHostname = hostname || (typeof window !== 'undefined' ? window.location.hostname : '');
-  const currentAppId = getAppFromHostname(currentHostname);
+  
+  // Use path-based detection as primary method
+  const currentAppId = getAppFromHostname(currentHostname, currentPathname);
   return currentAppId === appId;
 }
 

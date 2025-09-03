@@ -63,10 +63,11 @@ const authConfig: Partial<MiddlewareConfig> = {
 };
 
 /**
- * Handle app detection from x-app-id header or hostname
+ * Handle app detection from x-app-id header, URL path, or hostname
  */
-async function getAppFromHostname(request: NextRequest) {
+async function getAppFromRequest(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
+  const pathname = request.nextUrl.pathname;
   
   // Try to get app ID from x-app-id header first
   const headerAppId = request.headers.get("x-app-id");
@@ -75,12 +76,12 @@ async function getAppFromHostname(request: NextRequest) {
   if (headerAppId) {
     appId = headerAppId;
   } else {
-    // Fallback to hostname detection
+    // Use path-based detection as primary method
     try {
       const { getAppFromHostname } = await import("@repo/app-config");
-      appId = getAppFromHostname(hostname);
+      appId = getAppFromHostname(hostname, pathname);
     } catch (error) {
-      console.error("Failed to detect app from hostname:", error);
+      console.error("Failed to detect app from hostname/path:", error);
       appId = "core"; // Default fallback
     }
   }
@@ -88,6 +89,7 @@ async function getAppFromHostname(request: NextRequest) {
   return {
     appId,
     hostname,
+    pathname,
     needsCookieUpdate: request.cookies.get("x-app-id")?.value !== appId,
   };
 }
@@ -124,8 +126,8 @@ async function getValidLanguage(request: NextRequest) {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Get app information from hostname
-  const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppFromHostname(request);
+  // Get app information from request (path-based detection)
+  const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppFromRequest(request);
 
   // Get language information
   const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(request);

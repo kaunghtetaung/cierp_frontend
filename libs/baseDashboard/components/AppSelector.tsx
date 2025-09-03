@@ -51,22 +51,22 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
   // Debug: Log apps array to see structure
   console.log("Apps array structure:", apps);
 
-  // Get current app from hostname subdomain
+  // Get current app from URL path (path-based routing)
   const getCurrentApp = (): TenantApplication | null => {
     if (apps.length === 0) return null;
 
     if (typeof window !== "undefined") {
-      const currentHostname = window.location.hostname;
-      const baseDomain = extractBaseDomain(currentHostname);
+      const currentPathname = window.location.pathname;
+      
+      // Extract app from path (e.g., "/core/users" -> "core")
+      const pathSegments = currentPathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+      const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
 
-      // Extract subdomain (e.g., "core" from "core.crystal-image.net")
-      const subdomain = currentHostname.replace(`.${baseDomain}`, "");
-
-      // Find app that matches the current subdomain using slug (with fallback)
+      // Find app that matches the current path using slug (with fallback)
       const currentApp = apps.find((app) => {
         const appIdentifier =
           app.slug || getLocalizedText(app.displayShortName, currentLanguage);
-        return appIdentifier === subdomain;
+        return appIdentifier === appFromPath;
       });
 
       // If found, return it; otherwise return first app as fallback
@@ -107,28 +107,31 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
       const currentHostname = window.location.hostname;
       const protocol = window.location.protocol;
       const port = window.location.port;
+      const currentPath = window.location.pathname;
       const search = window.location.search;
       const hash = window.location.hash;
 
-      // Extract base domain (e.g., crystal-image.net from core.crystal-image.net)
-      const baseDomain = extractBaseDomain(currentHostname);
+      // Extract current app from path
+      const pathSegments = currentPath.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+      const currentAppFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
 
-      // Check if we're already on this app's subdomain
-      const currentSubdomain = currentHostname.replace(`.${baseDomain}`, "");
-      if (currentSubdomain === appSlug) {
+      // Check if we're already on this app's path
+      if (currentAppFromPath === appSlug) {
         console.log(`Already on ${appSlug} app`);
         return;
       }
 
-      // Build new subdomain URL with app slug
+      // Build new path-based URL with app slug
       const portSuffix = port ? `:${port}` : "";
-      const newUrl = `${protocol}//${appSlug}.${baseDomain}${portSuffix}${pathname}${search}${hash}`;
+      // Remove current app from path and add new app
+      const remainingPath = pathSegments.length > 1 ? '/' + pathSegments.slice(1).join('/') : '';
+      const newUrl = `${protocol}//${currentHostname}${portSuffix}/${appSlug}${remainingPath}${search}${hash}`;
 
       console.log(
-        `Switching from ${currentSubdomain} to ${appSlug} app: ${newUrl}`
+        `Switching from ${currentAppFromPath} to ${appSlug} app: ${newUrl}`
       );
 
-      // Navigate to new subdomain
+      // Navigate to new path-based URL
       window.location.href = newUrl;
     }
   };

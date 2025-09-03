@@ -66,9 +66,12 @@ async function getValidLanguage(request: NextRequest) {
 }
 
 /**
- * Handle app detection for PublicWeb (dynamically from x-app-id header or hostname)
+ * Handle app detection for PublicWeb (dynamically from x-app-id header, URL path, or hostname)
  */
 async function getAppInfo(request: NextRequest) {
+  const hostname = request.headers.get("host") || "";
+  const pathname = request.nextUrl.pathname;
+  
   // Try to get app ID from x-app-id header first
   const headerAppId = request.headers.get("x-app-id");
   
@@ -76,13 +79,12 @@ async function getAppInfo(request: NextRequest) {
   if (headerAppId) {
     appId = headerAppId;
   } else {
-    // Fallback to hostname detection
+    // Use path-based detection as primary method
     try {
       const { getAppFromHostname } = await import("@repo/app-config");
-      const hostname = request.headers.get("host") || "";
-      appId = getAppFromHostname(hostname);
+      appId = getAppFromHostname(hostname, pathname);
     } catch (error) {
-      console.error("Failed to detect app from hostname:", error);
+      console.error("Failed to detect app from hostname/path:", error);
       appId = "core"; // Default fallback
     }
   }
