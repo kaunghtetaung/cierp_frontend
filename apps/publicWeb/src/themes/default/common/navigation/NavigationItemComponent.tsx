@@ -27,7 +27,7 @@ const ItemContent = ({
   isMobile,
   currentLanguage,
 }: Pick<NavigationItemProps, "item" | "isMobile" | "currentLanguage">) => {
-  const title = getTitle(item, currentLanguage);
+  const title = getTitle(item, currentLanguage || 'en');
   const iconName = getIconName(item);
 
   return (
@@ -52,8 +52,8 @@ const ItemContent = ({
 const DropdownContent = ({
   children,
   currentLanguage,
-  isAuthenticated,
-  userRoles,
+  isAuthenticated = false,
+  userRoles = [],
 }: {
   children: any[];
   currentLanguage: "en" | "mm";
@@ -101,7 +101,7 @@ const DesktopNavigationItem = ({
       <NavigationMenuItem className={cn(item.cssClass)}>
         <NavigationMenuTrigger>{content}</NavigationMenuTrigger>
         <DropdownContent
-          currentLanguage={currentLanguage}
+          currentLanguage={currentLanguage || 'en'}
           isAuthenticated={isAuthenticated}
           userRoles={userRoles}
         >

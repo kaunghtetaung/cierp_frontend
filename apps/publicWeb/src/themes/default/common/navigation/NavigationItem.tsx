@@ -41,7 +41,7 @@ export function NavigationItem({
   }, [item.requiresAuth, item.allowedRoles, isAuthenticated, userRoles]);
 
   // Get localized title
-  const title = item.title[currentLanguage] || item.title.en || "Untitled";
+  const title = item.title[currentLanguage || 'en'] || item.title.en || "Untitled";
 
   // Don't render if user doesn't have access
   if (!hasAccess) {

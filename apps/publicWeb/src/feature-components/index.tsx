@@ -13,8 +13,7 @@ export {
 export type { 
   Language, 
   LangSelectorContextValue,
-  LangSelectorWrapperProps,
-  LangSelectorUIProps 
+  LangSelectorWrapperProps
 } from './lang-selector';
 
 // User Menu
@@ -49,35 +48,18 @@ export type {
   SearchWrapperProps
 } from './search';
 
-// Icons
-export { default as IconComponent } from './icons';
+// Icons - re-export available icons from lucide-react
 export {
-  IconComponent as Icon,
-  IconSelector,
-  SmallIcon,
-  MediumIcon,
-  LargeIcon,
-  ThemedIcon,
-  ICON_CATEGORIES,
-  ICON_REGISTRY,
-  ALL_ICONS,
-  getIconComponent,
-  isValidIcon,
-  getIconsByCategory,
-  searchIcons,
-  getIconInfo
+  User as UserIcon,
+  Settings as SettingsIcon,
+  LogOut as LogOutIcon,
+  Search as SearchIcon,
+  Menu as MenuIcon,
+  X as XIcon,
+  ChevronDown as ChevronDownIcon,
+  Globe as GlobeIcon,
 } from './icons';
 export type {
-  IconComponentProps,
-  IconSelectorProps,
-  IconCategory,
-  IconName,
-  IconInfo,
-  IconSearchResult,
-  IconCategoryInfo,
-  IconValidationResult,
-  IconFieldProps,
-  IconButtonProps,
-  IconThemeVariant,
-  IconSize
+  IconProps,
+  IconComponent
 } from './icons/types';

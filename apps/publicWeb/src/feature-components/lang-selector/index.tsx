@@ -5,10 +5,31 @@ import { LangSelectorWrapperProps } from './types';
 import { LangSelectorProvider, useLangSelector } from './context';
 import { DEFAULT_LANGUAGES } from './utils';
 
-// Re-export everything for convenience
-export * from './types';
-export * from './utils';
-export * from './context';
+// Re-export specific items to avoid duplicates
+export type { 
+  LangSelectorContextValue,
+  LangSelectorWrapperProps,
+  LangSelectorProviderProps,
+  LangSelectorUIProps
+} from './types';
+
+export type { Language } from './utils';
+
+export {
+  DEFAULT_LANGUAGES,
+  getLanguageByCode,
+  getDefaultLanguage,
+  isValidLanguageCode,
+  getBrowserLanguage,
+  getStoredLanguage,
+  setStoredLanguage,
+  changeLanguageAPI
+} from './utils';
+
+export { 
+  LangSelectorProvider,
+  useLangSelector 
+} from './context';
 
 /**
  * Main wrapper component for language selector
@@ -52,8 +73,7 @@ function LangSelectorConsumer({
   return <>{children(context)}</>;
 }
 
-// Hook for easy access
-export { useLangSelector } from './context';
+// Hook already exported above
 
 // Default export
 export default LangSelectorWrapper;

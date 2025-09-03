@@ -141,7 +141,7 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const { isMobile, state, openMobile, setOpenMobile, open } = useSidebar();
 
     if (collapsible === "none") {
       return (
@@ -162,14 +162,14 @@ const Sidebar = React.forwardRef<
       return (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className={cn("absolute inset-0 bg-black/50", !open && "hidden")}
-            onClick={() => context?.setOpen && context.setOpen(false)}
+            className={cn("absolute inset-0 bg-black/50", !openMobile && "hidden")}
+            onClick={() => setOpenMobile(false)}
           />
           <div
             className={cn(
               "fixed h-full w-[--sidebar-width-mobile] bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-in-out",
               side === "left" ? "left-0" : "right-0",
-              open
+              openMobile
                 ? "translate-x-0"
                 : side === "left"
                 ? "-translate-x-full"

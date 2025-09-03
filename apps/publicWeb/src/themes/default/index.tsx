@@ -40,11 +40,7 @@ export {
 // Types
 export type {
   HeaderContainerProps,
-  HeaderBannerProps,
-  HeaderActionsProps,
-  SectionData,
-  SectionProps,
-  SectionRendererProps
+  FooterContainerProps
 } from './common';
 
 // Default export - the main theme entry point

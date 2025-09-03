@@ -45,6 +45,8 @@ export interface MobileNavigationProps extends BaseNavigationProps {
 export interface NavigationItemProps {
   item: NavigationItem;
   currentLanguage?: "en" | "mm";
+  isAuthenticated: boolean;
+  userRoles: string[];
   isMobile?: boolean;
   onItemClick?: () => void;
 }

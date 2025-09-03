@@ -30,6 +30,8 @@ export interface HeaderContainerProps {
   className?: string;
   currentLanguage?: 'en' | 'mm';
   tenantId: string;
+  isAuthenticated: boolean;
+  userRoles: string[];
   // Optional overrides for customization
   showLogo?: boolean;
   showNavigation?: boolean;

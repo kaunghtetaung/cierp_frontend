@@ -4,7 +4,7 @@
 import React from "react";
 import { UserMenu as FeatureUserMenu } from "@/feature-components/user-menu/UserMenu";
 import { User, Lock } from "lucide-react";
-import { Button } from "./Button";
+import { Button } from "../ui/Button";
 
 export interface UserMenuProps {
   className?: string;

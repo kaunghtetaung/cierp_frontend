@@ -67,7 +67,7 @@ function HealthPageContent({
               <div className="flex justify-between">
                 <span className="font-medium">Request ID:</span>
                 <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded text-xs">
-                  {requestId.slice(0, 8)}...
+                  {requestId?.slice(0, 8) || 'N/A'}...
                 </span>
               </div>
               
@@ -114,10 +114,10 @@ function HealthPageContent({
               </div>
               <div className="ml-3">
                 <h3 className="text-lg font-medium text-green-800 dark:text-green-200">
-                  {tenantSettings.fullName || tenantSettings.shortName || 'Tenant Configuration'}
+                  {(tenantSettings as any)?.fullName || (tenantSettings as any)?.shortName || 'Tenant Configuration'}
                 </h3>
                 <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                  Status: {tenantSettings.isActive ? 'Active' : 'Inactive'} • ID: <code className="font-mono">{tenantId}</code>
+                  Status: {(tenantSettings as any)?.isActive ? 'Active' : 'Inactive'} • ID: <code className="font-mono">{tenantId}</code>
                 </p>
               </div>
             </div>
@@ -126,45 +126,45 @@ function HealthPageContent({
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="font-medium text-green-800 dark:text-green-200">Organization:</span>
-                  <span className="text-green-700 dark:text-green-300">{tenantSettings.fullName || 'N/A'}</span>
+                  <span className="text-green-700 dark:text-green-300">{(tenantSettings as any)?.fullName || 'N/A'}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="font-medium text-green-800 dark:text-green-200">Short Name:</span>
-                  <span className="text-green-700 dark:text-green-300">{tenantSettings.shortName || 'N/A'}</span>
+                  <span className="text-green-700 dark:text-green-300">{(tenantSettings as any)?.shortName || 'N/A'}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="font-medium text-green-800 dark:text-green-200">Root Domain:</span>
-                  <span className="text-green-700 dark:text-green-300 font-mono text-xs">{tenantSettings.rootDomain || 'N/A'}</span>
+                  <span className="text-green-700 dark:text-green-300 font-mono text-xs">{(tenantSettings as any)?.rootDomain || 'N/A'}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="font-medium text-green-800 dark:text-green-200">Status:</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    tenantSettings.isActive 
+                    (tenantSettings as any)?.isActive 
                       ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' 
                       : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
                   }`}>
-                    {tenantSettings.isActive ? 'Active' : 'Inactive'}
+                    {(tenantSettings as any)?.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
                 
-                {tenantSettings.contact && (
+                {(tenantSettings as any)?.contact && (
                   <div className="space-y-2">
                     <span className="font-medium text-green-800 dark:text-green-200">Contact Info:</span>
                     <div className="text-green-700 dark:text-green-300 text-xs space-y-1">
-                      {tenantSettings.contact.email && (
-                        <div>Email: {tenantSettings.contact.email}</div>
+                      {(tenantSettings as any)?.contact?.email && (
+                        <div>Email: {(tenantSettings as any)?.contact?.email}</div>
                       )}
-                      {tenantSettings.contact.phoneNo && (
-                        <div>Phone: {tenantSettings.contact.phoneNo}</div>
+                      {(tenantSettings as any)?.contact?.phoneNo && (
+                        <div>Phone: {(tenantSettings as any)?.contact?.phoneNo}</div>
                       )}
-                      {tenantSettings.contact.webSiteUrl && (
-                        <div>Website: {tenantSettings.contact.webSiteUrl}</div>
+                      {(tenantSettings as any)?.contact?.webSiteUrl && (
+                        <div>Website: {(tenantSettings as any)?.contact?.webSiteUrl}</div>
                       )}
-                      {tenantSettings.contact.address && (
-                        <div>Address: {tenantSettings.contact.address}</div>
+                      {(tenantSettings as any)?.contact?.address && (
+                        <div>Address: {(tenantSettings as any)?.contact?.address}</div>
                       )}
                     </div>
                   </div>
@@ -172,11 +172,11 @@ function HealthPageContent({
               </div>
               
               <div className="space-y-3">
-                {tenantSettings.applications && tenantSettings.applications.length > 0 && (
+                {(tenantSettings as any)?.applications && (tenantSettings as any)?.applications?.length > 0 && (
                   <div className="space-y-2">
                     <span className="font-medium text-green-800 dark:text-green-200">Applications:</span>
                     <div className="space-y-1">
-                      {tenantSettings.applications.map((app: TenantApplication | any, index: number) => {
+                      {(tenantSettings as any)?.applications?.map((app: TenantApplication | any, index: number) => {
                         // Handle both object and string formats for backward compatibility
                         const appName = typeof app === 'object' ? (app.name || app.shortName || 'Unknown') : String(app);
                         const appDescription = typeof app === 'object' ? app.description : undefined;
@@ -210,20 +210,20 @@ function HealthPageContent({
                   </div>
                 )}
                 
-                {tenantSettings.createdAt && (
+                {(tenantSettings as any)?.createdAt && (
                   <div className="flex justify-between">
                     <span className="font-medium text-green-800 dark:text-green-200">Created:</span>
                     <span className="text-green-700 dark:text-green-300 text-xs">
-                      {new Date(tenantSettings.createdAt).toLocaleDateString()}
+                      {new Date((tenantSettings as any)?.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 )}
                 
-                {tenantSettings.updatedAt && (
+                {(tenantSettings as any)?.updatedAt && (
                   <div className="flex justify-between">
                     <span className="font-medium text-green-800 dark:text-green-200">Updated:</span>
                     <span className="text-green-700 dark:text-green-300 text-xs">
-                      {new Date(tenantSettings.updatedAt).toLocaleDateString()}
+                      {new Date((tenantSettings as any)?.updatedAt).toLocaleDateString()}
                     </span>
                   </div>
                 )}

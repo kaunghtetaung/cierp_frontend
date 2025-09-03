@@ -41,7 +41,7 @@ export function UserSidebar({
             <h2 className="text-lg font-semibold">Account</h2>
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={() => onOpenChange(false)}
               className="h-8 w-8"
             >
