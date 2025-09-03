@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@repo/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
 import { ArrowLeft } from 'lucide-react'
 import { ReactHookFormWrapper } from './ReactHookFormWrapper'
 import { toastSuccess, toastError } from '@repo/utils'

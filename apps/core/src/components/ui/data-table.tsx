@@ -14,7 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@repo/ui";
 import { Button } from "./button";
 import { Input } from "./input";
 import {

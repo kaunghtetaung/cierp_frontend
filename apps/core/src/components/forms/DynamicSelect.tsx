@@ -2,18 +2,18 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { IconComponent } from "@repo/ui/components/icons";
+import { Button } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import { getLocalizedErrorMessage } from "@repo/api/messages";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+} from "@repo/ui";
+import { Badge } from "@repo/ui";
+import { cn } from "@repo/ui";
 import { getModuleReferenceAction } from "@repo/app-modules/server-actions";
 import type { FormField } from "@repo/types";
 import type { MultilingualText } from "@repo/types";

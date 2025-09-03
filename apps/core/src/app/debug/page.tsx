@@ -3,9 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { useLanguage } from "@repo/language";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { IconComponent } from "@repo/ui/components/icons";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 
 export default function DebugPage() {
   const { currentLanguage } = useLanguage();

@@ -16,6 +16,7 @@ import { StandardOIDCClient } from "../clients/oidc-client";
 import { InitializerTokenStrategy } from "./initializer-token-strategy";
 import { TenantTokenStrategy } from "./tenant-token-strategy";
 import { UserTokenStrategy } from "./user-token-strategy";
+import { tokenHealthService } from "../services/token-health-service";
 
 /**
  * Token Manager using Strategy Pattern and Dependency Injection
@@ -47,6 +48,9 @@ export class TokenManager {
     );
     this.tenantStrategy = new TenantTokenStrategy(this.cache, this.oidcClient);
     this.userStrategy = new UserTokenStrategy(this.cache, this.oidcClient);
+
+    // Initialize token health service
+    tokenHealthService.initialize(this);
   }
 
   static getInstance(): TokenManager {
@@ -305,5 +309,103 @@ export class TokenManager {
       } - FOR TENANT SETTINGS: ${initializerToken ? "FOUND" : "NOT FOUND"}`
     );
     return initializerToken;
+  }
+
+  // ===== PROACTIVE SESSION MANAGEMENT =====
+  
+  /**
+   * Start monitoring tokens for a user session
+   * This enables proactive token refresh before expiration
+   */
+  startSessionMonitoring(tenantId: string, userId: string): void {
+    console.log(`🔄 TokenManager: Starting session monitoring for user ${userId} in tenant ${tenantId}`);
+    tokenHealthService.registerSession(tenantId, userId);
+  }
+
+  /**
+   * Start monitoring tokens for a tenant session (no specific user)
+   */
+  startTenantMonitoring(tenantId: string): void {
+    console.log(`🔄 TokenManager: Starting tenant monitoring for ${tenantId}`);
+    tokenHealthService.registerSession(tenantId);
+  }
+
+  /**
+   * Stop monitoring tokens for a user session
+   */
+  stopSessionMonitoring(tenantId: string, userId: string): void {
+    console.log(`🛑 TokenManager: Stopping session monitoring for user ${userId} in tenant ${tenantId}`);
+    tokenHealthService.unregisterSession(tenantId, userId);
+  }
+
+  /**
+   * Stop monitoring tokens for a tenant session
+   */
+  stopTenantMonitoring(tenantId: string): void {
+    console.log(`🛑 TokenManager: Stopping tenant monitoring for ${tenantId}`);
+    tokenHealthService.unregisterSession(tenantId);
+  }
+
+  /**
+   * Check if user tokens are valid without triggering refresh
+   */
+  async validateUserTokens(tenantId: string, userId: string): Promise<{
+    accessTokenValid: boolean;
+    refreshTokenValid: boolean;
+    needsRefresh: boolean;
+  }> {
+    const accessTokenValid = await this.userStrategy.isUserTokenValid(tenantId, userId);
+    const refreshToken = await this.userStrategy.getUserRefreshToken(tenantId, userId);
+    const refreshTokenValid = refreshToken !== null;
+
+    return {
+      accessTokenValid,
+      refreshTokenValid,
+      needsRefresh: !accessTokenValid && refreshTokenValid
+    };
+  }
+
+  /**
+   * Get enhanced token for request with proactive monitoring
+   * Automatically starts session monitoring when tokens are successfully retrieved
+   */
+  async getTokenForRequestWithMonitoring(
+    tenantId?: string,
+    userId?: string
+  ): Promise<string | null> {
+    const token = await this.getTokenForRequest(tenantId, userId);
+    
+    if (token && tenantId) {
+      if (userId) {
+        // Start monitoring user session
+        this.startSessionMonitoring(tenantId, userId);
+      } else {
+        // Start monitoring tenant session
+        this.startTenantMonitoring(tenantId);
+      }
+    }
+    
+    return token;
+  }
+
+  /**
+   * Get token health service status
+   */
+  getMonitoringStatus(): {
+    isMonitoring: boolean;
+    activeSessions: number;
+  } {
+    return {
+      isMonitoring: tokenHealthService.getStatus().isMonitoring,
+      activeSessions: tokenHealthService.getStatus().activeSessions
+    };
+  }
+
+  /**
+   * Cleanup method for app shutdown
+   */
+  destroy(): void {
+    tokenHealthService.destroy();
+    console.log('🛑 TokenManager: Destroyed and cleaned up monitoring');
   }
 }

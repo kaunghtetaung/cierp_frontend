@@ -16,7 +16,7 @@
     "@repo/api": "workspace:*",
     "react": "*",
     "react-dom": "*",
-    "react-hook-form": "*",
+    "react-hook-form": "^7.62.0",
     "zod": "*",
     "next": "*"
   },

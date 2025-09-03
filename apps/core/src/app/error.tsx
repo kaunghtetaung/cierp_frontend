@@ -4,7 +4,7 @@ import React from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { IconComponent } from '@repo/ui/components/icons'
+import { IconComponent } from '@repo/ui'
 import { useLanguage } from '@repo/language'
 import { getLocalizedText } from '@repo/utils'
 

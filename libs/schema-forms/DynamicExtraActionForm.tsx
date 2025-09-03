@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import { useForm, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@repo/ui/components/button";
-import { IconComponent } from "@repo/ui/components/icons";
-import { Form } from "@repo/ui/components/form";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
+import { Form } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@repo/schema-utils";
 import type { ExtraActionForm } from "@repo/types";
@@ -28,6 +28,7 @@ export function DynamicExtraActionForm({
   currentLanguage,
   onSubmit,
   onCancel,
+  moduleSlug,
   hideHeader = false,
 }: DynamicExtraActionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,9 +79,21 @@ export function DynamicExtraActionForm({
       // Convert form data to FormData for server action
       const formData = new FormData();
 
+      // Add action metadata
+      formData.append("actionKey", action.actionKey);
+      
+      // Add moduleSlug if provided
+      if (moduleSlug && moduleSlug !== 'undefined') {
+        formData.append("moduleSlug", moduleSlug);
+      }
+
       // Add selected items if this action requires selection
       if (action.requiresSelection && selectedItems) {
         selectedItems.forEach((id) => formData.append("selectedIds", id));
+        // Also add the first item as 'id' for single-item actions
+        if (selectedItems.length === 1) {
+          formData.append("id", selectedItems[0]);
+        }
       }
 
       // Add form field data

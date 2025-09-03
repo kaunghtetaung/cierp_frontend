@@ -1,7 +1,7 @@
 // Centralized Authentication Error Handler
 // Handles JWT token expiration, logout, and redirection logic
 
-import { toastError, toastWarning } from "@repo/utils";
+import { toastError, toastWarning, toastInfo } from "@repo/utils";
 
 /**
  * Configuration for auth error handling
@@ -11,6 +11,7 @@ interface AuthErrorConfig {
   preserveReturnUrl: boolean;
   showToastNotifications: boolean;
   clearStorageOnLogout: boolean;
+  enableTokenHealthNotifications: boolean;
 }
 
 /**
@@ -20,7 +21,8 @@ const DEFAULT_CONFIG: AuthErrorConfig = {
   loginPath: "/login",
   preserveReturnUrl: true,
   showToastNotifications: true,
-  clearStorageOnLogout: true
+  clearStorageOnLogout: true,
+  enableTokenHealthNotifications: true
 };
 
 /**
@@ -123,6 +125,70 @@ export class AuthErrorHandler {
     }
 
     await this.handleAuthError({ statusCode: 401, message: 'Token refresh failed' }, context);
+  }
+
+  /**
+   * Show token renewal success notification
+   */
+  showTokenRenewedNotification(language?: 'en' | 'mm'): void {
+    if (!this.config.enableTokenHealthNotifications || !this.config.showToastNotifications) {
+      return;
+    }
+
+    const lang = language || this.getCurrentLanguage();
+    toastInfo(
+      lang === 'mm'
+        ? 'သင့်အကောင့်ဝင်ခွင့် အောင်မြင်စွာ ပြန်လည်ရယူခဲ့သည်။'
+        : 'Your session has been automatically renewed.'
+    );
+  }
+
+  /**
+   * Show session monitoring started notification
+   */
+  showMonitoringStartedNotification(language?: 'en' | 'mm'): void {
+    if (!this.config.enableTokenHealthNotifications || !this.config.showToastNotifications) {
+      return;
+    }
+
+    const lang = language || this.getCurrentLanguage();
+    toastInfo(
+      lang === 'mm'
+        ? 'အကောင့်လုံခြုံရေး စောင့်ကြည့်မှု စတင်လိုက်ပြီ။'
+        : 'Session monitoring activated for improved security.'
+    );
+  }
+
+  /**
+   * Show session will expire warning
+   */
+  showSessionExpiringWarning(minutesRemaining: number, language?: 'en' | 'mm'): void {
+    if (!this.config.enableTokenHealthNotifications || !this.config.showToastNotifications) {
+      return;
+    }
+
+    const lang = language || this.getCurrentLanguage();
+    toastWarning(
+      lang === 'mm'
+        ? `သင့်အကောင့်ဝင်ခွင့် ${minutesRemaining} မိနစ်အတွင်း သက်တမ်းကုန်မည်။`
+        : `Your session will expire in ${minutesRemaining} minutes.`
+    );
+  }
+
+  /**
+   * Show background token refresh failure warning
+   */
+  showBackgroundRefreshFailure(language?: 'en' | 'mm'): void {
+    if (!this.config.enableTokenHealthNotifications || !this.config.showToastNotifications) {
+      return;
+    }
+
+    const lang = language || this.getCurrentLanguage();
+    toastWarning(
+      lang === 'mm'
+        ? 'နောက်ခံတွင် အကောင့်ဝင်ခွင့် ပြန်လည်ရယူ၍ မရပါ။ မကြာမီ ထပ်မံဝင်ရောက်ရပါမည်။'
+        : 'Background session renewal failed. You may need to log in soon.'
+    );
   }
 
   /**

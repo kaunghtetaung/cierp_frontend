@@ -28,6 +28,7 @@ import { StandardHttpExecutor } from '../executors/http-executor';
 
 // Interceptor implementations
 import { ValidationRequestInterceptor } from '../interceptors/validation-interceptor';
+import { TenantRequestInterceptor } from '../interceptors/tenant-interceptor';
 import { AuthResponseInterceptor } from '../interceptors/auth-interceptor';
 import { GlobalErrorInterceptor } from '../interceptors/error-interceptor';
 
@@ -79,14 +80,29 @@ export class HttpClient {
   }
 
   private setupDefaultInterceptors(): void {
-    // Request interceptors
-    this.addRequestInterceptor(new ValidationRequestInterceptor());
-    
-    // Response interceptors
-    this.addResponseInterceptor(new AuthResponseInterceptor(this.config.enableAuth));
-    
-    // Error interceptors
-    this.addErrorInterceptor(new GlobalErrorInterceptor());
+    try {
+      // Request interceptors (order matters!)
+      // 1. Tenant ID interceptor (must be first to ensure tenant context)
+      this.addRequestInterceptor(new TenantRequestInterceptor());
+      
+      // 2. Validation interceptor
+      if (ValidationRequestInterceptor) {
+        this.addRequestInterceptor(new ValidationRequestInterceptor());
+      }
+      
+      // Response interceptors
+      if (AuthResponseInterceptor) {
+        this.addResponseInterceptor(new AuthResponseInterceptor(this.config.enableAuth));
+      }
+      
+      // Error interceptors
+      if (GlobalErrorInterceptor) {
+        this.addErrorInterceptor(new GlobalErrorInterceptor());
+      }
+    } catch (error) {
+      console.warn('Failed to setup interceptors:', error);
+      // Continue without interceptors rather than failing completely
+    }
   }
 
   // ===== INTERCEPTOR MANAGEMENT =====

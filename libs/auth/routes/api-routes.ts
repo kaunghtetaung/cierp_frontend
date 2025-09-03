@@ -9,6 +9,7 @@ import {
   logoutUser,
   validateRequest,
 } from "../core";
+import { renewSession } from "../core/sessions";
 import { getCacheInstance } from "@repo/cache";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getTenantSetting } from "@repo/tenant/tenant-service";
@@ -484,7 +485,7 @@ export async function handleRefreshSession(
       return NextResponse.json({ error: "No active session" }, { status: 401 });
     }
 
-    // Use simplified validation function
+    // First validate the existing session
     const sessionInfo = await validateRequest(sessionId, {
       ipAddress:
         request.headers.get("x-forwarded-for") ||
@@ -500,11 +501,21 @@ export async function handleRefreshSession(
       );
     }
 
-    const session = sessionInfo.session;
+    // Actually extend the session (this was missing!)
+    const renewedSession = await renewSession(sessionId);
+    
+    if (!renewedSession) {
+      return NextResponse.json(
+        { error: "Failed to extend session" },
+        { status: 500 }
+      );
+    }
+
+    console.log(`[REFRESH_SESSION] Session extended successfully for user: ${sessionInfo.user?.email}, new expiry: ${renewedSession.expiresAt}`);
 
     return NextResponse.json({
       success: true,
-      expiresAt: session.expiresAt,
+      expiresAt: renewedSession.expiresAt, // Return the NEW expiry time
     });
   } catch (error) {
     console.error("Refresh session error:", error);

@@ -3,6 +3,7 @@ import { getCookie } from "@repo/security/cookies";
 import { COOKIE_NAMES, MIDDLEWARE_HEADERS } from "@repo/utils/common/constants";
 import { getTokenForRequest } from "@repo/auth/core";
 import { getLanguageFromCookie } from "@repo/language/utils";
+import { getValidTenantId } from '../utils/tenant-resolver';
 import type { HeaderBuilder, HttpClientConfig } from '../types/http-types';
 import { HTTP_CONSTANTS } from '../types/http-types';
 import type { HttpMethod, ApiRequestConfig } from "@repo/types";
@@ -37,9 +38,13 @@ export class StandardHeaderBuilder implements HeaderBuilder {
       ...customHeaders,
     };
 
-    // Add tenant ID header (server-side operations should pass tenantId explicitly)
-    if (tenantId) {
-      headers["x-tenant-id"] = tenantId;
+    // CRITICAL: Always resolve and add tenant ID header for API gateway
+    const resolvedTenantId = await getValidTenantId(tenantId);
+    if (resolvedTenantId) {
+      headers[MIDDLEWARE_HEADERS.TENANT_ID] = resolvedTenantId;
+    } else {
+      console.error('CRITICAL: No valid tenant ID resolved for API request - request may fail');
+      // Still proceed but log the issue for debugging
     }
 
     // Add language header (x-lang) - required by API gateway

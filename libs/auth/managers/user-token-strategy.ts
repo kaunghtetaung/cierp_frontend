@@ -4,9 +4,9 @@ import type {
   TokenStrategy, 
   TokenCache, 
   OIDCClient, 
-  TokenValidationResult,
-  TOKEN_CONSTANTS 
+  TokenValidationResult
 } from '../types/token-types';
+import { TOKEN_CONSTANTS } from '../types/token-types';
 
 // JWT Token data structure
 interface TokenData {
@@ -36,13 +36,13 @@ export class UserTokenStrategy implements TokenStrategy {
       return null;
     }
 
-    // Try cached token first
-    const cachedToken = await this.getUserAccessToken(tenantId, userId);
+    // Try cached token first - with expiry validation
+    const cachedToken = await this.getValidUserAccessToken(tenantId, userId);
     if (cachedToken) {
       return cachedToken;
     }
 
-    // Try refresh token
+    // Try refresh token if cached token is expired/invalid
     const refreshToken = await this.getUserRefreshToken(tenantId, userId);
     if (refreshToken) {
       return await this.refreshToken(tenantId, userId);
@@ -139,6 +139,33 @@ export class UserTokenStrategy implements TokenStrategy {
   // Public helper methods for external access
   async getUserAccessToken(tenantId: string, userId: string): Promise<string | null> {
     return await this.cache.get<string>(CacheKeys.userAccessToken(tenantId, userId));
+  }
+
+  // Enhanced method that validates token expiry before returning
+  async getValidUserAccessToken(tenantId: string, userId: string): Promise<string | null> {
+    const tokenKey = CacheKeys.userAccessToken(tenantId, userId);
+    const currentToken = await this.cache.get<string>(tokenKey);
+    
+    if (!currentToken) {
+      return null;
+    }
+
+    // Check if token will expire within the safety margin (5 minutes)
+    const ttl = await this.cache.ttl(tokenKey);
+    
+    if (ttl <= TOKEN_CONSTANTS.SAFETY_MARGIN_SECONDS) {
+      console.log(`⏰ User token for ${userId} expires in ${ttl}s, clearing expired token`);
+      await this.cache.del(tokenKey);
+      return null;
+    }
+    
+    return currentToken;
+  }
+
+  // Method to check if a token is valid without returning it
+  async isUserTokenValid(tenantId: string, userId: string): Promise<boolean> {
+    const validToken = await this.getValidUserAccessToken(tenantId, userId);
+    return validToken !== null;
   }
 
   async setUserAccessToken(

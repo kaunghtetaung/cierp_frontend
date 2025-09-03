@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { useLanguage } from "@repo/language";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { DataTable } from "@repo/ui";
+import { Checkbox } from "@repo/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,18 +17,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { IconComponent } from "@repo/ui/components/icons";
+} from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import {
   useDeleteModuleItem,
   useHardDeleteModuleItem,
   useBulkModuleOperation,
-} from "@/hooks/use-module-query";
+} from "@repo/schema-hooks";
 import { DynamicSearch } from "./DynamicSearch";
-import { Pagination } from "@/components/ui/pagination";
-import { ExtraActionModal } from "@/components/forms/ExtraActionModal";
-import { generateZodSchema } from "@/lib/form-schema";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { Pagination } from "@repo/ui";
+import { ExtraActionModal } from "@repo/schema-forms";
+import { generateZodSchema } from "@repo/schema-utils";
+import { generateSearchFields, getPrimarySearchField } from "@repo/schema-utils/search-field-generator";
+import { ConfirmationDialog } from "@repo/ui";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -85,6 +86,57 @@ export function ModuleDataTable({
       "asc") as "asc" | "desc",
     filters: {} as Record<string, Record<string, any>>,
   });
+
+  // Client-side pagination state for mobile view
+  const [clientSidePage, setClientSidePage] = useState(1);
+  const isClientSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === true;
+
+  // Simple search state
+  const [simpleSearchValue, setSimpleSearchValue] = useState("");
+  
+  // Generate search fields from schema
+  const searchFields = useMemo(() => {
+    return generateSearchFields(module);
+  }, [module]);
+  
+  // Get primary search field for simple search
+  const primarySearchField = useMemo(() => {
+    return getPrimarySearchField(module);
+  }, [module]);
+
+  // Handle simple search
+  const handleSimpleSearch = useCallback((value: string) => {
+    setSimpleSearchValue(value);
+    
+    if (primarySearchField && value.trim()) {
+      // Use regex operator for text search
+      const searchOperator = primarySearchField.operators.includes('$regex') 
+        ? '$regex' 
+        : primarySearchField.operators[0];
+      
+      setQueryParams(prev => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          [primarySearchField.fieldName]: {
+            [searchOperator]: value
+          }
+        },
+        page: 1
+      }));
+    } else if (!value.trim() && primarySearchField) {
+      // Clear the primary search field filter
+      setQueryParams(prev => {
+        const newFilters = { ...prev.filters };
+        delete newFilters[primarySearchField.fieldName];
+        return {
+          ...prev,
+          filters: newFilters,
+          page: 1
+        };
+      });
+    }
+  }, [primarySearchField]);
 
   // Helper function to get raw nested field values (without language filtering)
   const getRawNestedValue = (obj: any, path: string) => {
@@ -708,17 +760,52 @@ export function ModuleDataTable({
         </Link>
       </div>
 
-      {/* Advanced Search */}
-      {module.dataTableSchema.filtering?.enabled &&
-        module.moduleAccessPolicy?.queryAllowedFields && (
+      {/* Search Section */}
+      <div className="space-y-4">
+        {/* Simple Search */}
+        {primarySearchField && (
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <IconComponent 
+                name="Search" 
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" 
+              />
+              <Input
+                type="text"
+                placeholder={
+                  currentLanguage === "mm" 
+                    ? `${getLocalizedText(primarySearchField.label || { en: "Search", mm: "ရှာဖွေမည်" }, currentLanguage)} ရှာဖွေမည်...` 
+                    : `Search ${getLocalizedText(primarySearchField.label || { en: "Search", mm: "ရှာဖွေမည်" }, currentLanguage)}...`
+                }
+                value={simpleSearchValue}
+                onChange={(e) => handleSimpleSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {simpleSearchValue && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSimpleSearch("")}
+              >
+                <IconComponent name="X" className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Advanced Search */}
+        {module.dataTableSchema.filtering?.enabled && searchFields.length > 0 && (
           <DynamicSearch
-            queryAllowedFields={module.moduleAccessPolicy.queryAllowedFields}
+            queryAllowedFields={searchFields}
             onFiltersChange={(filters) => {
               setQueryParams((prev) => ({ ...prev, filters, page: 1 }));
             }}
             className="mb-4"
+            simpleSearchField={primarySearchField?.fieldName}
           />
         )}
+      </div>
 
       {/* Actions Bar */}
       {selectedItems.length > 0 &&
@@ -784,7 +871,13 @@ export function ModuleDataTable({
       <div className="w-full min-w-0">
         {/* Mobile Card View - Show on mobile, iPad Mini and iPad Air */}
         <div className="xl:hidden space-y-4">
-          {data.map((item, index) => (
+          {(isClientSidePaging 
+            ? data.slice(
+                (clientSidePage - 1) * queryParams.limit,
+                clientSidePage * queryParams.limit
+              )
+            : data
+          ).map((item, index) => (
             <div
               key={item._id || item.id || index}
               className="bg-card border border-border rounded-lg p-4 space-y-3"
@@ -1013,6 +1106,8 @@ export function ModuleDataTable({
               }
               onRowSelectionChange={setSelectedItems}
               initialColumnVisibility={columnVisibility}
+              enablePagination={module.dataTableSchema.pagination?.isClientSidePaging === true}
+              pageSize={module.dataTableSchema.pagination?.defaultLimit || 10}
             />
           </div>
         </div>
@@ -1020,18 +1115,42 @@ export function ModuleDataTable({
 
       {/* Pagination */}
       {data.length > 0 && module.dataTableSchema.pagination?.enabled && (
-        <Pagination
-          currentPage={queryParams.page}
-          totalPages={totalPages}
-          pageSize={queryParams.limit}
-          totalItems={totalItems}
-          allowedLimits={module.dataTableSchema.pagination.allowedLimits}
-          onPageChange={(page) => setQueryParams((prev) => ({ ...prev, page }))}
-          onPageSizeChange={(pageSize) =>
-            setQueryParams((prev) => ({ ...prev, limit: pageSize, page: 1 }))
-          }
-          currentLanguage={currentLanguage}
-        />
+        <>
+          {/* Server-Side Pagination - Only show when not using client-side pagination */}
+          {!isClientSidePaging && (
+            <Pagination
+              currentPage={queryParams.page}
+              totalPages={totalPages}
+              pageSize={queryParams.limit}
+              totalItems={totalItems}
+              allowedLimits={module.dataTableSchema.pagination.allowedLimits}
+              onPageChange={(page) => setQueryParams((prev) => ({ ...prev, page }))}
+              onPageSizeChange={(pageSize) =>
+                setQueryParams((prev) => ({ ...prev, limit: pageSize, page: 1 }))
+              }
+              currentLanguage={currentLanguage}
+            />
+          )}
+
+          {/* Client-Side Pagination for Mobile - Only show when using client-side pagination and on mobile/tablet */}
+          {isClientSidePaging && (
+            <div className="xl:hidden">
+              <Pagination
+                currentPage={clientSidePage}
+                totalPages={Math.ceil(data.length / queryParams.limit)}
+                pageSize={queryParams.limit}
+                totalItems={data.length}
+                allowedLimits={module.dataTableSchema.pagination.allowedLimits}
+                onPageChange={(page) => setClientSidePage(page)}
+                onPageSizeChange={(pageSize) => {
+                  setQueryParams((prev) => ({ ...prev, limit: pageSize }));
+                  setClientSidePage(1);
+                }}
+                currentLanguage={currentLanguage}
+              />
+            </div>
+          )}
+        </>
       )}
 
 

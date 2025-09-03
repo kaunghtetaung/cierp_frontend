@@ -2,14 +2,14 @@
 
 import * as React from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@repo/ui/lib/utils";
+} from "@repo/ui";
+import { cn } from "@repo/ui";
 import { useTheme } from "@/components/providers/theme-provider";
 
 export function ThemeToggle({ className }: { className?: string }) {

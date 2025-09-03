@@ -2,7 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
-import { IconComponent } from '@repo/ui/components/icons'
+import { IconComponent } from '@repo/ui'
 import { getLocalizedErrorMessage, getLocalizedRecoveryActions } from '@repo/api/messages'
 
 interface MultilingualErrorBoundaryState {

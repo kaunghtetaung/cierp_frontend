@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
-import { ReactHookFormWrapper } from "@/components/forms/ReactHookFormWrapper";
-import { ReactHookWizardFormWrapper } from "@/components/forms/ReactHookWizardFormWrapper";
+import { ReactHookForm } from "@repo/schema-forms";
+import { ReactHookWizardForm } from "@repo/schema-forms";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
 import { generateZodSchema } from "@repo/schema-utils";
 import { enableCommonMultilangFields } from "@/lib/enable-multilang";
@@ -14,7 +14,7 @@ interface ModuleNewPageProps {
 }
 
 export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
-  const { appSchemaData } = await fetchLayoutData();
+  const { appSchemaData, middlewareData } = await fetchLayoutData();
   const resolvedParams = await params;
 
   if (!appSchemaData?.modules) {
@@ -35,7 +35,7 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
 
   // Choose form component based on layout type
   const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
-  const FormComponent = isWizardForm ? ReactHookWizardFormWrapper : ReactHookFormWrapper;
+  const FormComponent = isWizardForm ? ReactHookWizardForm : ReactHookForm;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -43,6 +43,7 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
         module={moduleWithMultilang}
         action="create"
         moduleSlug={module.slug}
+        currentLanguage={middlewareData.language}
       />
     </div>
   );

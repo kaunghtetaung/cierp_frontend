@@ -4,11 +4,11 @@ import React, { useState } from "react";
 import { useForm, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@/components/ui/button";
-import { IconComponent } from "@repo/ui/components/icons";
-import { Form } from "@/components/ui/form";
-import { FormFieldRenderer } from "./FormFieldRenderer";
-import { generateZodSchema } from "@/lib/form-schema";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
+import { Form } from "@repo/ui";
+import { FormFieldRenderer } from "@repo/schema-forms";
+import { generateZodSchema } from "@repo/schema-utils";
 import type { ExtraActionForm } from "@repo/types";
 
 interface DynamicExtraActionFormProps {

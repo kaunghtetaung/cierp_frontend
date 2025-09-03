@@ -15,7 +15,10 @@ export async function resolveTenantByDomain(
 
   try {
     const protocol = request.nextUrl.protocol.replace(":", "");
-    const apiUrl = buildTenantApiUrl(hostname, protocol);
+    // For localhost development, use API_BASE_URL; for multi-tenant domains, use domain-based URLs
+    const isLocalhost = cleanHostname === 'localhost' || cleanHostname.includes('127.0.0.');
+    const apiConfig = (isLocalhost && process.env.API_BASE_URL) ? { baseUrl: process.env.API_BASE_URL } : {};
+    const apiUrl = buildTenantApiUrl(hostname, protocol, apiConfig);
 
     if (config.enableLogging) {
       console.log(

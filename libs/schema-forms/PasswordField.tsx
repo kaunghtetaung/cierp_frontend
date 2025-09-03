@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Input } from '@repo/ui/components/input'
-import { Progress } from '@repo/ui/components/progress'
-import { Button } from '@repo/ui/components/button'
+import { Input } from '@repo/ui'
+import { Progress } from '@repo/ui'
+import { Button } from '@repo/ui'
 import { Eye, EyeOff, Check, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { usePasswordValidation } from './hooks/usePasswordValidation'
+import { cn } from '@repo/ui'
+import { usePasswordValidation } from '@repo/schema-hooks/usePasswordValidation'
 import type { PasswordStrengthConfig } from '@repo/types'
 
 interface PasswordFieldProps {
@@ -60,15 +60,15 @@ export function PasswordField({
 
   const getProgressColor = () => {
     switch (level) {
-      case 'weak': return 'bg-red-500'
-      case 'medium': return 'bg-yellow-500' 
-      case 'strong': return 'bg-green-500'
-      default: return 'bg-gray-300'
+      case 'weak': return 'bg-danger'
+      case 'medium': return 'bg-warning' 
+      case 'strong': return 'bg-success'
+      default: return 'bg-muted'
     }
   }
 
   const getRequirementStatus = (requirement: boolean) => 
-    requirement ? 'text-green-600' : 'text-gray-400'
+    requirement ? 'text-success' : 'text-muted-foreground'
 
   const getRequirementIcon = (requirement: boolean) =>
     requirement ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />
@@ -111,14 +111,14 @@ export function PasswordField({
       {showStrengthIndicator && value && config.showStrengthMeter && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">
+            <span className="text-muted-foreground">
               {currentLanguage === 'mm' ? 'စကားဝှက်အင်အား' : 'Password strength'}:
             </span>
             <span className={cn(
               'font-medium',
-              level === 'strong' ? 'text-green-600' : 
-              level === 'medium' ? 'text-yellow-600' : 
-              'text-red-600'
+              level === 'strong' ? 'text-success' : 
+              level === 'medium' ? 'text-warning' : 
+              'text-danger'
             )}>
               {strengthLabel}
             </span>
@@ -143,7 +143,7 @@ export function PasswordField({
       {/* Requirements List - Hidden to avoid redundancy with HTML5 validation */}
       {false && showStrengthIndicator && value && config.showRequirements && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">
+          <h4 className="text-sm font-medium text-foreground">
             {currentLanguage === 'mm' ? 'လိုအပ်ချက်များ' : 'Requirements'}:
           </h4>
           <div className="space-y-1 text-sm">
@@ -220,7 +220,7 @@ export function PasswordField({
 
       {/* Error Summary (for form validation integration) */}
       {showStrengthIndicator && value && errors.length > 0 && (
-        <div className="text-xs text-red-600 space-y-1">
+        <div className="text-xs text-danger space-y-1">
           {errors.slice(0, 2).map((error, index) => (
             <div key={index}>• {error}</div>
           ))}

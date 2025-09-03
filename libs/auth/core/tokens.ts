@@ -170,16 +170,60 @@ export async function getUserAccessTokenData(tenantId: string, userId: string): 
   const cache = getCacheInstance();
   const key = CacheKeys.userAccessToken(tenantId, userId);
   
-  const stored = await cache.get<StoredToken>(key);
-  if (!stored) return null;
+  // User access tokens are stored as raw JWT strings (not StoredToken objects)
+  const rawJwtToken = await cache.get<string>(key);
+  if (!rawJwtToken) return null;
   
-  // Check if token is expired (with buffer)
-  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+  try {
+    // Extract expiry from JWT's exp claim
+    const parts = rawJwtToken.split('.');
+    if (parts.length !== 3) {
+      await cache.del(key);
+      return null;
+    }
+    
+    let base64Payload = parts[1];
+    base64Payload = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64Payload.length % 4) {
+      base64Payload += '=';
+    }
+    
+    const payload = JSON.parse(atob(base64Payload));
+    const expiresAt = payload.exp; // JWT exp is in seconds since epoch
+    const issuedAt = payload.iat || Math.floor(Date.now() / 1000); // Fallback to now if iat missing
+    
+    if (!expiresAt) {
+      await cache.del(key);
+      return null;
+    }
+    
+    // Check if token is expired (with buffer)
+    if (Date.now() >= (expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+      await cache.del(key);
+      return null;
+    }
+    
+    // Create a StoredToken-compatible object from the raw JWT
+    const tokenData: TokenData = {
+      access_token: rawJwtToken,
+      expires_in: expiresAt - issuedAt,
+      token_type: 'Bearer'
+    };
+    
+    const storedToken: StoredToken = {
+      token: rawJwtToken,
+      tokenData,
+      expiresAt: expiresAt,
+      type: 'user',
+      createdAt: issuedAt
+    };
+    
+    return storedToken;
+  } catch (error) {
+    console.error('Failed to parse user access token JWT:', error);
     await cache.del(key);
     return null;
   }
-  
-  return stored;
 }
 
 export async function getUserRefreshToken(tenantId: string, userId: string): Promise<string | null> {

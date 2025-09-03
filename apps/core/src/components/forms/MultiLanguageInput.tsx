@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { IconComponent } from "@repo/ui/components/icons";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import type { MultilingualText, FormField } from "@repo/types";
 
 interface MultiLanguageInputProps {
@@ -148,7 +148,7 @@ export function MultiLanguageInput({
           <span className="text-base">{flagEmoji}</span>
           <span>{fieldLabel}</span>
           {field.validationRule?.required && (
-            <span className="text-red-500">*</span>
+            <span className="text-danger">*</span>
           )}
         </label>
         

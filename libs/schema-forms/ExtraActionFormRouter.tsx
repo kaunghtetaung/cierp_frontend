@@ -11,6 +11,7 @@ interface ExtraActionFormRouterProps {
   onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
   hideHeader?: boolean; // Hide the form header to prevent duplication in modals
+  moduleSlug?: string; // Module context for pre-built forms
 }
 
 // Pre-built form components registry
@@ -42,6 +43,7 @@ export function ExtraActionFormRouter({
   onSubmit,
   onCancel,
   hideHeader = false,
+  moduleSlug,
 }: ExtraActionFormRouterProps) {
   // Determine form approach - default to 'pre-built' for backward compatibility
   const formApproach = action.formApproach || 'pre-built';
@@ -66,6 +68,7 @@ export function ExtraActionFormRouter({
         onSubmit={onSubmit}
         onCancel={onCancel}
         hideHeader={hideHeader}
+        moduleSlug={moduleSlug}
       />
     );
   }
@@ -97,6 +100,7 @@ export function ExtraActionFormRouter({
             onSubmit={onSubmit}
             onCancel={onCancel}
             hideHeader={hideHeader}
+            moduleSlug={moduleSlug}
           />
         </React.Suspense>
       );
@@ -146,6 +150,7 @@ export function ExtraActionFormRouter({
           }}
           onCancel={onCancel}
           hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
         />
       </React.Suspense>
     );
@@ -188,4 +193,5 @@ export interface PreBuiltFormProps {
   onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
   hideHeader?: boolean;
+  moduleSlug?: string; // Added to pass module context to pre-built forms
 }

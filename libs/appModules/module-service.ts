@@ -70,6 +70,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      timeout: 25000, // 25 seconds timeout for module lists
     });
 
     if (!response.success) {

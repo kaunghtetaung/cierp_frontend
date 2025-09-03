@@ -2,19 +2,19 @@
 
 import React, { useRef, useEffect } from 'react'
 import { useFormContext, Controller } from 'react-hook-form'
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@repo/ui/components/form'
-import { Input } from '@repo/ui/components/input'
-import { Textarea } from '@repo/ui/components/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/components/select'
-import { Checkbox } from '@repo/ui/components/checkbox'
-import { RadioGroup, RadioGroupItem } from '@repo/ui/components/radio-group'
-import { Label } from '@repo/ui/components/label'
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@repo/ui'
+import { Input } from '@repo/ui'
+import { Textarea } from '@repo/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui'
+import { Checkbox } from '@repo/ui'
+import { RadioGroup, RadioGroupItem } from '@repo/ui'
+import { Label } from '@repo/ui'
 import { DynamicSelect } from './DynamicSelect'
 import { DependentSelect } from './DependentSelect'
 import { PasswordField } from './PasswordField'
 import { MultiLanguageInput } from './MultiLanguageInput'
 import { PhoneInput } from './PhoneInput'
-import { IconComponent, IconSelector } from '@repo/ui/components/icons'
+import { IconComponent, IconSelector } from '@repo/ui'
 import type { FormField as SchemaFormField } from '@repo/types'
 
 // Auto-configure dropdownConfig for common organizational fields
@@ -127,8 +127,20 @@ export function FormFieldRenderer({
   watch: watchProp,
   onValueChange
 }: FormFieldRendererProps) {
-  const { control, watch } = useFormContext()
+  const formContext = useFormContext()
+  const control = formContext?.control
+  const watch = formContext?.watch
   const watchFunction = watchProp || watch
+  
+  // If no form context, return error message
+  if (!control) {
+    console.error('FormFieldRenderer: No form context found. Make sure this component is wrapped in a FormProvider.')
+    return (
+      <div className="text-destructive text-sm">
+        Error: FormFieldRenderer must be used within a Form component
+      </div>
+    )
+  }
   
   // Apply auto-configuration and backward compatibility
   let field = convertDataSourceToDropdownConfig(originalField);

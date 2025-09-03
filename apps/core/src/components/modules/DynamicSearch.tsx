@@ -3,23 +3,25 @@
 import React, { useState, useCallback } from "react";
 import { useLanguage } from "@repo/language";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { Label } from "@repo/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { IconComponent } from "@repo/ui/components/icons";
+} from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import type { QueryAllowedField } from "@repo/types/access-policy-types";
 
 interface DynamicSearchProps {
   queryAllowedFields?: QueryAllowedField[];
   onFiltersChange: (filters: Record<string, Record<string, any>>) => void;
   className?: string;
+  simpleSearchField?: string; // Field name being used for simple search
+  onAdvancedToggle?: (isAdvancedOpen: boolean) => void; // Callback when advanced search is toggled
 }
 
 interface FilterState {
@@ -80,10 +82,17 @@ const getFieldTypeInput = (
   }
 };
 
-export function DynamicSearch({ queryAllowedFields, onFiltersChange, className }: DynamicSearchProps) {
+export function DynamicSearch({ queryAllowedFields, onFiltersChange, className, simpleSearchField, onAdvancedToggle }: DynamicSearchProps) {
   const { currentLanguage } = useLanguage();
   const [filters, setFilters] = useState<FilterState>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Filter out the simple search field from advanced fields
+  const advancedFields = React.useMemo(() => {
+    if (!queryAllowedFields) return [];
+    if (!simpleSearchField) return queryAllowedFields;
+    return queryAllowedFields.filter(field => field.fieldName !== simpleSearchField);
+  }, [queryAllowedFields, simpleSearchField]);
 
   const updateFilter = useCallback((fieldName: string, operator: string, value: string) => {
     const newFilters = {
@@ -128,7 +137,7 @@ export function DynamicSearch({ queryAllowedFields, onFiltersChange, className }
     onFiltersChange({});
   }, [onFiltersChange]);
 
-  if (!queryAllowedFields || queryAllowedFields.length === 0) {
+  if (!advancedFields || advancedFields.length === 0) {
     return null;
   }
 
@@ -136,45 +145,33 @@ export function DynamicSearch({ queryAllowedFields, onFiltersChange, className }
 
   return (
     <div className={`space-y-4 ${className || ''}`}>
-      {/* Quick Search - Show first field with regex operator by default */}
-      {queryAllowedFields.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            {(() => {
-              const firstField = queryAllowedFields[0];
-              const regexOperator = firstField.operators.includes('$regex') ? '$regex' : firstField.operators[0];
-              const currentFilter = filters[firstField.fieldName];
-              
-              return getFieldTypeInput(
-                firstField.fieldName,
-                firstField.fieldType,
-                currentFilter?.value || '',
-                (value) => updateFilter(firstField.fieldName, regexOperator, value)
-              );
-            })()}
-          </div>
+      {/* Advanced Search Toggle */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const newShowAdvanced = !showAdvanced;
+            setShowAdvanced(newShowAdvanced);
+            onAdvancedToggle?.(newShowAdvanced);
+          }}
+          className="h-9"
+        >
+          <IconComponent name="Filter" className="w-4 h-4 mr-1" />
+          {currentLanguage === 'mm' ? 'အဆင့်မြင့် ရှာဖွေမှု' : 'Advanced Search'}
+        </Button>
+        {hasActiveFilters && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            onClick={clearAllFilters}
             className="h-9"
           >
-            <IconComponent name="Filter" className="w-4 h-4 mr-1" />
-            {currentLanguage === 'mm' ? 'အဆင့်မြင့်' : 'Advanced'}
+            <IconComponent name="Trash" className="w-4 h-4 mr-1" />
+            {currentLanguage === 'mm' ? 'ရှင်းလင်း' : 'Clear All'}
           </Button>
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAllFilters}
-              className="h-9"
-            >
-              <IconComponent name="Trash" className="w-4 h-4 mr-1" />
-              {currentLanguage === 'mm' ? 'ရှင်းလင်း' : 'Clear'}
-            </Button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Advanced Search */}
       {showAdvanced && (
@@ -186,7 +183,7 @@ export function DynamicSearch({ queryAllowedFields, onFiltersChange, className }
           </div>
 
           <div className="grid gap-4">
-            {queryAllowedFields.map((field) => {
+            {advancedFields.map((field) => {
               const currentFilter = filters[field.fieldName];
               const currentOperator = currentFilter?.operator || field.operators[0];
               const currentValue = currentFilter?.value || '';
@@ -195,7 +192,9 @@ export function DynamicSearch({ queryAllowedFields, onFiltersChange, className }
                 <div key={field.fieldName} className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-3">
                     <Label htmlFor={`field-${field.fieldName}`} className="text-xs">
-                      {field.fieldName}
+                      {field.label 
+                        ? getLocalizedText(field.label, currentLanguage)
+                        : field.fieldName}
                     </Label>
                   </div>
                   

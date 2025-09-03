@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@repo/ui/components/button";
-import { IconComponent } from "@repo/ui/components/icons";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import type { MultilingualText, FormField } from "@repo/types";
 
 interface MultiLanguageInputProps {

@@ -3,7 +3,7 @@ import { MiddlewareConfig } from "./types";
 
 export const DEFAULT_CONFIG: MiddlewareConfig = {
   tenantApi: {
-    timeout: 5000,
+    timeout: 15000, // Increased timeout to 15 seconds
   },
   cookies: {
     secure: process.env.NODE_ENV === "production",

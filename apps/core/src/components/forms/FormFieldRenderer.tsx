@@ -2,19 +2,19 @@
 
 import React, { useRef, useEffect } from 'react'
 import { useFormContext, Controller } from 'react-hook-form'
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@repo/ui'
+import { Input } from '@repo/ui'
+import { Textarea } from '@repo/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui'
+import { Checkbox } from '@repo/ui'
+import { RadioGroup, RadioGroupItem } from '@repo/ui'
+import { Label } from '@repo/ui'
 import { DynamicSelect } from './DynamicSelect'
 import { DependentSelect } from './DependentSelect'
 import { PasswordField } from './PasswordField'
 import { MultiLanguageInput } from './MultiLanguageInput'
 import { PhoneInput } from './PhoneInput'
-import { IconComponent, IconSelector } from '@repo/ui/components/icons'
+import { IconComponent, IconSelector } from '@repo/ui'
 import type { FormField as SchemaFormField } from '@repo/types'
 
 // Auto-configure dropdownConfig for common organizational fields
@@ -179,7 +179,7 @@ export function FormFieldRenderer({
             <label className="block text-xs sm:text-sm font-medium">
               {getFieldLabel(field)}{" "}
               {field.validationRule?.required && (
-                <span className="text-red-500">*</span>
+                <span className="text-danger">*</span>
               )}
             </label>
           </div>
@@ -223,7 +223,7 @@ export function FormFieldRenderer({
   if (!field.fieldName || typeof field.fieldName !== 'string') {
     console.error('FormFieldRenderer: fieldName must be a non-empty string', { field, fieldName: field.fieldName })
     return (
-      <div className="text-red-500 text-sm p-2 border border-red-300 rounded">
+      <div className="text-danger text-sm p-2 border border-danger rounded">
         Error: Invalid field name configuration
       </div>
     )
@@ -241,7 +241,7 @@ export function FormFieldRenderer({
         name={field.fieldName}
         render={({ field: formField, fieldState }) => (
           <FormItem className={isVerticalLayout ? "flex-1 min-w-0" : ""}>
-            <FormLabel className={`${isRequired ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''} ${
+            <FormLabel className={`${isRequired ? "after:content-['*'] after:ml-0.5 after:text-danger" : ''} ${
               isVerticalLayout ? "text-xs sm:text-sm" : "text-sm"
             }`}>
               {label}

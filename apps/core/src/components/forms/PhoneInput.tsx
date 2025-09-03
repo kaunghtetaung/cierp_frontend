@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, forwardRef } from 'react'
 import { AsYouType, getCountries, getCountryCallingCode } from 'libphonenumber-js'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { IconComponent } from '@repo/ui/components/icons'
+import { Input } from '@repo/ui/input'
+import { Button } from '@repo/ui/button'
+import { IconComponent } from '@repo/ui'
 import { 
   validatePhoneNumber, 
   formatToE164, 
@@ -17,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@repo/ui/dropdown-menu'
 
 interface PhoneInputProps {
   value?: string

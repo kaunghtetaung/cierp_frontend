@@ -6,56 +6,107 @@
   /* ======================================
      GLOBAL THEME COLORS - Main Palette
      ====================================== */
-  /* Primary Brand Colors */
-  --color-primary: hsl(105, 91%, 35%);
-  --color-primary-foreground: hsl(146, 33%, 96%);
-  --color-secondary: oklab(64.6% -0.15985 0.13205);
-  --color-secondary-foreground: hsl(240 5.9% 10%);
+  /* Primary Brand Colors - Using strong blue as primary */
+  --color-primary: hsl(220, 100%, 50%); /* Strong blue primary */
+  --color-primary-foreground: hsl(0, 0%, 98%);
+  --color-secondary: hsl(220, 60%, 85%); /* Light blue secondary */
+  --color-secondary-foreground: hsl(220, 100%, 20%);
   
-  /* Surface Colors */
-  --color-background: hsl(100, 36%, 95%);
-  --color-foreground: hsl(240 10% 3.9%);
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(240 10% 3.9%);
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(240 10% 3.9%);
+  /* Surface Colors - Clean light theme */
+  --color-background: hsl(0, 0%, 99%);
+  --color-foreground: hsl(240, 10%, 3.9%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(240, 10%, 3.9%);
+  --color-popover: hsl(0, 0%, 100%);
+  --color-popover-foreground: hsl(240, 10%, 3.9%);
   
-  /* Accent & Muted Colors */
-  --color-muted: hsl(240 4.8% 95.9%);
-  --color-muted-foreground: hsl(240 3.8% 46.1%);
-  --color-accent: hsl(240 4.8% 95.9%);
-  --color-accent-foreground: hsl(240 5.9% 10%);
+  /* Accent & Muted Colors - Blue theme variants */
+  --color-muted: hsl(220, 25%, 85%); /* More visible blue-tinted muted for loading spinner */
+  --color-muted-foreground: hsl(240, 3.8%, 46.1%);
+  --color-accent: hsl(220, 30%, 92%);
+  --color-accent-foreground: hsl(220, 100%, 25%);
   
-  /* Status Colors */
-  --color-destructive: hsl(0 84.2% 60.2%);
-  --color-destructive-foreground: hsl(0 0% 98%);
-  --color-success: hsl(142.1 76.2% 36.3%);
-  --color-success-foreground: hsl(0 0% 98%);
-  --color-warning: hsl(32.1 94.6% 43.7%);
-  --color-warning-foreground: hsl(0 0% 98%);
-  --color-info: hsl(221.2 83.2% 53.3%);
-  --color-info-foreground: hsl(0 0% 98%);
-  --color-danger: hsl(0 84.2% 60.2%);
+  /* ======================================
+     SEMANTIC COLOR SYSTEM - Design System
+     Complete theme with foreground/background variants
+     ====================================== */
   
-  /* Border & Form Colors */
-  --color-border: hsl(240 5.9% 90%);
-  --color-input: hsl(240 5.9% 90%);
-  --color-ring: hsl(240 5.9% 10%);
+  /* Primary Theme Colors */
+  --color-primary: hsl(220, 100%, 50%); /* Strong blue primary */
+  --color-primary-foreground: hsl(0, 0%, 98%);
+  --color-primary-light: hsl(220, 100%, 85%); /* Light variant for hover/disabled states */
+  --color-primary-dark: hsl(220, 100%, 35%); /* Dark variant for pressed states */
+  
+  /* Secondary Theme Colors */
+  --color-secondary: hsl(220, 60%, 85%); /* Light blue secondary */
+  --color-secondary-foreground: hsl(220, 100%, 20%);
+  --color-secondary-light: hsl(220, 60%, 92%);
+  --color-secondary-dark: hsl(220, 60%, 70%);
+  
+  /* Success Colors - Green palette */
+  --color-success: hsl(142, 76%, 36%); /* Green for success states */
+  --color-success-foreground: hsl(0, 0%, 98%);
+  --color-success-light: hsl(142, 76%, 85%); /* Light green for backgrounds */
+  --color-success-dark: hsl(142, 76%, 25%); /* Dark green for emphasis */
+  
+  /* Info Colors - Blue palette */
+  --color-info: hsl(221, 83%, 53%); /* Blue for info states */
+  --color-info-foreground: hsl(0, 0%, 98%);
+  --color-info-light: hsl(221, 83%, 85%); /* Light blue for backgrounds */
+  --color-info-dark: hsl(221, 83%, 40%); /* Dark blue for emphasis */
+  
+  /* Warning Colors - Orange/Yellow palette */
+  --color-warning: hsl(32, 95%, 44%); /* Orange for warning states */
+  --color-warning-foreground: hsl(0, 0%, 98%);
+  --color-warning-light: hsl(32, 95%, 85%); /* Light orange for backgrounds */
+  --color-warning-dark: hsl(32, 95%, 30%); /* Dark orange for emphasis */
+  
+  /* Danger/Destructive Colors - Red palette */
+  --color-danger: hsl(0, 84%, 60%); /* Red for danger/destructive states */
+  --color-danger-foreground: hsl(0, 0%, 98%);
+  --color-danger-light: hsl(0, 84%, 85%); /* Light red for backgrounds */
+  --color-danger-dark: hsl(0, 84%, 45%); /* Dark red for emphasis */
+  
+  /* Legacy aliases for backward compatibility */
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-danger-foreground);
+  
+  /* Border & Form Colors - Stronger blue variants */
+  --color-border: hsl(220, 40%, 75%); /* Strong blue border */
+  --color-input: hsl(220, 35%, 80%); /* Slightly lighter blue for input backgrounds */
+  --color-ring: hsl(220, 100%, 50%); /* Primary blue for focus ring */
   
   /* Border Radius */
   --radius: 0.5rem;
   
   /* ======================================
-     SIDEBAR SPECIFIC COLORS
+     SEMANTIC BUTTON MAPPINGS - Data Table Actions
+     Using design system colors for consistency
      ====================================== */
-  --sidebar: hsl(120, 2%, 37%); /* This is sidebar and the whole background Color*/
-  --sidebar-foreground: hsl(94, 81%, 56%); /* Foreground color for text in sidebar */
-  --sidebar-primary: hsl(240 5.9% 10%); /* Primary color for sidebar elements */
-  --sidebar-primary-foreground: hsl(0, 0%, 98%); /* Foreground color for primary elements in sidebar */
-  --sidebar-accent: hsl(110, 3%, 44%); /* Accent color for sidebar elements */
-  --sidebar-accent-foreground: hsl(110, 95%, 49%); /* Foreground color for accent elements in sidebar */
-  --sidebar-border: hsl(220 13% 91%); /* Border color for sidebar elements */
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --color-button-select: var(--color-info); /* Blue for Select Title - Info semantic */
+  --color-button-select-foreground: var(--color-info-foreground);
+  --color-button-print: var(--color-success); /* Green for Print - Success semantic */
+  --color-button-print-foreground: var(--color-success-foreground);
+  --color-button-export: var(--color-success-dark); /* Darker green for Export - Success variant */
+  --color-button-export-foreground: var(--color-success-foreground);
+  --color-button-columns: var(--color-secondary-dark); /* Purple/blue for Columns - Secondary variant */
+  --color-button-columns-foreground: var(--color-secondary-foreground);
+  --color-button-filter: var(--color-warning); /* Orange for Filters - Warning semantic */
+  --color-button-filter-foreground: var(--color-warning-foreground);
+  --color-button-settings: var(--color-primary); /* Primary blue for Settings - Primary semantic */
+  --color-button-settings-foreground: var(--color-primary-foreground);
+  
+  /* ======================================
+     SIDEBAR SPECIFIC COLORS - Dark Sidebar
+     ====================================== */
+  --sidebar: hsl(220, 15%, 12%); /* Dark blue-grey sidebar */
+  --sidebar-foreground: hsl(220, 20%, 85%); /* Light blue-grey text */
+  --sidebar-primary: hsl(220, 100%, 50%); /* Strong blue primary for sidebar elements */
+  --sidebar-primary-foreground: hsl(0, 0%, 98%); /* White text on primary elements */
+  --sidebar-accent: hsl(220, 20%, 20%); /* Dark blue accent */
+  --sidebar-accent-foreground: hsl(220, 60%, 80%); /* Light blue accent text */
+  --sidebar-border: hsl(220, 15%, 18%); /* Subtle dark border */
+  --sidebar-ring: hsl(220, 100%, 50%); /* Ring color matches primary */
 }
 
 @layer base {
@@ -93,16 +144,35 @@
   --color-accent: var(--color-accent);
   --color-accent-foreground: var(--color-accent-foreground);
   
-  /* Status Colors - Reference :root variables */
-  --color-destructive: var(--color-destructive);
-  --color-destructive-foreground: var(--color-destructive-foreground);
+  /* Semantic Color System - Reference :root variables */
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-secondary-light: var(--color-secondary-light);
+  --color-secondary-dark: var(--color-secondary-dark);
   --color-success: var(--color-success);
   --color-success-foreground: var(--color-success-foreground);
-  --color-warning: var(--color-warning);
-  --color-warning-foreground: var(--color-warning-foreground);
+  --color-success-light: var(--color-success-light);
+  --color-success-dark: var(--color-success-dark);
   --color-info: var(--color-info);
   --color-info-foreground: var(--color-info-foreground);
+  --color-info-light: var(--color-info-light);
+  --color-info-dark: var(--color-info-dark);
+  --color-warning: var(--color-warning);
+  --color-warning-foreground: var(--color-warning-foreground);
+  --color-warning-light: var(--color-warning-light);
+  --color-warning-dark: var(--color-warning-dark);
   --color-danger: var(--color-danger);
+  --color-danger-foreground: var(--color-danger-foreground);
+  --color-danger-light: var(--color-danger-light);
+  --color-danger-dark: var(--color-danger-dark);
+  
+  /* Legacy aliases */
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-danger-foreground);
   
   /* Border & Form Colors - Reference :root variables */
   --color-border: var(--color-border);
@@ -122,6 +192,20 @@
   /* Border radius - Reference :root variable */
   --radius: var(--radius);
 
+  /* Button Colors - Reference :root variables */
+  --color-button-select: var(--color-button-select);
+  --color-button-select-foreground: var(--color-button-select-foreground);
+  --color-button-print: var(--color-button-print);
+  --color-button-print-foreground: var(--color-button-print-foreground);
+  --color-button-export: var(--color-button-export);
+  --color-button-export-foreground: var(--color-button-export-foreground);
+  --color-button-columns: var(--color-button-columns);
+  --color-button-columns-foreground: var(--color-button-columns-foreground);
+  --color-button-filter: var(--color-button-filter);
+  --color-button-filter-foreground: var(--color-button-filter-foreground);
+  --color-button-settings: var(--color-button-settings);
+  --color-button-settings-foreground: var(--color-button-settings-foreground);
+
   /* ======================================
      CUSTOM GRADIENTS
      Using referenced color variables
@@ -138,53 +222,89 @@
    DARK THEME - Override :root variables
    ====================================== */
 .dark {
-  /* Primary Brand Colors - Dark Mode */
-  --color-primary: hsl(105, 91%, 45%); /* Slightly brighter green for dark mode */
-  --color-primary-foreground: hsl(240 5.9% 10%);
-  --color-secondary: hsl(240 3.7% 15.9%);
-  --color-secondary-foreground: hsl(0 0% 98%);
+  /* Primary Brand Colors - Dark Mode with blue theme */
+  --color-primary: hsl(220, 100%, 60%); /* Brighter blue for dark mode visibility */
+  --color-primary-foreground: hsl(240, 10%, 3.9%);
+  --color-secondary: hsl(220, 15%, 18%); /* Dark blue secondary */
+  --color-secondary-foreground: hsl(220, 50%, 85%);
   
   /* Surface Colors - Dark Mode */
-  --color-background: hsl(240, 52%, 9%);
-  --color-foreground: hsl(0 0% 98%);
-  --color-card: hsl(240 10% 3.9%);
-  --color-card-foreground: hsl(0 0% 98%);
-  --color-popover: hsl(240 10% 3.9%);
-  --color-popover-foreground: hsl(0 0% 98%);
+  --color-background: hsl(240, 10%, 3.9%);
+  --color-foreground: hsl(0, 0%, 98%);
+  --color-card: hsl(240, 10%, 3.9%);
+  --color-card-foreground: hsl(0, 0%, 98%);
+  --color-popover: hsl(240, 10%, 3.9%);
+  --color-popover-foreground: hsl(0, 0%, 98%);
   
-  /* Accent & Muted Colors - Dark Mode */
-  --color-muted: hsl(240 3.7% 15.9%);
-  --color-muted-foreground: hsl(240 5% 64.9%);
-  --color-accent: hsl(240 3.7% 15.9%);
-  --color-accent-foreground: hsl(0 0% 98%);
+  /* Accent & Muted Colors - Dark Mode with blue accents */
+  --color-muted: hsl(220, 15%, 35%); /* More visible dark blue-tinted muted for loading spinner */
+  --color-muted-foreground: hsl(220, 15%, 65%);
+  --color-accent: hsl(220, 12%, 18%);
+  --color-accent-foreground: hsl(220, 40%, 85%);
   
-  /* Status Colors - Dark Mode */
-  --color-destructive: hsl(0 62.8% 30.6%);
-  --color-destructive-foreground: hsl(0 0% 98%);
-  --color-success: hsl(142.1 70% 45%); /* Adjusted for dark mode */
-  --color-success-foreground: hsl(0 0% 98%);
-  --color-warning: hsl(32.1 90% 50%); /* Adjusted for dark mode */
-  --color-warning-foreground: hsl(0 0% 98%);
-  --color-info: hsl(221.2 83.2% 60%); /* Adjusted for dark mode */
-  --color-info-foreground: hsl(0 0% 98%);
-  --color-danger: hsl(0 62.8% 30.6%);
+  /* ======================================
+     SEMANTIC COLOR SYSTEM - Dark Theme
+     Adjusted brightness for dark mode visibility
+     ====================================== */
   
-  /* Border & Form Colors - Dark Mode */
-  --color-border: hsl(240 3.7% 15.9%);
-  --color-input: hsl(240 3.7% 15.9%);
-  --color-ring: hsl(240 4.9% 83.9%);
+  /* Primary Theme Colors - Dark Mode */
+  --color-primary: hsl(220, 100%, 60%); /* Brighter blue for dark mode */
+  --color-primary-foreground: hsl(240, 10%, 3.9%);
+  --color-primary-light: hsl(220, 100%, 80%); /* Much brighter for dark mode */
+  --color-primary-dark: hsl(220, 100%, 45%); /* Still darker than main */
+  
+  /* Secondary Theme Colors - Dark Mode */
+  --color-secondary: hsl(220, 15%, 25%); /* Dark blue secondary for dark mode */
+  --color-secondary-foreground: hsl(220, 50%, 85%);
+  --color-secondary-light: hsl(220, 15%, 35%);
+  --color-secondary-dark: hsl(220, 15%, 18%);
+  
+  /* Success Colors - Dark Mode */
+  --color-success: hsl(142, 76%, 45%); /* Brighter green for dark mode */
+  --color-success-foreground: hsl(240, 10%, 3.9%);
+  --color-success-light: hsl(142, 76%, 65%);
+  --color-success-dark: hsl(142, 76%, 30%);
+  
+  /* Info Colors - Dark Mode */
+  --color-info: hsl(221, 83%, 60%); /* Brighter blue for dark mode */
+  --color-info-foreground: hsl(240, 10%, 3.9%);
+  --color-info-light: hsl(221, 83%, 75%);
+  --color-info-dark: hsl(221, 83%, 45%);
+  
+  /* Warning Colors - Dark Mode */
+  --color-warning: hsl(32, 95%, 50%); /* Brighter orange for dark mode */
+  --color-warning-foreground: hsl(240, 10%, 3.9%);
+  --color-warning-light: hsl(32, 95%, 70%);
+  --color-warning-dark: hsl(32, 95%, 35%);
+  
+  /* Danger Colors - Dark Mode */
+  --color-danger: hsl(0, 84%, 65%); /* Brighter red for dark mode */
+  --color-danger-foreground: hsl(240, 10%, 3.9%);
+  --color-danger-light: hsl(0, 84%, 80%);
+  --color-danger-dark: hsl(0, 84%, 50%);
+  
+  /* Legacy aliases */
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-danger-foreground);
+  
+  /* Border & Form Colors - Dark Mode with stronger blue variants */
+  --color-border: hsl(220, 25%, 25%); /* Strong dark blue border */
+  --color-input: hsl(220, 20%, 30%); /* Slightly lighter dark blue for input backgrounds */
+  --color-ring: hsl(220, 100%, 60%); /* Bright blue for focus ring in dark mode */
+
+  /* Button mappings automatically inherit from semantic colors above */
 
   /* ======================================
-     SIDEBAR SPECIFIC - Dark Mode
+     SIDEBAR SPECIFIC - Dark Mode (remains dark for both light/dark modes)
      ====================================== */
-  --sidebar: hsl(240 5.9% 10%);
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar: hsl(220, 15%, 12%); /* Keep dark blue-grey sidebar in dark mode */
+  --sidebar-foreground: hsl(220, 20%, 85%); /* Light blue-grey text */
+  --sidebar-primary: hsl(220, 100%, 60%); /* Bright blue for active states */
+  --sidebar-primary-foreground: hsl(240, 10%, 3.9%); /* Dark text on bright blue */
+  --sidebar-accent: hsl(220, 20%, 20%); /* Dark blue accent */
+  --sidebar-accent-foreground: hsl(220, 60%, 80%); /* Light blue accent text */
+  --sidebar-border: hsl(220, 15%, 18%); /* Subtle dark border */
+  --sidebar-ring: hsl(220, 100%, 60%); /* Ring matches primary */
 }
 
 /* ======================================
@@ -280,8 +400,96 @@
   color: var(--normal-text);
 }
 
-/* Fix for table overflow issues */
+/* Enhanced Table Styling for Better UI/UX */
 .module-data-table {
+  /* Clean table layout */
+  & table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+  
+  /* Modern header styling */
+  & thead th {
+    background: linear-gradient(135deg, var(--color-accent), var(--color-muted)) !important;
+    color: var(--color-accent-foreground) !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    padding: 12px 12px !important;
+    border-bottom: 2px solid var(--color-primary) !important;
+    border-right: 1px solid hsl(220, 15%, 85%) !important;
+    position: relative !important;
+    text-align: center !important;
+  }
+  
+  & thead th:first-child {
+    border-top-left-radius: 8px !important;
+  }
+  
+  & thead th:last-child {
+    border-right: none !important;
+    border-top-right-radius: 8px !important;
+  }
+  
+  /* Sortable header indicators */
+  & thead th .cursor-pointer {
+    transition: all 0.2s ease !important;
+  }
+  
+  & thead th .cursor-pointer:hover {
+    color: var(--color-primary) !important;
+    transform: translateY(-1px) !important;
+  }
+  
+  /* Clean cell styling */
+  & tbody td {
+    padding: 8px 12px !important;
+    border-bottom: 1px solid hsl(220, 20%, 90%) !important;
+    border-right: 1px solid hsl(220, 15%, 95%) !important;
+    background-color: var(--color-card) !important;
+    font-size: 0.875rem !important;
+    transition: all 0.15s ease !important;
+  }
+  
+  & tbody td:last-child {
+    border-right: none !important;
+  }
+  
+  /* Enhanced row hover effects */
+  & tbody tr {
+    transition: all 0.15s ease !important;
+  }
+  
+  & tbody tr:hover {
+    background-color: var(--color-accent) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px hsla(220, 100%, 50%, 0.1) !important;
+  }
+  
+  & tbody tr:hover td {
+    background-color: transparent !important;
+    color: var(--color-accent-foreground) !important;
+  }
+  
+  /* Selected row styling */
+  & tbody tr[data-state="selected"] {
+    background-color: hsl(220, 100%, 95%) !important;
+  }
+  
+  & tbody tr[data-state="selected"]:hover {
+    background-color: hsl(220, 100%, 90%) !important;
+  }
+  
+  /* Alternating row colors for better readability */
+  & tbody tr:nth-child(even) {
+    background-color: hsl(220, 20%, 98%) !important;
+  }
+  
+  & tbody tr:nth-child(even):hover {
+    background-color: var(--color-accent) !important;
+  }
+
   /* Override table whitespace-nowrap */
   & th:not(:has([role="checkbox"])) {
     white-space: normal !important;
@@ -306,15 +514,118 @@
     padding: 0 8px !important;
   }
   
-  /* Ensure table stays within bounds */
-  & table {
-    table-layout: fixed !important;
-    width: 100% !important;
-  }
-  
   /* Ensure proper scrolling */
   & [data-slot="table-container"] {
     max-width: 100% !important;
     overflow-x: auto !important;
+    border-radius: var(--radius) !important;
+    border: 2px solid var(--color-border) !important;
   }
+}
+
+/* Enhanced Input and Form Styling with Strong Teal Focus */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea,
+select {
+  border: 2px solid var(--color-input) !important;
+  background-color: var(--color-card) !important;
+  border-radius: var(--radius) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Strong focus states with teal enhancement */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-ring) !important;
+  background-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px hsl(220, 100%, 50%, 0.1) !important;
+  outline: none !important;
+}
+
+/* Hover states for better interactivity */
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+input[type="tel"]:hover,
+input[type="url"]:hover,
+input[type="search"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--color-primary) !important;
+}
+
+/* ======================================
+   SEMANTIC COLOR UTILITY CLASSES
+   Easy-to-use classes for the design system
+   ====================================== */
+
+/* Background Colors */
+.bg-primary { background-color: var(--color-primary) !important; color: var(--color-primary-foreground) !important; }
+.bg-primary-light { background-color: var(--color-primary-light) !important; color: var(--color-primary-foreground) !important; }
+.bg-primary-dark { background-color: var(--color-primary-dark) !important; color: var(--color-primary-foreground) !important; }
+.bg-secondary { background-color: var(--color-secondary) !important; color: var(--color-secondary-foreground) !important; }
+.bg-secondary-light { background-color: var(--color-secondary-light) !important; color: var(--color-secondary-foreground) !important; }
+.bg-secondary-dark { background-color: var(--color-secondary-dark) !important; color: var(--color-secondary-foreground) !important; }
+.bg-success { background-color: var(--color-success) !important; color: var(--color-success-foreground) !important; }
+.bg-success-light { background-color: var(--color-success-light) !important; color: var(--color-success-foreground) !important; }
+.bg-success-dark { background-color: var(--color-success-dark) !important; color: var(--color-success-foreground) !important; }
+.bg-info { background-color: var(--color-info) !important; color: var(--color-info-foreground) !important; }
+.bg-info-light { background-color: var(--color-info-light) !important; color: var(--color-info-foreground) !important; }
+.bg-info-dark { background-color: var(--color-info-dark) !important; color: var(--color-info-foreground) !important; }
+.bg-warning { background-color: var(--color-warning) !important; color: var(--color-warning-foreground) !important; }
+.bg-warning-light { background-color: var(--color-warning-light) !important; color: var(--color-warning-foreground) !important; }
+.bg-warning-dark { background-color: var(--color-warning-dark) !important; color: var(--color-warning-foreground) !important; }
+.bg-danger { background-color: var(--color-danger) !important; color: var(--color-danger-foreground) !important; }
+.bg-danger-light { background-color: var(--color-danger-light) !important; color: var(--color-danger-foreground) !important; }
+.bg-danger-dark { background-color: var(--color-danger-dark) !important; color: var(--color-danger-foreground) !important; }
+
+/* Text Colors */
+.text-primary { color: var(--color-primary) !important; }
+.text-secondary { color: var(--color-secondary-foreground) !important; }
+.text-success { color: var(--color-success) !important; }
+.text-info { color: var(--color-info) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-danger { color: var(--color-danger) !important; }
+
+/* Border Colors */
+.border-primary { border-color: var(--color-primary) !important; }
+.border-secondary { border-color: var(--color-secondary) !important; }
+.border-success { border-color: var(--color-success) !important; }
+.border-info { border-color: var(--color-info) !important; }
+.border-warning { border-color: var(--color-warning) !important; }
+.border-danger { border-color: var(--color-danger) !important; }
+
+/* Hover Effects */
+.hover\:bg-primary:hover { background-color: var(--color-primary-dark) !important; }
+.hover\:bg-secondary:hover { background-color: var(--color-secondary-dark) !important; }
+.hover\:bg-success:hover { background-color: var(--color-success-dark) !important; }
+.hover\:bg-info:hover { background-color: var(--color-info-dark) !important; }
+.hover\:bg-warning:hover { background-color: var(--color-warning-dark) !important; }
+.hover\:bg-danger:hover { background-color: var(--color-danger-dark) !important; }
+
+/* Enhanced styling for form components using CSS variable classes */
+.border {
+  border-color: var(--color-border) !important;
+}
+
+.ring-ring {
+  --tw-ring-color: var(--color-ring) !important;
+}
+
+.focus\:ring-ring:focus {
+  --tw-ring-color: var(--color-ring) !important;
 }

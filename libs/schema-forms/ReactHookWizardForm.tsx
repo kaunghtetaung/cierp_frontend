@@ -2,18 +2,17 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller, FieldValues } from "react-hook-form";
+import { useForm, Controller, FieldValues, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastSuccess, toastError, toastWarning, toastInfo } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@repo/ui/components/button";
-import { IconComponent } from "@repo/ui/components/icons";
-import { Form } from "@repo/ui/components/form";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@repo/schema-utils";
 import { useWizardStorage } from "@repo/schema-hooks/use-wizard-storage";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
-import { ConfirmationDialog } from "@repo/ui/components/confirmation-dialog";
+import { ConfirmationDialog } from "@repo/ui";
 import type { ModuleSchema, FormField } from "@repo/types";
 
 interface ReactHookWizardFormProps {
@@ -1550,7 +1549,7 @@ export function ReactHookWizardForm({
       <div className="bg-card border rounded-lg p-6 mb-6">
         
         {/* Form Fields */}
-        <Form {...form}>
+        <FormProvider {...form}>
           <form 
             onSubmit={currentStep < totalSteps - 1 ? handleNext : handleSubmit(onSubmit)} 
             className="space-y-6"
@@ -1689,7 +1688,7 @@ export function ReactHookWizardForm({
           </div>
           </div>
           </form>
-        </Form>
+        </FormProvider>
       </div>
 
       {/* Draft Restore Confirmation Dialog */}

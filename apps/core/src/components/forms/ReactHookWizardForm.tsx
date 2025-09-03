@@ -6,14 +6,14 @@ import { useForm, Controller, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastSuccess, toastError, toastWarning, toastInfo } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@/components/ui/button";
-import { IconComponent } from "@repo/ui/components/icons";
-import { Form } from "@/components/ui/form";
-import { FormFieldRenderer } from "./FormFieldRenderer";
-import { generateZodSchema } from "@/lib/form-schema";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
+import { Form } from "@repo/ui";
+import { FormFieldRenderer } from "@repo/schema-forms";
+import { generateZodSchema } from "@repo/schema-utils";
 import { useWizardStorage } from "@/hooks/use-wizard-storage";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { ConfirmationDialog } from "@repo/ui";
 import type { ModuleSchema, FormField } from "@repo/types";
 
 interface ReactHookWizardFormProps {

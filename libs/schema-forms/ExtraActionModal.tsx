@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@repo/ui/components/dialog";
+} from "@repo/ui";
 import { ExtraActionFormRouter } from "./ExtraActionFormRouter";
 import { getLocalizedText, toastSuccess, toastError } from "@repo/utils";
 import { executeExtraAction } from "@repo/app-modules/server-actions";
@@ -43,21 +43,35 @@ export function ExtraActionModal({
     
     try {
       // Add action metadata
-      formData.append('actionId', action.actionId);
-      formData.append('moduleSlug', module.moduleSlug);
+      formData.append('actionKey', action.actionId); // Use actionKey for server compatibility
+      formData.append('actionId', action.actionId); // Keep actionId for backwards compatibility
+      formData.append('moduleSlug', module.slug);
       
-      // Add selected items
+      // Add selected items with both naming conventions for compatibility
       selectedItems.forEach((item, index) => {
         const itemId = typeof item === 'string' ? item : (item._id || item.id);
         if (itemId) {
-          formData.append(`selectedItems[${index}]`, itemId);
+          formData.append('selectedIds', itemId); // Server expects selectedIds as array
+          formData.append(`selectedItems[${index}]`, itemId); // Keep indexed format for backwards compatibility
         }
       });
+      
+      // If this is a row action, add the specific item ID
+      if (isRowAction && selectedItems.length === 1) {
+        const itemId = typeof selectedItems[0] === 'string' ? selectedItems[0] : (selectedItems[0]._id || selectedItems[0].id);
+        if (itemId) {
+          formData.append('id', itemId);
+        }
+      }
 
       console.log('ExtraActionModal: Submitting form data', {
+        actionKey: action.actionId,
         actionId: action.actionId,
-        moduleSlug: module.moduleSlug,
-        selectedItemsCount: selectedItems.length
+        moduleSlug: module.slug,
+        selectedItemsCount: selectedItems.length,
+        isRowAction: isRowAction,
+        hasId: formData.has('id'),
+        id: formData.get('id')
       });
 
       // Execute the action
@@ -128,6 +142,7 @@ export function ExtraActionModal({
           onSubmit={handleFormSubmit}
           onCancel={onClose}
           hideHeader={true}
+          moduleSlug={module.slug}
         />
       </DialogContent>
     </Dialog>

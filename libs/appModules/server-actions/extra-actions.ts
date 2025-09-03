@@ -42,13 +42,31 @@ async function createModuleService() {
 
 export async function executeExtraAction(formData: FormData): Promise<ExtraActionResult> {
   try {
-    const actionKey = formData.get("actionKey") as string;
+    // Debug: Log all form data entries
+    console.log("📋 executeExtraAction: All form data entries:");
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+    
+    // Support both actionKey and actionId for backwards compatibility
+    const actionKey = (formData.get("actionKey") || formData.get("actionId")) as string;
     const moduleSlug = formData.get("moduleSlug") as string;
     const id = formData.get("id") as string;
     const selectedIds = formData.getAll("selectedIds") as string[];
 
-    if (!actionKey || !moduleSlug) {
-      throw new Error("Missing required action parameters");
+    console.log("📋 executeExtraAction: Parsed values:", {
+      actionKey,
+      moduleSlug,
+      id,
+      selectedIds
+    });
+
+    if (!actionKey) {
+      throw new Error(`Missing required action parameter: actionKey or actionId. Got actionKey=${formData.get("actionKey")}, actionId=${formData.get("actionId")}`);
+    }
+    
+    if (!moduleSlug) {
+      throw new Error(`Missing required action parameter: moduleSlug. Got moduleSlug=${formData.get("moduleSlug")}`);
     }
 
     // For actions that don't require an ID (like bulk operations)
@@ -106,7 +124,9 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       }
       // For "generate" mode, send empty body to let server generate password
 
-      const endpoint = `/core/${moduleSlug}/${targetId}/reset-password`;
+      // Build endpoint - use the moduleSlug as the resource name (e.g., "users")
+      const appName = 'core'; // TODO: This should come from config or context
+      const endpoint = `/${appName}/${moduleSlug}/${targetId}/reset-password`;
       console.log(`🔐 RESET PASSWORD DEBUG: Calling API endpoint: ${endpoint}`);
       console.log(`🔐 RESET PASSWORD DEBUG: Request body:`, resetData);
       console.log(`🔐 RESET PASSWORD DEBUG: Auth details:`, {
@@ -184,7 +204,9 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         assignRolesData.roleId = roleId;
       }
 
-      const endpoint = `/core/${moduleSlug}/${targetId}/roles`;
+      // Build endpoint - use the moduleSlug as the resource name (e.g., "users")
+      const appName = 'core'; // TODO: This should come from config or context
+      const endpoint = `/${appName}/${moduleSlug}/${targetId}/roles`;
       console.log(`🎭 ASSIGN ROLES DEBUG: Calling API endpoint: ${endpoint}`);
       console.log(`🎭 ASSIGN ROLES DEBUG: Request body:`, assignRolesData);
 

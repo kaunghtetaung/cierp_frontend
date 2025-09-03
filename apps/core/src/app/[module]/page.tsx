@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
 import { getModuleList } from "@repo/app-modules";
 import { ModuleDataTableWrapper } from "@/components/modules/ModuleDataTableWrapper";
+import { ModuleDataTableWithTimeout } from "@/components/modules/ModuleDataTableWithTimeout";
 import type { ModuleSchema } from "@repo/types";
 
 interface ModulePageProps {
@@ -44,16 +45,39 @@ export default async function ModulePage({
     notFound();
   }
 
-  // Fetch data directly in Server Component
+  // Try to fetch data on server with a timeout
   const resolvedSearchParams = await searchParams;
-  const moduleData = await getModuleList(
-    resolvedParams.module,
-    resolvedSearchParams
-  );
+  let moduleData: any[] | null = null;
+  let serverError = false;
+
+  try {
+    // Create a timeout promise (10 seconds for server-side)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Server timeout')), 10000);
+    });
+    
+    const dataPromise = getModuleList(resolvedParams.module, resolvedSearchParams);
+    moduleData = await Promise.race([dataPromise, timeoutPromise]) as any[];
+    
+  } catch (error) {
+    console.log(`Server-side data fetch failed for ${resolvedParams.module}:`, error);
+    serverError = true;
+    // Don't throw - let client handle it
+  }
 
   return (
     <div className="w-full min-w-0 overflow-hidden">
-      <ModuleDataTableWrapper module={module} initialData={moduleData} />
+      {serverError || !moduleData ? (
+        <ModuleDataTableWithTimeout 
+          module={module} 
+          searchParams={resolvedSearchParams}
+        />
+      ) : (
+        <ModuleDataTableWrapper 
+          module={module} 
+          initialData={moduleData} 
+        />
+      )}
     </div>
   );
 }

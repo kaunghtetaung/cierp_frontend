@@ -3,7 +3,7 @@ import { fetchLayoutData, generatePageMetadata } from "@/lib/layout-data";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ThemeScript } from "@/components/theme-script";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@repo/ui";
 import type { RootLayoutProps } from "@/types/layout";
 
 import "./globals.css";

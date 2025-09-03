@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { useLanguage } from "@repo/language";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { DataTable, FilterConfig } from "@repo/ui";
+import { Checkbox } from "@repo/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,18 +17,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { IconComponent } from "@repo/ui/components/icons";
+} from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import {
   useDeleteModuleItem,
   useHardDeleteModuleItem,
   useBulkModuleOperation,
 } from "@repo/schema-hooks";
 import { DynamicSearch } from "./DynamicSearch";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@repo/ui";
 import { ExtraActionModal } from "@repo/schema-forms";
-import { generateZodSchema } from "@/lib/form-schema";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { generateZodSchema } from "@repo/schema-utils";
+import { generateSearchFields, getPrimarySearchField } from "@repo/schema-utils/search-field-generator";
+import { ConfirmationDialog } from "@repo/ui";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -86,6 +87,56 @@ export function ModuleDataTable({
     filters: {} as Record<string, Record<string, any>>,
   });
 
+  // Simple search state
+  const [simpleSearchValue, setSimpleSearchValue] = useState("");
+  
+  // Advanced search toggle state
+  const [isAdvancedSearchActive, setIsAdvancedSearchActive] = useState(false);
+  
+  // Generate search fields from schema
+  const searchFields = useMemo(() => {
+    return generateSearchFields(module);
+  }, [module]);
+  
+  // Get primary search field for simple search
+  const primarySearchField = useMemo(() => {
+    return getPrimarySearchField(module);
+  }, [module]);
+
+  // Handle simple search
+  const handleSimpleSearch = useCallback((value: string) => {
+    setSimpleSearchValue(value);
+    
+    if (primarySearchField && value.trim()) {
+      // Use regex operator for text search
+      const searchOperator = primarySearchField.operators.includes('$regex') 
+        ? '$regex' 
+        : primarySearchField.operators[0];
+      
+      setQueryParams(prev => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          [primarySearchField.fieldName]: {
+            [searchOperator]: value
+          }
+        },
+        page: 1
+      }));
+    } else if (!value.trim() && primarySearchField) {
+      // Clear the primary search field filter
+      setQueryParams(prev => {
+        const newFilters = { ...prev.filters };
+        delete newFilters[primarySearchField.fieldName];
+        return {
+          ...prev,
+          filters: newFilters,
+          page: 1
+        };
+      });
+    }
+  }, [primarySearchField]);
+
   // Helper function to get raw nested field values (without language filtering)
   const getRawNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
@@ -133,31 +184,45 @@ export function ModuleDataTable({
     return { hasEnglish, hasMyanmar, isLanguageSpecific };
   };
 
-  // Function to calculate column visibility based on current language
+  // Function to calculate column visibility based on current language with 6-column limit
   const calculateLanguageBasedVisibility = (columns: TableColumn[], currentLanguage: string) => {
     const visibility: Record<string, boolean> = {};
     
-    // Always show selection column if present
+    // Always show selection column if present (doesn't count toward 6-column limit)
     if (module.dataTableSchema.layout === "withCheckbox") {
       visibility["select"] = true;
     }
     
-    // Always show actions column if present
+    // Show serial number column by default but allow hiding (doesn't count toward 6-column limit)
+    visibility["sr"] = true;
+    
+    // Always show actions column if present (doesn't count toward 6-column limit)
     if (module.dataTableSchema.actions) {
       visibility["actions"] = true;
     }
     
-    // Calculate visibility for data columns
+    // Calculate visibility for data columns - only show first 6 columns by default
+    let visibleCount = 0;
+    const maxVisibleColumns = 6;
+    
     columns.forEach(column => {
       const { hasEnglish, hasMyanmar, isLanguageSpecific } = detectColumnLanguageSupport(column);
       
+      let shouldShow = false;
       if (currentLanguage === 'en') {
-        visibility[column.fieldName] = hasEnglish;
+        shouldShow = hasEnglish;
       } else if (currentLanguage === 'mm') {
-        visibility[column.fieldName] = hasMyanmar;
+        shouldShow = hasMyanmar;
       } else {
-        // Default: show all columns for unknown languages
+        shouldShow = true; // Default: show all columns for unknown languages
+      }
+      
+      // Only show first 6 columns that should be visible
+      if (shouldShow && visibleCount < maxVisibleColumns) {
         visibility[column.fieldName] = true;
+        visibleCount++;
+      } else {
+        visibility[column.fieldName] = false;
       }
     });
     
@@ -367,6 +432,66 @@ export function ModuleDataTable({
     }
   };
 
+  // Generate filter configurations based on column types
+  const filterConfigs: Record<string, FilterConfig> = useMemo(() => {
+    const configs: Record<string, FilterConfig> = {};
+    
+    module.dataTableSchema.columns.forEach((column: TableColumn) => {
+      const fieldName = column.fieldName;
+      
+      switch (column.type) {
+        case 'date':
+        case 'datetime':
+          configs[fieldName] = {
+            dataType: column.type === 'datetime' ? 'datetime' : 'date'
+          };
+          break;
+        case 'number':
+        case 'integer':
+        case 'float':
+          configs[fieldName] = {
+            dataType: 'number'
+          };
+          break;
+        case 'boolean':
+          configs[fieldName] = {
+            dataType: 'boolean'
+          };
+          break;
+        case 'select':
+        case 'enum':
+          configs[fieldName] = {
+            dataType: 'select',
+            options: column.options || []
+          };
+          break;
+        case 'multiselect':
+          configs[fieldName] = {
+            dataType: 'multiselect',
+            options: column.options || []
+          };
+          break;
+        case 'text':
+        case 'string':
+        case 'email':
+        case 'url':
+        default:
+          configs[fieldName] = {
+            dataType: 'text',
+            // Add typeahead if needed - can implement getSuggestions for specific fields
+            getSuggestions: column.searchable ? async (value: string) => {
+              // This could be implemented to fetch suggestions from API
+              // For now, return empty array
+              return [];
+            } : undefined
+          };
+          break;
+      }
+    });
+    
+    return configs;
+  }, [module.dataTableSchema.columns]);
+
   // Create columns for the data table
   const columns: ColumnDef<any>[] = useMemo(() => {
     const cols: ColumnDef<any>[] = [];
@@ -402,6 +527,27 @@ export function ModuleDataTable({
       });
     }
 
+    // Serial Number column
+    cols.push({
+      id: "sr",
+      size: 60, // Fixed width for serial number column
+      minSize: 60,
+      maxSize: 60,
+      header: currentLanguage === "mm" ? "စဉ်" : "Sr.",
+      cell: ({ row, table }) => {
+        // Get the current sorted/filtered row position
+        const sortedRows = table.getSortedRowModel().rows;
+        const sortedIndex = sortedRows.findIndex(r => r.id === row.id);
+        return (
+          <div className="text-center font-medium">
+            {sortedIndex + 1}
+          </div>
+        );
+      },
+      enableSorting: false,
+      enableHiding: true, // Can be hidden
+    });
+
     // Data columns
     module.dataTableSchema.columns.forEach((column: TableColumn) => {
       cols.push({
@@ -410,37 +556,8 @@ export function ModuleDataTable({
         size: 150, // Set default column width
         minSize: 100, // Minimum width
         maxSize: 300, // Maximum width
-        header: ({ column: tableColumn }) => {
-          return column.sortable ? (
-            <Button
-              variant="ghost"
-              onClick={() => handleSort(column.fieldName)}
-              className={`p-0 h-auto font-medium justify-start ${
-                queryParams.sortBy === column.fieldName ? "text-primary" : ""
-              }`}
-            >
-              {getLocalizedText(column.label, currentLanguage)}
-              <IconComponent
-                name={
-                  queryParams.sortBy === column.fieldName
-                    ? queryParams.sortOrder === "asc"
-                      ? "ArrowUp"
-                      : "ArrowDown"
-                    : "ArrowUpDown"
-                }
-                className={`ml-2 h-4 w-4 ${
-                  queryParams.sortBy === column.fieldName
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                }`}
-              />
-            </Button>
-          ) : (
-            <span className="font-medium">
-              {getLocalizedText(column.label, currentLanguage)}
-            </span>
-          );
-        },
+        header: getLocalizedText(column.label, currentLanguage),
+        enableSorting: column.sortable,
         cell: ({ row }) => {
           const fieldValue = getNestedValue(row.original, column.fieldName);
           const rawValue = getRawNestedValue(row.original, column.fieldName);
@@ -571,6 +688,9 @@ export function ModuleDataTable({
     if (module.dataTableSchema.actions) {
       cols.push({
         id: "actions",
+        size: 120, // Wider for direct buttons
+        minSize: 120,
+        maxSize: 120,
         header: () => (
           <div className="text-center">
             {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
@@ -578,59 +698,65 @@ export function ModuleDataTable({
         ),
         cell: ({ row }) => {
           const item = row.original;
+          const hasExtraActions = module.dataTableSchema.actions.extraActions && 
+                                  module.dataTableSchema.actions.extraActions.length > 0;
 
           return (
-            <div className="flex items-center justify-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <IconComponent name="MoreHorizontal" className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                    {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+            <div className="flex items-center justify-center gap-1">
+              {/* Direct Edit Button */}
+              {module.dataTableSchema.actions.edit !== false && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEdit(item._id || item.id)}
+                  className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+                  title={currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Edit"}
+                >
+                  <IconComponent name="Edit" className="h-4 w-4" />
+                </Button>
+              )}
 
-                  {/* View Action */}
-                  {module.dataTableSchema.actions.view && (
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href={`/${module.slug}/${item._id || item.id}/view`}
-                        className="cursor-pointer"
-                      >
-                        <IconComponent name="Eye" className="mr-2 h-4 w-4" />
-                        {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+              {/* Direct Delete Button */}
+              {module.dataTableSchema.actions.delete !== false && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(item._id || item.id)}
+                  className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                  title={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
+                >
+                  <IconComponent name="Trash2" className="h-4 w-4" />
+                </Button>
+              )}
 
-                  {/* Edit Action - Show by default unless explicitly disabled */}
-                  {module.dataTableSchema.actions.edit !== false && (
-                    <DropdownMenuItem
-                      onClick={() => handleEdit(item._id || item.id)}
-                      className="cursor-pointer"
+              {/* More Actions Dropdown - Only show if there are extra actions or view action */}
+              {(hasExtraActions || module.dataTableSchema.actions.view) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 data-[state=open]:bg-muted hover:bg-muted"
+                      title={currentLanguage === "mm" ? "နောက်ထပ်လုပ်ဆောင်ချက်များ" : "More actions"}
                     >
-                      <IconComponent name="Edit" className="mr-2 h-4 w-4" />
-                      {currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Edit"}
-                    </DropdownMenuItem>
-                  )}
+                      <IconComponent name="MoreHorizontal" className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[180px]">
+                    {module.dataTableSchema.actions.view && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/${module.slug}/${item._id || item.id}/view`}
+                          className="cursor-pointer"
+                        >
+                          <IconComponent name="Eye" className="mr-2 h-4 w-4" />
+                          {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
-                  {/* Delete Action - Show by default unless explicitly disabled */}
-                  {module.dataTableSchema.actions.delete !== false && (
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(item._id || item.id)}
-                      className="cursor-pointer text-destructive"
-                    >
-                      <IconComponent name="Trash2" className="mr-2 h-4 w-4" />
-                      {currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
-                    </DropdownMenuItem>
-                  )}
-
-                  {/* Extra Actions - All actions available from row menu with automatic selection handling */}
-                  {module.dataTableSchema.actions.extraActions?.map((action) =>
+                    {/* Extra Actions */}
+                    {module.dataTableSchema.actions.extraActions?.map((action) =>
                       action.type === "page" ? (
                         <DropdownMenuItem key={action.actionKey} asChild>
                           <Link
@@ -660,8 +786,9 @@ export function ModuleDataTable({
                         </DropdownMenuItem>
                       )
                     )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           );
         },
@@ -708,17 +835,57 @@ export function ModuleDataTable({
         </Link>
       </div>
 
-      {/* Advanced Search */}
-      {module.dataTableSchema.filtering?.enabled &&
-        module.moduleAccessPolicy?.queryAllowedFields && (
-          <DynamicSearch
-            queryAllowedFields={module.moduleAccessPolicy.queryAllowedFields}
-            onFiltersChange={(filters) => {
-              setQueryParams((prev) => ({ ...prev, filters, page: 1 }));
-            }}
-            className="mb-4"
-          />
-        )}
+      {/* Search Section */}
+      <div className="space-y-4">
+        {/* Search Row - Normal Search (Left) + Advanced Search Button (Right) */}
+        <div className={`${isAdvancedSearchActive ? 'w-full' : 'flex items-center justify-between gap-4'}`}>
+          {/* Normal Search - Left Side - Hidden when advanced is active */}
+          {!isAdvancedSearchActive && primarySearchField && (
+            <div className="flex items-center gap-2 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <IconComponent 
+                  name="Search" 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" 
+                />
+                <Input
+                  type="text"
+                  placeholder={
+                    currentLanguage === "mm" 
+                      ? `${getLocalizedText(primarySearchField.label || { en: "Search", mm: "ရှာဖွေမည်" }, currentLanguage)} ရှာဖွေမည်...` 
+                      : `Search ${getLocalizedText(primarySearchField.label || { en: "Search", mm: "ရှာဖွေမည়" }, currentLanguage)}...`
+                  }
+                  value={simpleSearchValue}
+                  onChange={(e) => handleSimpleSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {simpleSearchValue && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSimpleSearch("")}
+                >
+                  <IconComponent name="X" className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Advanced Search - Full width when active, right side when inactive */}
+          {module.dataTableSchema.filtering?.enabled && searchFields.length > 0 && (
+            <div className={`${isAdvancedSearchActive ? 'w-full' : 'flex-shrink-0'}`}>
+              <DynamicSearch
+                queryAllowedFields={searchFields}
+                onFiltersChange={(filters) => {
+                  setQueryParams((prev) => ({ ...prev, filters, page: 1 }));
+                }}
+                simpleSearchField={primarySearchField?.fieldName}
+                onAdvancedToggle={(isActive) => setIsAdvancedSearchActive(isActive)}
+              />
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Actions Bar */}
       {selectedItems.length > 0 &&
@@ -998,21 +1165,12 @@ export function ModuleDataTable({
             <DataTable
               columns={columns}
               data={data}
-              searchKey={
-                module.dataTableSchema.filtering?.searchFields?.[0] ||
-                module.dataTableSchema.columns[0]?.fieldName
-              }
-              searchPlaceholder={
-                currentLanguage === "mm"
-                  ? `${
-                      module.dataTableSchema.filtering?.searchFields?.[0] || "ဒေတာ"
-                    } ရှာဖွေမည်...`
-                  : `Search ${
-                      module.dataTableSchema.filtering?.searchFields?.[0] || "data"
-                    }...`
-              }
               onRowSelectionChange={setSelectedItems}
               initialColumnVisibility={columnVisibility}
+              printTitle={getLocalizedText(module.name, currentLanguage)}
+              moduleId={module.slug}
+              filterConfigs={filterConfigs}
+              showFilters={true}
             />
           </div>
         </div>

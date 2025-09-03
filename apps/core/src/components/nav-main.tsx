@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { IconComponent } from "@repo/ui/components/icons";
+import { IconComponent } from "@repo/ui";
 import { useLanguage } from "@repo/language";
 import { getLocalizedText } from "@repo/utils";
 
@@ -11,7 +11,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@repo/ui";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -22,7 +22,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar";
+} from "@repo/ui";
 
 export function NavMain({
   items,

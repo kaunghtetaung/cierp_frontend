@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@repo/ui"
 import type { DashboardLayoutProps, DashboardConfig } from "../types"
 
 /**

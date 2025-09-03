@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconComponent } from '@repo/ui/components/icons'
+import { IconComponent } from '@repo/ui'
 import { MultilingualErrorBoundary } from './MultilingualErrorBoundary'
 import { useLanguage } from '@repo/language'
 import { getLocalizedErrorMessage } from '@repo/api/messages'
@@ -40,8 +40,8 @@ function TestFormComponent({ shouldError }: { shouldError: boolean }) {
   }
   
   return (
-    <div className="p-4 border border-green-200 rounded-lg bg-green-50">
-      <p className="text-green-800 text-sm">Form loaded successfully!</p>
+    <div className="p-4 border border-success rounded-lg bg-success-light">
+      <p className="text-success text-sm">Form loaded successfully!</p>
     </div>
   )
 }
@@ -55,8 +55,8 @@ function TestDataComponent({ shouldError }: { shouldError: boolean }) {
   }
   
   return (
-    <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
-      <p className="text-blue-800 text-sm">Data loaded successfully!</p>
+    <div className="p-4 border border-info rounded-lg bg-info-light">
+      <p className="text-info text-sm">Data loaded successfully!</p>
     </div>
   )
 }
@@ -202,8 +202,8 @@ export function ErrorTestComponent() {
               {activeTest && ['component', 'network', 'chunk'].includes(activeTest) ? (
                 <ErrorThrowingComponent errorType={activeTest} />
               ) : (
-                <div className="p-4 border border-green-200 rounded-lg bg-green-50">
-                  <p className="text-green-800 text-sm">
+                <div className="p-4 border border-success rounded-lg bg-success-light">
+                  <p className="text-success text-sm">
                     {currentLanguage === 'mm' 
                       ? 'ကွန်ပိုနင့် အဆင်ပြေစွာ တင်ပြနေသည်!'
                       : 'Component loaded successfully!'
@@ -258,8 +258,8 @@ export function ErrorTestComponent() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-sm text-blue-800 mb-2">
+              <div className="p-3 bg-info-light border border-info rounded-lg">
+                <h4 className="font-semibold text-sm text-info mb-2">
                   {currentLanguage === 'mm' ? 'နမူနာ API အမှားများ:' : 'Sample API Errors:'}
                 </h4>
                 <div className="space-y-2 text-xs">

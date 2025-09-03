@@ -7,7 +7,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
   NavigationMenuContent,
-} from "@repo/ui/components/navigation-menu";
+} from "@repo/ui";
 import { IconComponent } from "@repo/ui";
 import Link from "next/link";
 import { NavigationItemProps } from "./types";

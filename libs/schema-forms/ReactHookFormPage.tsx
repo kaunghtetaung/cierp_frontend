@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@repo/ui/components/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/card'
+import { Button } from '@repo/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
 import { ArrowLeft } from 'lucide-react'
-import { ReactHookFormWrapper } from './ReactHookFormWrapper'
+import { FormWithLanguage } from './FormWithLanguage'
 import { toastSuccess, toastError } from '@repo/utils'
 import type { ModuleSchema } from '@repo/types'
 

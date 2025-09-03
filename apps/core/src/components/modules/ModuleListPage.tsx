@@ -4,10 +4,10 @@ import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@repo/language";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { DataTable } from "@repo/ui";
+import { Checkbox } from "@repo/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,14 +15,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@repo/ui";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { IconComponent } from "@repo/ui/components/icons";
+} from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import {
   useModuleList,
   useModuleItem,
@@ -31,7 +31,7 @@ import {
 } from "@repo/schema-hooks";
 import { DynamicSearch } from "./DynamicSearch";
 import { ReactHookForm } from "../forms/ReactHookForm";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { ConfirmationDialog } from "@repo/ui";
 import { toastSuccess, toastError } from "@repo/utils";
 import type { ModuleSchema, DataTableColumn } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";

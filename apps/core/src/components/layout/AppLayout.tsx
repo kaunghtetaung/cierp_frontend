@@ -5,12 +5,12 @@ import {
   SidebarInset,
   SidebarProvider,
   useSidebar,
-} from "@/components/ui/sidebar";
+} from "@repo/ui";
 import { DashboardErrorBoundary } from "@repo/base-dashboard";
 import { AppSidebar } from "@/components/common/sidebar";
 import Header from "@/components/common/header";
 import type { AppLayoutProps } from "@/types/layout";
-import { cn } from "@repo/ui/lib/utils";
+import { cn } from "@repo/ui";
 /**
  * Content wrapper that adapts to sidebar state
  */

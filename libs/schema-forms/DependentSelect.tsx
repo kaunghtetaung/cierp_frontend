@@ -2,9 +2,9 @@
 
 import React from 'react'
 import { useFormContext } from 'react-hook-form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/components/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui'
 import { getModuleReferenceAction } from '@repo/app-modules/server-actions'
-import { LoadingSpinner } from '@repo/ui/components/loading-spinner'
+import { LoadingSpinner } from '@repo/ui'
 import type { FormField as SchemaFormField } from '@repo/types'
 import type { ReferenceOption } from '@repo/app-modules/types'
 

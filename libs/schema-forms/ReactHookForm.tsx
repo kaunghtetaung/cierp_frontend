@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller, FieldValues } from "react-hook-form";
+import { useForm, Controller, FieldValues, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
-import { Button } from "@repo/ui/components/button";
-import { Form } from "@repo/ui/components/form";
-import { IconComponent } from "@repo/ui/components/icons";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@repo/schema-utils";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
@@ -225,7 +224,7 @@ export function ReactHookForm({
       </div>
 
       {/* Form Fields */}
-      <Form {...form}>
+      <FormProvider {...form}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div
             className={`${
@@ -315,7 +314,7 @@ export function ReactHookForm({
           </Button>
         </div>
         </form>
-      </Form>
+      </FormProvider>
     </div>
   );
 }

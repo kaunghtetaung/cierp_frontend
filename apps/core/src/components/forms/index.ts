@@ -10,5 +10,5 @@ export { MultiLanguageInput } from "./MultiLanguageInput";
 // Extra Action Form System
 export { DynamicExtraActionForm } from "./DynamicExtraActionForm";
 export { ExtraActionFormRouter } from "./ExtraActionFormRouter";
-export { ExtraActionModal } from "./ExtraActionModal";
+export { ExtraActionModal } from "@repo/schema-forms";
 export type { PreBuiltFormProps } from "./ExtraActionFormRouter";

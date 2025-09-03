@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { IconComponent } from '@repo/ui/components/icons';
+import { IconComponent } from '@repo/ui';
 import { useAuthContext } from './auth-provider';
 
 /**

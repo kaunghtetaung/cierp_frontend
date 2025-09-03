@@ -18,7 +18,7 @@ export default function TenantNotFoundPage({ searchParams }: TenantNotFoundPageP
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Service Unavailable - {hostname || 'Unknown Domain'}</title>
+        <title>{`Service Unavailable - ${hostname || 'Unknown Domain'}`}</title>
         <meta name="description" content="The service for this domain is currently unavailable. Please try again later." />
         <meta name="robots" content="noindex, nofollow" />
         <style dangerouslySetInnerHTML={{
@@ -199,13 +199,21 @@ export default function TenantNotFoundPage({ searchParams }: TenantNotFoundPageP
               
               <button
                 className="button button-primary"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                }}
               >
                 Try Again
               </button>
               <button
                 className="button button-secondary"
-                onClick={() => window.history.back()}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.history.back();
+                  }
+                }}
               >
                 Go Back
               </button>

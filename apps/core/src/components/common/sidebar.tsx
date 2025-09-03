@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { TenantSettings, ModuleSchema } from "@repo/types";
-import { IconComponent } from "@repo/ui/components/icons";
+import { IconComponent } from "@repo/ui";
 import { getLocalizedText } from "@repo/utils";
 import { useLanguage } from "@repo/language";
 import { NavMain } from "@/components/nav-main";
@@ -14,7 +14,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-} from "@/components/ui/sidebar";
+} from "@repo/ui";
 
 // Multilingual secondary navigation items
 const getSecondaryNavItems = (language: string) => [
@@ -33,6 +33,13 @@ const getSecondaryNavItems = (language: string) => [
     url: "/faq",
     icon: ({ className, ...props }: any) => (
       <IconComponent name="HelpCircle" className={className} {...props} />
+    ),
+  },
+  {
+    title: getLocalizedText({ en: "Session Monitor", mm: "အကောင့်ဝင်ခွင့် စောင့်ကြည့်မှု" }, language),
+    url: "/session-monitor",
+    icon: ({ className, ...props }: any) => (
+      <IconComponent name="Monitor" className={className} {...props} />
     ),
   },
   {

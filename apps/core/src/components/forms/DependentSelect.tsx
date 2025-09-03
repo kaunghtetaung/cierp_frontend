@@ -2,9 +2,9 @@
 
 import React from 'react'
 import { useFormContext } from 'react-hook-form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select'
 import { getModuleReferenceAction } from '@repo/app-modules/server-actions'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LoadingSpinner } from '@repo/ui/loading-spinner'
 import type { FormField as SchemaFormField } from '@repo/types'
 import type { ReferenceOption } from '@repo/app-modules/types'
 
@@ -125,7 +125,7 @@ export function DependentSelect({
   
   if (error) {
     return (
-      <div className="text-sm text-red-500 border rounded-md p-2 bg-red-50">
+      <div className="text-sm text-danger border rounded-md p-2 bg-danger-light">
         Error loading options: {error}
       </div>
     )

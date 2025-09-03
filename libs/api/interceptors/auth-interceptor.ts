@@ -1,12 +1,14 @@
 // Auth Interceptor - Single Responsibility: Authentication token refresh
 import { HTTP_STATUS } from "@repo/utils/common/constants";
-import { TokenManager } from "../../auth/managers/token-manager";
-import { handleTokenRefreshFailure } from "../../auth/auth-error-handler";
 import type { ResponseInterceptor, HttpResponseContext } from '../types/http-types';
+
+// Lazy import to avoid circular dependencies
+let TokenManager: any;
+let handleTokenRefreshFailure: any;
 
 export class AuthResponseInterceptor implements ResponseInterceptor {
   private refreshPromise: Promise<string> | null = null;
-  private tokenManager: TokenManager | null = null;
+  private tokenManager: any = null;
   private enableAuth: boolean;
 
   constructor(enableAuth: boolean = true) {
@@ -18,13 +20,20 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
   /**
    * Lazy initialization of TokenManager to avoid circular dependencies
    */
-  private getTokenManager(): TokenManager | null {
+  private getTokenManager(): any {
     if (!this.enableAuth) {
       return null;
     }
 
     if (!this.tokenManager) {
       try {
+        // Lazy load TokenManager on first use
+        if (!TokenManager) {
+          TokenManager = require("../../auth/managers/token-manager").TokenManager;
+        }
+        if (!handleTokenRefreshFailure) {
+          handleTokenRefreshFailure = require("../../auth/auth-error-handler").handleTokenRefreshFailure;
+        }
         this.tokenManager = TokenManager.getInstance();
       } catch (error) {
         console.warn("Failed to initialize TokenManager:", error);
@@ -69,12 +78,23 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
         // Token refresh failed - delegate to centralized auth error handler
         console.log("🔐 AuthResponseInterceptor: Token refresh failed, delegating to AuthErrorHandler");
         
-        handleTokenRefreshFailure({
-          url: context.request.url,
-          userLanguage: this.getCurrentLanguage()
-        }).catch(authError => {
-          console.error('🔐 AuthResponseInterceptor: Auth error handling failed:', authError);
-        });
+        // Ensure handleTokenRefreshFailure is loaded
+        if (!handleTokenRefreshFailure) {
+          try {
+            handleTokenRefreshFailure = require("../../auth/auth-error-handler").handleTokenRefreshFailure;
+          } catch (error) {
+            console.error("Failed to load handleTokenRefreshFailure:", error);
+          }
+        }
+        
+        if (handleTokenRefreshFailure) {
+          handleTokenRefreshFailure({
+            url: context.request.url,
+            userLanguage: this.getCurrentLanguage()
+          }).catch(authError => {
+            console.error('🔐 AuthResponseInterceptor: Auth error handling failed:', authError);
+          });
+        }
       }
     }
 
@@ -156,21 +176,74 @@ export class AuthResponseInterceptor implements ResponseInterceptor {
     }
 
     try {
-      // Extract tenantId from the current request context if available
+      // Extract tenantId and userId from the current request context if available
       const tenantId = context.request.config.tenantId;
+      const userId = context.request.config.userId;
       
-      // Use TokenManager's proper Client Credentials refresh logic
-      // This will handle the priority: User -> Tenant -> Initializer tokens
-      const newToken = await tokenManager.getTokenForRequest(tenantId, undefined);
+      console.log("🔄 Auth Interceptor - Starting token refresh", { tenantId, userId });
+      
+      // CRITICAL FIX: Clear potentially expired tokens before refresh attempt
+      if (userId && tenantId) {
+        console.log("🧹 Auth Interceptor - Clearing expired user tokens before refresh");
+        await tokenManager.clearUserAccessToken(tenantId, userId);
+      } else if (tenantId) {
+        console.log("🧹 Auth Interceptor - Clearing expired tenant tokens before refresh");
+        await tokenManager.clearTenantTokens(tenantId);
+      }
+      
+      // Force token refresh instead of getting potentially cached expired token
+      let newToken: string | null = null;
+      
+      if (userId && tenantId) {
+        // Attempt user token refresh first
+        console.log("🔄 Auth Interceptor - Attempting user token refresh");
+        newToken = await tokenManager.refreshUserAccessToken(tenantId, userId);
+      }
+      
+      if (!newToken && tenantId) {
+        // Fallback to tenant token refresh
+        console.log("🔄 Auth Interceptor - Falling back to tenant token refresh");
+        // Get tenant secrets for refresh
+        try {
+          const { getTenantSecrets } = await import("@repo/tenant/wrapper");
+          const tenantSecrets = await getTenantSecrets(tenantId);
+          
+          let clientId: string | undefined;
+          let clientSecret: string | undefined;
+
+          if (tenantSecrets?.clientId && tenantSecrets?.clientSecret) {
+            clientId = tenantSecrets.clientId;
+            clientSecret = tenantSecrets.clientSecret;
+          } else if (
+            tenantSecrets?.apiAccess?.clientId &&
+            tenantSecrets?.apiAccess?.clientSecret
+          ) {
+            clientId = tenantSecrets.apiAccess.clientId;
+            clientSecret = tenantSecrets.apiAccess.clientSecret;
+          }
+
+          if (clientId && clientSecret) {
+            newToken = await tokenManager.refreshTenantAccessToken(tenantId, clientId, clientSecret);
+          }
+        } catch (secretError) {
+          console.warn("🔄 Auth Interceptor - Failed to get tenant secrets for refresh:", secretError);
+        }
+      }
       
       if (!newToken) {
-        throw new Error("Failed to refresh token using TokenManager");
+        // Final fallback - get initializer token
+        console.log("🔄 Auth Interceptor - Final fallback to initializer token");
+        newToken = await tokenManager.getInitializerToken();
+      }
+      
+      if (!newToken) {
+        throw new Error("Failed to refresh token - all strategies exhausted");
       }
 
-      console.log("🔄 Auth Interceptor - Token refreshed successfully using TokenManager");
+      console.log("✅ Auth Interceptor - Token refreshed successfully using TokenManager");
       return newToken;
     } catch (error) {
-      console.error("🔄 Auth Interceptor - Token refresh failed:", error);
+      console.error("❌ Auth Interceptor - Token refresh failed:", error);
       throw error;
     }
   }

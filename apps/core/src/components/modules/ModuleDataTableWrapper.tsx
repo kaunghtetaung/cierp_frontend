@@ -4,7 +4,7 @@ import React from "react";
 import { useSearchParams } from "next/navigation";
 import { useModuleList } from "@repo/schema-hooks";
 import { ModuleDataTable } from "./ModuleDataTable";
-import { IconComponent } from "@repo/ui/components/icons";
+import { IconComponent } from "@repo/ui";
 import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
 

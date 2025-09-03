@@ -1,7 +1,7 @@
 "use client";
 
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger, useSidebar } from "@repo/ui";
+import { Separator } from "@repo/ui";
 import { LanguageSelector } from "@repo/base-dashboard";
 import { useLanguage } from "@repo/language";
 import { getLocalizedText } from "@repo/utils";

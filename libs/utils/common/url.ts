@@ -418,8 +418,20 @@ export function getApiEndpoint(
   const parsed = parse(cleanHostname);
   const rootDomain = parsed.domain || cleanHostname;
 
-  // With IP-based setup, API runs on standard port 80
-  const fullUrl = `${protocol}://api.${rootDomain}`;
+  // For localhost development, use environment API URL if available
+  if (cleanHostname === 'localhost' || cleanHostname.includes('127.0.0.')) {
+    if (config.baseUrl) {
+      return { fullUrl: config.baseUrl, rootDomain };
+    }
+    
+    if (process.env.API_BASE_URL) {
+      return { fullUrl: process.env.API_BASE_URL, rootDomain };
+    }
+  }
+
+  // For multi-tenant domains, build API URL matching client protocol and port
+  const cleanProtocol = protocol.endsWith(':') ? protocol.slice(0, -1) : protocol;
+  const fullUrl = `${cleanProtocol}://api.${rootDomain}`;
 
   return { fullUrl, rootDomain };
 }

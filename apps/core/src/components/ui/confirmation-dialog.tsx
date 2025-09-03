@@ -10,8 +10,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { IconComponent } from "@repo/ui/components/icons";
+} from "@repo/ui";
+import { IconComponent } from "@repo/ui";
 
 interface ConfirmationDialogProps {
   open: boolean;

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getLocalizedText } from '@repo/utils'
 import { Button } from '@/components/ui/button'
-import { IconComponent } from '@repo/ui/components/icons'
+import { IconComponent } from '@repo/ui'
 import { deleteModuleItemAction } from '@repo/app-modules/server-actions'
 import type { ModuleSchema, DataTableColumn } from '@repo/types'
 

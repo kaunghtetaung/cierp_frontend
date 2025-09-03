@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@repo/ui";
 import { useBreadcrumb, BreadcrumbItem } from "@/hooks/useBreadcrumb";
 import { useLanguage } from "@repo/language";
 import { getLocalizedText } from "@repo/utils";

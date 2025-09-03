@@ -67,6 +67,7 @@ export interface PaginationConfig {
   enabled: boolean;
   defaultLimit: number;
   allowedLimits: number[];
+  isClientSidePaging?: boolean; // If true, use client-side pagination; if false/undefined, use server-side
 }
 
 // Sorting configuration
