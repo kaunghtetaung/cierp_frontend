@@ -43,7 +43,7 @@ export class ApplicationErrorImpl implements ApplicationError {
     this.context = context;
     this.cause = options.cause;
     this.statusCode = options.statusCode || HTTP_ERROR_MAPPINGS[code as keyof typeof HTTP_ERROR_MAPPINGS];
-    this.retryable = options.retryable ?? RETRYABLE_ERROR_CODES.has(code);
+    this.retryable = options.retryable ?? RETRYABLE_ERROR_CODES.has(code as any);
     this.severity = options.severity || this.determineSeverity(type, code);
     this.category = options.category || this.determineCategory(type);
   }

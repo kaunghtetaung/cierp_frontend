@@ -236,17 +236,18 @@ export function trapFocus(element: Element): () => void {
   const firstFocusableElement = focusableElements[0] as HTMLElement;
   const lastFocusableElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Tab') {
-      if (e.shiftKey) {
+  const handleKeyDown = (e: Event) => {
+    const keyEvent = e as KeyboardEvent;
+    if (keyEvent.key === 'Tab') {
+      if (keyEvent.shiftKey) {
         if (document.activeElement === firstFocusableElement) {
           lastFocusableElement.focus();
-          e.preventDefault();
+          keyEvent.preventDefault();
         }
       } else {
         if (document.activeElement === lastFocusableElement) {
           firstFocusableElement.focus();
-          e.preventDefault();
+          keyEvent.preventDefault();
         }
       }
     }

@@ -1,7 +1,5 @@
-// Main entry point for post library
+// Main entry point for post library - use explicit exports to avoid conflicts
 export * from './types/types';
-export * from './services/post-service';
-export * from './components/post-wrapper';
 
 // Import types for internal use
 import type { 
@@ -41,8 +39,8 @@ export type {
   PostTemplate
 } from './types/types';
 
-// Re-export the new PostService class
-export { PostService } from './services/post-service';
+// Re-export the new PostService class and utilities from service with aliases
+export { PostService, getPostUrl as getPostUrlFromService, calculateReadingTime as calculateReadingTimeFromService } from './services/post-service';
 
 export type {
   MultiLanguageText
@@ -72,13 +70,13 @@ export {
   generatePostSlug,
   generateCategorySlug,
   generateTagSlug,
-  getPostUrl as getPostUrlFromData,
-  getPostEditUrl as getPostEditUrlFromData,
-  getPostPreviewUrl as getPostPreviewUrlFromData,
-  getCategoryUrl as getCategoryUrlFromData,
-  getTagUrl as getTagUrlFromData,
+  getPostUrl,
+  getPostEditUrl,
+  getPostPreviewUrl,
+  getCategoryUrl,
+  getTagUrl,
   getAuthorUrl,
-  calculateReadingTime as calculateReadingTimeFromContent,
+  calculateReadingTime,
   generateExcerpt
 } from './types/types';
 

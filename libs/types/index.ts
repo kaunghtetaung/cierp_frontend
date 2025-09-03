@@ -1,14 +1,52 @@
-// Main exports from types package
-export * from './common';
+// Main exports from types package - using explicit exports to avoid conflicts
 export * from './auth';
-export * from './tenant';
-export * from './api';
 export * from './ui';
 export * from './content';
 export * from './section';
 
-// Module schema types for server-side usage
-export * from './module-schema';
+// Export tenant types explicitly to avoid conflicts
+export type {
+  MultilingualText as TenantMultilingualText,
+  TenantBrandInfo,
+  TenantContact,
+  TenantApplication,
+  TenantSettings,
+  TenantSecrets,
+  TenantSettingsDto,
+  TenantContextValue,
+  TenantProviderProps,
+  TenantInitializeResponse,
+  TenantResolver
+} from './tenant';
+
+// Export common types explicitly to avoid conflicts
+export type {
+  BaseEntity as CommonBaseEntity,
+  PaginatedResponse as CommonPaginatedResponse,
+  ApiResponse as CommonApiResponse,
+  Status,
+  SelectOption
+} from './common';
+
+// Export API types explicitly to avoid conflicts
+export type {
+  BaseEntity,
+  ApiResponse,
+  PaginatedResponse,
+  ApiError,
+  HttpMethod
+} from './api';
+
+// Module schema types for server-side usage - handle MultilingualText conflict
+export type {
+  SupportedLanguage,
+  CoreModuleName,
+  LucideIconName,
+  MultilingualText,
+  HttpMethod as ModuleHttpMethod,
+  ButtonStyle,
+  ServiceName
+} from './module-schema';
 export * from './form-types';
 export * from './table-types';
 export * from './access-policy-types';
