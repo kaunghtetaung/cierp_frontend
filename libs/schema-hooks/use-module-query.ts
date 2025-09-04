@@ -46,13 +46,30 @@ export function useModuleList<T = any>(
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch module list");
       }
-      return result.data;
+      
+      // Debug logging to understand the action result
+      console.log('🔍 useModuleList Debug:', {
+        module,
+        params,
+        resultSuccess: result.success,
+        resultData: result.data,
+        resultDataType: typeof result.data,
+        resultDataIsArray: Array.isArray(result.data),
+        resultDataLength: result.data?.length,
+        resultPagination: result.pagination
+      });
+      
+      // Return both data and pagination metadata for server-side pagination support
+      return {
+        data: result.data || [],
+        pagination: result.pagination
+      };
     },
     enabled: options?.enabled ?? true,
     staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes
     refetchInterval: options?.refetchInterval,
-    initialData: options?.initialData,
-    placeholderData: options?.placeholderData,
+    initialData: options?.initialData ? { data: options.initialData, pagination: undefined } : undefined,
+    placeholderData: options?.placeholderData ? { data: options.placeholderData, pagination: undefined } : undefined,
   });
 }
 

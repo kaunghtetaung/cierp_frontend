@@ -41,16 +41,16 @@ export function NavMain({
   const pathname = usePathname();
   const { currentLanguage } = useLanguage();
 
-  // Function to check if a path is active
+  // Function to check if a path is active - updated for path-based routing
   const isPathActive = (itemUrl: string, subItems?: any[]) => {
     // Exact match
     if (pathname === itemUrl) {
       return true;
     }
     
-    // Check if current path starts with the item URL (for nested routes)
-    // e.g., /users should be active when on /users/new or /users/123
-    if (itemUrl !== "/" && pathname.startsWith(itemUrl + "/")) {
+    // For path-based routing, check if current path starts with the item URL
+    // e.g., /core/users should be active when on /core/users/new or /core/users/123
+    if (itemUrl !== "/" && !itemUrl.endsWith("/") && pathname.startsWith(itemUrl + "/")) {
       return true;
     }
     
@@ -64,6 +64,22 @@ export function NavMain({
     return false;
   };
 
+  // Get current app from path for dashboard link
+  const getCurrentAppPrefix = (): string => {
+    const pathSegments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
+    
+    if (appFromPath && (appFromPath === 'core' || appFromPath === 'library' || appFromPath === 'school' || appFromPath === 'content')) {
+      return `/${appFromPath}`;
+    }
+    return '/core'; // Default fallback
+  };
+
+  const currentAppPrefix = getCurrentAppPrefix();
+  
+  // Check if we're on the dashboard (root of current app)
+  const isDashboardActive = pathname === currentAppPrefix || pathname === currentAppPrefix + "/" || pathname === "/";
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -73,9 +89,9 @@ export function NavMain({
           <SidebarMenuButton 
             asChild 
             tooltip={getLocalizedText({ en: "Dashboard", mm: "ဒက်ရှ်ဘုတ်" }, currentLanguage)} 
-            isActive={pathname === "/"}
+            isActive={isDashboardActive}
           >
-            <Link href="/">
+            <Link href={currentAppPrefix}>
               <IconComponent name="LayoutDashboard" />
               <span>{getLocalizedText({ en: "Dashboard", mm: "ဒက်ရှ်ဘုတ်" }, currentLanguage)}</span>
             </Link>

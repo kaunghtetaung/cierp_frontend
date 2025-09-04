@@ -34,6 +34,7 @@ export interface BackendValidationError {
 export interface ActionResponse<T = any> {
   success: boolean;
   data?: T;
+  pagination?: any;
   error?: string;
   errors?: Record<string, string[]>;
   fieldErrors?: string[];
@@ -50,11 +51,12 @@ export async function getModuleListAction<T = any>(
   params: ModuleListParams = {}
 ): Promise<ActionResponse<T[]>> {
   try {
-    const data = await getModuleList<T>(module, params);
+    const response = await getModuleList<T>(module, params);
 
     return {
       success: true,
-      data,
+      data: response.data,
+      pagination: response.pagination,
     };
   } catch (error) {
     console.error(`Error fetching ${module} list:`, error);

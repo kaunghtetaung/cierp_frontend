@@ -24,12 +24,24 @@ export function ModuleDataTableWrapper({
   const queryParams = React.useMemo(() => {
     const params: Record<string, any> = {};
     
-    // Get pagination params
-    const page = searchParams.get('page');
-    const limit = searchParams.get('limit');
+    // For server-side pagination, always include page and limit parameters
+    const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
     
-    if (page) params.page = parseInt(page);
-    if (limit) params.limit = parseInt(limit);
+    if (isServerSidePaging) {
+      // Get pagination params with defaults for server-side paging
+      const page = searchParams.get('page');
+      const limit = searchParams.get('limit');
+      
+      params.page = page ? parseInt(page) : 1;
+      params.limit = limit ? parseInt(limit) : module.dataTableSchema.pagination?.defaultLimit || 10;
+    } else {
+      // For client-side paging, only include if specified in URL
+      const page = searchParams.get('page');
+      const limit = searchParams.get('limit');
+      
+      if (page) params.page = parseInt(page);
+      if (limit) params.limit = parseInt(limit);
+    }
     
     // Get filter params
     for (const [key, value] of searchParams.entries()) {
@@ -49,11 +61,11 @@ export function ModuleDataTableWrapper({
     if (order) params.order = order;
     
     return params;
-  }, [searchParams]);
+  }, [searchParams, module.dataTableSchema.pagination]);
 
   // Fetch data using React Query
   const {
-    data: moduleData = initialData,
+    data: moduleResponse,
     isLoading,
     error,
     refetch,
@@ -61,6 +73,24 @@ export function ModuleDataTableWrapper({
     initialData: initialData,
     staleTime: 0, // Always refetch to ensure fresh data
   });
+
+  // Extract data and pagination from response
+  // Debug logging to understand the response structure
+  console.log('🔍 ModuleDataTableWrapper Debug:', {
+    moduleResponse,
+    hasData: !!moduleResponse?.data,
+    isDataArray: Array.isArray(moduleResponse?.data),
+    dataLength: moduleResponse?.data?.length,
+    hasPagination: !!moduleResponse?.pagination,
+    initialDataLength: initialData?.length
+  });
+
+  const moduleData = Array.isArray(moduleResponse?.data) 
+    ? moduleResponse.data 
+    : Array.isArray(initialData) 
+      ? initialData 
+      : [];
+  const pagination = moduleResponse?.pagination;
 
   if (error) {
     return (
@@ -94,12 +124,25 @@ export function ModuleDataTableWrapper({
     );
   }
 
+  // Debug pagination values being passed to ModuleDataTable
+  const totalItems = pagination?.total || moduleData.length;
+  const totalPages = pagination?.totalPages || 1;
+  
+  console.log('🔍 ModuleDataTableWrapper Pagination Debug:', {
+    moduleSlug: module.slug,
+    isServerSidePaging: module.dataTableSchema.pagination?.isClientSidePaging === false,
+    paginationData: pagination,
+    totalItems,
+    totalPages,
+    moduleDataLength: moduleData.length
+  });
+
   return (
     <ModuleDataTable 
       module={module} 
       data={moduleData}
-      totalItems={moduleData.length}
-      totalPages={1}
+      totalItems={totalItems}
+      totalPages={totalPages}
     />
   );
 }

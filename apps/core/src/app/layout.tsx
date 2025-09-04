@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     await fetchLayoutData();
 
   return (
-    <html lang={middlewareData.language}>
+    <html lang={middlewareData.language} suppressHydrationWarning>
       <head>
         <title>
           {tenant?.displayName[middlewareData.language] ||
@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         />
         <ThemeScript />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AppProviders
           initialLanguage={middlewareData.language}
           initialTenant={tenant}

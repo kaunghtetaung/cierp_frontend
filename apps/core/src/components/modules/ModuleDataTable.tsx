@@ -50,6 +50,20 @@ export function ModuleDataTable({
 }: Omit<ModuleDataTableProps, 'currentLanguage'>) {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
+
+  // Helper function to get current app prefix for URLs
+  const getCurrentAppPrefix = (): string => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const pathSegments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+      const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
+      
+      if (appFromPath && (appFromPath === 'core' || appFromPath === 'library' || appFromPath === 'school' || appFromPath === 'content')) {
+        return `/${appFromPath}`;
+      }
+    }
+    return '/core'; // Default fallback
+  };
   
   // React Query mutations for delete operations
   const deleteItemMutation = useDeleteModuleItem(module.slug);
@@ -298,7 +312,8 @@ export function ModuleDataTable({
 
   const handleEdit = (id: string) => {
     // Navigate to dedicated edit page using Next.js router for client-side navigation
-    router.push(`/${module.slug}/${id}`);
+    const appPrefix = getCurrentAppPrefix();
+    router.push(`${appPrefix}/${module.slug}/${id}`);
   };
 
 
@@ -746,7 +761,7 @@ export function ModuleDataTable({
                     {module.dataTableSchema.actions.view && (
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/${module.slug}/${item._id || item.id}/view`}
+                          href={`${getCurrentAppPrefix()}/${module.slug}/${item._id || item.id}/view`}
                           className="cursor-pointer"
                         >
                           <IconComponent name="Eye" className="mr-2 h-4 w-4" />
@@ -760,7 +775,7 @@ export function ModuleDataTable({
                       action.type === "page" ? (
                         <DropdownMenuItem key={action.actionKey} asChild>
                           <Link
-                            href={`/${module.slug}/${
+                            href={`${getCurrentAppPrefix()}/${module.slug}/${
                               item._id || item.id
                             }/actions/${action.actionKey}`}
                             className="cursor-pointer"
@@ -822,7 +837,7 @@ export function ModuleDataTable({
           </div>
         </div>
 
-        <Link href={`/${module.slug}/new`}>
+        <Link href={`${getCurrentAppPrefix()}/${module.slug}/new`}>
           <Button>
             <IconComponent name="Plus" className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">
@@ -1071,7 +1086,7 @@ export function ModuleDataTable({
                     {/* View Action */}
                     {module.dataTableSchema.actions.view && (
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/${module.slug}/${item._id || item.id}/view`}>
+                        <Link href={`${getCurrentAppPrefix()}/${module.slug}/${item._id || item.id}/view`}>
                           <IconComponent name="Eye" className="mr-2 h-4 w-4" />
                           {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
                         </Link>
@@ -1108,7 +1123,7 @@ export function ModuleDataTable({
                       action.type === "page" ? (
                         <Button key={action.actionKey} variant="outline" size="sm" asChild>
                           <Link
-                            href={`/${module.slug}/${
+                            href={`${getCurrentAppPrefix()}/${module.slug}/${
                               item._id || item.id
                             }/actions/${action.actionKey}`}
                           >

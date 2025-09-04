@@ -9,13 +9,16 @@ import { cn } from "../lib/utils"
 import { Button, buttonVariants } from "./button"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+  // Filter out non-DOM props to prevent React warnings
+  const { currentPage, totalPages, onPageChange, pageSize, totalItems, allowedLimits, onPageSizeChange, currentLanguage, ...navProps } = props as any;
+  
   return (
     <nav
       role="navigation"
       aria-label="pagination"
       data-slot="pagination"
       className={cn("mx-auto flex w-full justify-center", className)}
-      {...props}
+      {...navProps}
     />
   )
 }

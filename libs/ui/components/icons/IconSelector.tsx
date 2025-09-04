@@ -144,13 +144,12 @@ export function IconSelector({
         
         <div className="flex items-center gap-1">
           {value && (
-            <button
-              type="button"
+            <span
               onClick={handleClearSelection}
-              className="flex items-center p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+              className="flex items-center p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <X size={14} />
-            </button>
+            </span>
           )}
           <ChevronDown 
             size={16} 

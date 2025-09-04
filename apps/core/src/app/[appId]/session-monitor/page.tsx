@@ -141,7 +141,8 @@ export default function SessionMonitorPage() {
         const data = await response.json();
         setSessionsData(data);
       } else {
-        console.error('Failed to fetch sessions data');
+        const errorText = await response.text();
+        console.error(`Failed to fetch sessions data: ${response.status} ${response.statusText}`, errorText);
         setSessionsData(null);
       }
     } catch (error) {

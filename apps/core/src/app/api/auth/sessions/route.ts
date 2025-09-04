@@ -58,27 +58,38 @@ export async function GET(request: NextRequest) {
     const cache = getCacheInstance();
     const { tenantId } = sessionInfo.session;
     
+    console.log(`[SESSIONS_LIST] Getting sessions for tenant: ${tenantId}`);
+    
     // Get all session keys for this tenant
-    const sessionKeys = await cache.keys(`session:${tenantId}:*`);
+    const sessionKeys = await cache.getKeysPattern(`session:${tenantId}:*`);
+    console.log(`[SESSIONS_LIST] Found ${sessionKeys.length} session keys:`, sessionKeys);
     
     const sessions = await Promise.all(
       sessionKeys.map(async (key) => {
-        const session = await cache.get(key);
-        if (!session) return null;
+        try {
+          const session = await cache.get(key);
+          if (!session) {
+            console.log(`[SESSIONS_LIST] Empty session for key: ${key}`);
+            return null;
+          }
 
-        return {
-          sessionId: session.sessionId,
-          userId: session.userId,
-          tenantId: session.tenantId,
-          userEmail: session.userEmail || 'Unknown',
-          userName: session.userName || 'Unknown',
-          createdAt: session.createdAt,
-          expiresAt: session.expiresAt,
-          lastActivityAt: session.lastActivityAt,
-          ipAddress: session.ipAddress,
-          userAgent: session.userAgent,
-          isCurrent: session.sessionId === sessionInfo.session.sessionId
-        };
+          return {
+            sessionId: session.sessionId || 'unknown',
+            userId: session.userId || 'unknown',
+            tenantId: session.tenantId || tenantId,
+            userEmail: session.userEmail || 'Unknown',
+            userName: session.userName || 'Unknown',
+            createdAt: session.createdAt,
+            expiresAt: session.expiresAt,
+            lastActivityAt: session.lastActivityAt,
+            ipAddress: session.ipAddress || 'unknown',
+            userAgent: session.userAgent || 'unknown',
+            isCurrent: session.sessionId === sessionInfo.session.sessionId
+          };
+        } catch (sessionError) {
+          console.error(`[SESSIONS_LIST] Error processing session ${key}:`, sessionError);
+          return null;
+        }
       })
     );
 
@@ -93,8 +104,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Sessions list error:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: "Failed to retrieve sessions" },
+      { error: "Failed to retrieve sessions", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

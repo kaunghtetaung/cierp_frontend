@@ -87,12 +87,13 @@ async function createServiceInstance() {
 
 /**
  * Get module list using React.cache for request-level deduplication.
+ * Returns full response with pagination metadata for server-side pagination support.
  */
 export const getModuleList = cache(
   async <T = any>(
     module: string,
     params: ModuleListParams = {}
-  ): Promise<T[]> => {
+  ): Promise<{ data: T[]; pagination?: any }> => {
     const moduleService = await createServiceInstance();
     return await moduleService.getList<T>(module, params);
   }

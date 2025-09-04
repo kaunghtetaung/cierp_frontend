@@ -34,11 +34,12 @@ export class ModuleService {
   }
   /**
    * Fetch module list with pagination and filters
+   * Returns full response with pagination metadata for server-side pagination support
    */
   async getList<T = any>(
     module: string,
     params: ModuleListParams = {}
-  ): Promise<T[]> {
+  ): Promise<{ data: T[]; pagination?: any }> {
     let endpoint = `/${this.appName}/${module}`;
 
     // Build query parameters
@@ -64,7 +65,7 @@ export class ModuleService {
       endpoint += `?${queryParams.toString()}`;
     }
 
-    const response = await this.httpClient.request<T[]>(endpoint, {
+    const response = await this.httpClient.request<any>(endpoint, {
       method: "GET",
       tenantId: this.tenantId,
       userSessionId: this.userSessionId,
@@ -77,7 +78,24 @@ export class ModuleService {
       throw new Error(response.error || "Failed to fetch module list");
     }
 
-    return response.data;
+    // The backend may return either:
+    // 1. Just an array (for client-side pagination): [item1, item2, ...]
+    // 2. An object with data and pagination (for server-side pagination): { data: [...], pagination: {...} }
+    const responseData = response.data;
+    
+    // If response.data has a 'data' field, it includes pagination metadata
+    if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+      return {
+        data: responseData.data as T[],
+        pagination: responseData.pagination
+      };
+    }
+
+    // Otherwise, it's just the array (client-side pagination)
+    return {
+      data: Array.isArray(responseData) ? responseData as T[] : [],
+      pagination: undefined
+    };
   }
 
   /**

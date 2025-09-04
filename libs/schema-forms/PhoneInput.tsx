@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef, forwardRef } from 'react'
+import React, { useState, useEffect, useRef, forwardRef, useMemo } from 'react'
 import { AsYouType, getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { Input } from '@repo/ui'
 import { Button } from '@repo/ui'
@@ -264,30 +264,34 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     const [isOpen, setIsOpen] = useState(false)
     const asYouType = useRef<AsYouType>()
     
-    // Get all countries
-    const allCountries = getCountryData()
+    // Get all countries - memoized to prevent fetching on every render
+    const allCountries = useMemo(() => getCountryData(), [])
     
-    // Filter countries based on config
-    const availableCountries = allCountries.filter(country => {
-      if (onlyCountries && !onlyCountries.includes(country.code)) return false
-      if (excludeCountries.includes(country.code)) return false
-      return true
-    })
+    // Filter countries based on config - memoized to prevent infinite re-renders
+    const availableCountries = useMemo(() => {
+      return allCountries.filter(country => {
+        if (onlyCountries && !onlyCountries.includes(country.code)) return false
+        if (excludeCountries.includes(country.code)) return false
+        return true
+      })
+    }, [allCountries, onlyCountries, excludeCountries])
     
-    // Sort countries with preferred ones first
-    const sortedCountries = [
+    // Sort countries with preferred ones first - memoized to prevent unnecessary recalculations
+    const sortedCountries = useMemo(() => [
       ...availableCountries.filter(country => preferredCountries.includes(country.code)),
       ...availableCountries.filter(country => !preferredCountries.includes(country.code))
-    ]
+    ], [availableCountries, preferredCountries])
     
-    // Filter countries by search query
-    const filteredCountries = enableSearch 
-      ? sortedCountries.filter(country => 
-          country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          country.dialCode.includes(searchQuery) ||
-          country.code.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : sortedCountries
+    // Filter countries by search query - memoized for performance
+    const filteredCountries = useMemo(() => {
+      return enableSearch 
+        ? sortedCountries.filter(country => 
+            country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            country.dialCode.includes(searchQuery) ||
+            country.code.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        : sortedCountries
+    }, [enableSearch, sortedCountries, searchQuery])
 
     // Initialize AsYouType formatter
     useEffect(() => {
@@ -309,8 +313,8 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
         const validation = validatePhoneNumber(value)
         if (validation.country) {
           const country = availableCountries.find(c => c.code === validation.country)
-          if (country) {
-            // Always update if we can detect a country from the phone number
+          if (country && country.code !== selectedCountry?.code) {
+            // Only update if we can detect a country from the phone number AND it's different from current
             console.log(`🌍 PhoneInput: Detected country ${country.code} (${country.name}) from phone number: ${value}`)
             setSelectedCountry(country)
             return
@@ -321,14 +325,14 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       }
       
       // Only fall back to default country if no phone number and no country is currently selected
-      if (!value && defaultCountry) {
+      if (!value && !selectedCountry && defaultCountry) {
         const country = availableCountries.find(c => c.code === defaultCountry)
         if (country) {
           console.log(`🇲🇲 PhoneInput: Using default country ${country.code} (${country.name})`)
-          setSelectedCountry(prevSelected => prevSelected || country)
+          setSelectedCountry(country)
         }
       }
-    }, [value, availableCountries, defaultCountry])
+    }, [value, availableCountries, defaultCountry, selectedCountry])
 
     // Handle phone number input
     const handlePhoneChange = (inputValue: string) => {

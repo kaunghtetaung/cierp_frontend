@@ -17,10 +17,10 @@ import {
 } from "@repo/ui";
 
 // Multilingual secondary navigation items
-const getSecondaryNavItems = (language: string) => [
+const getSecondaryNavItems = (language: string, appPrefix: string = '/core') => [
   {
     title: getLocalizedText({ en: "Support", mm: "အကူအညီ" }, language),
-    url: "/support",
+    url: `${appPrefix}/support`,
     icon: ({ className, ...props }: any) => (
       <IconComponent name="LifeBuoy" className={className} {...props} />
     ),
@@ -30,21 +30,21 @@ const getSecondaryNavItems = (language: string) => [
       { en: "FAQ", mm: "မေးလေ့ရှိသောမေးခွန်းများ" },
       language
     ),
-    url: "/faq",
+    url: `${appPrefix}/faq`,
     icon: ({ className, ...props }: any) => (
       <IconComponent name="HelpCircle" className={className} {...props} />
     ),
   },
   {
     title: getLocalizedText({ en: "Session Monitor", mm: "အကောင့်ဝင်ခွင့် စောင့်ကြည့်မှု" }, language),
-    url: "/session-monitor",
+    url: `${appPrefix}/session-monitor`,
     icon: ({ className, ...props }: any) => (
       <IconComponent name="Monitor" className={className} {...props} />
     ),
   },
   {
     title: getLocalizedText({ en: "Profile", mm: "ပရိုဖိုင်" }, language),
-    url: "/profile",
+    url: `${appPrefix}/profile`,
     icon: ({ className, ...props }: any) => (
       <IconComponent name="User" className={className} {...props} />
     ),
@@ -52,10 +52,29 @@ const getSecondaryNavItems = (language: string) => [
 ];
 
 // Function to convert AppSchema modules to navigation items with language support
-function modulesToNavItems(modules: ModuleSchema[], language: string): any[] {
+function modulesToNavItems(modules: ModuleSchema[], language: string, currentAppId?: string): any[] {
+  // Get current app from URL path for proper navigation
+  const getAppPrefix = (): string => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const pathSegments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+      const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
+      
+      // Verify it's a valid app (matches known app configs)
+      if (appFromPath && (appFromPath === 'core' || appFromPath === 'library' || appFromPath === 'school' || appFromPath === 'content')) {
+        return `/${appFromPath}`;
+      }
+    }
+    
+    // Fallback to provided currentAppId or default to core
+    return currentAppId ? `/${currentAppId}` : '/core';
+  };
+
+  const appPrefix = getAppPrefix();
+
   return modules.map((module) => ({
     title: getLocalizedText(module.name, language) || module.slug,
-    url: `/${module.slug}`,
+    url: `${appPrefix}/${module.slug}`,
     icon: ({ className, ...props }: any) => (
       <IconComponent
         name={module.iconName || "SquareTerminal"}
@@ -67,7 +86,7 @@ function modulesToNavItems(modules: ModuleSchema[], language: string): any[] {
     items:
       module.subModules?.map((subModule) => ({
         title: getLocalizedText(subModule.name, language) || subModule.slug,
-        url: `/${module.slug}/${subModule.slug}`,
+        url: `${appPrefix}/${module.slug}/${subModule.slug}`,
       })) || [],
   }));
 }
@@ -96,15 +115,30 @@ export function AppSidebar({
   // Use AppSchema modules to generate dynamic navigation with language support
   const navItems = React.useMemo(() => {
     if (appSchemaData?.modules && appSchemaData.modules.length > 0) {
-      return modulesToNavItems(appSchemaData.modules, currentLanguage);
+      return modulesToNavItems(appSchemaData.modules, currentLanguage, appSchemaData.appId);
     }
     return [];
   }, [appSchemaData, currentLanguage]);
 
   // Generate localized secondary navigation
   const localizedSecondaryNav = React.useMemo(() => {
-    return getSecondaryNavItems(currentLanguage);
-  }, [currentLanguage]);
+    // Get current app prefix for secondary navigation
+    const getAppPrefix = (): string => {
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const pathSegments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+        const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
+        
+        if (appFromPath && (appFromPath === 'core' || appFromPath === 'library' || appFromPath === 'school' || appFromPath === 'content')) {
+          return `/${appFromPath}`;
+        }
+      }
+      
+      return appSchemaData?.appId ? `/${appSchemaData.appId}` : '/core';
+    };
+
+    return getSecondaryNavItems(currentLanguage, getAppPrefix());
+  }, [currentLanguage, appSchemaData?.appId]);
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>

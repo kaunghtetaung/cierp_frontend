@@ -3,9 +3,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AuthProvider, useAuth } from "@repo/auth";
 import type { TenantSettings } from "@repo/types";
 import Image from "next/image";
+import { useAuth } from "@repo/auth";
+import { initiateLogin } from "@repo/auth/login-utils";
 
 function ModernLoginContent({
   tenantSettings,
@@ -14,13 +15,15 @@ function ModernLoginContent({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, error } = useAuth();
-  const loading = false; // Temporary fix
+  const { isAuthenticated, user, isLoading, error: authError } = useAuth();
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
   const returnUrl =
     searchParams.get("redirect_url") ||
     searchParams.get("returnUrl") ||
+    (typeof window !== 'undefined' ? window.location.origin : '') || 
     "/dashboard";
 
   // Extract customization from tenant settings
@@ -47,17 +50,27 @@ function ModernLoginContent({
     }
   }, [isAuthenticated, router, returnUrl]);
 
+  // Handle auth errors
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
   const handleLogin = async () => {
     try {
+      setError(null);
       setIsLoggingIn(true);
-      await login(returnUrl);
+      // Use proper OIDC login flow
+      await initiateLogin(returnUrl);
     } catch (error) {
       console.error("Login failed:", error);
+      setError(error instanceof Error ? error.message : "Login failed. Please try again.");
       setIsLoggingIn(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
@@ -285,9 +298,17 @@ function ModernLoginContent({
                   <div>
                     <span className="text-gray-600">Loading:</span>{" "}
                     <span
-                      className={loading ? "text-amber-500" : "text-gray-600"}
+                      className={isLoading ? "text-amber-500" : "text-gray-600"}
                     >
-                      {loading ? "Yes" : "No"}
+                      {isLoading ? "Yes" : "No"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Authenticated:</span>{" "}
+                    <span
+                      className={isAuthenticated ? "text-green-500" : "text-gray-600"}
+                    >
+                      {isAuthenticated ? "Yes" : "No"}
                     </span>
                   </div>
                 </div>
@@ -319,9 +340,5 @@ function ModernLoginContent({
 }
 
 export function LoginPageContent({ tenantSettings }: { tenantSettings: any }) {
-  return (
-    <AuthProvider>
-      <ModernLoginContent tenantSettings={tenantSettings} />
-    </AuthProvider>
-  );
+  return <ModernLoginContent tenantSettings={tenantSettings} />;
 }
