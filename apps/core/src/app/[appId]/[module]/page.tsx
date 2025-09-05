@@ -45,7 +45,23 @@ export default async function ModulePage({
     notFound();
   }
 
-  // Try to fetch data on server with a timeout
+  // Check if module uses server-side pagination
+  const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
+  
+  // Skip server-side fetch for server-paginated modules to avoid double API calls
+  if (isServerSidePaging) {
+    // For server-side pagination, let client handle fetching with proper params
+    return (
+      <div className="w-full min-w-0 overflow-hidden">
+        <ModuleDataTableWrapper 
+          module={module} 
+          initialData={[]} 
+        />
+      </div>
+    );
+  }
+
+  // For client-side pagination, fetch all data on server
   const resolvedSearchParams = await searchParams;
   let moduleData: any[] | null = null;
   let serverError = false;

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useModuleList } from "@repo/schema-hooks";
 import { ModuleDataTable } from "./ModuleDataTable";
 import { IconComponent } from "@repo/ui";
@@ -19,6 +19,8 @@ export function ModuleDataTableWrapper({
 }: ModuleDataTableWrapperProps) {
   const { currentLanguage } = useLanguage();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Convert search params to query parameters
   const queryParams = React.useMemo(() => {
@@ -54,37 +56,63 @@ export function ModuleDataTableWrapper({
       }
     }
     
-    // Get sort params
-    const sort = searchParams.get('sort');
-    const order = searchParams.get('order');
-    if (sort) params.sort = sort;
-    if (order) params.order = order;
+    // Get sort params (using sortBy and sortOrder to match backend API)
+    const sortBy = searchParams.get('sortBy') || searchParams.get('sort');
+    const sortOrder = searchParams.get('sortOrder') || searchParams.get('order');
+    if (sortBy) params.sort = sortBy;
+    if (sortOrder) params.order = sortOrder as 'asc' | 'desc';
     
     return params;
   }, [searchParams, module.dataTableSchema.pagination]);
 
   // Fetch data using React Query
+  // staleTime: 0 means always fetch fresh data from backend
+  // You can increase this value (in milliseconds) to cache data between page navigations
+  // For example: staleTime: 30000 would cache for 30 seconds
   const {
     data: moduleResponse,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useModuleList(module.slug, queryParams, {
-    initialData: initialData,
-    staleTime: 0, // Always refetch to ensure fresh data
+    // Only use initialData if it has actual data (client-side pagination case)
+    // For server-side pagination, initialData will be empty array
+    initialData: initialData && initialData.length > 0 ? initialData : undefined,
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes to improve performance
   });
+
+  // Pagination handlers for server-side pagination - MUST be defined before any returns
+  const handlePageChange = React.useCallback((page: number) => {
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('page', page.toString());
+    router.push(`${pathname}?${newSearchParams.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  const handlePageSizeChange = React.useCallback((pageSize: number) => {
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('limit', pageSize.toString());
+    newSearchParams.set('page', '1'); // Reset to first page when changing page size
+    router.push(`${pathname}?${newSearchParams.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  // Sorting handler for server-side sorting
+  const handleSort = React.useCallback((sortField: string) => {
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    const currentSortBy = searchParams.get('sortBy');
+    const currentSortOrder = searchParams.get('sortOrder') || 'asc';
+    
+    // Toggle sort order if clicking the same column, otherwise default to 'asc'
+    const newSortOrder = currentSortBy === sortField && currentSortOrder === 'asc' ? 'desc' : 'asc';
+    
+    newSearchParams.set('sortBy', sortField);
+    newSearchParams.set('sortOrder', newSortOrder);
+    newSearchParams.set('page', '1'); // Reset to first page when sorting changes
+    
+    router.push(`${pathname}?${newSearchParams.toString()}`);
+  }, [searchParams, pathname, router]);
 
   // Extract data and pagination from response
-  // Debug logging to understand the response structure
-  console.log('🔍 ModuleDataTableWrapper Debug:', {
-    moduleResponse,
-    hasData: !!moduleResponse?.data,
-    isDataArray: Array.isArray(moduleResponse?.data),
-    dataLength: moduleResponse?.data?.length,
-    hasPagination: !!moduleResponse?.pagination,
-    initialDataLength: initialData?.length
-  });
-
   const moduleData = Array.isArray(moduleResponse?.data) 
     ? moduleResponse.data 
     : Array.isArray(initialData) 
@@ -92,6 +120,7 @@ export function ModuleDataTableWrapper({
       : [];
   const pagination = moduleResponse?.pagination;
 
+  // Check for error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
@@ -113,6 +142,7 @@ export function ModuleDataTableWrapper({
     );
   }
 
+  // Check for loading state
   if (isLoading && !moduleData.length) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -124,18 +154,28 @@ export function ModuleDataTableWrapper({
     );
   }
 
-  // Debug pagination values being passed to ModuleDataTable
+  // Calculate pagination values
   const totalItems = pagination?.total || moduleData.length;
   const totalPages = pagination?.totalPages || 1;
+  const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
   
-  console.log('🔍 ModuleDataTableWrapper Pagination Debug:', {
-    moduleSlug: module.slug,
-    isServerSidePaging: module.dataTableSchema.pagination?.isClientSidePaging === false,
-    paginationData: pagination,
+  console.log("ModuleDataTableWrapper debug:", {
+    pagination,
+    moduleData: moduleData.length,
     totalItems,
     totalPages,
-    moduleDataLength: moduleData.length
+    isServerSidePaging,
+    paginationEnabled: module.dataTableSchema.pagination?.enabled,
+    paginationConfig: module.dataTableSchema.pagination,
   });
+
+  // Get current page and page size from URL for server-side pagination
+  const currentPage = isServerSidePaging ? (searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1) : undefined;
+  const currentPageSize = isServerSidePaging ? (searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : module.dataTableSchema.pagination?.defaultLimit || 10) : undefined;
+
+  // Get current sort state from URL
+  const currentSortBy = searchParams.get('sortBy') || undefined;
+  const currentSortOrder = (searchParams.get('sortOrder') || 'asc') as 'asc' | 'desc';
 
   return (
     <ModuleDataTable 
@@ -143,6 +183,15 @@ export function ModuleDataTableWrapper({
       data={moduleData}
       totalItems={totalItems}
       totalPages={totalPages}
+      currentPage={currentPage}
+      pageSize={currentPageSize}
+      onPageChange={isServerSidePaging ? handlePageChange : undefined}
+      onPageSizeChange={isServerSidePaging ? handlePageSizeChange : undefined}
+      onSort={isServerSidePaging ? handleSort : undefined}
+      sortBy={currentSortBy}
+      sortOrder={currentSortOrder}
+      isLoading={isFetching}
+      onRefresh={refetch}
     />
   );
 }

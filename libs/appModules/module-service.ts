@@ -47,8 +47,9 @@ export class ModuleService {
 
     if (params.page) queryParams.set("page", String(params.page));
     if (params.limit) queryParams.set("limit", String(params.limit));
-    if (params.sort) queryParams.set("sort", params.sort);
-    if (params.order) queryParams.set("order", params.order);
+    // Backend expects sortBy and sortOrder
+    if (params.sort) queryParams.set("sortBy", params.sort);
+    if (params.order) queryParams.set("sortOrder", params.order);
 
     // Add field filters with operators (e.g., filter[name][$regex]=test)
     if (params.filters) {
@@ -83,8 +84,18 @@ export class ModuleService {
     // 2. An object with data and pagination (for server-side pagination): { data: [...], pagination: {...} }
     const responseData = response.data;
     
+    // Debug: Log the raw response structure
+    console.log("ModuleService getList - raw response structure:", {
+      hasData: !!responseData,
+      isArray: Array.isArray(responseData),
+      hasDataField: responseData && typeof responseData === 'object' && 'data' in responseData,
+      hasPaginationField: responseData && typeof responseData === 'object' && 'pagination' in responseData,
+      keys: responseData && typeof responseData === 'object' && !Array.isArray(responseData) ? Object.keys(responseData) : 'N/A',
+    });
+    
     // If response.data has a 'data' field, it includes pagination metadata
     if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+      console.log("ModuleService getList - returning with pagination:", responseData.pagination);
       return {
         data: responseData.data as T[],
         pagination: responseData.pagination
@@ -92,6 +103,7 @@ export class ModuleService {
     }
 
     // Otherwise, it's just the array (client-side pagination)
+    console.log("ModuleService getList - returning array without pagination");
     return {
       data: Array.isArray(responseData) ? responseData as T[] : [],
       pagination: undefined

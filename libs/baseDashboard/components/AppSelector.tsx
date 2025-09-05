@@ -114,24 +114,24 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
       // Extract current app from path
       const pathSegments = currentPath.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
       const currentAppFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
+      const currentPage = pathSegments.length > 1 ? pathSegments[1] : '';
 
-      // Check if we're already on this app's path
-      if (currentAppFromPath === appSlug) {
-        console.log(`Already on ${appSlug} app`);
+      // Check if we're already on this app's dashboard
+      if (currentAppFromPath === appSlug && currentPage === 'dashboard') {
+        console.log(`Already on ${appSlug} app dashboard`);
         return;
       }
 
-      // Build new path-based URL with app slug
+      // Build new path-based URL with app slug - always redirect to dashboard
       const portSuffix = port ? `:${port}` : "";
-      // Remove current app from path and add new app
-      const remainingPath = pathSegments.length > 1 ? '/' + pathSegments.slice(1).join('/') : '';
-      const newUrl = `${protocol}//${currentHostname}${portSuffix}/${appSlug}${remainingPath}${search}${hash}`;
+      // Always navigate to the dashboard page when switching apps
+      const newUrl = `${protocol}//${currentHostname}${portSuffix}/${appSlug}/dashboard`;
 
       console.log(
-        `Switching from ${currentAppFromPath} to ${appSlug} app: ${newUrl}`
+        `Switching from ${currentAppFromPath} to ${appSlug} app dashboard: ${newUrl}`
       );
 
-      // Navigate to new path-based URL
+      // Navigate to new path-based URL (dashboard)
       window.location.href = newUrl;
     }
   };

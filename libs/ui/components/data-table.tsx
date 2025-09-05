@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
   ColumnDef,
   ColumnFiltersState,
+  ColumnOrderState,
+  ColumnSizingState,
   SortingState,
   VisibilityState,
   flexRender,
@@ -44,7 +46,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./dialog";
-import { ChevronUp, ChevronDown, ChevronsUpDown, Columns3, Printer, Download, FileText, Plus, X } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronsLeftRight, ChevronFirst, ChevronLast, Columns3, Printer, Download, FileText, Plus, X } from "lucide-react";
 import { FilterConfig } from "./table-filters";
 import { TableFilterModal } from "./table-filter-modal";
 import {
@@ -113,7 +115,9 @@ export function DataTable<TData, TValue>({
     return {
       columnVisibility: `table-columns-${baseKey}-${tableIdentifier}`,
       sorting: `table-sorting-${baseKey}-${tableIdentifier}`,
-      titles: `table-titles-${baseKey}`
+      titles: `table-titles-${baseKey}`,
+      columnOrder: `table-column-order-${baseKey}`, // Add column order storage key
+      columnSizing: `table-column-sizing-${baseKey}` // Add column sizing storage key
     };
   }, [columns, moduleId]);
 
@@ -150,6 +154,80 @@ export function DataTable<TData, TValue>({
   });
   
   const [rowSelection, setRowSelection] = React.useState({});
+  
+  // Column Order state - loaded from localStorage
+  const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
+    if (typeof window === 'undefined') return [];
+    
+    try {
+      const stored = localStorage.getItem(storageKeys.columnOrder);
+      if (stored) {
+        const order = JSON.parse(stored);
+        // Ensure Sr. column is always first if it exists
+        const srIndex = order.indexOf('sr');
+        if (srIndex > 0) {
+          order.splice(srIndex, 1);
+          order.unshift('sr');
+        }
+        return order;
+      }
+    } catch (error) {
+      console.warn('Failed to load column order from localStorage:', error);
+    }
+    
+    // Default column order with Sr. first
+    const defaultOrder = columns.map(col => 'id' in col ? col.id : '').filter(Boolean);
+    const srIndex = defaultOrder.indexOf('sr');
+    if (srIndex > 0) {
+      defaultOrder.splice(srIndex, 1);
+      defaultOrder.unshift('sr');
+    }
+    return defaultOrder as string[];
+  });
+  
+  // Save column order to localStorage when it changes
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (columnOrder.length === 0) return;
+    
+    try {
+      localStorage.setItem(storageKeys.columnOrder, JSON.stringify(columnOrder));
+    } catch (error) {
+      console.warn('Failed to save column order to localStorage:', error);
+    }
+  }, [columnOrder, storageKeys.columnOrder]);
+
+  // Column Sizing state - loaded from localStorage
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => {
+    if (typeof window === 'undefined') return {};
+    
+    try {
+      const stored = localStorage.getItem(storageKeys.columnSizing);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.warn('Failed to load column sizing from localStorage:', error);
+    }
+    
+    // Default column sizes
+    return {
+      sr: 60,
+      select: 40,
+      actions: 100,
+    };
+  });
+
+  // Save column sizing to localStorage when it changes
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      localStorage.setItem(storageKeys.columnSizing, JSON.stringify(columnSizing));
+    } catch (error) {
+      console.warn('Failed to save column sizing to localStorage:', error);
+    }
+  }, [columnSizing, storageKeys.columnSizing]);
 
   // Title management functions
   const getTitlesFromStorage = React.useCallback((): string[] => {
@@ -327,12 +405,15 @@ export function DataTable<TData, TValue>({
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onColumnOrderChange: setColumnOrder,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     ...(enablePagination && { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
+    columnResizeMode: 'onChange',
     filterFns: {
       dateRange: filterFunctions.dateRange,
       numberRange: filterFunctions.numberRange,
@@ -343,6 +424,8 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
       columnVisibility,
+      columnOrder,
+      columnSizing,
       rowSelection,
     },
     initialState: {
@@ -807,37 +890,193 @@ export function DataTable<TData, TValue>({
       )}
       <div className="rounded-md border border-gray-200 overflow-hidden mt-4">
         <div className="overflow-x-auto">
-          <Table>
+          <Table style={{ width: table.getCenterTotalSize() }}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
+                  {headerGroup.headers.map((header, headerIndex) => {
+                    const columnId = header.column.id;
+                    const isDraggable = columnId !== 'sr' && columnId !== 'select' && columnId !== 'actions';
+                    
                     return (
-                      <TableHead key={header.id} className="whitespace-nowrap">
+                      <TableHead 
+                        key={header.id} 
+                        className={cn(
+                          "relative group",
+                          isDraggable && "hover:bg-muted/30"
+                        )}
+                        style={{
+                          width: header.getSize(),
+                          position: 'relative',
+                          cursor: isDraggable ? 'grab' : 'auto'
+                        }}
+                        draggable={isDraggable}
+                        onDragStart={(e) => {
+                          if (!isDraggable) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.dataTransfer.setData('text/plain', columnId);
+                          e.dataTransfer.effectAllowed = 'move';
+                          (e.currentTarget as HTMLElement).style.opacity = '0.5';
+                          (e.currentTarget as HTMLElement).style.cursor = 'grabbing';
+                        }}
+                        onDragEnd={(e) => {
+                          if (!isDraggable) return;
+                          (e.currentTarget as HTMLElement).style.opacity = '1';
+                          (e.currentTarget as HTMLElement).style.cursor = 'grab';
+                        }}
+                        onDragOver={(e) => {
+                          if (!isDraggable) return;
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          (e.currentTarget as HTMLElement).style.borderLeft = '2px solid #3b82f6';
+                        }}
+                        onDragLeave={(e) => {
+                          if (!isDraggable) return;
+                          (e.currentTarget as HTMLElement).style.borderLeft = '';
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (!isDraggable) return;
+                          
+                          (e.currentTarget as HTMLElement).style.borderLeft = '';
+                          const draggedColumnId = e.dataTransfer.getData('text/plain');
+                          const targetColumnId = columnId;
+                          
+                          if (draggedColumnId === targetColumnId) return;
+                          
+                          // Don't allow dropping on or moving fixed columns
+                          if (targetColumnId === 'sr' || targetColumnId === 'select' || targetColumnId === 'actions') return;
+                          if (draggedColumnId === 'sr' || draggedColumnId === 'select' || draggedColumnId === 'actions') return;
+                          
+                          const newColumnOrder = [...columnOrder];
+                          const draggedIndex = newColumnOrder.indexOf(draggedColumnId);
+                          const targetIndex = newColumnOrder.indexOf(targetColumnId);
+                          
+                          if (draggedIndex !== -1 && targetIndex !== -1) {
+                            newColumnOrder.splice(draggedIndex, 1);
+                            newColumnOrder.splice(targetIndex, 0, draggedColumnId);
+                            
+                            // Ensure Sr. column stays first
+                            const srIndex = newColumnOrder.indexOf('sr');
+                            if (srIndex > 0) {
+                              newColumnOrder.splice(srIndex, 1);
+                              newColumnOrder.unshift('sr');
+                            }
+                            
+                            setColumnOrder(newColumnOrder);
+                          }
+                        }}
+                      >
                         {header.isPlaceholder ? null : (
-                          <div
-                            className={cn(
-                              "flex items-center gap-2",
-                              header.column.getCanSort() && "cursor-pointer select-none"
+                          <div className="relative flex items-center justify-center h-full px-2">
+                            {/* Left move button - move column to first position */}
+                            {isDraggable && (
+                              <button
+                                className="absolute left-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newColumnOrder = [...columnOrder];
+                                  const currentIndex = newColumnOrder.indexOf(columnId);
+                                  if (currentIndex > 1) { // Don't move before Sr. column
+                                    newColumnOrder.splice(currentIndex, 1);
+                                    newColumnOrder.splice(1, 0, columnId); // Insert after Sr. column
+                                    setColumnOrder(newColumnOrder);
+                                  }
+                                }}
+                                title="Move to first"
+                              >
+                                <ChevronFirst className="h-3 w-3" />
+                              </button>
                             )}
-                            onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                          >
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                            {header.column.getCanSort() && (
-                              <span className="ml-1">
-                                {header.column.getIsSorted() === "desc" ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : header.column.getIsSorted() === "asc" ? (
-                                  <ChevronUp className="h-4 w-4" />
-                                ) : (
-                                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                            
+                            {/* Center content with title and sort indicator */}
+                            <div
+                              className={cn(
+                                "flex items-center justify-center gap-1 text-center",
+                                "break-words min-w-0", // Allow text wrapping and prevent overflow
+                                header.column.getCanSort() && !isDraggable && "cursor-pointer select-none",
+                                isDraggable && "cursor-grab active:cursor-grabbing"
+                              )}
+                              onClick={header.column.getCanSort() && !isDraggable ? header.column.getToggleSortingHandler() : undefined}
+                            >
+                              <span className="break-words">
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
                                 )}
                               </span>
+                              {header.column.getCanSort() && (
+                                <span className="ml-0.5 flex-shrink-0">
+                                  {header.column.getIsSorted() === "desc" ? (
+                                    <ChevronDown className="h-3 w-3" />
+                                  ) : header.column.getIsSorted() === "asc" ? (
+                                    <ChevronUp className="h-3 w-3" />
+                                  ) : (
+                                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Right move button - move column to last position */}
+                            {isDraggable && (
+                              <button
+                                className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newColumnOrder = [...columnOrder];
+                                  const currentIndex = newColumnOrder.indexOf(columnId);
+                                  const lastMovableIndex = newColumnOrder.indexOf('actions') > -1 
+                                    ? newColumnOrder.indexOf('actions') - 1 
+                                    : newColumnOrder.length - 1;
+                                  if (currentIndex < lastMovableIndex) {
+                                    newColumnOrder.splice(currentIndex, 1);
+                                    newColumnOrder.splice(lastMovableIndex, 0, columnId);
+                                    setColumnOrder(newColumnOrder);
+                                  }
+                                }}
+                                title="Move to last"
+                              >
+                                <ChevronLast className="h-3 w-3" />
+                              </button>
                             )}
                           </div>
+                        )}
+                        {/* Column resize handles - centered between columns */}
+                        {header.column.getCanResize() && (
+                          <>
+                            {/* Right border resize handle - positioned between current and next column */}
+                            <div
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              className="absolute -right-3 top-0 h-full w-6 cursor-col-resize select-none touch-none z-40 group/resize flex items-center justify-center"
+                              style={{
+                                userSelect: 'none',
+                                touchAction: 'none',
+                              }}
+                            >
+                              {/* Vertical line indicator */}
+                              <div className="absolute inset-y-0 left-1/2 w-px bg-border/30 group-hover/resize:bg-blue-500/50 transition-colors" />
+                              
+                              {/* Centered resize icon with prominent background */}
+                              <div className={cn(
+                                "relative transition-all duration-200",
+                                "opacity-0 group-hover/resize:opacity-100",
+                                "scale-90 group-hover/resize:scale-100",
+                                header.column.getIsResizing() && "opacity-100 scale-100"
+                              )}>
+                                <div className={cn(
+                                  "bg-gradient-to-r from-blue-500 to-blue-600 text-white p-1.5 rounded-lg shadow-lg",
+                                  "border border-blue-400/50",
+                                  header.column.getIsResizing() && "animate-pulse"
+                                )}>
+                                  <ChevronsLeftRight className="h-4 w-4" />
+                                </div>
+                              </div>
+                            </div>
+                          </>
                         )}
                       </TableHead>
                     );
@@ -853,7 +1092,12 @@ export function DataTable<TData, TValue>({
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="whitespace-nowrap">
+                      <TableCell 
+                        key={cell.id}
+                        style={{
+                          width: cell.column.getSize(),
+                        }}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()

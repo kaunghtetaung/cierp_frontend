@@ -47,17 +47,6 @@ export function useModuleList<T = any>(
         throw new Error(result.error || "Failed to fetch module list");
       }
       
-      // Debug logging to understand the action result
-      console.log('🔍 useModuleList Debug:', {
-        module,
-        params,
-        resultSuccess: result.success,
-        resultData: result.data,
-        resultDataType: typeof result.data,
-        resultDataIsArray: Array.isArray(result.data),
-        resultDataLength: result.data?.length,
-        resultPagination: result.pagination
-      });
       
       // Return both data and pagination metadata for server-side pagination support
       return {

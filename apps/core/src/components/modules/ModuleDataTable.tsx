@@ -21,7 +21,6 @@ import {
 import { IconComponent } from "@repo/ui";
 import {
   useDeleteModuleItem,
-  useHardDeleteModuleItem,
   useBulkModuleOperation,
 } from "@repo/schema-hooks";
 import { DynamicSearch } from "./DynamicSearch";
@@ -40,6 +39,15 @@ interface ModuleDataTableProps {
   totalItems?: number;
   totalPages?: number;
   currentLanguage?: string;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  currentPage?: number;
+  pageSize?: number;
+  onSort?: (sortField: string) => void;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  isLoading?: boolean;
+  onRefresh?: () => void;
 }
 
 export function ModuleDataTable({
@@ -47,6 +55,15 @@ export function ModuleDataTable({
   data,
   totalItems = data.length,
   totalPages = 1,
+  onPageChange,
+  onPageSizeChange,
+  currentPage,
+  pageSize,
+  onSort,
+  sortBy,
+  sortOrder = 'asc',
+  isLoading = false,
+  onRefresh,
 }: Omit<ModuleDataTableProps, 'currentLanguage'>) {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
@@ -67,7 +84,6 @@ export function ModuleDataTable({
   
   // React Query mutations for delete operations
   const deleteItemMutation = useDeleteModuleItem(module.slug);
-  const hardDeleteItemMutation = useHardDeleteModuleItem(module.slug);
   const bulkOperationMutation = useBulkModuleOperation(module.slug);
   
   // Debug: Log the actions configuration
@@ -77,6 +93,19 @@ export function ModuleDataTable({
     edit: module.dataTableSchema.actions?.edit,
     delete: module.dataTableSchema.actions?.delete,
     view: module.dataTableSchema.actions?.view,
+  });
+  
+  // Debug: Log pagination configuration and data
+  console.log("ModuleDataTable pagination debug:", {
+    hasPaginationConfig: !!module.dataTableSchema.pagination,
+    paginationEnabled: module.dataTableSchema.pagination?.enabled,
+    paginationConfig: module.dataTableSchema.pagination,
+    dataLength: data.length,
+    totalItems,
+    totalPages,
+    currentPage,
+    pageSize,
+    willShowPagination: data.length > 0 && !!module.dataTableSchema.pagination,
   });
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [activeExtraAction, setActiveExtraAction] =
@@ -89,8 +118,6 @@ export function ModuleDataTable({
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [extraActionConfirmOpen, setExtraActionConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [pendingDeleteType, setPendingDeleteType] = useState<'soft' | 'hard'>('soft');
-  const [bulkDeleteType, setBulkDeleteType] = useState<'soft' | 'hard'>('soft');
   const [pendingExtraAction, setPendingExtraAction] = useState<ExtraAction | null>(null);
   const [queryParams, setQueryParams] = useState({
     page: 1,
@@ -300,15 +327,6 @@ export function ModuleDataTable({
     return value;
   };
 
-  const handleSort = (sortBy: string) => {
-    setQueryParams((prev) => ({
-      ...prev,
-      sortBy,
-      sortOrder:
-        prev.sortBy === sortBy && prev.sortOrder === "asc" ? "desc" : "asc",
-      page: 1, // Reset to first page when sorting
-    }));
-  };
 
   const handleEdit = (id: string) => {
     // Navigate to dedicated edit page using Next.js router for client-side navigation
@@ -546,18 +564,33 @@ export function ModuleDataTable({
     cols.push({
       id: "sr",
       size: 60, // Fixed width for serial number column
-      minSize: 60,
-      maxSize: 60,
+      minSize: 50,
+      maxSize: 80,
+      enableResizing: true,
       header: currentLanguage === "mm" ? "စဉ်" : "Sr.",
       cell: ({ row, table }) => {
-        // Get the current sorted/filtered row position
-        const sortedRows = table.getSortedRowModel().rows;
-        const sortedIndex = sortedRows.findIndex(r => r.id === row.id);
-        return (
-          <div className="text-center font-medium">
-            {sortedIndex + 1}
-          </div>
-        );
+        // For server-side pagination, calculate based on current page and page size
+        const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
+        
+        if (isServerSidePaging && currentPage && pageSize) {
+          // Calculate serial number based on page: (page - 1) * pageSize + rowIndex + 1
+          const rowIndex = row.index;
+          const serialNumber = (currentPage - 1) * pageSize + rowIndex + 1;
+          return (
+            <div className="text-center font-medium">
+              {serialNumber}
+            </div>
+          );
+        } else {
+          // For client-side pagination or no pagination, use the sorted index
+          const sortedRows = table.getSortedRowModel().rows;
+          const sortedIndex = sortedRows.findIndex(r => r.id === row.id);
+          return (
+            <div className="text-center font-medium">
+              {sortedIndex + 1}
+            </div>
+          );
+        }
       },
       enableSorting: false,
       enableHiding: true, // Can be hidden
@@ -570,9 +603,42 @@ export function ModuleDataTable({
         accessorFn: (row) => getNestedValue(row, column.fieldName),
         size: 150, // Set default column width
         minSize: 100, // Minimum width
-        maxSize: 300, // Maximum width
-        header: getLocalizedText(column.label, currentLanguage),
-        enableSorting: column.sortable,
+        maxSize: 400, // Maximum width
+        enableResizing: true,
+        header: ({ column: tableColumn }) => {
+          const label = getLocalizedText(column.label, currentLanguage);
+          const isSortable = column.sortable;
+          const isServerSide = module.dataTableSchema.pagination?.isClientSidePaging === false;
+          
+          if (isSortable && isServerSide && onSort) {
+            const isSorted = sortBy === column.fieldName;
+            const currentOrder = isSorted ? sortOrder : undefined;
+            
+            return (
+              <button
+                className="flex items-center gap-1 font-medium hover:text-primary transition-colors"
+                onClick={() => onSort(column.fieldName)}
+              >
+                {label}
+                {isSorted && (
+                  <IconComponent 
+                    name={currentOrder === 'asc' ? 'ArrowUp' : 'ArrowDown'} 
+                    className="h-4 w-4"
+                  />
+                )}
+                {!isSorted && isSortable && (
+                  <IconComponent 
+                    name="ArrowUpDown" 
+                    className="h-4 w-4 opacity-40"
+                  />
+                )}
+              </button>
+            );
+          }
+          
+          return label;
+        },
+        enableSorting: column.sortable && module.dataTableSchema.pagination?.isClientSidePaging !== false,
         cell: ({ row }) => {
           const fieldValue = getNestedValue(row.original, column.fieldName);
           const rawValue = getRawNestedValue(row.original, column.fieldName);
@@ -656,7 +722,7 @@ export function ModuleDataTable({
             }
             
             return (
-              <div className="font-medium truncate max-w-[250px] group relative">
+              <div className="font-medium break-words group relative">
                 <span title={displayValue || rawValue._id}>
                   {displayValue || rawValue._id || "-"}
                 </span>
@@ -671,7 +737,7 @@ export function ModuleDataTable({
           } else if (column.type === "reference" && rawValue && typeof rawValue === 'object' && rawValue.id) {
             // Legacy support for reference fields with {id, value: {en, mm}} structure
             return (
-              <div className="font-medium truncate max-w-[250px] group relative">
+              <div className="font-medium break-words group relative">
                 <span title={fieldValue || rawValue.id}>
                   {fieldValue || rawValue.id || "-"}
                 </span>
@@ -687,7 +753,7 @@ export function ModuleDataTable({
 
           return (
             <div
-              className="font-medium truncate max-w-[250px]"
+              className="font-medium break-words"
               title={fieldValue || "-"}
             >
               {fieldValue || "-"}
@@ -704,8 +770,9 @@ export function ModuleDataTable({
       cols.push({
         id: "actions",
         size: 120, // Wider for direct buttons
-        minSize: 120,
-        maxSize: 120,
+        minSize: 100,
+        maxSize: 200,
+        enableResizing: true,
         header: () => (
           <div className="text-center">
             {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
@@ -817,7 +884,19 @@ export function ModuleDataTable({
 
 
   return (
-    <div className="space-y-6 w-full min-w-0 overflow-hidden">
+    <div className="space-y-6 w-full min-w-0 overflow-hidden relative">
+      {/* Top-Left Loading Indicator */}
+      {isLoading && (
+        <div className="absolute top-0 left-0 z-20">
+          <div className="flex items-center gap-2 bg-primary/10 backdrop-blur-sm px-3 py-2 rounded-br-lg border-r border-b border-primary/20">
+            <IconComponent name="Loader2" className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm font-medium text-primary">
+              {currentLanguage === "mm" ? "ဖွင့်နေသည်..." : "Loading..."}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -837,17 +916,46 @@ export function ModuleDataTable({
           </div>
         </div>
 
-        <Link href={`${getCurrentAppPrefix()}/${module.slug}/new`}>
-          <Button>
-            <IconComponent name="Plus" className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">
-              {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
-            </span>
-            <span className="sm:hidden">
-              {currentLanguage === "mm" ? "အသစ်" : "New"}
-            </span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Refresh Button */}
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="default"
+              onClick={onRefresh}
+              disabled={isLoading}
+            >
+              <IconComponent 
+                name={isLoading ? "Loader2" : "RotateCcw"} 
+                className={`w-4 h-4 mr-1 sm:mr-2 ${isLoading ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">
+                {currentLanguage === "mm" 
+                  ? (isLoading ? "ပြန်လုပ်နေသည်..." : "ပြန်လုပ်မည်") 
+                  : (isLoading ? "Refreshing..." : "Refresh")}
+              </span>
+              <span className="sm:hidden">
+                <IconComponent 
+                  name={isLoading ? "Loader2" : "RotateCcw"} 
+                  className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+                />
+              </span>
+            </Button>
+          )}
+          
+          {/* Add New Button */}
+          <Link href={`${getCurrentAppPrefix()}/${module.slug}/new`}>
+            <Button>
+              <IconComponent name="Plus" className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">
+                {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
+              </span>
+              <span className="sm:hidden">
+                {currentLanguage === "mm" ? "အသစ်" : "New"}
+              </span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search Section */}
@@ -963,7 +1071,12 @@ export function ModuleDataTable({
         )}
 
       {/* Data Table - Responsive: Cards for mobile and small tablets, Table for large screens */}
-      <div className="w-full min-w-0">
+      <div className="w-full min-w-0 relative">
+        {/* Subtle loading backdrop */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/30 z-10 pointer-events-none" />
+        )}
+        
         {/* Mobile Card View - Show on mobile, iPad Mini and iPad Air */}
         <div className="xl:hidden space-y-4">
           {data.map((item, index) => (
@@ -1192,19 +1305,21 @@ export function ModuleDataTable({
       </div>
 
       {/* Pagination */}
-      {data.length > 0 && module.dataTableSchema.pagination?.enabled && (
-        <Pagination
-          currentPage={queryParams.page}
-          totalPages={totalPages}
-          pageSize={queryParams.limit}
-          totalItems={totalItems}
-          allowedLimits={module.dataTableSchema.pagination.allowedLimits}
-          onPageChange={(page) => setQueryParams((prev) => ({ ...prev, page }))}
-          onPageSizeChange={(pageSize) =>
-            setQueryParams((prev) => ({ ...prev, limit: pageSize, page: 1 }))
-          }
-          currentLanguage={currentLanguage}
-        />
+      {data.length > 0 && module.dataTableSchema.pagination && (
+        <div className={isLoading ? 'pointer-events-none' : ''}>
+          <Pagination
+            currentPage={currentPage ?? queryParams.page}
+            totalPages={totalPages}
+            pageSize={pageSize ?? queryParams.limit}
+            totalItems={totalItems}
+            allowedLimits={module.dataTableSchema.pagination?.allowedLimits}
+            onPageChange={onPageChange || ((page) => setQueryParams((prev) => ({ ...prev, page })))}
+            onPageSizeChange={onPageSizeChange || ((pageSize) =>
+              setQueryParams((prev) => ({ ...prev, limit: pageSize, page: 1 }))
+            )}
+            currentLanguage={currentLanguage}
+          />
+        </div>
       )}
 
 

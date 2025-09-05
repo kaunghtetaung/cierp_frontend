@@ -89,6 +89,19 @@ export class StandardResponseHandler implements ResponseHandler {
 
     if (isJson) {
       const data = await response.json();
+      
+      // Check if this is a paginated response (has both data array and pagination object)
+      if (data && typeof data === 'object' && 'data' in data && 'pagination' in data) {
+        // Return the full response structure for paginated responses
+        return {
+          data: data, // Return the entire object including both data and pagination
+          message: data.message || "Success",
+          success: data.success !== false,
+          timestamp: new Date(),
+        };
+      }
+      
+      // For non-paginated responses, extract the data as before
       return {
         data: data.data || data,
         message: data.message || "Success",
