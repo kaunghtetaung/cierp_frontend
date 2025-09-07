@@ -385,26 +385,29 @@ export function AuthGuard({
 }: AuthGuardProps) {
   const { user, isAuthenticated, isLoading } = useAuthContext();
 
+  // Always call useEffect FIRST (unconditionally) to comply with Rules of Hooks
+  useEffect(() => {
+    if (!isAuthenticated && redirect && !isLoading) {
+      const publicWebUrl = getPublicUrlClient();
+      const currentUrl = getCurrentUrlClient();
+      
+      // Check if already on login page to prevent infinite redirect loop
+      const isLoginPage = currentUrl.includes('/login');
+      
+      if (!isLoginPage) {
+        const redirectUrl = encodeURIComponent(currentUrl);
+        // Redirect to publicWeb login page
+        window.location.href = `${publicWebUrl}/login?redirect_url=${redirectUrl}`;
+      }
+    }
+  }, [isAuthenticated, redirect, isLoading]);
+
   if (isLoading) {
     return <>{loadingFallback || <div>Loading...</div>}</>;
   }
 
   if (!isAuthenticated) {
     if (redirect) {
-      useEffect(() => {
-        const publicWebUrl = getPublicUrlClient();
-        const currentUrl = getCurrentUrlClient();
-        
-        // Check if already on login page to prevent infinite redirect loop
-        const isLoginPage = currentUrl.includes('/login');
-        
-        if (!isLoginPage) {
-          const redirectUrl = encodeURIComponent(currentUrl);
-          // Redirect to publicWeb login page
-          window.location.href = `${publicWebUrl}/login?redirect_url=${redirectUrl}`;
-        }
-      }, []);
-      
       // Check if we're on login page
       const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
       if (!currentUrl.includes('/login')) {

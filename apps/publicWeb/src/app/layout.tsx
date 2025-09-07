@@ -31,39 +31,25 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  console.log("\n📱 === LAYOUT TENANT IMPLEMENTATION DEBUG START ===");
-  console.log("📱 Step 1: RootLayout starting to execute");
-  
   let initialTenant = null;
   let initialError = null;
   let criticalError = false;
 
   try {
-    console.log("📱 Step 2: About to call getCurrentTenantForClient()");
-    const startTime = Date.now();
-    
     // Get current tenant using the wrapper pattern
     initialTenant = await getCurrentTenantForClient();
-    
-    const fetchTime = Date.now() - startTime;
-    console.log(`📱 Step 3: getCurrentTenantForClient completed in ${fetchTime}ms`);
-    console.log("📱 Step 4: Tenant result:", JSON.stringify(initialTenant));
 
     if (!initialTenant) {
-      console.log("📱 Step 5: No tenant found, setting initial error");
       initialError = "No tenant found or tenant is inactive";
       // This might not be critical if TenantProvider can handle it
-    } else {
-      console.log("📱 Step 5: Tenant found successfully:", initialTenant.id);
     }
   } catch (error) {
-    console.error("📱 Step ERROR: Failed to load tenant in root layout:", error);
+    console.error("Failed to load tenant in root layout:", error);
     initialError =
       error instanceof Error ? error.message : "Failed to load tenant";
 
     // Determine if this is a critical error that prevents the app from working
     if (error instanceof Error) {
-      console.log("📱 Step ERROR: Checking if error is critical");
       // Critical errors that prevent the entire app from working
       if (
         error.message.includes("connection") ||
@@ -79,15 +65,13 @@ export default async function RootLayout({
         error.message.includes("Gateway Exception")
       ) {
         criticalError = true;
-        console.log("📱 Step ERROR: Critical error detected, will show fallback UI");
       }
     }
   }
 
   // If we have a critical error, render fallback UI instead of TenantProvider
   if (criticalError && initialError) {
-    console.error("📱 Step 6: Critical error in RootLayout:", initialError);
-    console.log("📱 === LAYOUT TENANT IMPLEMENTATION DEBUG END (CRITICAL ERROR) ===\n");
+    console.error("Critical error in RootLayout:", initialError);
     return (
       <html lang="en">
         <body>
@@ -96,13 +80,6 @@ export default async function RootLayout({
       </html>
     );
   }
-
-  console.log("📱 Step 6: Rendering TenantProvider with:", {
-    hasTenant: !!initialTenant,
-    hasError: !!initialError,
-    tenantId: initialTenant?.id || null
-  });
-  console.log("📱 === LAYOUT TENANT IMPLEMENTATION DEBUG END (SUCCESS) ===\n");
 
   // Normal operation - use TenantProvider (can handle non-critical tenant errors)
   return (

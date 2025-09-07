@@ -958,24 +958,24 @@ export function DataTable<TData, TValue>({
         <div className={cn(
           "overflow-x-auto relative",
           // Add visual feedback when resizing
-          table.getState().columnSizingInfo.isResizingColumn && "select-none"
+          table.getState().columnSizingInfo?.isResizingColumn && "select-none"
         )}>
           {/* Resize preview line */}
-          {table.getState().columnSizingInfo.isResizingColumn && (
+          {table.getState().columnSizingInfo?.isResizingColumn && (
             <div
               className="absolute top-0 bottom-0 w-1 bg-blue-600 shadow-2xl shadow-blue-600/50 z-50 pointer-events-none animate-pulse"
               style={{
-                left: `${table.getState().columnSizingInfo.startSize + table.getState().columnSizingInfo.deltaOffset}px`,
+                left: `${(table.getState().columnSizingInfo?.startSize ?? 0) + (table.getState().columnSizingInfo?.deltaOffset ?? 0)}px`,
               }}
             />
           )}
           <Table 
             style={{ 
               width: table.getCenterTotalSize(),
-              transition: table.getState().columnSizingInfo.isResizingColumn ? 'none' : 'width 0.2s ease-out'
+              transition: table.getState().columnSizingInfo?.isResizingColumn ? 'none' : 'width 0.2s ease-out'
             }}
             className={cn(
-              table.getState().columnSizingInfo.isResizingColumn && "cursor-col-resize"
+              table.getState().columnSizingInfo?.isResizingColumn && "cursor-col-resize"
             )}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -1158,22 +1158,31 @@ export function DataTable<TData, TValue>({
                             onKeyDown={(e) => {
                               const step = e.shiftKey ? 50 : 10;
                               const currentSize = header.getSize();
+                              const columnId = header.column.id;
+                              
+                              const updateSize = (newSize: number) => {
+                                table.setColumnSizing((old) => ({
+                                  ...old,
+                                  [columnId]: newSize,
+                                }));
+                              };
+                              
                               switch (e.key) {
                                 case 'ArrowLeft':
                                   e.preventDefault();
-                                  header.column.setSize(Math.max(50, currentSize - step));
+                                  updateSize(Math.max(50, currentSize - step));
                                   break;
                                 case 'ArrowRight':
                                   e.preventDefault();
-                                  header.column.setSize(Math.min(500, currentSize + step));
+                                  updateSize(Math.min(500, currentSize + step));
                                   break;
                                 case 'Home':
                                   e.preventDefault();
-                                  header.column.setSize(50);
+                                  updateSize(50);
                                   break;
                                 case 'End':
                                   e.preventDefault();
-                                  header.column.setSize(500);
+                                  updateSize(500);
                                   break;
                               }
                             }}

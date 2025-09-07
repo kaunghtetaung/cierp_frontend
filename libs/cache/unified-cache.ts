@@ -24,9 +24,18 @@ export class UnifiedCache {
       host: config.host,
       port: config.port,
       db: config.db || 0,
-      lazyConnect: true, // Use lazy connect to handle auth gracefully
+      lazyConnect: true, // Use lazy connect to prevent blocking
       retryDelayOnFailover: 100,
       maxRetriesPerRequest: 1, // Reduce retries to avoid spam
+      enableReadyCheck: false, // Disable ready check to prevent hanging
+      reconnectOnError: (err: Error) => {
+        // Don't reconnect on auth errors
+        const targetError = 'NOAUTH';
+        if (err.message.includes(targetError)) {
+          return false;
+        }
+        return true;
+      }
     };
 
     // Only add password if it exists
@@ -36,8 +45,17 @@ export class UnifiedCache {
 
     this.redis = new Redis(redisOptions);
 
+    // Manually connect to handle errors gracefully
+    this.redis.connect().catch((error) => {
+      console.error("Redis initial connection failed:", error.message);
+      // Continue without Redis - operations will fail gracefully
+    });
+
     this.redis.on("error", (error) => {
-      console.error("Redis connection error:", error);
+      // Log but don't crash on Redis errors
+      if (!error.message.includes('NOAUTH')) {
+        console.error("Redis connection error:", error.message);
+      }
     });
 
     this.redis.on("connect", () => {
@@ -66,12 +84,27 @@ export class UnifiedCache {
   }
 
   /**
-   * Get value from cache
+   * Get value from cache with built-in timeout protection
    */
   async get<T>(key: string): Promise<T | null> {
     try {
       const redisKey = this.getKey(key);
-      const value = await this.redis.get(redisKey);
+      
+      // Create a timeout promise that rejects after 2 seconds
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Redis GET timeout for key: ${key}`));
+        }, 2000); // 2 second timeout for Redis operations
+      });
+      
+      // Race between Redis operation and timeout
+      const value = await Promise.race([
+        this.redis.get(redisKey),
+        timeoutPromise
+      ]).catch((error) => {
+        console.warn(`[Cache] Redis GET failed or timed out for ${key}:`, error.message);
+        return null;
+      });
       
       if (key.includes('tenantAccessToken')) {
         console.log(`🔍 [Cache] Getting key: ${key} -> Redis key: ${redisKey} -> Value: ${value ? 'FOUND' : 'NULL'}`);
@@ -135,7 +168,7 @@ export class UnifiedCache {
     key: string,
     fetchFunction: () => Promise<T>,
     ttlSeconds: number = 3600,
-    options: CacheSetOptions<T> = {}
+    _options: CacheSetOptions<T> = {}
   ): Promise<T> {
     try {
       if (key.includes('tenantAccessToken')) {

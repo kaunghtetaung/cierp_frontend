@@ -3,7 +3,11 @@ import { cache } from "react";
 import { getApiDomain } from "@repo/utils/server";
 import { createHttpClient } from "@repo/api/client";
 import { getCacheInstance, CacheKeys, CacheTTL } from "@repo/cache";
-import type { TenantSettingsDto, TenantSettings, ApiResponse } from "@repo/types";
+import type {
+  TenantSettingsDto,
+  TenantSettings,
+  ApiResponse,
+} from "@repo/types";
 
 export class TenantService {
   private httpClient;
@@ -14,7 +18,7 @@ export class TenantService {
       baseURL,
       enableAuth: true,
       enableCSRF: false, // Tenant API doesn't need CSRF
-      timeout: 10000 // 10 second timeout for server requests
+      timeout: 10000, // 10 second timeout for server requests
     });
   }
 
@@ -25,27 +29,44 @@ export class TenantService {
   async getSettings(tenantId: string): Promise<TenantSettingsDto> {
     console.log("\n💾 === TENANT SERVICE GET SETTINGS DEBUG START ===");
     console.log("💾 Step 1: Getting settings for tenant:", tenantId);
-    
+
     const cacheKey = CacheKeys.tenantSettings(tenantId);
     console.log("💾 Step 2: Cache key:", cacheKey);
 
-    // Try to get from cache first
-    const cachedTenant = await this.cache.get<TenantSettingsDto>(cacheKey);
-    if (cachedTenant) {
-      console.log("💾 Step 3: Found in cache, returning cached data");
-      console.log("💾 === TENANT SERVICE GET SETTINGS DEBUG END (CACHED) ===\n");
-      return cachedTenant;
+    // Try to get from cache first with timeout to prevent hanging
+    try {
+      const cachePromise = this.cache.get<TenantSettingsDto>(cacheKey);
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.log("💾 Step 3: Cache timeout after 1 second, proceeding to API");
+          resolve(null);
+        }, 1000); // 1 second timeout for cache
+      });
+      
+      const cachedTenant = await Promise.race([cachePromise, timeoutPromise]);
+      if (cachedTenant) {
+        console.log("💾 Step 3: Found in cache, returning cached data");
+        console.log(
+          "💾 === TENANT SERVICE GET SETTINGS DEBUG END (CACHED) ===\n"
+        );
+        return cachedTenant;
+      }
+    } catch (error) {
+      console.error("💾 Step 3: Cache error, proceeding to API:", error);
     }
 
     console.log("💾 Step 3: Not in cache, fetching from API");
     const startTime = Date.now();
-    
+
     // If not in cache, fetch from API using HTTP client
-    const response: ApiResponse<TenantSettingsDto> = await this.httpClient.get(
-      `/tenant/settings`,
-      { id: tenantId }
-    );
-    
+    // Use request method to pass both params and tenantId config
+    const response: ApiResponse<TenantSettingsDto> =
+      await this.httpClient.request(`/tenant/settings`, {
+        method: "GET",
+        params: { id: tenantId },
+        tenantId: tenantId, // CRITICAL: Pass tenantId for header-builder to use
+      });
+
     const fetchTime = Date.now() - startTime;
     console.log(`💾 Step 4: API fetch completed in ${fetchTime}ms`);
     console.log("💾 Step 5: API response success:", response.success);
@@ -53,7 +74,7 @@ export class TenantService {
     if (!response.success) {
       console.error("💾 Step ERROR: API fetch failed:", response.error);
       console.log("💾 === TENANT SERVICE GET SETTINGS DEBUG END (ERROR) ===\n");
-      throw new Error(response.error || 'Failed to fetch tenant settings');
+      throw new Error(response.error || "Failed to fetch tenant settings");
     }
 
     const tenantData = response.data;
@@ -147,19 +168,20 @@ export const getTenantByDomain = cache(
       const httpClient = createHttpClient({
         baseURL,
         enableAuth: true,
-        enableCSRF: false
+        enableCSRF: false,
       });
 
-      const response: ApiResponse<{ id?: string; tenantId?: string }> = await httpClient.get(
-        `/tenant/initialize`,
-        { host: domain }
-      );
+      const response: ApiResponse<{ id?: string; tenantId?: string }> =
+        await httpClient.get(`/tenant/initialize`, { host: domain });
 
       if (!response.success) {
-        if (response.error?.includes('not found') || response.error?.includes('404')) {
+        if (
+          response.error?.includes("not found") ||
+          response.error?.includes("404")
+        ) {
           return null; // Tenant not found
         }
-        throw new Error(response.error || 'Failed to resolve tenant by domain');
+        throw new Error(response.error || "Failed to resolve tenant by domain");
       }
 
       const tenantId = response.data.id || response.data.tenantId;
