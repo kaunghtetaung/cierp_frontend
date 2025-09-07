@@ -141,7 +141,7 @@ export async function handleLoginRequest(
 
     // Store PKCE parameters in session for callback
     const cache = getCacheInstance();
-    const pkceKey = `PKCE:${state}`;
+    const pkceKey = `ciApp:PKCE:${state}`;
     await cache.set(
       pkceKey,
       JSON.stringify({
@@ -201,7 +201,7 @@ export async function handleAuthCallback(
 
     // Retrieve PKCE parameters from cache
     const cache = getCacheInstance();
-    const pkceKey = `PKCE:${state}`;
+    const pkceKey = `ciApp:PKCE:${state}`;
     const pkceData = await cache.get<string>(pkceKey);
 
     if (!pkceData) {

@@ -46,7 +46,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./dialog";
-import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronsLeftRight, ChevronFirst, ChevronLast, Columns3, Printer, Download, FileText, Plus, X } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronsLeftRight, ChevronFirst, ChevronLast, Columns3, Printer, Download, FileText, Plus, X, RotateCcw, Loader2 } from "lucide-react";
 import { FilterConfig } from "./table-filters";
 import { TableFilterModal } from "./table-filter-modal";
 import {
@@ -71,6 +71,9 @@ interface DataTableProps<TData, TValue> {
   showFilters?: boolean; // Toggle to show/hide filter row
   enablePagination?: boolean; // Enable client-side pagination
   pageSize?: number; // Initial page size for client-side pagination
+  onRefresh?: () => void; // Refresh callback
+  isLoading?: boolean; // Loading state
+  addNewRoute?: string; // Custom route for Add New button
 }
 
 export function DataTable<TData, TValue>({
@@ -86,6 +89,9 @@ export function DataTable<TData, TValue>({
   showFilters = true,
   enablePagination = false,
   pageSize = 10,
+  onRefresh,
+  isLoading = false,
+  addNewRoute,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   
@@ -197,7 +203,7 @@ export function DataTable<TData, TValue>({
     }
   }, [columnOrder, storageKeys.columnOrder]);
 
-  // Column Sizing state - loaded from localStorage
+  // Column Sizing state - loaded from localStorage with smart defaults
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => {
     if (typeof window === 'undefined') return {};
     
@@ -210,24 +216,44 @@ export function DataTable<TData, TValue>({
       console.warn('Failed to load column sizing from localStorage:', error);
     }
     
-    // Default column sizes
-    return {
+    // Smart default column sizes
+    const defaults: ColumnSizingState = {
       sr: 60,
       select: 40,
       actions: 100,
     };
+    
+    // Add intelligent defaults for other columns
+    columns.forEach((col: any) => {
+      if ('id' in col && col.id && !(col.id in defaults)) {
+        defaults[col.id] = 150; // Default size
+      }
+    });
+    
+    return defaults;
   });
 
-  // Save column sizing to localStorage when it changes
+  // Debounced save to localStorage for better performance
+  const saveColumnSizingDebounced = React.useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return (sizing: ColumnSizingState) => {
+      if (typeof window === 'undefined') return;
+      
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem(storageKeys.columnSizing, JSON.stringify(sizing));
+        } catch (error) {
+          console.warn('Failed to save column sizing to localStorage:', error);
+        }
+      }, 250);
+    };
+  }, [storageKeys.columnSizing]);
+
+  // Save column sizing with debounce
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      localStorage.setItem(storageKeys.columnSizing, JSON.stringify(columnSizing));
-    } catch (error) {
-      console.warn('Failed to save column sizing to localStorage:', error);
-    }
-  }, [columnSizing, storageKeys.columnSizing]);
+    saveColumnSizingDebounced(columnSizing);
+  }, [columnSizing, saveColumnSizingDebounced]);
 
   // Title management functions
   const getTitlesFromStorage = React.useCallback((): string[] => {
@@ -414,6 +440,7 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     columnResizeMode: 'onChange',
+    enableColumnResizing: true,
     filterFns: {
       dateRange: filterFunctions.dateRange,
       numberRange: filterFunctions.numberRange,
@@ -681,31 +708,31 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full">
-      <div className="flex items-center pt-4">
-        {searchKey && (
-          <Input
-            placeholder={searchPlaceholder}
-            value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        )}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Select Title Button */}
-          <Dialog open={isTitleModalOpen} onOpenChange={setIsTitleModalOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="default"
-                size="sm"
-                title="Select Title"
-                className="bg-info hover:bg-info transition-all duration-200"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Select Title
-              </Button>
-            </DialogTrigger>
+      {/* Full-width button bar */}
+      <div className="w-full bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-y border-border mb-4">
+        <div className="flex items-center justify-between px-4 py-2">
+          {/* Left side - Title selection */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Title:</span>
+              <div className="flex items-center gap-2">
+                {/* Display selected title */}
+                <div className="px-3 py-1 bg-white dark:bg-gray-900 border border-border rounded-md min-w-[200px]">
+                  <span className="text-sm font-medium">{selectedTitle || "No title selected"}</span>
+                </div>
+                
+                {/* Select Title Button */}
+                <Dialog open={isTitleModalOpen} onOpenChange={setIsTitleModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      title="Change Title"
+                      className="h-8"
+                    >
+                      <FileText className="h-3 w-3" />
+                    </Button>
+                  </DialogTrigger>
             <DialogContent className="!max-w-[280px] sm:!max-w-[280px]">
               <DialogHeader>
                 <DialogTitle>Manage Titles</DialogTitle>
@@ -798,45 +825,80 @@ export function DataTable<TData, TValue>({
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
-
-          {/* Print Button */}
-          <Button 
-            variant="default"
-            size="sm"
-            onClick={handlePrint}
-            title="Print Table"
-            className="bg-success hover:bg-success transition-all duration-200"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-
-          {/* Excel Export Button */}
-          <Button 
-            variant="default"
-            size="sm"
-            onClick={handleExportToExcel}
-            title="Export to Excel"
-            className="bg-success-dark hover:bg-success transition-all duration-200"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export Excel
-          </Button>
+                </Dialog>
+              </div>
+            </div>
+            
+            {/* Search bar if enabled */}
+            {searchKey && (
+              <Input
+                placeholder={searchPlaceholder}
+                value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn(searchKey)?.setFilterValue(event.target.value)
+                }
+                className="max-w-xs h-8"
+              />
+            )}
+          </div>
           
-          {/* Column Visibility Button */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {/* Right side - Action buttons */}
+          <div className="flex items-center gap-2">
+            {/* Refresh Button */}
+            {onRefresh && (
               <Button 
-                variant="default"
+                variant="outline"
                 size="sm"
-                title="Show/Hide Columns"
-                className="bg-secondary-dark hover:bg-secondary transition-all duration-200"
+                onClick={() => onRefresh()}
+                title="Refresh Data"
+                className="h-8"
+                disabled={isLoading}
               >
-                <Columns3 className="h-4 w-4 mr-2" />
-                Columns
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                )}
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
-            </DropdownMenuTrigger>
+            )}
+            {/* Print Button */}
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              title="Print Table"
+              className="h-8"
+            >
+              <Printer className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Print</span>
+            </Button>
+
+            {/* Excel Export Button */}
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleExportToExcel}
+              title="Export to Excel"
+              className="h-8"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
+            
+            {/* Column Visibility Button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  title="Show/Hide Columns"
+                  className="h-8"
+                >
+                  <Columns3 className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Columns</span>
+                </Button>
+              </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {table
               .getAllColumns()
@@ -856,30 +918,34 @@ export function DataTable<TData, TValue>({
                 );
               })}
           </DropdownMenuContent>
-          </DropdownMenu>
+            </DropdownMenu>
 
-          {/* Filter Modal Button */}
-          {showFilters && (
-            <TableFilterModal
-              table={table}
-              filterConfigs={filterConfigs}
-            />
-          )}
+            {/* Filter Modal Button */}
+            {showFilters && (
+              <TableFilterModal
+                table={table}
+                filterConfigs={filterConfigs}
+              />
+            )}
 
-          {/* Add New Button */}
-          {moduleId && (
-            <Link href={`/${moduleId}/new`}>
-              <Button 
-                variant="default"
-                size="sm"
-                title="Add New Record"
-                className="bg-success hover:bg-success transition-all duration-200"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add New
-              </Button>
-            </Link>
-          )}
+            {/* Divider line for better separation */}
+            <div className="h-8 w-px bg-border" />
+
+            {/* Add New Button */}
+            {addNewRoute && (
+              <Link href={addNewRoute}>
+                <Button 
+                  variant="default"
+                  size="sm"
+                  title="Add New Record"
+                  className="h-8 bg-primary hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add New
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
       {/* Table Title - Only visible in print view */}
@@ -889,8 +955,28 @@ export function DataTable<TData, TValue>({
         </div>
       )}
       <div className="rounded-md border border-gray-200 overflow-hidden mt-4">
-        <div className="overflow-x-auto">
-          <Table style={{ width: table.getCenterTotalSize() }}>
+        <div className={cn(
+          "overflow-x-auto relative",
+          // Add visual feedback when resizing
+          table.getState().columnSizingInfo.isResizingColumn && "select-none"
+        )}>
+          {/* Resize preview line */}
+          {table.getState().columnSizingInfo.isResizingColumn && (
+            <div
+              className="absolute top-0 bottom-0 w-1 bg-blue-600 shadow-2xl shadow-blue-600/50 z-50 pointer-events-none animate-pulse"
+              style={{
+                left: `${table.getState().columnSizingInfo.startSize + table.getState().columnSizingInfo.deltaOffset}px`,
+              }}
+            />
+          )}
+          <Table 
+            style={{ 
+              width: table.getCenterTotalSize(),
+              transition: table.getState().columnSizingInfo.isResizingColumn ? 'none' : 'width 0.2s ease-out'
+            }}
+            className={cn(
+              table.getState().columnSizingInfo.isResizingColumn && "cursor-col-resize"
+            )}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -1044,39 +1130,92 @@ export function DataTable<TData, TValue>({
                             )}
                           </div>
                         )}
-                        {/* Column resize handles - centered between columns */}
+                        {/* Column resize handle */}
                         {header.column.getCanResize() && (
-                          <>
-                            {/* Right border resize handle - positioned between current and next column */}
-                            <div
-                              onMouseDown={header.getResizeHandler()}
-                              onTouchStart={header.getResizeHandler()}
-                              className="absolute -right-3 top-0 h-full w-6 cursor-col-resize select-none touch-none z-40 group/resize flex items-center justify-center"
-                              style={{
-                                userSelect: 'none',
-                                touchAction: 'none',
-                              }}
-                            >
-                              {/* Vertical line indicator */}
-                              <div className="absolute inset-y-0 left-1/2 w-px bg-border/30 group-hover/resize:bg-blue-500/50 transition-colors" />
-                              
-                              {/* Centered resize icon with prominent background */}
+                          <div
+                            {...{
+                              onMouseDown: header.getResizeHandler(),
+                              onTouchStart: header.getResizeHandler(),
+                            }}
+                            className={cn(
+                              "absolute top-0 h-full",
+                              "cursor-col-resize select-none touch-none",
+                              "group/resize flex items-center justify-center"
+                            )}
+                            style={{
+                              right: 0,
+                              width: '8px',
+                              transform: 'translateX(50%)',
+                              zIndex: 50,
+                              userSelect: 'none',
+                              touchAction: 'none',
+                            }}
+                            // Accessibility
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label={`Resize ${flexRender(header.column.columnDef.header, header.getContext())} column`}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              const step = e.shiftKey ? 50 : 10;
+                              const currentSize = header.getSize();
+                              switch (e.key) {
+                                case 'ArrowLeft':
+                                  e.preventDefault();
+                                  header.column.setSize(Math.max(50, currentSize - step));
+                                  break;
+                                case 'ArrowRight':
+                                  e.preventDefault();
+                                  header.column.setSize(Math.min(500, currentSize + step));
+                                  break;
+                                case 'Home':
+                                  e.preventDefault();
+                                  header.column.setSize(50);
+                                  break;
+                                case 'End':
+                                  e.preventDefault();
+                                  header.column.setSize(500);
+                                  break;
+                              }
+                            }}
+                          >
+                            {/* Vertical line - visible on hover */}
+                            <div className={cn(
+                              "absolute h-full w-px transition-all duration-200",
+                              "bg-transparent group-hover:bg-border/30",
+                              header.column.getIsResizing() && "bg-blue-600 w-0.5"
+                            )} />
+                            
+                            {/* Resize button - only show on hover */}
+                            <div className={cn(
+                              "absolute flex items-center justify-center transition-all duration-200",
+                              "opacity-0 scale-50 pointer-events-none",
+                              "group-hover:opacity-100 group-hover:scale-100",
+                              header.column.getIsResizing() && "opacity-100 scale-110"
+                            )}>
                               <div className={cn(
-                                "relative transition-all duration-200",
-                                "opacity-0 group-hover/resize:opacity-100",
-                                "scale-90 group-hover/resize:scale-100",
-                                header.column.getIsResizing() && "opacity-100 scale-100"
+                                "p-1.5 rounded-lg shadow-xl transition-all duration-200",
+                                "group-hover:bg-blue-600 group-hover:border-blue-500",
+                                "border-2 border-transparent",
+                                header.column.getIsResizing() && [
+                                  "bg-blue-700 border-blue-400",
+                                  "shadow-2xl shadow-blue-600/50",
+                                  "animate-pulse"
+                                ]
                               )}>
-                                <div className={cn(
-                                  "bg-gradient-to-r from-blue-500 to-blue-600 text-white p-1.5 rounded-lg shadow-lg",
-                                  "border border-blue-400/50",
-                                  header.column.getIsResizing() && "animate-pulse"
-                                )}>
-                                  <ChevronsLeftRight className="h-4 w-4" />
-                                </div>
+                                <ChevronsLeftRight className={cn(
+                                  "transition-all duration-200",
+                                  "text-transparent group-hover:text-white",
+                                  "h-3 w-3 group-hover:h-4 group-hover:w-4",
+                                  header.column.getIsResizing() && "text-white h-5 w-5"
+                                )} />
                               </div>
                             </div>
-                          </>
+                            
+                            {/* Screen reader instructions */}
+                            <span className="sr-only">
+                              Use arrow keys to resize. Shift + arrow for larger steps. Home for minimum, End for maximum width.
+                            </span>
+                          </div>
                         )}
                       </TableHead>
                     );

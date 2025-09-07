@@ -916,46 +916,7 @@ export function ModuleDataTable({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Refresh Button */}
-          {onRefresh && (
-            <Button
-              variant="outline"
-              size="default"
-              onClick={onRefresh}
-              disabled={isLoading}
-            >
-              <IconComponent 
-                name={isLoading ? "Loader2" : "RotateCcw"} 
-                className={`w-4 h-4 mr-1 sm:mr-2 ${isLoading ? "animate-spin" : ""}`}
-              />
-              <span className="hidden sm:inline">
-                {currentLanguage === "mm" 
-                  ? (isLoading ? "ပြန်လုပ်နေသည်..." : "ပြန်လုပ်မည်") 
-                  : (isLoading ? "Refreshing..." : "Refresh")}
-              </span>
-              <span className="sm:hidden">
-                <IconComponent 
-                  name={isLoading ? "Loader2" : "RotateCcw"} 
-                  className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-                />
-              </span>
-            </Button>
-          )}
-          
-          {/* Add New Button */}
-          <Link href={`${getCurrentAppPrefix()}/${module.slug}/new`}>
-            <Button>
-              <IconComponent name="Plus" className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">
-                {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
-              </span>
-              <span className="sm:hidden">
-                {currentLanguage === "mm" ? "အသစ်" : "New"}
-              </span>
-            </Button>
-          </Link>
-        </div>
+        {/* Buttons removed - now in DataTable button bar */}
       </div>
 
       {/* Search Section */}
@@ -1299,6 +1260,9 @@ export function ModuleDataTable({
               moduleId={module.slug}
               filterConfigs={filterConfigs}
               showFilters={true}
+              onRefresh={onRefresh}
+              isLoading={isLoading}
+              addNewRoute={`/core/${module.slug}/new`}
             />
           </div>
         </div>

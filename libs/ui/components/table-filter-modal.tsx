@@ -66,13 +66,13 @@ export function TableFilterModal<TData>({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="default"
+          variant="outline"
           size="sm"
           title="Filter Table"
-          className="relative bg-warning hover:bg-warning transition-all duration-200"
+          className="relative h-8"
         >
-          <Filter className="h-4 w-4 mr-2" />
-          Filters
+          <Filter className="h-4 w-4 mr-1" />
+          <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
             <Badge 
               variant="destructive" 

@@ -33,15 +33,30 @@ export async function getTenantWithSecrets(
  * Cached at request level to prevent multiple calls
  */
 export const getCurrentTenantForClient = cache(async (): Promise<TenantSettings | null> => {
+  console.log("\n🔧 === WRAPPER TENANT RESOLUTION DEBUG START ===");
+  console.log("🔧 Step 1: getCurrentTenantForClient() called");
+  
   try {
+    console.log("🔧 Step 2: Getting tenant ID from headers");
     const tenantId = await getTenantIdFromHeaders();
+    console.log("🔧 Step 3: Tenant ID from headers:", tenantId);
 
     if (!tenantId) {
+      console.log("🔧 Step 4: No tenant ID found in headers, returning null");
+      console.log("🔧 === WRAPPER TENANT RESOLUTION DEBUG END (NO TENANT) ===\n");
       return null;
     }
 
-    console.log(`🎯 Getting current tenant for client: ${tenantId}`);
-    return await getTenantSettingClientSafe(tenantId);
+    console.log(`🔧 Step 4: Getting tenant settings for ID: ${tenantId}`);
+    const startTime = Date.now();
+    const tenantSettings = await getTenantSettingClientSafe(tenantId);
+    const fetchTime = Date.now() - startTime;
+    
+    console.log(`🔧 Step 5: getTenantSettingClientSafe completed in ${fetchTime}ms`);
+    console.log("🔧 Step 6: Tenant settings result:", tenantSettings ? "Found" : "Not found");
+    console.log("🔧 === WRAPPER TENANT RESOLUTION DEBUG END (SUCCESS) ===\n");
+    
+    return tenantSettings;
   } catch (error) {
     console.error("Failed to get current tenant for client:", error);
 

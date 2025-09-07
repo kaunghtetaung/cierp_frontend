@@ -23,28 +23,46 @@ export class TenantService {
    * Uses direct get/set to avoid nested cache calls with TokenManager
    */
   async getSettings(tenantId: string): Promise<TenantSettingsDto> {
+    console.log("\n💾 === TENANT SERVICE GET SETTINGS DEBUG START ===");
+    console.log("💾 Step 1: Getting settings for tenant:", tenantId);
+    
     const cacheKey = CacheKeys.tenantSettings(tenantId);
+    console.log("💾 Step 2: Cache key:", cacheKey);
 
     // Try to get from cache first
     const cachedTenant = await this.cache.get<TenantSettingsDto>(cacheKey);
     if (cachedTenant) {
+      console.log("💾 Step 3: Found in cache, returning cached data");
+      console.log("💾 === TENANT SERVICE GET SETTINGS DEBUG END (CACHED) ===\n");
       return cachedTenant;
     }
 
+    console.log("💾 Step 3: Not in cache, fetching from API");
+    const startTime = Date.now();
+    
     // If not in cache, fetch from API using HTTP client
     const response: ApiResponse<TenantSettingsDto> = await this.httpClient.get(
       `/tenant/settings`,
       { id: tenantId }
     );
+    
+    const fetchTime = Date.now() - startTime;
+    console.log(`💾 Step 4: API fetch completed in ${fetchTime}ms`);
+    console.log("💾 Step 5: API response success:", response.success);
 
     if (!response.success) {
+      console.error("💾 Step ERROR: API fetch failed:", response.error);
+      console.log("💾 === TENANT SERVICE GET SETTINGS DEBUG END (ERROR) ===\n");
       throw new Error(response.error || 'Failed to fetch tenant settings');
     }
 
     const tenantData = response.data;
+    console.log("💾 Step 6: Got tenant data, caching it");
 
     // Cache the result
     await this.cache.set(cacheKey, tenantData, CacheTTL.TENANT_SETTINGS);
+    console.log("💾 Step 7: Data cached successfully");
+    console.log("💾 === TENANT SERVICE GET SETTINGS DEBUG END (SUCCESS) ===\n");
 
     return tenantData;
   }
