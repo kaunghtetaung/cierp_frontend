@@ -323,6 +323,10 @@ export function TypeaheadDynamicSelect({
   const handleFocus = () => {
     setIsFocused(true);
     setDisplayValue(searchTerm);
+    // Open dropdown when focusing
+    if (searchTerm.length >= minSearchLength) {
+      setOpen(true);
+    }
   };
 
   // Handle blur
@@ -340,6 +344,13 @@ export function TypeaheadDynamicSelect({
         setSearchTerm("");
       }
     }, 200);
+  };
+  
+  // Handle input click - ensure it's focusable
+  const handleInputClick = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
   };
 
   // Handle click outside
@@ -397,20 +408,25 @@ export function TypeaheadDynamicSelect({
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onClick={handleInputClick}
+          disabled={field.disabled || field.readonly}
+          readOnly={false}
           className={cn(
-            "w-full pr-10",
+            "w-full pr-10 cursor-text",
             validationError && "border-destructive",
-            !value && "text-muted-foreground"
+            !value && "text-muted-foreground",
+            (field.disabled || field.readonly) && "cursor-not-allowed opacity-50"
           )}
           aria-label={field.label ? getLocalizedText(field.label, currentLanguage) : "Search"}
           aria-expanded={open}
           aria-haspopup="listbox"
           role="combobox"
           aria-autocomplete="list"
+          autoComplete="off"
         />
         
         {/* Icons */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
           {isSearching && (
             <IconComponent name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
@@ -426,7 +442,7 @@ export function TypeaheadDynamicSelect({
                 setSearchTerm("");
                 setOptions([]);
               }}
-              className="p-0.5 hover:bg-accent rounded"
+              className="p-0.5 hover:bg-accent rounded pointer-events-auto"
             >
               <IconComponent name="X" className="h-3 w-3 text-muted-foreground" />
             </button>

@@ -10,8 +10,9 @@ const nextConfig = {
   // Configure webpack to handle source maps properly
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
-      // Use a source map strategy that doesn't require .map files for third-party packages
-      config.devtool = 'eval-cheap-module-source-map';
+      // Use source-map for better debugging experience in Chrome DevTools
+      // This provides the best quality source maps for debugging
+      config.devtool = 'source-map';
       
       // Ignore missing source map files to prevent 404 errors
       config.ignoreWarnings = [
