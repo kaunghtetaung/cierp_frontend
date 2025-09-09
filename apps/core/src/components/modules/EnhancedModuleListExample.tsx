@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ModuleActionBar } from './ModuleActionBar'
 import { DeleteActionsMenu } from './DeleteActionsMenu'
-import { useDeleteModuleItem, useHardDeleteModuleItem, useBulkModuleOperation } from '@/hooks/use-module-query'
+import { useDeleteModuleItem, useHardDeleteModuleItem, useBulkModuleOperation } from '@repo/schema-hooks'
 import { toastSuccess, toastError } from '@repo/utils'
 import { useLanguage } from '@repo/language'
 import { Button } from '@/components/ui/button'

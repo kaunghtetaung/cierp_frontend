@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { useDeletedModuleItems, useRestoreModuleItem, useHardDeleteModuleItem, useBulkModuleOperation } from '@/hooks/use-module-query'
+import { useDeletedModuleItems, useRestoreModuleItem, useHardDeleteModuleItem, useBulkModuleOperation } from '@repo/schema-hooks'
 import { RecycleBinView } from '@/components/common/recycle-bin-view'
 import { toastSuccess, toastError } from '@repo/utils'
 import { useLanguage } from '@repo/language'
