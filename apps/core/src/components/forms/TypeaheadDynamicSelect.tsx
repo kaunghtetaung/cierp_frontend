@@ -44,6 +44,8 @@ export function TypeaheadDynamicSelect({
   watch,
   errors,
 }: TypeaheadDynamicSelectProps) {
+  // Confirm this component is running for typeahead fields
+  console.log(`🔍 TypeaheadDynamicSelect is active for "${field.fieldName}" - will ONLY fetch when user types`);
   const [options, setOptions] = useState<LocalSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -232,7 +234,6 @@ export function TypeaheadDynamicSelect({
       } else if (value) {
         // Don't fetch! Just show the ID temporarily
         // When user focuses and types, we'll fetch the proper options
-        console.log(`📝 TypeaheadDynamicSelect: Showing value "${value}" without fetching for field "${field.fieldName}"`);
         setDisplayValue(String(value));
       }
     }

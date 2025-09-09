@@ -66,20 +66,9 @@ export function DynamicSelect({
     field.dropdownConfig?.enableTypeahead
   );
 
-  // Debug logging for transparency
-  if (field.fieldName === 'author' || field.fieldName === 'publisher') {
-    console.log(`🎯 DynamicSelect checking ${field.fieldName}:`, {
-      fieldType: field.fieldType,
-      dataSourceEnableTypeahead: field.dataSource?.enableTypeahead,
-      dropdownConfigEnableTypeahead: field.dropdownConfig?.enableTypeahead,
-      isTypeaheadField,
-      willRedirect: isTypeaheadField
-    });
-  }
-
   // SOLID Principle: Open/Closed - Extend behavior through composition
   if (isTypeaheadField) {
-    console.log(`⚡ Redirecting "${field.fieldName}" to TypeaheadDynamicSelect`);
+    console.log(`✅ TypeaheadDynamicSelect will be used for "${field.fieldName}" (enableTypeahead: true)`);
     const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;
     return (
       <TypeaheadDynamicSelect
@@ -226,7 +215,6 @@ export function DynamicSelect({
     // IMPORTANT: Skip ALL fetching if typeahead is enabled
     // This was the core issue - we were fetching even for typeahead fields
     if (isTypeaheadField) {
-      console.log(`⏭️ Skipping fetch for typeahead field "${field.fieldName}"`);
       return;
     }
 
@@ -271,7 +259,6 @@ export function DynamicSelect({
     );
 
     if (shouldFetch && !isFetching.current) {
-      console.log(`📡 Fetching data for regular dropdown "${field.fieldName}"`);
       hasInitialized.current = true;
       fetchOptions();
     }
