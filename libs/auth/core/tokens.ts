@@ -30,15 +30,49 @@ export async function getInitializerToken(): Promise<string | null> {
   const key = CacheKeys.initializerToken();
   
   const stored = await cache.get<StoredToken>(key);
-  if (!stored) return null;
   
-  // Check if token is expired (with buffer)
-  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
-    await cache.del(key);
-    return null;
+  // If token exists and is valid, return it
+  if (stored && Date.now() < (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    console.log("✅ InitializerToken: Valid cached token found");
+    return stored.token;
   }
   
-  return stored.token;
+  // Token doesn't exist or is expired, try to refresh
+  console.log("🔄 InitializerToken: No valid cached token, attempting to refresh");
+  
+  // Clear expired token if it exists
+  if (stored) {
+    await cache.del(key);
+  }
+  
+  try {
+    const clientId = process.env.TENANT_API_CLIENT_ID;
+    const clientSecret = process.env.TENANT_API_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      console.error("❌ InitializerToken: Missing TENANT_API_CLIENT_ID or TENANT_API_CLIENT_SECRET");
+      return null;
+    }
+    
+    console.log(`🔄 InitializerToken: Using client ID: ${clientId.substring(0, 10)}...`);
+    
+    // Get new token from OIDC
+    const { getClientCredentialsToken } = await import('./oidc');
+    const tokenData = await getClientCredentialsToken(
+      clientId,
+      clientSecret,
+      "tenant:read"
+    );
+    
+    // Store the new token
+    await setInitializerToken(tokenData);
+    console.log(`✅ InitializerToken: Successfully refreshed and cached token (expires in ${tokenData.expires_in}s)`);
+    
+    return tokenData.access_token;
+  } catch (error) {
+    console.error("❌ InitializerToken: Failed to refresh token:", error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 export async function setInitializerToken(tokenData: TokenData): Promise<void> {

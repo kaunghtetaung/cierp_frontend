@@ -1,5 +1,5 @@
 // Server-side tenant wrapper following managementpanel patterns
-import { cache } from "react"
+import { cache } from "react";
 import {
   getTenantSetting as getTenantSettingFromService,
   getTenantSettingClientSafe,
@@ -32,57 +32,43 @@ export async function getTenantWithSecrets(
  * This is the main function used by the layout
  * Cached at request level to prevent multiple calls
  */
-export const getCurrentTenantForClient = cache(async (): Promise<TenantSettings | null> => {
-  console.log("\n🔧 === WRAPPER TENANT RESOLUTION DEBUG START ===");
-  console.log("🔧 Step 1: getCurrentTenantForClient() called");
-  
-  try {
-    console.log("🔧 Step 2: Getting tenant ID from headers");
-    const tenantId = await getTenantIdFromHeaders();
-    console.log("🔧 Step 3: Tenant ID from headers:", tenantId);
+export const getCurrentTenantForClient = cache(
+  async (): Promise<TenantSettings | null> => {
+    try {
+      const tenantId = await getTenantIdFromHeaders();
 
-    if (!tenantId) {
-      console.log("🔧 Step 4: No tenant ID found in headers, returning null");
-      console.log("🔧 === WRAPPER TENANT RESOLUTION DEBUG END (NO TENANT) ===\n");
+      if (!tenantId) {
+        return null;
+      }
+
+      const tenantSettings = await getTenantSettingClientSafe(tenantId);
+
+      return tenantSettings;
+    } catch (error) {
+      // Re-throw critical network errors that should be handled by root layout
+      if (error instanceof Error) {
+        if (
+          error.message.includes("connection") ||
+          error.message.includes("timeout") ||
+          error.message.includes("server") ||
+          error.message.includes("unavailable") ||
+          error.message.includes("ECONNREFUSED") ||
+          error.message.includes("ENOTFOUND") ||
+          error.message.includes('init["status"] must be in the range') ||
+          error.message.includes("fetch failed") ||
+          error.message.includes("Network Error") ||
+          error.message.includes("Service Unavailable") ||
+          error.message.includes("Gateway Exception")
+        ) {
+          throw error; // Re-throw critical errors
+        }
+      }
+
+      // Return null for non-critical errors (e.g., tenant not found, invalid data, etc.)
       return null;
     }
-
-    console.log(`🔧 Step 4: Getting tenant settings for ID: ${tenantId}`);
-    const startTime = Date.now();
-    const tenantSettings = await getTenantSettingClientSafe(tenantId);
-    const fetchTime = Date.now() - startTime;
-    
-    console.log(`🔧 Step 5: getTenantSettingClientSafe completed in ${fetchTime}ms`);
-    console.log("🔧 Step 6: Tenant settings result:", tenantSettings ? "Found" : "Not found");
-    console.log("🔧 === WRAPPER TENANT RESOLUTION DEBUG END (SUCCESS) ===\n");
-    
-    return tenantSettings;
-  } catch (error) {
-    console.error("Failed to get current tenant for client:", error);
-
-    // Re-throw critical network errors that should be handled by root layout
-    if (error instanceof Error) {
-      if (
-        error.message.includes("connection") ||
-        error.message.includes("timeout") ||
-        error.message.includes("server") ||
-        error.message.includes("unavailable") ||
-        error.message.includes("ECONNREFUSED") ||
-        error.message.includes("ENOTFOUND") ||
-        error.message.includes('init["status"] must be in the range') ||
-        error.message.includes("fetch failed") ||
-        error.message.includes("Network Error") ||
-        error.message.includes("Service Unavailable") ||
-        error.message.includes("Gateway Exception")
-      ) {
-        throw error; // Re-throw critical errors
-      }
-    }
-
-    // Return null for non-critical errors (e.g., tenant not found, invalid data, etc.)
-    return null;
   }
-})
+);
 
 /**
  * Validate if tenant exists and is active
@@ -91,7 +77,6 @@ export async function isTenantValid(tenantId: string): Promise<boolean> {
   try {
     return await validateTenant(tenantId);
   } catch (error) {
-    console.error(`Failed to validate tenant ${tenantId}:`, error);
     return false;
   }
 }
@@ -108,10 +93,6 @@ export async function getTenantSecrets(tenantId: string): Promise<any | null> {
 
     return secrets;
   } catch (error) {
-    console.error(
-      `❌ getTenantSecrets: Failed to get tenant secrets for ${tenantId}:`,
-      error
-    );
     return null;
   }
 }

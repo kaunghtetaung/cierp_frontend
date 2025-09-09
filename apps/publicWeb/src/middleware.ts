@@ -32,6 +32,9 @@ const publicWebConfig: Partial<MiddlewareConfig> = {
     "/api/ping",
     "/api/status",
     "/api/lang",
+    // Exclude Redis test routes
+    "/redis",
+    "/api/redis/test",
     // Exclude error pages to prevent infinite redirects
     "/error/tenant-not-found",
   ],
@@ -79,13 +82,20 @@ async function getAppInfo(request: NextRequest) {
   if (headerAppId) {
     appId = headerAppId;
   } else {
-    // Use path-based detection as primary method
+    // For PublicWeb, always use "PublicWeb" as the appId
+    // The getAppFromHostname function might return "core" for certain domains
+    // but this is the PublicWeb app, so we should always use "PublicWeb"
+    appId = "PublicWeb";
+    
+    // Optional: Still call the function for logging purposes
     try {
       const { getAppFromHostname } = await import("@repo/app-config");
-      appId = getAppFromHostname(hostname, pathname);
+      const detectedApp = getAppFromHostname(hostname, pathname);
+      if (detectedApp !== "PublicWeb") {
+        console.log(`Note: getAppFromHostname returned "${detectedApp}" but using "PublicWeb" for PublicWeb app`);
+      }
     } catch (error) {
-      console.error("Failed to detect app from hostname/path:", error);
-      appId = "core"; // Default fallback
+      // Silently continue with "PublicWeb"
     }
   }
   

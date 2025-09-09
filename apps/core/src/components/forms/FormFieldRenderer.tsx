@@ -10,6 +10,7 @@ import { Checkbox } from '@repo/ui'
 import { RadioGroup, RadioGroupItem } from '@repo/ui'
 import { Label } from '@repo/ui'
 import { DynamicSelect } from './DynamicSelect'
+import { TypeaheadDynamicSelect } from './TypeaheadDynamicSelect'
 import { DependentSelect } from './DependentSelect'
 import { PasswordField } from './PasswordField'
 import { MultiLanguageInput } from './MultiLanguageInput'
@@ -95,16 +96,52 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
       preloadData: field.fieldType === "dynamicSelect" ? true : false
     };
 
+    // Handle typeaheadSelect fields - add typeahead configuration
+    if (field.fieldType === "typeaheadSelect") {
+      console.log(`🔧 Converting typeaheadSelect field "${field.fieldName}" dataSource to dropdownConfig with typeahead enabled`);
+      dropdownConfig.enableTypeahead = true;
+      dropdownConfig.preloadData = false;
+      dropdownConfig.minSearchLength = field.dataSource.minSearchLength || 2;
+      dropdownConfig.debounceMs = field.dataSource.debounceMs || 300;
+      dropdownConfig.searchParam = field.dataSource.searchParam || 'search';
+      dropdownConfig.emptyMessage = field.dataSource.emptyMessage;
+      dropdownConfig.labelField = field.dataSource.labelField;
+      dropdownConfig.valueField = field.dataSource.valueField;
+    }
+
     // Handle dependent fields
     if (field.fieldType === "dependentSelect" && field.dataSource.dependentField) {
       dropdownConfig.dependsOn = [field.dataSource.dependentField];
     }
 
-    return {
+    // IMPORTANT: Preserve typeaheadSelect fieldType - don't convert it to select
+    // Only convert multiDependentSelect to multiSelect, everything else keeps its original type
+    let finalFieldType = field.fieldType;
+    if (field.fieldType === "multiDependentSelect") {
+      finalFieldType = "multiSelect";
+    } else if (field.fieldType === "typeaheadSelect") {
+      // Keep typeaheadSelect as is - don't convert to select
+      finalFieldType = "typeaheadSelect";
+    } else if (!["dynamicSelect", "dependentSelect", "typeaheadSelect", "multiSelect"].includes(field.fieldType)) {
+      // Only convert unknown types to select
+      finalFieldType = "select";
+    }
+
+    const result = {
       ...field,
-      fieldType: field.fieldType === "multiDependentSelect" ? "multiSelect" : "select",
+      fieldType: finalFieldType,
       dropdownConfig
     };
+    
+    if (finalFieldType === "typeaheadSelect") {
+      console.log(`🔧 Converted field "${field.fieldName}" result:`, {
+        fieldType: result.fieldType,
+        enableTypeahead: result.dropdownConfig?.enableTypeahead,
+        dropdownConfig: result.dropdownConfig
+      });
+    }
+    
+    return result;
   }
 
   return field;
@@ -134,6 +171,20 @@ export function FormFieldRenderer({
   let field = convertDataSourceToDropdownConfig(originalField);
   if (!originalField.dataSource) {
     field = autoConfigureDropdown(field);
+  }
+  
+  // Enhanced debug logging for typeaheadSelect fields
+  if (field.fieldType === 'typeaheadSelect') {
+    console.log('📋 FormFieldRenderer BEFORE processing typeaheadSelect:', {
+      fieldName: field.fieldName,
+      fieldType: field.fieldType,
+      originalFieldType: originalField.fieldType,
+      hasDataSource: !!originalField.dataSource,
+      hasDropdownConfig: !!field.dropdownConfig,
+      enableTypeahead: field.dropdownConfig?.enableTypeahead,
+      dropdownConfig: field.dropdownConfig,
+      dataSource: originalField.dataSource
+    });
   }
   
   // Early validation - ensure field has required properties
@@ -422,9 +473,117 @@ function FormFieldInput({
         />
       )
     
+    case 'typeaheadSelect':
+      // TypeaheadSelect always uses typeahead functionality
+      // The field type itself implies typeahead should be enabled
+      console.log('🔍 TypeaheadSelect case reached for field:', field.fieldName, { 
+        fieldType: field.fieldType, 
+        hasDataSource: !!field.dataSource,
+        hasDropdownConfig: !!field.dropdownConfig,
+        enableTypeahead: field.dropdownConfig?.enableTypeahead,
+        dataSource: field.dataSource,
+        dropdownConfig: field.dropdownConfig
+      });
+      
+      // For typeaheadSelect fields, ALWAYS use TypeaheadDynamicSelect
+      // The dropdownConfig should have been set by convertDataSourceToDropdownConfig
+      // But even if it's missing, we should still use typeahead for this field type
+      if (field.dropdownConfig || field.dataSource) {
+        // Build the typeahead configuration
+        const typeaheadField = {
+          ...field,
+          dropdownConfig: field.dropdownConfig || {
+            type: "dynamic",
+            refPath: field.dataSource?.endpoint,
+            searchable: true,
+            clearable: true,
+            preloadData: false,
+            enableTypeahead: true,
+            minSearchLength: field.dataSource?.minSearchLength || 2,
+            debounceMs: field.dataSource?.debounceMs || 300,
+            searchParam: field.dataSource?.searchParam || 'search',
+            emptyMessage: field.dataSource?.emptyMessage,
+            labelField: field.dataSource?.labelField,
+            valueField: field.dataSource?.valueField
+          }
+        };
+        
+        // Ensure typeahead is enabled in the config
+        if (typeaheadField.dropdownConfig) {
+          typeaheadField.dropdownConfig.enableTypeahead = true;
+          typeaheadField.dropdownConfig.preloadData = false;
+          // Add typeahead specific settings if not already present
+          if (!typeaheadField.dropdownConfig.minSearchLength && field.dataSource?.minSearchLength) {
+            typeaheadField.dropdownConfig.minSearchLength = field.dataSource.minSearchLength;
+          }
+          if (!typeaheadField.dropdownConfig.debounceMs && field.dataSource?.debounceMs) {
+            typeaheadField.dropdownConfig.debounceMs = field.dataSource.debounceMs;
+          }
+          if (!typeaheadField.dropdownConfig.searchParam && field.dataSource?.searchParam) {
+            typeaheadField.dropdownConfig.searchParam = field.dataSource.searchParam;
+          }
+        }
+        
+        console.log('✅ Using TypeaheadDynamicSelect for:', field.fieldName);
+        
+        return (
+          <TypeaheadDynamicSelect
+            field={typeaheadField}
+            value={formField.value}
+            onChange={(newValue) => {
+              formField.onChange(newValue);
+              onValueChange?.(newValue);
+            }}
+            currentLanguage={currentLanguage}
+            watch={watchFunc}
+            errors={errors}
+          />
+        );
+      }
+      // Fall through to regular select handling if no dataSource or dropdownConfig
+      console.log('⚠️ TypeaheadSelect field has no dataSource or dropdownConfig, falling through to regular select:', field.fieldName);
+    
     case 'select':
     case 'dynamicSelect':
     case 'dependentSelect':
+      // Check if dynamicSelect has enableTypeahead in dataSource
+      if ((field.fieldType === 'dynamicSelect' || field.fieldType === 'dependentSelect') && 
+          field.dataSource?.enableTypeahead) {
+        // Use TypeaheadDynamicSelect for fields with typeahead enabled
+        const typeaheadField = {
+          ...field,
+          dropdownConfig: {
+            type: "dynamic",
+            refPath: field.dataSource.endpoint,
+            searchable: true,
+            clearable: true,
+            preloadData: false,
+            enableTypeahead: true,
+            minSearchLength: field.dataSource.minSearchLength || 2,
+            debounceMs: field.dataSource.debounceMs || 300,
+            searchParam: field.dataSource.searchParam || 'search',
+            emptyMessage: field.dataSource.emptyMessage,
+            labelField: field.dataSource.labelField,
+            valueField: field.dataSource.valueField,
+            multiple: field.dataSource.multiple || field.fieldType === 'multiSelect'
+          }
+        };
+        
+        return (
+          <TypeaheadDynamicSelect
+            field={typeaheadField}
+            value={formField.value}
+            onChange={(newValue) => {
+              formField.onChange(newValue);
+              onValueChange?.(newValue);
+            }}
+            currentLanguage={currentLanguage}
+            watch={watchFunc}
+            errors={errors}
+          />
+        );
+      }
+      
       // Use DynamicSelect for advanced dropdown functionality if dropdownConfig exists
       if (field.dropdownConfig) {
         return (

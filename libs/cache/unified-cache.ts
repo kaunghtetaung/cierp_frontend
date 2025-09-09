@@ -1,5 +1,5 @@
-// Enhanced UnifiedCache with Redis integration
-import Redis from 'ioredis';
+// Enhanced UnifiedCache with native Redis client integration
+import { createClient, RedisClientType } from 'redis';
 import type {
   CacheConfig,
   CacheOptions,
@@ -10,61 +10,113 @@ import type {
 
 export class UnifiedCache {
   private static instance: UnifiedCache;
-  private redis: Redis;
+  private redis: RedisClientType;
   private keyPrefix: string;
   private lockMap = new Map<string, Promise<any>>();
   private hitCount = 0;
   private missCount = 0;
+  private connected = false;
+  private connecting = false;
+  private config: CacheConfig;
 
   private constructor(config: CacheConfig) {
     this.keyPrefix = config.keyPrefix || "";
+    this.config = config;
     
-    
-    const redisOptions: any = {
-      host: config.host,
-      port: config.port,
-      db: config.db || 0,
-      lazyConnect: true, // Use lazy connect to prevent blocking
-      retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 1, // Reduce retries to avoid spam
-      enableReadyCheck: false, // Disable ready check to prevent hanging
-      reconnectOnError: (err: Error) => {
-        // Don't reconnect on auth errors
-        const targetError = 'NOAUTH';
-        if (err.message.includes(targetError)) {
-          return false;
-        }
-        return true;
-      }
-    };
-
-    // Only add password if it exists
+    // Build Redis URL with proper authentication
+    let redisUrl = 'redis://';
     if (config.password) {
-      redisOptions.password = config.password;
+      // Native redis client uses URL format for auth
+      redisUrl += `:${config.password}@`;
+      console.log('🔐 Redis: Using password authentication');
+    }
+    redisUrl += `${config.host || 'localhost'}:${config.port || 6379}`;
+    if (config.db && config.db > 0) {
+      redisUrl += `/${config.db}`;
     }
 
-    this.redis = new Redis(redisOptions);
+    // Create Redis client with proper error handling
+    this.redis = createClient({
+      url: redisUrl,
+      socket: {
+        connectTimeout: config.connectTimeout || 5000,
+        reconnectStrategy: (retries) => {
+          if (retries > (config.maxRetriesPerRequest || 3)) {
+            console.error('Redis: Max reconnection attempts reached');
+            return false; // Stop reconnecting
+          }
+          // Exponential backoff with max 3 seconds
+          return Math.min(retries * (config.retryDelayOnFailover || 100), 3000);
+        }
+      }
+    }) as RedisClientType;
 
-    // Manually connect to handle errors gracefully
-    this.redis.connect().catch((error) => {
+    // Set up event handlers
+    this.redis.on('error', (error) => {
+      // Log but don't crash on Redis errors
+      if (!error.message.includes('NOAUTH') && config.enableLogging) {
+        console.error('Redis connection error:', error.message);
+      }
+      this.connected = false;
+    });
+
+    this.redis.on('connect', () => {
+      if (config.enableLogging) {
+        console.log('Redis connected successfully');
+      }
+      this.connected = true;
+    });
+
+    this.redis.on('ready', () => {
+      if (config.enableLogging) {
+        console.log('Redis ready for commands');
+      }
+      this.connected = true;
+    });
+
+    this.redis.on('end', () => {
+      if (config.enableLogging) {
+        console.log('Redis connection closed');
+      }
+      this.connected = false;
+    });
+
+    // Initialize connection if not lazy
+    if (!config.lazyConnect) {
+      this.connect();
+    }
+  }
+
+  /**
+   * Connect to Redis (used for lazy connections)
+   */
+  private async connect(): Promise<void> {
+    if (this.connected || this.connecting) return;
+    
+    this.connecting = true;
+    try {
+      await this.redis.connect();
+      this.connected = true;
+    } catch (error: any) {
       console.error("Redis initial connection failed:", error.message);
       // Continue without Redis - operations will fail gracefully
-    });
+    } finally {
+      this.connecting = false;
+    }
+  }
 
-    this.redis.on("error", (error) => {
-      // Log but don't crash on Redis errors
-      if (!error.message.includes('NOAUTH')) {
-        console.error("Redis connection error:", error.message);
-      }
-    });
-
-    this.redis.on("connect", () => {
-      console.log("Redis connected successfully");
-    });
-
-    this.redis.on("ready", () => {
-      console.log("Redis ready for commands");
-    });
+  /**
+   * Ensure Redis is connected before operations
+   */
+  private async ensureConnected(): Promise<boolean> {
+    if (!this.connected && !this.connecting) {
+      await this.connect();
+    }
+    // Wait a bit for connection if currently connecting
+    if (this.connecting) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return this.connected;
   }
 
   static getInstance(config?: CacheConfig): UnifiedCache {
@@ -88,29 +140,35 @@ export class UnifiedCache {
    */
   async get<T>(key: string): Promise<T | null> {
     try {
+      // Ensure connected
+      if (!await this.ensureConnected()) {
+        this.missCount++;
+        return null;
+      }
+
       const redisKey = this.getKey(key);
       
-      // Create a timeout promise that rejects after 2 seconds
-      const timeoutPromise = new Promise<never>((_, reject) => {
+      // Create a timeout promise
+      const timeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => {
-          reject(new Error(`Redis GET timeout for key: ${key}`));
-        }, 2000); // 2 second timeout for Redis operations
+          if (this.config.enableLogging) {
+            console.warn(`[Cache] Redis GET timeout for key: ${key}`);
+          }
+          resolve(null);
+        }, this.config.commandTimeout || 2000);
       });
       
       // Race between Redis operation and timeout
       const value = await Promise.race([
         this.redis.get(redisKey),
         timeoutPromise
-      ]).catch((error) => {
-        console.warn(`[Cache] Redis GET failed or timed out for ${key}:`, error.message);
-        return null;
-      });
+      ]);
       
-      if (key.includes('tenantAccessToken')) {
+      if (this.config.enableLogging && key.includes('tenantAccessToken')) {
         console.log(`🔍 [Cache] Getting key: ${key} -> Redis key: ${redisKey} -> Value: ${value ? 'FOUND' : 'NULL'}`);
       }
       
-      if (value === null) {
+      if (value === null || value === undefined) {
         this.missCount++;
         return null;
       }
@@ -123,8 +181,10 @@ export class UnifiedCache {
         // If JSON parsing fails, return as string
         return value as T;
       }
-    } catch (error) {
-      console.error(`[Cache] Error getting key ${key}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error getting key ${key}:`, error.message);
+      }
       this.missCount++;
       return null;
     }
@@ -135,28 +195,49 @@ export class UnifiedCache {
    */
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<boolean> {
     try {
+      // Ensure connected
+      if (!await this.ensureConnected()) {
+        return false;
+      }
+
       const redisKey = this.getKey(key);
       const serializedValue = typeof value === 'string' ? value : JSON.stringify(value);
       
-      if (key.includes('tenantAccessToken')) {
+      if (this.config.enableLogging && key.includes('tenantAccessToken')) {
         console.log(`💾 [Cache] Setting key: ${key} -> Redis key: ${redisKey} -> TTL: ${ttlSeconds}s`);
       }
       
-      if (ttlSeconds && ttlSeconds > 0) {
-        await this.redis.setex(redisKey, ttlSeconds, serializedValue);
-      } else {
-        await this.redis.set(redisKey, serializedValue);
-      }
+      // Create timeout promise
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => {
+          if (this.config.enableLogging) {
+            console.warn(`[Cache] Redis SET timeout for key: ${key}`);
+          }
+          resolve(false);
+        }, this.config.commandTimeout || 2000);
+      });
+
+      // Set with or without TTL
+      const setPromise = ttlSeconds && ttlSeconds > 0
+        ? this.redis.setEx(redisKey, ttlSeconds, serializedValue)
+        : this.redis.set(redisKey, serializedValue);
+
+      const result = await Promise.race([
+        setPromise.then(() => true),
+        timeoutPromise
+      ]);
       
-      if (key.includes('tenantAccessToken')) {
+      if (this.config.enableLogging && key.includes('tenantAccessToken')) {
         // Verify it was set
-        const verifyValue = await this.redis.get(redisKey);
+        const verifyValue = await this.redis.get(redisKey).catch(() => null);
         console.log(`💾 [Cache] Verification: key ${key} ${verifyValue ? 'STORED' : 'NOT STORED'}`);
       }
       
-      return true;
-    } catch (error) {
-      console.error(`[Cache] Error setting key ${key}:`, error);
+      return result;
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error setting key ${key}:`, error.message);
+      }
       return false;
     }
   }
@@ -171,14 +252,14 @@ export class UnifiedCache {
     _options: CacheSetOptions<T> = {}
   ): Promise<T> {
     try {
-      if (key.includes('tenantAccessToken')) {
+      if (this.config.enableLogging && key.includes('tenantAccessToken')) {
         console.log(`🔄 [Cache] getSet for key: ${key} with TTL: ${ttlSeconds}s`);
       }
       
       // Try to get from cache first
       const cachedValue = await this.get<T>(key);
       if (cachedValue !== null) {
-        if (key.includes('tenantAccessToken')) {
+        if (this.config.enableLogging && key.includes('tenantAccessToken')) {
           console.log(`🔄 [Cache] Found cached value for key: ${key}`);
         }
         return cachedValue;
@@ -187,7 +268,7 @@ export class UnifiedCache {
       // Check if another request is already fetching this key
       const existingPromise = this.lockMap.get(key);
       if (existingPromise) {
-        if (key.includes('tenantAccessToken')) {
+        if (this.config.enableLogging && key.includes('tenantAccessToken')) {
           console.log(`🔄 [Cache] Using existing promise for key: ${key}`);
         }
         return await existingPromise;
@@ -196,14 +277,14 @@ export class UnifiedCache {
       // Create new fetch promise and store it in lockMap
       const fetchPromise = (async () => {
         try {
-          if (key.includes('tenantAccessToken')) {
+          if (this.config.enableLogging && key.includes('tenantAccessToken')) {
             console.log(`🔄 [Cache] Fetching fresh value for key: ${key}`);
           }
           
           // Double-check cache after acquiring lock
           const secondCachedValue = await this.get<T>(key);
           if (secondCachedValue !== null) {
-            if (key.includes('tenantAccessToken')) {
+            if (this.config.enableLogging && key.includes('tenantAccessToken')) {
               console.log(`🔄 [Cache] Found cached value on second check for key: ${key}`);
             }
             return secondCachedValue;
@@ -212,7 +293,7 @@ export class UnifiedCache {
           // If not in cache, fetch from source
           const freshValue = await fetchFunction();
 
-          if (key.includes('tenantAccessToken')) {
+          if (this.config.enableLogging && key.includes('tenantAccessToken')) {
             console.log(`🔄 [Cache] Fetched fresh value for key: ${key}, storing in cache`);
           }
 
@@ -228,8 +309,10 @@ export class UnifiedCache {
 
       this.lockMap.set(key, fetchPromise);
       return await fetchPromise;
-    } catch (error) {
-      console.error(`[Cache] Error in getSet for key ${key}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error in getSet for key ${key}:`, error.message);
+      }
       // Clean up lock on error
       this.lockMap.delete(key);
       throw error;
@@ -241,10 +324,16 @@ export class UnifiedCache {
    */
   async del(key: string): Promise<boolean> {
     try {
+      if (!await this.ensureConnected()) {
+        return false;
+      }
+
       const result = await this.redis.del(this.getKey(key));
       return result > 0;
-    } catch (error) {
-      console.error(`[Cache] Error deleting key ${key}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error deleting key ${key}:`, error.message);
+      }
       return false;
     }
   }
@@ -254,10 +343,16 @@ export class UnifiedCache {
    */
   async exists(key: string): Promise<boolean> {
     try {
+      if (!await this.ensureConnected()) {
+        return false;
+      }
+
       const result = await this.redis.exists(this.getKey(key));
       return result === 1;
-    } catch (error) {
-      console.error(`[Cache] Error checking existence of key ${key}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error checking existence of key ${key}:`, error.message);
+      }
       return false;
     }
   }
@@ -267,9 +362,15 @@ export class UnifiedCache {
    */
   async ttl(key: string): Promise<number> {
     try {
+      if (!await this.ensureConnected()) {
+        return -1;
+      }
+
       return await this.redis.ttl(this.getKey(key));
-    } catch (error) {
-      console.error(`[Cache] Error getting TTL for key ${key}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error getting TTL for key ${key}:`, error.message);
+      }
       return -1;
     }
   }
@@ -279,10 +380,16 @@ export class UnifiedCache {
    */
   async expire(key: string, ttlSeconds: number): Promise<boolean> {
     try {
+      if (!await this.ensureConnected()) {
+        return false;
+      }
+
       const result = await this.redis.expire(this.getKey(key), ttlSeconds);
       return result === 1;
-    } catch (error) {
-      console.error(`[Cache] Error setting TTL for key ${key}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error setting TTL for key ${key}:`, error.message);
+      }
       return false;
     }
   }
@@ -292,9 +399,15 @@ export class UnifiedCache {
    */
   async getKeysPattern(pattern: string): Promise<string[]> {
     try {
+      if (!await this.ensureConnected()) {
+        return [];
+      }
+
       return await this.redis.keys(pattern);
-    } catch (error) {
-      console.error(`[Cache] Error getting keys with pattern ${pattern}:`, error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error getting keys with pattern ${pattern}:`, error.message);
+      }
       return [];
     }
   }
@@ -304,12 +417,18 @@ export class UnifiedCache {
    */
   async deletePattern(pattern: string): Promise<number> {
     try {
+      if (!await this.ensureConnected()) {
+        return 0;
+      }
+
       const keys = await this.redis.keys(pattern);
       if (keys.length === 0) return 0;
       
-      return await this.redis.del(...keys);
-    } catch (error) {
-      console.error(`[Cache] Error deleting keys with pattern ${pattern}:`, error);
+      return await this.redis.del(keys);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`[Cache] Error deleting keys with pattern ${pattern}:`, error.message);
+      }
       return 0;
     }
   }
@@ -319,11 +438,17 @@ export class UnifiedCache {
    */
   async clear(): Promise<void> {
     try {
-      await this.redis.flushdb();
+      if (!await this.ensureConnected()) {
+        return;
+      }
+
+      await this.redis.flushDb();
       this.hitCount = 0;
       this.missCount = 0;
-    } catch (error) {
-      console.error('[Cache] Error clearing cache:', error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error('[Cache] Error clearing cache:', error.message);
+      }
     }
   }
 
@@ -332,19 +457,31 @@ export class UnifiedCache {
    */
   async getStats(): Promise<CacheStats> {
     try {
+      if (!await this.ensureConnected()) {
+        return {
+          connected: false,
+          totalKeys: 0,
+          memoryUsage: 0,
+          hits: this.hitCount,
+          misses: this.missCount
+        };
+      }
+
       const info = await this.redis.info('memory');
       const memoryUsage = this.parseMemoryUsage(info);
-      const totalKeys = await this.redis.dbsize();
+      const totalKeys = await this.redis.dbSize();
       
       return {
-        connected: this.redis.status === 'ready',
+        connected: this.connected,
         totalKeys,
         memoryUsage,
         hits: this.hitCount,
         misses: this.missCount
       };
-    } catch (error) {
-      console.error('[Cache] Error getting stats:', error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error('[Cache] Error getting stats:', error.message);
+      }
       return {
         connected: false,
         totalKeys: 0,
@@ -360,13 +497,19 @@ export class UnifiedCache {
    */
   async healthCheck(): Promise<{ healthy: boolean; latency?: number }> {
     try {
+      if (!await this.ensureConnected()) {
+        return { healthy: false };
+      }
+
       const start = Date.now();
       await this.redis.ping();
       const latency = Date.now() - start;
       
       return { healthy: true, latency };
-    } catch (error) {
-      console.error('[Cache] Health check failed:', error);
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error('[Cache] Health check failed:', error.message);
+      }
       return { healthy: false };
     }
   }
@@ -376,19 +519,23 @@ export class UnifiedCache {
    */
   async disconnect(): Promise<void> {
     try {
-      await this.redis.quit();
-    } catch (error) {
-      console.error('[Cache] Error disconnecting:', error);
+      if (this.connected) {
+        await this.redis.quit();
+        this.connected = false;
+      }
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error('[Cache] Error disconnecting:', error.message);
+      }
     }
   }
 
   /**
    * Get Redis instance for advanced operations
    */
-  getRedisInstance(): Redis {
+  getRedisInstance(): RedisClientType {
     return this.redis;
   }
-
 
   /**
    * Parse memory usage from Redis info

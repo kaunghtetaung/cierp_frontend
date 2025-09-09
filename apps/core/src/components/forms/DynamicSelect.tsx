@@ -51,6 +51,23 @@ export function DynamicSelect({
   watch,
   errors,
 }: DynamicSelectProps) {
+  // IMPORTANT: Redirect typeaheadSelect fields to TypeaheadDynamicSelect
+  if ((field.fieldType as string) === 'typeaheadSelect' || (field.dropdownConfig as any)?.enableTypeahead || field.dataSource?.enableTypeahead) {
+    console.warn(`⚠️ DynamicSelect received typeaheadSelect field "${field.fieldName}". This should use TypeaheadDynamicSelect instead!`);
+    // Dynamically import and render TypeaheadDynamicSelect
+    const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;
+    return (
+      <TypeaheadDynamicSelect
+        field={field}
+        value={value}
+        onChange={onChange}
+        currentLanguage={currentLanguage}
+        watch={watch}
+        errors={errors}
+      />
+    );
+  }
+
   const [options, setOptions] = useState<LocalSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -503,21 +520,18 @@ export function DynamicSelect({
     );
   }
 
+  // Ref for search input focus management
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (open && searchInputRef.current && dropdownConfig.searchable) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [open, dropdownConfig.searchable]);
+
   return (
     <div className="w-full">
-      
-      {/* Search input for searchable dropdowns */}
-      {dropdownConfig.searchable && open && (
-        <div className="mb-2">
-          <Input
-            placeholder={currentLanguage === "mm" ? "ရှာဖွေပါ..." : "Search..."}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8"
-          />
-        </div>
-      )}
-
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button
@@ -538,15 +552,38 @@ export function DynamicSelect({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-h-60"
+          className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)]"
           sideOffset={4}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          {filteredOptions.length === 0 ? (
-            <div className="px-2 py-1.5 text-sm text-muted-foreground">
-              {currentLanguage === "mm" ? "ရွေးချယ်စရာ မရှိပါ" : "No options found"}
+          {/* Search input for searchable dropdowns - now inside dropdown */}
+          {dropdownConfig.searchable && (
+            <div className="p-2 border-b">
+              <Input
+                ref={searchInputRef}
+                placeholder={currentLanguage === "mm" ? "ရှာဖွေပါ..." : "Search..."}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  // Prevent dropdown from closing on certain keys
+                  if (e.key === 'Enter' || e.key === 'Space') {
+                    e.stopPropagation();
+                  }
+                }}
+                className="h-8"
+                autoFocus
+              />
             </div>
-          ) : (
-            filteredOptions.map((option) => {
+          )}
+          
+          {/* Options list with scrollable container */}
+          <div className="max-h-[300px] overflow-auto p-1">
+            {filteredOptions.length === 0 ? (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
+                {currentLanguage === "mm" ? "ရွေးချယ်စရာ မရှိပါ" : "No options found"}
+              </div>
+            ) : (
+              filteredOptions.map((option) => {
               const labelText = typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage);
               
               if (process.env.NODE_ENV === 'development') {
@@ -581,6 +618,7 @@ export function DynamicSelect({
               );
             })
           )}
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
 

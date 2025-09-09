@@ -1,0 +1,76 @@
+### Test OIDC Client Credentials Flow for Initializer Token
+### This file tests the OIDC token endpoint with the initializer credentials
+
+### Variables - Update these based on your environment
+@authDomain = http://auth.crystal-image.net
+@clientId = f63672873ab7908f14f889c9a4d1b0747b8036257aa08c3568f5b1aa102f75d2
+@clientSecret = T7uAqmC0utEiQO4ifCDvlnscjFTxaV8/XLPngmA7phCCif8mZy25MrTTu9OaDRPs
+@host = www.crystal-image.net
+
+### 1. Get Client Credentials Token (Initializer Token)
+### This is what the InitializerTokenStrategy.refreshToken() calls
+POST {{authDomain}}/oidc/token
+Host: {{host}}
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+grant_type=client_credentials&client_id={{clientId}}&client_secret={{clientSecret}}&scope=tenant:read
+
+### 2. Alternative - Test without scope
+POST {{authDomain}}/oidc/token
+Host: {{host}}
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+grant_type=client_credentials&client_id={{clientId}}&client_secret={{clientSecret}}
+
+### 3. Test Token Introspection (if you have a token)
+### Replace {access_token} with actual token from response above
+# @name tokenResponse
+POST {{authDomain}}/oidc/introspect
+Host: {{host}}
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+token={access_token}&client_id={{clientId}}&client_secret={{clientSecret}}
+
+### 4. Test Tenant API with Initializer Token
+### First get the token from request #1, then use it here
+### Replace {access_token} with actual token
+GET http://api.crystal-image.net/tenant/settings?id=688602a2c856ff5ae49faecb
+Host: {{host}}
+Accept: application/json
+Authorization: Bearer {access_token}
+x-tenant-id: 688602a2c856ff5ae49faecb
+
+### 5. Test if auth service is reachable
+GET {{authDomain}}/health
+Host: {{host}}
+Accept: application/json
+
+### 6. Test OIDC Discovery Endpoint (if available)
+GET {{authDomain}}/.well-known/openid-configuration
+Host: {{host}}
+Accept: application/json
+
+###
+### DEBUGGING NOTES:
+### 
+### Common Issues:
+### 1. Network Error: Check if auth.crystal-image.net is reachable
+### 2. 401 Unauthorized: Check client_id and client_secret
+### 3. 400 Bad Request: Check grant_type and request format
+### 4. Connection Refused: Auth service might be down
+###
+### The InitializerTokenStrategy flow:
+### 1. Checks Redis cache for existing token
+### 2. If not found or expired, calls refreshToken()
+### 3. refreshToken() gets credentials from env vars
+### 4. Calls getClientCredentialsToken() which makes the POST to /oidc/token
+### 5. Stores the token in Redis cache with expiry
+###
+### Environment Variables Required:
+### - TENANT_API_CLIENT_ID
+### - TENANT_API_CLIENT_SECRET
+### - AUTH_DOMAIN (optional, defaults based on current domain)
+###

@@ -32,24 +32,29 @@ export class InitializerTokenStrategy implements TokenStrategy {
 
   async getToken(): Promise<string | null> {
     try {
+      console.log("🔍 InitializerToken: Checking cache for existing token");
       const stored = await this.cache.get<StoredToken>(CacheKeys.initializerToken());
+      
       if (!stored) {
-        // No cached token, fetch new one
+        console.log("⚠️ InitializerToken: No cached token found, fetching new one");
         return await this.refreshToken();
       }
       
       // Check if token is expired (with 5 min buffer)
       const now = Math.floor(Date.now() / 1000);
       if (now >= stored.expiresAt - 300) {
+        console.log("⚠️ InitializerToken: Token expired or expiring soon, refreshing");
         await this.cache.del(CacheKeys.initializerToken());
-        // Token expired, fetch new one
         return await this.refreshToken();
       }
       
+      console.log("✅ InitializerToken: Valid cached token found");
       return stored.token;
     } catch (error) {
-      console.error("Error obtaining initializerToken:", error);
-      return null;
+      console.error("❌ InitializerToken: Error in getToken:", error);
+      console.log("🔄 InitializerToken: Attempting to refresh token as fallback");
+      // Try to refresh as a fallback
+      return await this.refreshToken();
     }
   }
 
@@ -58,12 +63,18 @@ export class InitializerTokenStrategy implements TokenStrategy {
     const clientSecret = process.env.TENANT_API_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      throw new Error(
-        "TENANT_API_CLIENT_ID and TENANT_API_CLIENT_SECRET must be configured"
+      console.error(
+        "❌ InitializerToken: Missing credentials - TENANT_API_CLIENT_ID and TENANT_API_CLIENT_SECRET must be configured"
       );
+      return null;
     }
 
     try {
+      console.log("🔄 InitializerToken: Attempting to fetch new token from OIDC");
+      console.log(`🔄 InitializerToken: Using client ID: ${clientId.substring(0, 10)}...`);
+      
+      const authDomain = await getAuthDomain();
+      console.log(`🔄 InitializerToken: Auth domain resolved to: ${authDomain}`);
 
       const tokenData = await getClientCredentialsToken(
         clientId,
@@ -73,12 +84,23 @@ export class InitializerTokenStrategy implements TokenStrategy {
 
       const accessToken = tokenData.access_token;
       if (accessToken) {
+        console.log("✅ InitializerToken: Successfully obtained new token");
         await this.setInitializerTokenData(tokenData);
+        console.log(`✅ InitializerToken: Token cached with expiry: ${tokenData.expires_in}s`);
+      } else {
+        console.error("❌ InitializerToken: No access token in response");
       }
 
       return accessToken;
     } catch (error) {
-      console.error("❌ Failed to fetch initializer token:", error);
+      console.error("❌ InitializerToken: Failed to fetch token from OIDC");
+      console.error("❌ InitializerToken: Error details:", error instanceof Error ? error.message : error);
+      
+      // Log more context for debugging
+      if (error instanceof Error && error.message.includes('fetch')) {
+        console.error("❌ InitializerToken: Network error - check if auth service is reachable");
+      }
+      
       return null;
     }
   }

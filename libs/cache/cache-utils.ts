@@ -6,6 +6,7 @@ import type { CacheConfig, CacheInstance } from './types';
 const DEFAULT_CACHE_CONFIG: CacheConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  username: process.env.REDIS_USERNAME, // Add username for Redis ACL
   password: process.env.REDIS_PASSWORD,
   db: parseInt(process.env.REDIS_DB || '0', 10),
   keyPrefix: '',

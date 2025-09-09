@@ -1,5 +1,5 @@
 // Cache type definitions
-import type { Redis } from 'ioredis';
+import type { RedisClientType } from 'redis';
 
 export interface CacheConfig {
   readonly host: string;
@@ -46,6 +46,6 @@ export type CacheSerializationFn<T> = (value: T) => string;
 export type CacheDeserializationFn<T> = (value: string) => T;
 
 export interface CacheInstance {
-  readonly redis: Redis;
+  readonly redis: RedisClientType;
   readonly config: CacheConfig;
 }

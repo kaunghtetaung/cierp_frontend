@@ -1,49 +1,70 @@
 const Redis = require('ioredis');
 
-console.log('Testing Redis connection...');
-const startTime = Date.now();
-
+// Test Redis connection with your Docker setup
 const redis = new Redis({
-  host: 'localhost',
+  host: 'localhost',  // Use localhost since you've port forwarded
   port: 6379,
+  username: 'cidbaccess',
   password: 'cidb1234!@',
   db: 0,
-  lazyConnect: false, // Connect immediately
-  connectTimeout: 5000, // 5 second timeout for connection
-  commandTimeout: 5000, // 5 second timeout for commands
+  retryStrategy: (times) => {
+    if (times > 3) {
+      console.error('❌ Could not connect after 3 attempts');
+      return null;
+    }
+    return Math.min(times * 100, 2000);
+  }
 });
 
 redis.on('connect', () => {
-  const connectionTime = Date.now() - startTime;
-  console.log(`Redis connected in ${connectionTime}ms`);
-});
-
-redis.on('ready', async () => {
-  const readyTime = Date.now() - startTime;
-  console.log(`Redis ready in ${readyTime}ms`);
-  
-  // Test basic operations
-  const setStart = Date.now();
-  await redis.set('test:key', 'test value');
-  console.log(`SET operation took ${Date.now() - setStart}ms`);
-  
-  const getStart = Date.now();
-  const value = await redis.get('test:key');
-  console.log(`GET operation took ${Date.now() - getStart}ms, value: ${value}`);
-  
-  await redis.del('test:key');
-  
-  redis.disconnect();
-  process.exit(0);
+  console.log('✅ Redis connected successfully!');
 });
 
 redis.on('error', (err) => {
-  console.error('Redis error:', err);
-  process.exit(1);
+  console.error('❌ Redis connection error:', err.message);
 });
 
-// Timeout after 10 seconds
+// Test operations
+async function testRedis() {
+  try {
+    // Test write
+    console.log('\n📝 Testing WRITE...');
+    await redis.set('test:key', JSON.stringify({ 
+      test: true, 
+      timestamp: new Date().toISOString() 
+    }));
+    console.log('✅ Write successful');
+
+    // Test read
+    console.log('\n📖 Testing READ...');
+    const value = await redis.get('test:key');
+    console.log('✅ Read successful:', value);
+
+    // Test delete
+    console.log('\n🗑️ Testing DELETE...');
+    await redis.del('test:key');
+    console.log('✅ Delete successful');
+
+    // Test connection info
+    console.log('\n📊 Connection Info:');
+    const info = await redis.info('server');
+    const lines = info.split('\r\n').slice(0, 5);
+    lines.forEach(line => console.log('  ', line));
+
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+    process.exit(1);
+  }
+}
+
+// Wait for connection then test
+redis.once('ready', () => {
+  console.log('🚀 Redis ready, starting tests...');
+  testRedis();
+});
+
 setTimeout(() => {
-  console.error('Redis connection timeout after 10 seconds');
+  console.error('⏱️ Timeout - could not connect to Redis');
   process.exit(1);
 }, 10000);

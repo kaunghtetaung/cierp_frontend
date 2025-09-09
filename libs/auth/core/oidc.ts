@@ -123,6 +123,8 @@ export async function getClientCredentialsToken(
   const authDomain = await getAuthDomain();
   const tokenEndpoint = `${authDomain}/oidc/token`;
   
+  console.log(`🔐 OIDC: Requesting client credentials token from: ${tokenEndpoint}`);
+  
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: clientId,
@@ -131,29 +133,45 @@ export async function getClientCredentialsToken(
   
   if (scope) {
     body.append('scope', scope);
+    console.log(`🔐 OIDC: Requesting scope: ${scope}`);
   }
   
-  const response = await fetch(tokenEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: body.toString(),
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Client credentials token failed: ${response.status} ${errorText}`);
+  try {
+    const response = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ OIDC: Token request failed - Status: ${response.status}`);
+      console.error(`❌ OIDC: Error response: ${errorText}`);
+      throw new Error(`Client credentials token failed: ${response.status} ${errorText}`);
+    }
+    
+    const tokenData = await response.json() as TokenResponse;
+    
+    console.log(`✅ OIDC: Successfully obtained token, expires in: ${tokenData.expires_in}s`);
+    
+    return {
+      access_token: tokenData.access_token,
+      expires_in: tokenData.expires_in,
+      token_type: tokenData.token_type,
+      scope: tokenData.scope,
+    };
+  } catch (error) {
+    console.error('❌ OIDC: Failed to get client credentials token');
+    if (error instanceof Error) {
+      console.error('❌ OIDC: Error details:', error.message);
+      if (error.message.includes('fetch failed')) {
+        console.error(`❌ OIDC: Cannot reach auth service at: ${tokenEndpoint}`);
+      }
+    }
+    throw error;
   }
-  
-  const tokenData = await response.json() as TokenResponse;
-  
-  return {
-    access_token: tokenData.access_token,
-    expires_in: tokenData.expires_in,
-    token_type: tokenData.token_type,
-    scope: tokenData.scope,
-  };
 }
 
 /**

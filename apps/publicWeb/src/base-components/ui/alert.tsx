@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
 
 type AlertVariant = "default" | "destructive" | "success" | "warning" | "info";
 
@@ -14,26 +13,19 @@ interface AlertTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 interface AlertDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
 
 const alertVariants: Record<AlertVariant, string> = {
-  default: "bg-background text-foreground border-border",
-  destructive: "bg-destructive/10 text-destructive border-destructive/30 [&>svg]:text-destructive",
-  success: "bg-success/10 text-success border-success/30 [&>svg]:text-success",
-  warning: "bg-warning/10 text-warning border-warning/30 [&>svg]:text-warning", 
-  info: "bg-info/10 text-info border-info/30 [&>svg]:text-info",
+  default: "bg-gray-50 text-gray-900 border-gray-200",
+  destructive: "bg-red-50 text-red-900 border-red-200 [&>svg]:text-red-600",
+  success: "bg-green-50 text-green-900 border-green-200 [&>svg]:text-green-600",
+  warning: "bg-yellow-50 text-yellow-900 border-yellow-200 [&>svg]:text-yellow-600", 
+  info: "bg-blue-50 text-blue-900 border-blue-200 [&>svg]:text-blue-600",
 };
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = "default", ...props }, ref) => (
+  ({ className = "", variant = "default", ...props }, ref) => (
     <div
       ref={ref}
       role="alert"
-      className={cn(
-        "relative w-full rounded-lg border px-4 py-3 text-sm",
-        "flex items-start gap-3",
-        "[&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:h-4 [&>svg]:w-4",
-        "[&>svg~*]:pl-7",
-        alertVariants[variant],
-        className
-      )}
+      className={`relative w-full rounded-lg border px-4 py-3 text-sm flex items-start gap-3 [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:h-4 [&>svg]:w-4 [&>svg~*]:pl-7 ${alertVariants[variant]} ${className}`}
       {...props}
     />
   )
@@ -41,13 +33,10 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
 Alert.displayName = "Alert";
 
 const AlertTitle = React.forwardRef<HTMLParagraphElement, AlertTitleProps>(
-  ({ className, ...props }, ref) => (
+  ({ className = "", ...props }, ref) => (
     <h5
       ref={ref}
-      className={cn(
-        "mb-1 font-medium leading-none tracking-tight",
-        className
-      )}
+      className={`mb-1 font-medium leading-none tracking-tight ${className}`}
       {...props}
     />
   )
@@ -55,10 +44,10 @@ const AlertTitle = React.forwardRef<HTMLParagraphElement, AlertTitleProps>(
 AlertTitle.displayName = "AlertTitle";
 
 const AlertDescription = React.forwardRef<HTMLParagraphElement, AlertDescriptionProps>(
-  ({ className, ...props }, ref) => (
+  ({ className = "", ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("text-sm opacity-90", className)}
+      className={`text-sm opacity-90 ${className}`}
       {...props}
     />
   )
