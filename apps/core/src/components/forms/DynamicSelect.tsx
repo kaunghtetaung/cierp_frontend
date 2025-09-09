@@ -51,9 +51,21 @@ export function DynamicSelect({
   watch,
   errors,
 }: DynamicSelectProps) {
+  // Debug log for author field
+  if (field.fieldName === 'author') {
+    console.log('🎯 DynamicSelect received author field:', {
+      fieldType: field.fieldType,
+      hasDropdownConfig: !!field.dropdownConfig,
+      enableTypeahead: field.dropdownConfig?.enableTypeahead,
+      hasDataSource: !!field.dataSource,
+      dataSourceEnableTypeahead: field.dataSource?.enableTypeahead,
+      preloadData: field.dropdownConfig?.preloadData
+    });
+  }
+  
   // IMPORTANT: Redirect typeaheadSelect fields to TypeaheadDynamicSelect
   if ((field.fieldType as string) === 'typeaheadSelect' || (field.dropdownConfig as any)?.enableTypeahead || field.dataSource?.enableTypeahead) {
-    console.warn(`⚠️ DynamicSelect received typeaheadSelect field "${field.fieldName}". This should use TypeaheadDynamicSelect instead!`);
+    console.warn(`⚠️ DynamicSelect redirecting "${field.fieldName}" to TypeaheadDynamicSelect!`);
     // Dynamically import and render TypeaheadDynamicSelect
     const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;
     return (

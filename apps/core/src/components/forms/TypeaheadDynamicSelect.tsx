@@ -219,15 +219,31 @@ export function TypeaheadDynamicSelect({
   // Load initial value if provided
   useEffect(() => {
     if (value && !selectedOption) {
-      // For initial load, fetch without search to get the selected item
-      fetchOptions("").then(() => {
-        const found = options.find(opt => opt.value === String(value));
-        if (found) {
-          setSelectedOption(found);
-          const labelText = typeof found.label === 'string' ? found.label : getLocalizedText(found.label, currentLanguage);
-          setDisplayValue(labelText);
-        }
-      });
+      // For typeahead fields, only load if we have an existing value to display
+      // Don't fetch all options, just try to display what we have
+      // The actual data will be loaded when user starts typing
+      
+      // If the value is an object with label, use it directly
+      if (typeof value === 'object' && value.label) {
+        setSelectedOption(value);
+        const labelText = typeof value.label === 'string' ? value.label : getLocalizedText(value.label, currentLanguage);
+        setDisplayValue(labelText);
+      } else if (value) {
+        // For simple values, we'll need to fetch just this one item
+        // But only if it's a typeahead field with an existing value
+        // This is needed to display the current selection
+        
+        // Make a single item fetch with the value as search term
+        // Most APIs should return the exact match
+        fetchOptions(String(value)).then(() => {
+          const found = options.find(opt => opt.value === String(value));
+          if (found) {
+            setSelectedOption(found);
+            const labelText = typeof found.label === 'string' ? found.label : getLocalizedText(found.label, currentLanguage);
+            setDisplayValue(labelText);
+          }
+        });
+      }
     }
   }, [value]);
 
