@@ -44,8 +44,6 @@ export function TypeaheadDynamicSelect({
   watch,
   errors,
 }: TypeaheadDynamicSelectProps) {
-  // Confirm this component is running for typeahead fields
-  console.log(`🔍 TypeaheadDynamicSelect is active for "${field.fieldName}" - will ONLY fetch when user types`);
   const [options, setOptions] = useState<LocalSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

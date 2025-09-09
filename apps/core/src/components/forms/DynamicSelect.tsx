@@ -68,7 +68,6 @@ export function DynamicSelect({
 
   // SOLID Principle: Open/Closed - Extend behavior through composition
   if (isTypeaheadField) {
-    console.log(`✅ TypeaheadDynamicSelect will be used for "${field.fieldName}" (enableTypeahead: true)`);
     const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;
     return (
       <TypeaheadDynamicSelect
