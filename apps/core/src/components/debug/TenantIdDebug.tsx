@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
+import { Button } from '@repo/ui'
+import { Alert, AlertDescription } from '@repo/ui'
+import { Badge } from '@repo/ui'
 import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react'
 import { checkTenantIdAvailability, validateTenantIdFormat, debugTenantId } from '@repo/api/debug/tenant-debug'
 

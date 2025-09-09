@@ -2,15 +2,15 @@
 
 import { useState } from 'react'
 import { Trash2, HardDriveIcon, MoreHorizontal, Recycle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+} from '@repo/uidropdown-menu'
+import { ConfirmationDialog } from '@repo/ui'
 import { useLanguage } from '@repo/language'
 
 interface DeleteActionsMenuProps {

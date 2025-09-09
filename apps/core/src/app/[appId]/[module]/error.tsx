@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
+import { Button } from '@repo/ui'
+import { Alert, AlertDescription } from '@repo/ui'
 import { RefreshCw, AlertTriangle, Clock, Wifi, Home } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 

@@ -6,10 +6,10 @@ import { DeleteActionsMenu } from './DeleteActionsMenu'
 import { useDeleteModuleItem, useHardDeleteModuleItem, useBulkModuleOperation } from '@repo/schema-hooks'
 import { toastSuccess, toastError } from '@repo/utils'
 import { useLanguage } from '@repo/language'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+import { Button } from '@repo/ui'
+import { Checkbox } from '@repo/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui'
+import { ConfirmationDialog } from '@repo/ui'
 
 interface EnhancedModuleListExampleProps {
   module: string

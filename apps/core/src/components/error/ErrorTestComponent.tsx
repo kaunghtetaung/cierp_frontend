@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@repo/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
 import { IconComponent } from '@repo/ui'
 import { MultilingualErrorBoundary } from './MultilingualErrorBoundary'
 import { useLanguage } from '@repo/language'

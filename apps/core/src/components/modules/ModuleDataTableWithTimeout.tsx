@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { ModuleDataTable } from '@repo/schema-tables'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@repo/ui'
+import { Button } from '@repo/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
 import { Loader2, RefreshCw, AlertTriangle, Clock, Wifi, WifiOff } from 'lucide-react'
 import type { ModuleSchema } from '@repo/types'
 

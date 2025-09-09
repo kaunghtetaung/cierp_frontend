@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Button } from '@repo/ui'
 import { Trash2, Plus, RefreshCw } from 'lucide-react'
 import { useLanguage } from '@repo/language'
 

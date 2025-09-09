@@ -11,12 +11,12 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+import { Button } from '@repo/ui'
+import { Input } from '@repo/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
+import { Badge } from '@repo/ui'
+import { Checkbox } from '@repo/ui'
+import { ConfirmationDialog } from '@repo/ui'
 
 export interface DeletedItem {
   id: string
