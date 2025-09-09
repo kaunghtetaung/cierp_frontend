@@ -82,7 +82,7 @@ export default async function ModulePage({
   }
 
   return (
-    <div className="w-full min-w-0 overflow-hidden">
+    <div className="space-y-6">
       {serverError || !moduleData ? (
         <ModuleDataTableWithTimeout 
           module={module} 

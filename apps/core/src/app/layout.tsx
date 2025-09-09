@@ -53,7 +53,11 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           initialTenant={tenant}
           initialError={tenantError}
         >
-          <AppLayout tenant={tenant} appSchemaData={appSchemaData}>
+          <AppLayout 
+            tenant={tenant} 
+            appSchemaData={appSchemaData}
+            variant="dashboard"
+          >
             {children}
           </AppLayout>
           <Toaster />

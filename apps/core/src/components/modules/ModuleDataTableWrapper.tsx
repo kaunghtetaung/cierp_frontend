@@ -3,7 +3,7 @@
 import React from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useModuleList } from "@repo/schema-hooks";
-import { ModuleDataTable } from "./ModuleDataTable";
+import { ModuleDataTable } from "@repo/schema-tables";
 import { IconComponent } from "@repo/ui";
 import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
@@ -27,7 +27,8 @@ export function ModuleDataTableWrapper({
     const params: Record<string, any> = {};
     
     // For server-side pagination, always include page and limit parameters
-    const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
+    const isClientSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === true;
+    const isServerSidePaging = !isClientSidePaging;
     
     if (isServerSidePaging) {
       // Get pagination params with defaults for server-side paging
@@ -154,10 +155,19 @@ export function ModuleDataTableWrapper({
     );
   }
 
+  // Get current page and page size - for client-side paging we still track it in URL for bookmarking
+  const currentPage = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
+  const currentPageSize = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : module.dataTableSchema.pagination?.defaultLimit || 10;
+
   // Calculate pagination values
   const totalItems = pagination?.total || moduleData.length;
-  const totalPages = pagination?.totalPages || 1;
-  const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
+  const isClientSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === true;
+  const isServerSidePaging = !isClientSidePaging;
+  
+  // For client-side paging, calculate totalPages based on data length and page size
+  const totalPages = isServerSidePaging 
+    ? (pagination?.totalPages || 1)
+    : Math.ceil(moduleData.length / currentPageSize);
   
   console.log("ModuleDataTableWrapper debug:", {
     pagination,
@@ -168,10 +178,6 @@ export function ModuleDataTableWrapper({
     paginationEnabled: module.dataTableSchema.pagination?.enabled,
     paginationConfig: module.dataTableSchema.pagination,
   });
-
-  // Get current page and page size from URL for server-side pagination
-  const currentPage = isServerSidePaging ? (searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1) : undefined;
-  const currentPageSize = isServerSidePaging ? (searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : module.dataTableSchema.pagination?.defaultLimit || 10) : undefined;
 
   // Get current sort state from URL
   const currentSortBy = searchParams.get('sortBy') || undefined;
@@ -185,8 +191,8 @@ export function ModuleDataTableWrapper({
       totalPages={totalPages}
       currentPage={currentPage}
       pageSize={currentPageSize}
-      onPageChange={isServerSidePaging ? handlePageChange : undefined}
-      onPageSizeChange={isServerSidePaging ? handlePageSizeChange : undefined}
+      onPageChange={handlePageChange}
+      onPageSizeChange={handlePageSizeChange}
       onSort={isServerSidePaging ? handleSort : undefined}
       sortBy={currentSortBy}
       sortOrder={currentSortOrder}

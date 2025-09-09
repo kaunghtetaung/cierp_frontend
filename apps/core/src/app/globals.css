@@ -11,7 +11,7 @@
   --color-primary-foreground: hsl(0, 0%, 98%);
   --color-secondary: hsl(220, 60%, 85%); /* Light blue secondary */
   --color-secondary-foreground: hsl(220, 100%, 20%);
-  
+
   /* Surface Colors - Clean light theme */
   --color-background: hsl(0, 0%, 99%);
   --color-foreground: hsl(240, 10%, 3.9%);
@@ -19,66 +19,66 @@
   --color-card-foreground: hsl(240, 10%, 3.9%);
   --color-popover: hsl(0, 0%, 100%);
   --color-popover-foreground: hsl(240, 10%, 3.9%);
-  
+
   /* Accent & Muted Colors - Blue theme variants */
   --color-muted: hsl(220, 25%, 85%); /* More visible blue-tinted muted for loading spinner */
   --color-muted-foreground: hsl(240, 3.8%, 46.1%);
   --color-accent: hsl(220, 30%, 92%);
   --color-accent-foreground: hsl(220, 100%, 25%);
-  
+
   /* ======================================
      SEMANTIC COLOR SYSTEM - Design System
      Complete theme with foreground/background variants
      ====================================== */
-  
+
   /* Primary Theme Colors */
   --color-primary: hsl(220, 100%, 50%); /* Strong blue primary */
   --color-primary-foreground: hsl(0, 0%, 98%);
   --color-primary-light: hsl(220, 100%, 85%); /* Light variant for hover/disabled states */
   --color-primary-dark: hsl(220, 100%, 35%); /* Dark variant for pressed states */
-  
+
   /* Secondary Theme Colors */
   --color-secondary: hsl(220, 60%, 85%); /* Light blue secondary */
   --color-secondary-foreground: hsl(220, 100%, 20%);
   --color-secondary-light: hsl(220, 60%, 92%);
   --color-secondary-dark: hsl(220, 60%, 70%);
-  
+
   /* Success Colors - Green palette */
   --color-success: hsl(142, 76%, 36%); /* Green for success states */
   --color-success-foreground: hsl(0, 0%, 98%);
   --color-success-light: hsl(142, 76%, 85%); /* Light green for backgrounds */
   --color-success-dark: hsl(142, 76%, 25%); /* Dark green for emphasis */
-  
+
   /* Info Colors - Blue palette */
   --color-info: hsl(221, 83%, 53%); /* Blue for info states */
   --color-info-foreground: hsl(0, 0%, 98%);
   --color-info-light: hsl(221, 83%, 85%); /* Light blue for backgrounds */
   --color-info-dark: hsl(221, 83%, 40%); /* Dark blue for emphasis */
-  
+
   /* Warning Colors - Orange/Yellow palette */
   --color-warning: hsl(32, 95%, 44%); /* Orange for warning states */
   --color-warning-foreground: hsl(0, 0%, 98%);
   --color-warning-light: hsl(32, 95%, 85%); /* Light orange for backgrounds */
   --color-warning-dark: hsl(32, 95%, 30%); /* Dark orange for emphasis */
-  
+
   /* Danger/Destructive Colors - Red palette */
   --color-danger: hsl(0, 84%, 60%); /* Red for danger/destructive states */
   --color-danger-foreground: hsl(0, 0%, 98%);
   --color-danger-light: hsl(0, 84%, 85%); /* Light red for backgrounds */
   --color-danger-dark: hsl(0, 84%, 45%); /* Dark red for emphasis */
-  
+
   /* Legacy aliases for backward compatibility */
   --color-destructive: var(--color-danger);
   --color-destructive-foreground: var(--color-danger-foreground);
-  
+
   /* Border & Form Colors - Stronger blue variants */
   --color-border: hsl(220, 40%, 75%); /* Strong blue border */
   --color-input: hsl(220, 35%, 80%); /* Slightly lighter blue for input backgrounds */
   --color-ring: hsl(220, 100%, 50%); /* Primary blue for focus ring */
-  
+
   /* Border Radius */
   --radius: 0.5rem;
-  
+
   /* ======================================
      SEMANTIC BUTTON MAPPINGS - Data Table Actions
      Using design system colors for consistency
@@ -95,7 +95,7 @@
   --color-button-filter-foreground: var(--color-warning-foreground);
   --color-button-settings: var(--color-primary); /* Primary blue for Settings - Primary semantic */
   --color-button-settings-foreground: var(--color-primary-foreground);
-  
+
   /* ======================================
      SIDEBAR SPECIFIC COLORS - Dark Sidebar
      ====================================== */
@@ -123,13 +123,13 @@
      TAILWIND THEME INTEGRATION
      Using :root CSS variables for consistency
      ====================================== */
-  
+
   /* Primary Brand Colors - Reference :root variables */
   --color-primary: var(--color-primary);
   --color-primary-foreground: var(--color-primary-foreground);
   --color-secondary: var(--color-secondary);
   --color-secondary-foreground: var(--color-secondary-foreground);
-  
+
   /* Surface Colors - Reference :root variables */
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
@@ -137,13 +137,13 @@
   --color-card-foreground: var(--color-card-foreground);
   --color-popover: var(--color-popover);
   --color-popover-foreground: var(--color-popover-foreground);
-  
+
   /* Accent & Muted Colors - Reference :root variables */
   --color-muted: var(--color-muted);
   --color-muted-foreground: var(--color-muted-foreground);
   --color-accent: var(--color-accent);
   --color-accent-foreground: var(--color-accent-foreground);
-  
+
   /* Semantic Color System - Reference :root variables */
   --color-primary: var(--color-primary);
   --color-primary-foreground: var(--color-primary-foreground);
@@ -169,11 +169,11 @@
   --color-danger-foreground: var(--color-danger-foreground);
   --color-danger-light: var(--color-danger-light);
   --color-danger-dark: var(--color-danger-dark);
-  
+
   /* Legacy aliases */
   --color-destructive: var(--color-danger);
   --color-destructive-foreground: var(--color-danger-foreground);
-  
+
   /* Border & Form Colors - Reference :root variables */
   --color-border: var(--color-border);
   --color-input: var(--color-input);
@@ -227,7 +227,7 @@
   --color-primary-foreground: hsl(240, 10%, 3.9%);
   --color-secondary: hsl(220, 15%, 18%); /* Dark blue secondary */
   --color-secondary-foreground: hsl(220, 50%, 85%);
-  
+
   /* Surface Colors - Dark Mode */
   --color-background: hsl(240, 10%, 3.9%);
   --color-foreground: hsl(0, 0%, 98%);
@@ -235,58 +235,58 @@
   --color-card-foreground: hsl(0, 0%, 98%);
   --color-popover: hsl(240, 10%, 3.9%);
   --color-popover-foreground: hsl(0, 0%, 98%);
-  
+
   /* Accent & Muted Colors - Dark Mode with blue accents */
   --color-muted: hsl(220, 15%, 35%); /* More visible dark blue-tinted muted for loading spinner */
   --color-muted-foreground: hsl(220, 15%, 65%);
   --color-accent: hsl(220, 12%, 18%);
   --color-accent-foreground: hsl(220, 40%, 85%);
-  
+
   /* ======================================
      SEMANTIC COLOR SYSTEM - Dark Theme
      Adjusted brightness for dark mode visibility
      ====================================== */
-  
+
   /* Primary Theme Colors - Dark Mode */
   --color-primary: hsl(220, 100%, 60%); /* Brighter blue for dark mode */
   --color-primary-foreground: hsl(240, 10%, 3.9%);
   --color-primary-light: hsl(220, 100%, 80%); /* Much brighter for dark mode */
   --color-primary-dark: hsl(220, 100%, 45%); /* Still darker than main */
-  
+
   /* Secondary Theme Colors - Dark Mode */
   --color-secondary: hsl(220, 15%, 25%); /* Dark blue secondary for dark mode */
   --color-secondary-foreground: hsl(220, 50%, 85%);
   --color-secondary-light: hsl(220, 15%, 35%);
   --color-secondary-dark: hsl(220, 15%, 18%);
-  
+
   /* Success Colors - Dark Mode */
   --color-success: hsl(142, 76%, 45%); /* Brighter green for dark mode */
   --color-success-foreground: hsl(240, 10%, 3.9%);
   --color-success-light: hsl(142, 76%, 65%);
   --color-success-dark: hsl(142, 76%, 30%);
-  
+
   /* Info Colors - Dark Mode */
   --color-info: hsl(221, 83%, 60%); /* Brighter blue for dark mode */
   --color-info-foreground: hsl(240, 10%, 3.9%);
   --color-info-light: hsl(221, 83%, 75%);
   --color-info-dark: hsl(221, 83%, 45%);
-  
+
   /* Warning Colors - Dark Mode */
   --color-warning: hsl(32, 95%, 50%); /* Brighter orange for dark mode */
   --color-warning-foreground: hsl(240, 10%, 3.9%);
   --color-warning-light: hsl(32, 95%, 70%);
   --color-warning-dark: hsl(32, 95%, 35%);
-  
+
   /* Danger Colors - Dark Mode */
   --color-danger: hsl(0, 84%, 65%); /* Brighter red for dark mode */
   --color-danger-foreground: hsl(240, 10%, 3.9%);
   --color-danger-light: hsl(0, 84%, 80%);
   --color-danger-dark: hsl(0, 84%, 50%);
-  
+
   /* Legacy aliases */
   --color-destructive: var(--color-danger);
   --color-destructive-foreground: var(--color-danger-foreground);
-  
+
   /* Border & Form Colors - Dark Mode with stronger blue variants */
   --color-border: hsl(220, 25%, 25%); /* Strong dark blue border */
   --color-input: hsl(220, 20%, 30%); /* Slightly lighter dark blue for input backgrounds */
@@ -315,22 +315,22 @@
   --success-bg: var(--color-success);
   --success-border: var(--color-success);
   --success-text: var(--color-success-foreground);
-  
+
   /* Error toast styling */
   --error-bg: var(--color-destructive);
   --error-border: var(--color-destructive);  
   --error-text: var(--color-destructive-foreground);
-  
+
   /* Warning toast styling */
   --warning-bg: var(--color-warning);
   --warning-border: var(--color-warning);
   --warning-text: var(--color-warning-foreground);
-  
+
   /* Info toast styling */
   --info-bg: var(--color-info);
   --info-border: var(--color-info);
   --info-text: var(--color-info-foreground);
-  
+
   /* Default toast styling */
   --normal-bg: var(--color-popover);
   --normal-border: var(--color-border);
@@ -342,22 +342,22 @@
   --success-bg: var(--color-success);
   --success-border: var(--color-success);
   --success-text: var(--color-success-foreground);
-  
+
   /* Error toast styling */
   --error-bg: var(--color-destructive);
   --error-border: var(--color-destructive);
   --error-text: var(--color-destructive-foreground);
-  
+
   /* Warning toast styling */
   --warning-bg: var(--color-warning);
   --warning-border: var(--color-warning);
   --warning-text: var(--color-warning-foreground);
-  
+
   /* Info toast styling */
   --info-bg: var(--color-info);
   --info-border: var(--color-info);
   --info-text: var(--color-info-foreground);
-  
+
   /* Default toast styling */
   --normal-bg: var(--color-popover);
   --normal-border: var(--color-border);
@@ -409,7 +409,7 @@
     border-collapse: separate !important;
     border-spacing: 0 !important;
   }
-  
+
   /* Modern header styling */
   & thead th {
     background: linear-gradient(135deg, var(--color-accent), var(--color-muted)) !important;
@@ -422,26 +422,26 @@
     position: relative !important;
     text-align: center !important;
   }
-  
+
   & thead th:first-child {
     border-top-left-radius: 8px !important;
   }
-  
+
   & thead th:last-child {
     border-right: none !important;
     border-top-right-radius: 8px !important;
   }
-  
+
   /* Sortable header indicators */
   & thead th .cursor-pointer {
     transition: all 0.2s ease !important;
   }
-  
+
   & thead th .cursor-pointer:hover {
     color: var(--color-primary) !important;
     transform: translateY(-1px) !important;
   }
-  
+
   /* Clean cell styling */
   & tbody td {
     padding: 8px 12px !important;
@@ -451,41 +451,41 @@
     font-size: 0.875rem !important;
     transition: all 0.15s ease !important;
   }
-  
+
   & tbody td:last-child {
     border-right: none !important;
   }
-  
+
   /* Enhanced row hover effects */
   & tbody tr {
     transition: all 0.15s ease !important;
   }
-  
+
   & tbody tr:hover {
     background-color: var(--color-accent) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px hsla(220, 100%, 50%, 0.1) !important;
   }
-  
+
   & tbody tr:hover td {
     background-color: transparent !important;
     color: var(--color-accent-foreground) !important;
   }
-  
+
   /* Selected row styling */
   & tbody tr[data-state="selected"] {
     background-color: hsl(220, 100%, 95%) !important;
   }
-  
+
   & tbody tr[data-state="selected"]:hover {
     background-color: hsl(220, 100%, 90%) !important;
   }
-  
+
   /* Alternating row colors for better readability */
   & tbody tr:nth-child(even) {
     background-color: hsl(220, 20%, 98%) !important;
   }
-  
+
   & tbody tr:nth-child(even):hover {
     background-color: var(--color-accent) !important;
   }
@@ -497,14 +497,14 @@
     min-width: 100px;
     max-width: 250px;
   }
-  
+
   & td:not(:has([role="checkbox"])) {
     white-space: normal !important;
     word-break: break-word !important;
     min-width: 100px;
     max-width: 250px;
   }
-  
+
   /* Fixed width for checkbox columns */
   & th:has([role="checkbox"]),
   & td:has([role="checkbox"]) {
@@ -513,7 +513,7 @@
     max-width: 40px !important;
     padding: 0 8px !important;
   }
-  
+
   /* Ensure proper scrolling */
   & [data-slot="table-container"] {
     max-width: 100% !important;
@@ -628,4 +628,35 @@ select:hover {
 
 .focus\:ring-ring:focus {
   --tw-ring-color: var(--color-ring) !important;
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ======================================
+   DIALOG & MODAL Z-INDEX FIXES
+   Ensure dialogs appear above all dashboard components
+   ====================================== */
+
+/* Ensure Radix AlertDialog components have proper z-index */
+[data-radix-portal] {
+  z-index: 9999 !important;
+}
+
+/* AlertDialog overlay */
+[data-radix-alert-dialog-overlay] {
+  z-index: 9998 !important;
+}
+
+/* AlertDialog content */
+[data-radix-alert-dialog-content] {
+  z-index: 9999 !important;
 }

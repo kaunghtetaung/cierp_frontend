@@ -5,3 +5,4 @@ export * from './use-extra-action-form';
 export * from './useFormSubmission';
 export * from './useDialog';
 export * from './usePasswordValidation';
+export * from './useBreadcrumb';
