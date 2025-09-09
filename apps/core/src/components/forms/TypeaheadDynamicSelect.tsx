@@ -216,33 +216,24 @@ export function TypeaheadDynamicSelect({
     }, debounceMs);
   }, [minSearchLength, debounceMs, fetchOptions]);
 
-  // Load initial value if provided
+  // IMPORTANT: For typeahead fields, DO NOT fetch data for initial values
+  // The whole point of typeahead is to only fetch when user types
+  // If we have a value, just show it as text without fetching options
   useEffect(() => {
     if (value && !selectedOption) {
-      // For typeahead fields, only load if we have an existing value to display
-      // Don't fetch all options, just try to display what we have
-      // The actual data will be loaded when user starts typing
+      // For typeahead fields, NEVER fetch data automatically
+      // Just display the value ID if we don't have the label
+      // The proper label will be fetched when user starts typing
       
-      // If the value is an object with label, use it directly
       if (typeof value === 'object' && value.label) {
         setSelectedOption(value);
         const labelText = typeof value.label === 'string' ? value.label : getLocalizedText(value.label, currentLanguage);
         setDisplayValue(labelText);
       } else if (value) {
-        // For simple values, we'll need to fetch just this one item
-        // But only if it's a typeahead field with an existing value
-        // This is needed to display the current selection
-        
-        // Make a single item fetch with the value as search term
-        // Most APIs should return the exact match
-        fetchOptions(String(value)).then(() => {
-          const found = options.find(opt => opt.value === String(value));
-          if (found) {
-            setSelectedOption(found);
-            const labelText = typeof found.label === 'string' ? found.label : getLocalizedText(found.label, currentLanguage);
-            setDisplayValue(labelText);
-          }
-        });
+        // Don't fetch! Just show the ID temporarily
+        // When user focuses and types, we'll fetch the proper options
+        console.log(`📝 TypeaheadDynamicSelect: Showing value "${value}" without fetching for field "${field.fieldName}"`);
+        setDisplayValue(String(value));
       }
     }
   }, [value]);
