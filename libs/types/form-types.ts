@@ -4,7 +4,7 @@
 
 import { MultilingualText } from './module-schema';
 
-// Field types supported by the form system - Complete 13 field types
+// Field types supported by the form system
 export type FieldType = 
   | 'text' 
   | 'email' 
@@ -16,6 +16,7 @@ export type FieldType =
   | 'dynamicSelect'
   | 'dependentSelect'
   | 'multiDependentSelect'
+  | 'typeaheadSelect'
   | 'checkbox' 
   | 'boolean'
   | 'date' 
@@ -97,6 +98,13 @@ export interface DropdownConfig {
   labelField?: string; // Field name for option labels (default: 'displayName')
   valueField?: string; // Field name for option values (default: '_id')
   
+  // Typeahead configuration (for typeaheadSelect fields)
+  enableTypeahead?: boolean; // Enable typeahead functionality
+  minSearchLength?: number; // Minimum characters before search (default: 2)
+  debounceMs?: number; // Debounce delay in milliseconds (default: 300)
+  searchParam?: string; // Query parameter name for search (default: 'search')
+  emptyMessage?: string; // Message when no results found
+  
   // Dependent configuration (for type: 'dependent')
   dependsOn?: string[]; // Field names this dropdown depends on
   queryParams?: string[]; // Query parameter names to pass dependency values
@@ -150,6 +158,11 @@ export interface FormField {
     dependentField?: string;
     labelField?: string;
     valueField?: string;
+    enableTypeahead?: boolean;
+    minSearchLength?: number;
+    debounceMs?: number;
+    searchParam?: string;
+    emptyMessage?: string;
     [key: string]: any;
   };
   
