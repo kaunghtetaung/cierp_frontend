@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import type { FormField, ValidationRule } from '@/types/module-schema'
-import { validatePhoneNumber, isValidE164 } from '@repo/utils/common/phone-validation'
+import type { FormField, ValidationRule } from '@repo/types/form-types'
+import { validatePhoneNumber } from '@repo/utils/common/phone-validation'
 
 /**
  * Generate Zod schema from form fields
@@ -37,10 +37,10 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
       case 'number':
         fieldSchema = z.number()
         if (field.validationRule.min !== undefined) {
-          fieldSchema = fieldSchema.min(field.validationRule.min)
+          fieldSchema = (fieldSchema as z.ZodNumber).min(field.validationRule.min)
         }
         if (field.validationRule.max !== undefined) {
-          fieldSchema = fieldSchema.max(field.validationRule.max)
+          fieldSchema = (fieldSchema as z.ZodNumber).max(field.validationRule.max)
         }
         break
       case 'boolean':
@@ -53,8 +53,18 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         })
         break
       case 'select':
-      case 'multiSelect':
         fieldSchema = z.string()
+        break
+      case 'multiSelect':
+        fieldSchema = z.array(z.string())
+        break
+      case 'dynamicSelect':
+        // Check if this is a multi-select dynamic field
+        if (field.multiple) {
+          fieldSchema = z.array(z.string())
+        } else {
+          fieldSchema = z.string()
+        }
         break
       case 'icon':
         fieldSchema = z.string()
@@ -136,6 +146,14 @@ export function generateDefaultValues(formFields: FormField[]): Record<string, a
         break
       case 'multiSelect':
         defaultValue = []
+        break
+      case 'dynamicSelect':
+        // Check if this is a multi-select dynamic field
+        if (field.multiple) {
+          defaultValue = []
+        } else {
+          defaultValue = ''
+        }
         break
       default:
         defaultValue = ''

@@ -66,6 +66,17 @@ export function DynamicSelect({
     field.dropdownConfig?.enableTypeahead
   );
 
+  // Debug logging to trace typeahead detection
+  console.log('🔍 DynamicSelect Debug:', {
+    fieldName: field.fieldName,
+    fieldType: field.fieldType,
+    dataSourceEnableTypeahead: field.dataSource?.enableTypeahead,
+    dropdownConfigEnableTypeahead: field.dropdownConfig?.enableTypeahead,
+    isTypeaheadField,
+    hasDataSource: !!field.dataSource,
+    hasDropdownConfig: !!field.dropdownConfig
+  });
+
   // SOLID Principle: Open/Closed - Extend behavior through composition
   if (isTypeaheadField) {
     const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;

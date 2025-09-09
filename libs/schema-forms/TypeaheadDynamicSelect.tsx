@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { getLocalizedText } from "@repo/utils";
 import { Input } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
@@ -44,6 +45,27 @@ export function TypeaheadDynamicSelect({
   watch,
   errors,
 }: TypeaheadDynamicSelectProps) {
+  // Defensive value processing: ensure we handle objects properly from the start
+  const processedValue = useMemo(() => {
+    // Case 1: Array for multi-select (process each item)
+    if (Array.isArray(value)) {
+      return value.map((item: any) => {
+        // If array item is an object with id/name, extract ID
+        if (item && typeof item === 'object' && (item.id || item._id) && item.name) {
+          return String(item.id || item._id);
+        }
+        return String(item);
+      });
+    }
+    
+    // Case 2: Single object with id/name (bibliography format), extract ID for form handling
+    if (value && typeof value === 'object' && !Array.isArray(value) && (value.id || value._id) && value.name) {
+      return String(value.id || value._id);
+    }
+    
+    // Case 3: Return as-is (string, null, undefined)
+    return value;
+  }, [value]);
   const [options, setOptions] = useState<LocalSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +76,29 @@ export function TypeaheadDynamicSelect({
   const [isSearching, setIsSearching] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   
   const dropdownConfig = field.dropdownConfig || {} as any;
   const dataSource = field.dataSource || {} as any;
-  const isMultiple = dropdownConfig.multiple || field.fieldType === "multiSelect";
+  const isMultiple = dropdownConfig.multiple || field.multiple || field.fieldType === "multiSelect";
   const validationError = errors?.[field.fieldName];
+
+  // Notify parent of processed value if it changed (to fix validation)
+  // NOTE: Only notify for single-select fields to convert {id,name} objects to strings
+  useEffect(() => {
+    // Only process single object conversion for single-select fields
+    if (!isMultiple && processedValue !== value && processedValue !== undefined && !Array.isArray(value)) {
+      onChange(processedValue);
+    }
+  }, [processedValue, value, onChange, isMultiple]);
   
   // Typeahead configuration
-  const enableTypeahead = dropdownConfig.enableTypeahead || dataSource.enableTypeahead || true;
+  const enableTypeahead = dropdownConfig.enableTypeahead || dataSource.enableTypeahead;
+
   const minSearchLength = dropdownConfig.minSearchLength || dataSource.minSearchLength || 2;
   const debounceMs = dropdownConfig.debounceMs || dataSource.debounceMs || 300;
   const searchParam = dropdownConfig.searchParam || dataSource.searchParam || 'search';
@@ -71,12 +108,28 @@ export function TypeaheadDynamicSelect({
   const debounceTimerRef = useRef<NodeJS.Timeout>();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
 
   // Parse module from refPath
   const getModuleFromRefPath = (refPath: string): string => {
     const cleaned = refPath.replace(/^\//, '').replace(/\/ref$/, '');
     return cleaned;
   };
+
+  // Calculate dropdown position for portal
+  const calculateDropdownPosition = useCallback(() => {
+    if (!inputContainerRef.current) return null;
+    
+    const rect = inputContainerRef.current.getBoundingClientRect();
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    return {
+      top: rect.bottom + scrollY + 4, // 4px gap below input
+      left: rect.left + scrollX,
+      width: rect.width
+    };
+  }, []);
 
   // Extract label from API response
   const getApiLabel = (item: ApiOption, language: string): string => {
@@ -159,7 +212,6 @@ export function TypeaheadDynamicSelect({
         });
       }
 
-      console.log(`🔍 TypeaheadDynamicSelect: Fetching with params:`, { module, queryParams });
 
       const result = await getModuleReferenceAction<ApiOption>(module, queryParams);
       
@@ -202,6 +254,8 @@ export function TypeaheadDynamicSelect({
     
     // Show dropdown when typing
     if (value.length >= minSearchLength) {
+      const position = calculateDropdownPosition();
+      setDropdownPosition(position);
       setOpen(true);
     }
 
@@ -214,28 +268,83 @@ export function TypeaheadDynamicSelect({
     debounceTimerRef.current = setTimeout(() => {
       fetchOptions(value);
     }, debounceMs);
-  }, [minSearchLength, debounceMs, fetchOptions]);
+  }, [minSearchLength, debounceMs, fetchOptions, calculateDropdownPosition]);
 
-  // IMPORTANT: For typeahead fields, DO NOT fetch data for initial values
-  // The whole point of typeahead is to only fetch when user types
-  // If we have a value, just show it as text without fetching options
+  // Handle initial value for edit scenarios
   useEffect(() => {
-    if (value && !selectedOption) {
-      // For typeahead fields, NEVER fetch data automatically
-      // Just display the value ID if we don't have the label
-      // The proper label will be fetched when user starts typing
+    if (!value) return;
+
+    // Case 1: Array of objects for multi-select edit (bibliography edit format)
+    if (Array.isArray(value) && value.length > 0 && isMultiple) {
+      const hasObjectsWithIdName = value.some(item => 
+        item && typeof item === 'object' && (item.id || item._id) && item.name
+      );
       
-      if (typeof value === 'object' && value.label) {
-        setSelectedOption(value);
-        const labelText = typeof value.label === 'string' ? value.label : getLocalizedText(value.label, currentLanguage);
-        setDisplayValue(labelText);
-      } else if (value) {
-        // Don't fetch! Just show the ID temporarily
-        // When user focuses and types, we'll fetch the proper options
-        setDisplayValue(String(value));
+      if (hasObjectsWithIdName) {
+        // Transform array of {id, name} objects to our standard format
+        const transformedOptions = value
+          .filter(item => item && typeof item === 'object' && (item.id || item._id) && item.name)
+          .map(item => ({
+            value: String(item.id || item._id),
+            label: {
+              en: String(item.name),
+              mm: String(item.name)
+            }
+          }));
+        
+        // Set options to include the initial values
+        setOptions(prevOptions => {
+          const existingValues = prevOptions.map(opt => opt.value);
+          const newOptions = transformedOptions.filter(opt => !existingValues.includes(opt.value));
+          return [...prevOptions, ...newOptions];
+        });
+        
+        // Update form with array of ID strings
+        const idValues = transformedOptions.map(opt => opt.value);
+        onChange(idValues);
+        
+        // Set display for multi-select (will show as badges)
+        setDisplayValue("");
+        return;
       }
     }
-  }, [value]);
+
+    // Case 2: Value is an object with label (standard format)
+    if (typeof value === 'object' && !Array.isArray(value) && value.label && selectedOption) return;
+    if (typeof value === 'object' && !Array.isArray(value) && value.label) {
+      setSelectedOption(value);
+      const labelText = typeof value.label === 'string' ? value.label : getLocalizedText(value.label, currentLanguage);
+      setDisplayValue(labelText);
+      return;
+    }
+
+    // Case 3: Single object with id and name (bibliography edit format)
+    if (typeof value === 'object' && !Array.isArray(value) && (value.id || value._id) && value.name) {
+      // Transform to our standard format
+      const transformedOption = {
+        value: String(value.id || value._id),
+        label: {
+          en: String(value.name),
+          mm: String(value.name)
+        }
+      };
+      setSelectedOption(transformedOption);
+      setDisplayValue(String(value.name));
+      
+      // IMPORTANT: Update the form with just the ID string to prevent validation errors
+      const idValue = String(value.id || value._id);
+      if (idValue !== value) {
+        onChange(idValue);
+      }
+      return;
+    }
+
+    // Case 4: Simple string value (show as-is, no fetching for typeahead)
+    if (typeof value === 'string' && !selectedOption) {
+      setDisplayValue(String(value));
+      return;
+    }
+  }, [value, selectedOption, currentLanguage, isMultiple, onChange]);
 
   // Update display value when selected option changes
   useEffect(() => {
@@ -262,7 +371,7 @@ export function TypeaheadDynamicSelect({
   // Handle selection
   const handleSelect = (optionValue: string) => {
     if (isMultiple) {
-      const currentValues = Array.isArray(value) ? value : [];
+      const currentValues = Array.isArray(processedValue) ? processedValue : [];
       const newValues = currentValues.includes(optionValue)
         ? currentValues.filter((v: string) => v !== optionValue)
         : [...currentValues, optionValue];
@@ -276,6 +385,7 @@ export function TypeaheadDynamicSelect({
         setDisplayValue(labelText);
       }
       setOpen(false);
+      setDropdownPosition(null);
       setSearchTerm("");
     }
   };
@@ -285,6 +395,10 @@ export function TypeaheadDynamicSelect({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
+        if (!open) {
+          const position = calculateDropdownPosition();
+          setDropdownPosition(position);
+        }
         setOpen(true);
         setHighlightedIndex(prev => 
           prev < filteredOptions.length - 1 ? prev + 1 : 0
@@ -307,10 +421,11 @@ export function TypeaheadDynamicSelect({
       case 'Escape':
         e.preventDefault();
         setOpen(false);
+        setDropdownPosition(null);
         // Restore display value to selected option
         if (selectedOption) {
           const labelText = typeof selectedOption.label === 'string' ? selectedOption.label : getLocalizedText(selectedOption.label, currentLanguage);
-      setDisplayValue(labelText);
+          setDisplayValue(labelText);
         } else {
           setDisplayValue("");
         }
@@ -325,6 +440,8 @@ export function TypeaheadDynamicSelect({
     setDisplayValue(searchTerm);
     // Open dropdown when focusing
     if (searchTerm.length >= minSearchLength) {
+      const position = calculateDropdownPosition();
+      setDropdownPosition(position);
       setOpen(true);
     }
   };
@@ -353,14 +470,16 @@ export function TypeaheadDynamicSelect({
     }
   };
 
-  // Handle click outside
+  // Handle click outside and position updates
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          inputContainerRef.current && !inputContainerRef.current.contains(event.target as Node)) {
         setOpen(false);
+        setDropdownPosition(null);
         if (selectedOption) {
           const labelText = typeof selectedOption.label === 'string' ? selectedOption.label : getLocalizedText(selectedOption.label, currentLanguage);
-      setDisplayValue(labelText);
+          setDisplayValue(labelText);
         } else {
           setDisplayValue("");
         }
@@ -368,9 +487,32 @@ export function TypeaheadDynamicSelect({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedOption, currentLanguage]);
+    const handleScroll = () => {
+      if (open && inputContainerRef.current) {
+        const position = calculateDropdownPosition();
+        setDropdownPosition(position);
+      }
+    };
+
+    const handleResize = () => {
+      if (open && inputContainerRef.current) {
+        const position = calculateDropdownPosition();
+        setDropdownPosition(position);
+      }
+    };
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [open, selectedOption, currentLanguage, calculateDropdownPosition]);
 
   // Get empty message
   const getEmptyMessage = () => {
@@ -392,7 +534,7 @@ export function TypeaheadDynamicSelect({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={inputContainerRef}>
       {/* Search Input - Always visible */}
       <div className="relative">
         <Input
@@ -409,13 +551,12 @@ export function TypeaheadDynamicSelect({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onClick={handleInputClick}
-          disabled={field.disabled || field.readonly}
+          disabled={false}
           readOnly={false}
           className={cn(
             "w-full pr-10 cursor-text",
             validationError && "border-destructive",
-            !value && "text-muted-foreground",
-            (field.disabled || field.readonly) && "cursor-not-allowed opacity-50"
+            !processedValue && "text-muted-foreground"
           )}
           aria-label={field.label ? getLocalizedText(field.label, currentLanguage) : "Search"}
           aria-expanded={open}
@@ -430,7 +571,7 @@ export function TypeaheadDynamicSelect({
           {isSearching && (
             <IconComponent name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
-          {value && !isSearching && (
+          {processedValue && !isSearching && (
             <button
               type="button"
               onClick={(e) => {
@@ -457,66 +598,77 @@ export function TypeaheadDynamicSelect({
         </div>
       </div>
 
-      {/* Options Dropdown */}
-      {open && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md">
-          <div className="max-h-[300px] overflow-auto p-1">
-            {isSearching && searchTerm.length >= minSearchLength ? (
-              <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                <IconComponent name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
-                Searching...
-              </div>
-            ) : error ? (
-              <div className="py-6 text-center text-sm text-destructive">
-                {error}
-              </div>
-            ) : filteredOptions.length === 0 ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                {getEmptyMessage()}
-              </div>
-            ) : (
-              filteredOptions.map((option, index) => (
-                <div
-                  key={option.value}
-                  role="option"
-                  aria-selected={
-                    isMultiple 
-                      ? Array.isArray(value) && value.includes(option.value)
-                      : value === option.value
-                  }
-                  className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
-                    highlightedIndex === index && "bg-accent text-accent-foreground",
-                    (isMultiple && Array.isArray(value) && value.includes(option.value)) ||
-                    (!isMultiple && value === option.value) 
-                      ? "font-medium" 
-                      : ""
-                  )}
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  <IconComponent
-                    name="Check"
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      (isMultiple && Array.isArray(value) && value.includes(option.value)) ||
-                      (!isMultiple && value === option.value)
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                  <span>{typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage)}</span>
+      {/* Options Dropdown - Rendered as Portal */}
+      {open && dropdownPosition && typeof window !== 'undefined' && 
+        createPortal(
+          <div 
+            ref={dropdownRef}
+            className="fixed z-[9999] bg-popover border rounded-md shadow-md"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }}
+          >
+            <div className="max-h-[300px] overflow-auto p-1">
+              {isSearching && searchTerm.length >= minSearchLength ? (
+                <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                  <IconComponent name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+                  Searching...
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+              ) : error ? (
+                <div className="py-6 text-center text-sm text-destructive">
+                  {error}
+                </div>
+              ) : filteredOptions.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  {getEmptyMessage()}
+                </div>
+              ) : (
+                filteredOptions.map((option, index) => (
+                  <div
+                    key={option.value}
+                    role="option"
+                    aria-selected={
+                      isMultiple 
+                        ? Array.isArray(processedValue) && processedValue.includes(option.value)
+                        : processedValue === option.value
+                    }
+                    className={cn(
+                      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
+                      highlightedIndex === index && "bg-accent text-accent-foreground",
+                      (isMultiple && Array.isArray(processedValue) && processedValue.includes(option.value)) ||
+                      (!isMultiple && processedValue === option.value) 
+                        ? "font-medium" 
+                        : ""
+                    )}
+                    onClick={() => handleSelect(option.value)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                  >
+                    <IconComponent
+                      name="Check"
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        (isMultiple && Array.isArray(processedValue) && processedValue.includes(option.value)) ||
+                        (!isMultiple && processedValue === option.value)
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                    <span>{typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )
+      }
 
       {/* Multi-select badges */}
-      {isMultiple && Array.isArray(value) && value.length > 0 && (
+      {isMultiple && Array.isArray(processedValue) && processedValue.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {value.map((val) => {
+          {processedValue.map((val) => {
             const option = options.find(opt => opt.value === val);
             if (!option) return null;
             return (

@@ -3,7 +3,7 @@ import { fetchLayoutData } from '@/lib/layout-data'
 import { getModuleItem } from '@repo/app-modules'
 import { submitModuleForm } from '@repo/app-modules/server-actions'
 import { FormWithLanguage } from '@repo/schema-forms'
-import { generateZodSchema } from '@/lib/form-schema'
+import { generateZodSchema } from '@repo/schema-utils'
 import { enableCommonMultilangFields } from '@/lib/enable-multilang'
 import type { ModuleSchema } from '@repo/types'
 

@@ -51,6 +51,28 @@ export function DynamicSelect({
   watch,
   errors,
 }: DynamicSelectProps) {
+  // Check if this should be a typeahead field and redirect if necessary
+  const isTypeaheadField = Boolean(
+    field.dataSource?.enableTypeahead || 
+    field.dropdownConfig?.enableTypeahead
+  );
+
+
+  // Redirect to TypeaheadDynamicSelect if needed
+  if (isTypeaheadField) {
+    const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;
+    return (
+      <TypeaheadDynamicSelect
+        field={field}
+        value={value}
+        onChange={onChange}
+        currentLanguage={currentLanguage}
+        watch={watch}
+        errors={errors}
+      />
+    );
+  }
+
   const [options, setOptions] = useState<LocalSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,12 +96,6 @@ export function DynamicSelect({
       values[fieldName] = watch(fieldName);
     });
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`👀 DynamicSelect "${field.fieldName}" dependency values updated:`, {
-        dependsOn: dropdownConfig.dependsOn,
-        values
-      });
-    }
     
     return values;
   }, [dropdownConfig.dependsOn, watch, ...watchedFields]);
@@ -92,25 +108,10 @@ export function DynamicSelect({
       const value = dependencyValues[fieldName];
       const isValid = value !== null && value !== undefined && value !== "" && value !== 0;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 DynamicSelect "${field.fieldName}" dependency check:`, {
-          fieldName,
-          value,
-          isValid,
-          type: typeof value
-        });
-      }
       
       return isValid;
     });
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🎯 DynamicSelect "${field.fieldName}" dependencies satisfied:`, {
-        satisfied,
-        dependsOn: dropdownConfig.dependsOn,
-        dependencyValues
-      });
-    }
     
     return satisfied;
   }, [dropdownConfig.dependsOn, dependencyValues, field.fieldName]);
@@ -169,14 +170,6 @@ export function DynamicSelect({
     // Final fallbacks
     const stringLabel = item.title || item._id || item.id || item.value || "";
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 DynamicSelect: getApiLabel for ${language}:`, {
-        item,
-        result: stringLabel,
-        labelType: typeof item.label
-      });
-    }
-    
     return String(stringLabel);
   };
 
@@ -184,9 +177,6 @@ export function DynamicSelect({
   const fetchOptions = useCallback(async () => {
     // Prevent concurrent requests
     if (isFetching.current || loading) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`⏸️ DynamicSelect: Already loading, skipping for "${field.fieldName}"`);
-      }
       return;
     }
 
@@ -203,28 +193,10 @@ export function DynamicSelect({
       const queryParams: Record<string, string> = {};
       
       if (dropdownConfig.dependsOn && dropdownConfig.dependsOn.length > 0) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔍 DynamicSelect: Building query params for "${field.fieldName}":`, {
-            dependsOn: dropdownConfig.dependsOn,
-            dependencyValues
-          });
-        }
-        
         dropdownConfig.dependsOn.forEach((fieldName, index) => {
           // Use dependentFieldValue as the parameter name for backend compatibility
           const paramName = "dependentFieldValue";
           const paramValue = dependencyValues[fieldName];
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`🔍 DynamicSelect: Processing dependency "${fieldName}":`, {
-              fieldName,
-              index,
-              paramName,
-              paramValue,
-              paramValueType: typeof paramValue,
-              hasValue: !!paramValue
-            });
-          }
           
           if (paramValue) {
             // Convert to string to handle any type issues (e.g., objects, numbers)
@@ -233,13 +205,7 @@ export function DynamicSelect({
         });
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 DynamicSelect: Final query params for "${field.fieldName}":`, queryParams);
-      }
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 DynamicSelect: Fetching "${field.fieldName}" from module "${module}" with params:`, queryParams);
-      }
 
       // Use server action instead of direct fetch
       const result = await getModuleReferenceAction<ApiOption>(module, queryParams);
@@ -247,13 +213,6 @@ export function DynamicSelect({
       if (!result.success) {
         const errorMsg = result.error || getLocalizedErrorMessage('DATA_LOAD_FAILED', currentLanguage as 'en' | 'mm');
         setError(errorMsg);
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`❌ DynamicSelect: Server action failed for "${field.fieldName}":`, {
-            error: result.error,
-            module,
-            queryParams
-          });
-        }
         throw new Error(errorMsg);
       }
 
@@ -263,9 +222,6 @@ export function DynamicSelect({
         ? responseData 
         : (responseData?.data || responseData?.items || []);
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ DynamicSelect: Loaded ${data.length} options for "${field.fieldName}"`, data);
-      }
       
       // Transform API response to LocalSelectOption format
       const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => {
@@ -277,13 +233,6 @@ export function DynamicSelect({
           },
         };
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 DynamicSelect: Transformed option for "${field.fieldName}":`, {
-            original: item,
-            transformed: transformedOption
-          });
-        }
-        
         return transformedOption;
       });
       
@@ -294,13 +243,6 @@ export function DynamicSelect({
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : getLocalizedErrorMessage('DATA_LOAD_FAILED', currentLanguage as 'en' | 'mm');
       setError(errorMsg);
-      if (process.env.NODE_ENV === 'development') {
-        console.error(`💥 DynamicSelect: Error fetching options for "${field.fieldName}":`, {
-          error,
-          module: dropdownConfig.refPath ? getModuleFromRefPath(dropdownConfig.refPath) : 'unknown',
-          fieldConfig: dropdownConfig
-        });
-      }
       setOptions([]);
     } finally {
       setLoading(false);
@@ -334,9 +276,6 @@ export function DynamicSelect({
 
     // For dependent dropdowns, wait for dependencies
     if (!dependenciesSatisfied) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`⏸️ DynamicSelect "${field.fieldName}": Dependencies not satisfied, clearing options and value`);
-      }
       if (options.length > 0) {
         setOptions([]);
       }
@@ -355,19 +294,6 @@ export function DynamicSelect({
       // Dependencies have changed (e.g., organization changed for department dropdown)
       lastFetchedDependencyKey.current !== dependencyKey
     );
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 DynamicSelect "${field.fieldName}" fetch decision:`, {
-        shouldFetch,
-        hasInitialized: hasInitialized.current,
-        preloadData: dropdownConfig.preloadData,
-        dependencyChanged: lastFetchedDependencyKey.current !== dependencyKey,
-        lastKey: lastFetchedDependencyKey.current,
-        currentKey: dependencyKey,
-        hasValueNoOptions: value && options.length === 0,
-        isFetching: isFetching.current
-      });
-    }
 
     if (shouldFetch && !isFetching.current) {
       hasInitialized.current = true;
@@ -548,15 +474,6 @@ export function DynamicSelect({
           ) : (
             filteredOptions.map((option) => {
               const labelText = typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage);
-              
-              if (process.env.NODE_ENV === 'development') {
-                console.log(`🎨 DynamicSelect: Rendering option for "${field.fieldName}":`, {
-                  value: option.value,
-                  originalLabel: option.label,
-                  labelText,
-                  currentLanguage
-                });
-              }
               
               return (
                 <DropdownMenuItem
