@@ -66,6 +66,13 @@ export class ModuleService {
       endpoint += `?${queryParams.toString()}`;
     }
 
+    console.log("ModuleService API call:", {
+      endpoint,
+      params,
+      queryParams: queryParams.toString(),
+      fullUrl: endpoint
+    });
+
     const response = await this.httpClient.request<any>(endpoint, {
       method: "GET",
       tenantId: this.tenantId,

@@ -114,12 +114,16 @@ export function ModuleDataTableWrapper({
   }, [searchParams, pathname, router]);
 
   // Extract data and pagination from response
-  const moduleData = Array.isArray(moduleResponse?.data) 
+  const fullModuleData = Array.isArray(moduleResponse?.data) 
     ? moduleResponse.data 
     : Array.isArray(initialData) 
       ? initialData 
       : [];
   const pagination = moduleResponse?.pagination;
+  
+  // Determine if we have server-side pagination or need client-side chunking
+  const hasServerSidePagination = !!(pagination && pagination.totalPages);
+  const needsClientSideChunking = !hasServerSidePagination && fullModuleData.length > currentPageSize;
 
   // Check for error state
   if (error) {
@@ -159,24 +163,67 @@ export function ModuleDataTableWrapper({
   const currentPage = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
   const currentPageSize = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : module.dataTableSchema.pagination?.defaultLimit || 10;
 
-  // Calculate pagination values
-  const totalItems = pagination?.total || moduleData.length;
+  // Calculate pagination values and slice data if needed
+  let moduleData: any[];
+  let totalItems: number;
+  let totalPages: number;
+  
   const isClientSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === true;
   const isServerSidePaging = !isClientSidePaging;
-  
-  // For client-side paging, calculate totalPages based on data length and page size
-  const totalPages = isServerSidePaging 
-    ? (pagination?.totalPages || 1)
-    : Math.ceil(moduleData.length / currentPageSize);
+
+  if (needsClientSideChunking) {
+    // Client-side chunking for large datasets without server-side pagination
+    totalItems = fullModuleData.length;
+    totalPages = Math.ceil(totalItems / currentPageSize);
+    
+    // Calculate slice boundaries
+    const startIndex = (currentPage - 1) * currentPageSize;
+    const endIndex = startIndex + currentPageSize;
+    
+    // Slice data to show only current page
+    moduleData = fullModuleData.slice(startIndex, endIndex);
+    
+    console.log("Client-side chunking applied:", {
+      totalRecords: fullModuleData.length,
+      currentPage,
+      pageSize: currentPageSize,
+      startIndex,
+      endIndex,
+      displayingRecords: moduleData.length,
+      totalPages
+    });
+  } else if (hasServerSidePagination) {
+    // Server-side pagination - use data as-is
+    moduleData = fullModuleData;
+    totalItems = pagination?.total || fullModuleData.length;
+    totalPages = pagination?.totalPages || 1;
+  } else {
+    // Regular client-side pagination or small datasets
+    moduleData = fullModuleData;
+    totalItems = fullModuleData.length;
+    totalPages = isServerSidePaging 
+      ? (pagination?.totalPages || 1)
+      : Math.ceil(fullModuleData.length / currentPageSize);
+  }
   
   console.log("ModuleDataTableWrapper debug:", {
     pagination,
-    moduleData: moduleData.length,
+    fullDataLength: fullModuleData.length,
+    displayingRecords: moduleData.length,
     totalItems,
     totalPages,
+    currentPage,
+    currentPageSize,
     isServerSidePaging,
     paginationEnabled: module.dataTableSchema.pagination?.enabled,
     paginationConfig: module.dataTableSchema.pagination,
+    // Enhanced debugging for pagination modes
+    paginationMode: {
+      hasServerSidePagination,
+      needsClientSideChunking,
+      mode: needsClientSideChunking ? 'CLIENT_CHUNKING' : hasServerSidePagination ? 'SERVER_SIDE' : 'CLIENT_SIDE',
+      paginationKeys: pagination ? Object.keys(pagination) : 'none'
+    }
   });
 
   // Get current sort state from URL

@@ -1,12 +1,12 @@
-import * as React from "react"
+import * as React from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MoreHorizontalIcon,
-} from "lucide-react"
+} from "lucide-react";
 
-import { cn } from "../lib/utils"
-import { Button, buttonVariants } from "./button"
+import { cn } from "../lib/utils";
+import { Button, buttonVariants } from "./button";
 
 interface PaginationProps {
   currentPage: number;
@@ -20,7 +20,7 @@ interface PaginationProps {
   className?: string;
 }
 
-function Pagination({ 
+function Pagination({
   currentPage,
   totalPages,
   totalItems,
@@ -30,10 +30,20 @@ function Pagination({
   allowedLimits,
   currentLanguage,
   className,
-  ...props 
+  ...props
 }: PaginationProps) {
   // Don't show pagination if there's only 1 page or no data
+  console.log("Pagination component debug:", {
+    totalPages,
+    totalItems,
+    currentPage,
+    pageSize,
+    shouldHide: totalPages <= 1 || totalItems === 0,
+    willRender: totalPages > 1 && totalItems > 0
+  });
+  
   if (totalPages <= 1 || totalItems === 0) {
+    console.log("Pagination HIDDEN: totalPages <= 1 or totalItems === 0");
     return null;
   }
 
@@ -45,7 +55,7 @@ function Pagination({
   const getPageNumbers = () => {
     const maxPagesToShow = 5;
     const pages = [];
-    
+
     if (totalPages <= maxPagesToShow) {
       // Show all pages if total is small
       for (let i = 1; i <= totalPages; i++) {
@@ -56,33 +66,42 @@ function Pagination({
       const halfWindow = Math.floor(maxPagesToShow / 2);
       let startPage = Math.max(1, currentPage - halfWindow);
       let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-      
+
       // Adjust if we're near the end
       if (endPage - startPage + 1 < maxPagesToShow) {
         startPage = Math.max(1, endPage - maxPagesToShow + 1);
       }
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
   const pageNumbers = getPageNumbers();
+  console.log("paging is running!");
 
   return (
-    <div className={cn("flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10", className)}>
+    <div
+      className={cn(
+        "flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10",
+        className
+      )}
+    >
       {/* Results info */}
       <div className="flex items-center gap-4">
         <div className="text-sm text-muted-foreground">
-          {currentLanguage === "mm" 
-            ? `${startIndex + 1} မှ ${endIndex} အထိ ပြသနေသည် (စုစုပေါင်း ${totalItems} ခု)`
-            : `Showing ${startIndex + 1} to ${endIndex} of ${totalItems} results`
-          }
+          {currentLanguage === "mm"
+            ? `${
+                startIndex + 1
+              } မှ ${endIndex} အထိ ပြသနေသည် (စုစုပေါင်း ${totalItems} ခု)`
+            : `Showing ${
+                startIndex + 1
+              } to ${endIndex} of ${totalItems} results`}
         </div>
-        
+
         {/* Page size selector */}
         {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
           <div className="flex items-center gap-2">
@@ -156,17 +175,17 @@ function PaginationContent({
       className={cn("flex flex-row items-center gap-1", className)}
       {...props}
     />
-  )
+  );
 }
 
 function PaginationItem({ ...props }: React.ComponentProps<"li">) {
-  return <li data-slot="pagination-item" {...props} />
+  return <li data-slot="pagination-item" {...props} />;
 }
 
 type PaginationLinkProps = {
-  isActive?: boolean
+  isActive?: boolean;
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
-  React.ComponentProps<"a">
+  React.ComponentProps<"a">;
 
 function PaginationLink({
   className,
@@ -188,7 +207,7 @@ function PaginationLink({
       )}
       {...props}
     />
-  )
+  );
 }
 
 function PaginationPrevious({
@@ -205,7 +224,7 @@ function PaginationPrevious({
       <ChevronLeftIcon />
       <span className="hidden sm:block">Previous</span>
     </PaginationLink>
-  )
+  );
 }
 
 function PaginationNext({
@@ -222,7 +241,7 @@ function PaginationNext({
       <span className="hidden sm:block">Next</span>
       <ChevronRightIcon />
     </PaginationLink>
-  )
+  );
 }
 
 function PaginationEllipsis({
@@ -239,7 +258,7 @@ function PaginationEllipsis({
       <MoreHorizontalIcon className="size-4" />
       <span className="sr-only">More pages</span>
     </span>
-  )
+  );
 }
 
 export {
@@ -250,4 +269,4 @@ export {
   PaginationPrevious,
   PaginationNext,
   PaginationEllipsis,
-}
+};

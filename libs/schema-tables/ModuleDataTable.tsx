@@ -1092,26 +1092,44 @@ export function ModuleDataTable({
       {(() => {
         const hasData = data.length > 0;
         const paginationEnabled = module.dataTableSchema.pagination?.enabled;
+        const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
+        const isClientSidePaging = !isServerSidePaging;
+        
+        // Server-side pagination: requires onPageChange and totalPages
         const hasServerSideProps = onPageChange && totalPages !== undefined && totalPages >= 1;
-        const hasPageProps = onPageChange || currentPage;
+        
+        // Client-side pagination: just needs pagination enabled and data
+        const hasClientSideRequirements = isClientSidePaging && paginationEnabled;
+        
+        const shouldShowPagination = hasData && (
+          (isServerSidePaging && hasServerSideProps) ||
+          (isClientSidePaging && hasClientSideRequirements)
+        );
         
         console.log("ModuleDataTable pagination debug:", {
           hasData,
           paginationEnabled,
+          isServerSidePaging,
+          isClientSidePaging,
           hasServerSideProps,
-          hasPageProps,
+          hasClientSideRequirements,
           onPageChange: !!onPageChange,
           currentPage,
           totalPages,
           totalItems,
           moduleSlug: module.slug,
           paginationConfig: module.dataTableSchema.pagination,
-          showPagination: hasData && (paginationEnabled || hasServerSideProps) && hasPageProps
+          shouldShowPagination,
+          // Enhanced debugging for high page counts
+          pageCountAnalysis: {
+            isHighPageCount: totalPages > 50,
+            exceedsMaxDisplay: totalPages > 5,
+            pageCountCategory: totalPages <= 1 ? 'single' : totalPages <= 5 ? 'small' : totalPages <= 50 ? 'medium' : 'large',
+            shouldRenderPaginationComponent: shouldShowPagination && totalPages > 1
+          }
         });
         
-        return hasData && 
-               (paginationEnabled || hasServerSideProps) && 
-               hasPageProps;
+        return shouldShowPagination;
       })() && (
         <div className={isLoading ? 'pointer-events-none' : ''}>
           <Pagination
