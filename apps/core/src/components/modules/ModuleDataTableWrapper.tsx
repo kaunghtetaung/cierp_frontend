@@ -74,19 +74,44 @@ export function ModuleDataTableWrapper({
   // staleTime: 0 means always fetch fresh data from backend
   // You can increase this value (in milliseconds) to cache data between page navigations
   // For example: staleTime: 30000 would cache for 30 seconds
+  const reactQueryEnabled = !isClientChunkingMode || !cachedFullData;
+  if (typeof window === 'undefined') {
+    console.log("🚀 [SERVER] React Query Debug:", JSON.stringify({
+      module: module.slug,
+      isClientChunkingMode,
+      cachedFullData: !!cachedFullData,
+      enabled: reactQueryEnabled,
+      originalQueryParams: queryParams,
+      finalQueryParams: isClientChunkingMode ? {} : queryParams
+    }, null, 2));
+  } else {
+    console.log("🚀 [CLIENT] React Query Debug:", {
+      module: module.slug,
+      isClientChunkingMode,
+      cachedFullData: !!cachedFullData,
+      enabled: reactQueryEnabled,
+      originalQueryParams: queryParams,
+      finalQueryParams: isClientChunkingMode ? {} : queryParams
+    });
+  }
+  
+  // Use different query parameters based on chunking mode
+  // In client chunking mode, we don't include pagination params to prevent new queries
+  const finalQueryParams = isClientChunkingMode ? {} : queryParams;
+  
   const {
     data: moduleResponse,
     isLoading,
     isFetching,
     error,
     refetch,
-  } = useModuleList(module.slug, queryParams, {
+  } = useModuleList(module.slug, finalQueryParams, {
     // Only use initialData if it has actual data (client-side pagination case)
     // For server-side pagination, initialData will be empty array
     initialData: initialData && initialData.length > 0 ? initialData : undefined,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes to improve performance
     // Disable API calls when in client chunking mode (except for first load)
-    enabled: !isClientChunkingMode || !cachedFullData,
+    enabled: reactQueryEnabled,
   });
 
   // Pagination handlers for server-side pagination - MUST be defined before any returns
@@ -138,14 +163,45 @@ export function ModuleDataTableWrapper({
   const hasServerSidePagination = !!(pagination && pagination.totalPages);
   const needsClientSideChunking = !hasServerSidePagination && fullModuleData.length > currentPageSize;
   
+  // Debug client chunking detection (using JSON.stringify for server logs)
+  if (typeof window === 'undefined') {
+    console.log("🔍 [SERVER] Client Chunking Detection Debug:", JSON.stringify({
+      module: module.slug,
+      pagination: pagination,
+      hasServerSidePagination,
+      fullDataLength: fullModuleData.length,
+      currentPageSize,
+      needsClientSideChunking,
+      isClientChunkingMode,
+      cachedFullData: !!cachedFullData,
+      apiDataLength: apiModuleData.length
+    }, null, 2));
+  } else {
+    console.log("🔍 [CLIENT] Client Chunking Detection Debug:", {
+      module: module.slug,
+      pagination: pagination,
+      hasServerSidePagination,
+      fullDataLength: fullModuleData.length,
+      currentPageSize,
+      needsClientSideChunking,
+      isClientChunkingMode,
+      cachedFullData: !!cachedFullData,
+      apiDataLength: apiModuleData.length
+    });
+  }
+  
   // Cache full data and set client chunking mode when detected
   React.useEffect(() => {
     if (needsClientSideChunking && apiModuleData.length > 0 && !cachedFullData) {
       setCachedFullData(apiModuleData);
       setIsClientChunkingMode(true);
-      console.log("🔄 Enabling client chunking mode - cached", apiModuleData.length, "records");
+      if (typeof window === 'undefined') {
+        console.log("🔄 [SERVER] Enabling client chunking mode - cached", apiModuleData.length, "records for", module.slug);
+      } else {
+        console.log("🔄 [CLIENT] Enabling client chunking mode - cached", apiModuleData.length, "records for", module.slug);
+      }
     }
-  }, [needsClientSideChunking, apiModuleData.length, cachedFullData]);
+  }, [needsClientSideChunking, apiModuleData.length, cachedFullData, module.slug]);
 
   // Check for error state
   if (error) {
