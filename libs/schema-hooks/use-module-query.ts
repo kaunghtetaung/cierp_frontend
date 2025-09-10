@@ -18,14 +18,78 @@ import type {
 export const moduleKeys = {
   all: ["modules"] as const,
   lists: () => [...moduleKeys.all, "list"] as const,
-  list: (module: string, params?: ModuleListParams) =>
-    [...moduleKeys.lists(), module, JSON.stringify(params || {})] as const,
+  list: (module: string, params?: ModuleListParams) => {
+    // Normalize parameters for consistent cache keys
+    const normalizedParams = normalizeModuleParams(params || {});
+    const cacheKey = [...moduleKeys.lists(), module, JSON.stringify(normalizedParams)] as const;
+    
+    // Debug cache key generation in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔑 [CACHE-KEY] Module: ${module}`, {
+        originalParams: params,
+        normalizedParams,
+        cacheKey: JSON.stringify(cacheKey)
+      });
+    }
+    
+    return cacheKey;
+  },
   details: () => [...moduleKeys.all, "detail"] as const,
   detail: (module: string, id: string) =>
     [...moduleKeys.details(), module, id] as const,
   schemas: () => [...moduleKeys.all, "schema"] as const,
   schema: (module: string) => [...moduleKeys.schemas(), module] as const,
 };
+
+/**
+ * Normalizes module list parameters for consistent cache key generation
+ * Ensures that functionally identical requests use the same cache key
+ */
+function normalizeModuleParams(params: ModuleListParams): ModuleListParams {
+  const normalized: ModuleListParams = {};
+  
+  // Sort keys alphabetically for consistent JSON.stringify output
+  const sortedKeys = Object.keys(params).sort();
+  
+  for (const key of sortedKeys) {
+    const value = params[key as keyof ModuleListParams];
+    
+    // Skip undefined and null values to avoid cache key variations
+    if (value === undefined || value === null) {
+      continue;
+    }
+    
+    // Handle different parameter types
+    if (key === 'page' || key === 'limit') {
+      // Convert to number and use default values to normalize
+      const numValue = typeof value === 'string' ? parseInt(value, 10) : value as number;
+      if (!isNaN(numValue) && numValue > 0) {
+        normalized[key as keyof ModuleListParams] = numValue as any;
+      }
+    } else if (key === 'filters' && typeof value === 'object') {
+      // Sort filter keys for consistent ordering
+      const sortedFilters: Record<string, any> = {};
+      const filterKeys = Object.keys(value as Record<string, any>).sort();
+      for (const filterKey of filterKeys) {
+        const filterValue = (value as Record<string, any>)[filterKey];
+        if (filterValue !== undefined && filterValue !== null && filterValue !== '') {
+          sortedFilters[filterKey] = filterValue;
+        }
+      }
+      // Only include filters if there are actual filter values
+      if (Object.keys(sortedFilters).length > 0) {
+        normalized.filters = sortedFilters;
+      }
+    } else {
+      // For other parameters (sort, order, etc.), include as-is if not empty
+      if (value !== '' && value !== undefined && value !== null) {
+        normalized[key as keyof ModuleListParams] = value as any;
+      }
+    }
+  }
+  
+  return normalized;
+}
 
 // Custom Hooks
 export function useModuleList<T = any>(
@@ -47,7 +111,6 @@ export function useModuleList<T = any>(
         throw new Error(result.error || "Failed to fetch module list");
       }
       
-      
       // Return both data and pagination metadata for server-side pagination support
       return {
         data: result.data || [],
@@ -55,8 +118,17 @@ export function useModuleList<T = any>(
       };
     },
     enabled: options?.enabled ?? true,
-    staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes
+    staleTime: options?.staleTime ?? 10 * 60 * 1000, // Increased from 5 to 10 minutes for better caching
+    gcTime: 15 * 60 * 1000, // 15 minutes garbage collection time
     refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches on window focus
+    refetchOnReconnect: 'always', // Refetch on network reconnection
+    retry: (failureCount, error) => {
+      // Custom retry logic - retry up to 2 times for network errors
+      if (failureCount >= 2) return false;
+      if (error instanceof Error && error.message.includes('fetch')) return true;
+      return false;
+    },
     initialData: options?.initialData ? { data: options.initialData, pagination: undefined } : undefined,
     placeholderData: options?.placeholderData ? { data: options.placeholderData, pagination: undefined } : undefined,
   });

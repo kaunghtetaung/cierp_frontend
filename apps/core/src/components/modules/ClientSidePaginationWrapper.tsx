@@ -80,7 +80,7 @@ export function ClientSidePaginationWrapper({
     refetch,
   } = useModuleList(module.slug, initialQueryParams, {
     initialData: initialData && initialData.length > 0 ? initialData : undefined,
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes (longer for client-side)
+    staleTime: 15 * 60 * 1000, // Increased to 15 minutes for client-side (data rarely changes)
     enabled: !isDataLoaded, // Only fetch once
   });
 
@@ -99,19 +99,49 @@ export function ClientSidePaginationWrapper({
     }
   }, [moduleResponse, initialData, cachedFullData, module.slug]);
 
+  // Debounced navigation to prevent rapid-fire API calls
+  const debouncedNavigate = React.useCallback((url: string, delay: number = 300) => {
+    // Clear any existing timeout
+    if (debouncedNavigate.timeoutId) {
+      clearTimeout(debouncedNavigate.timeoutId);
+    }
+    
+    // Set new timeout
+    debouncedNavigate.timeoutId = setTimeout(() => {
+      router.push(url);
+      debouncedNavigate.timeoutId = null;
+    }, delay);
+  }, [router]) as any;
+
+  // Add timeout tracking to the function
+  React.useEffect(() => {
+    debouncedNavigate.timeoutId = null;
+    
+    // Cleanup on unmount
+    return () => {
+      if (debouncedNavigate.timeoutId) {
+        clearTimeout(debouncedNavigate.timeoutId);
+      }
+    };
+  }, []);
+
   // Pagination handlers for client-side pagination (URL state management only)
   const handlePageChange = React.useCallback((page: number) => {
     const newSearchParams = new URLSearchParams(searchParams.toString());
     newSearchParams.set('page', page.toString());
-    router.push(`${pathname}?${newSearchParams.toString()}`);
-  }, [searchParams, pathname, router]);
+    
+    console.log(`📱 [CLIENT-SIDE] Page change: ${page} (debounced 200ms)`);
+    debouncedNavigate(`${pathname}?${newSearchParams.toString()}`, 200); // Fast debounce for pagination
+  }, [searchParams, pathname, debouncedNavigate]);
 
   const handlePageSizeChange = React.useCallback((pageSize: number) => {
     const newSearchParams = new URLSearchParams(searchParams.toString());
     newSearchParams.set('limit', pageSize.toString());
     newSearchParams.set('page', '1'); // Reset to first page when changing page size
-    router.push(`${pathname}?${newSearchParams.toString()}`);
-  }, [searchParams, pathname, router]);
+    
+    console.log(`📱 [CLIENT-SIDE] Page size change: ${pageSize} (debounced 300ms)`);
+    debouncedNavigate(`${pathname}?${newSearchParams.toString()}`, 300); // Medium debounce for page size
+  }, [searchParams, pathname, debouncedNavigate]);
 
   // Client-side sorting handler
   const handleSort = React.useCallback((sortField: string) => {
@@ -126,8 +156,9 @@ export function ClientSidePaginationWrapper({
     newSearchParams.set('sortOrder', newSortOrder);
     newSearchParams.set('page', '1'); // Reset to first page when sorting changes
     
-    router.push(`${pathname}?${newSearchParams.toString()}`);
-  }, [searchParams, pathname, router]);
+    console.log(`📱 [CLIENT-SIDE] Sort change: ${sortField} ${newSortOrder} (debounced 250ms)`);
+    debouncedNavigate(`${pathname}?${newSearchParams.toString()}`, 250); // Fast debounce for sorting
+  }, [searchParams, pathname, debouncedNavigate]);
 
   // Get current pagination state from URL
   const currentPage = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
