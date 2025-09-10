@@ -1089,9 +1089,30 @@ export function ModuleDataTable({
       </div>
 
       {/* Server-side Pagination - Only show when we have server-side pagination props */}
-      {data.length > 0 && 
-       (module.dataTableSchema.pagination?.enabled || (onPageChange && totalPages && totalPages > 1)) && 
-       (onPageChange || currentPage) && (
+      {(() => {
+        const hasData = data.length > 0;
+        const paginationEnabled = module.dataTableSchema.pagination?.enabled;
+        const hasServerSideProps = onPageChange && totalPages !== undefined && totalPages >= 1;
+        const hasPageProps = onPageChange || currentPage;
+        
+        console.log("ModuleDataTable pagination debug:", {
+          hasData,
+          paginationEnabled,
+          hasServerSideProps,
+          hasPageProps,
+          onPageChange: !!onPageChange,
+          currentPage,
+          totalPages,
+          totalItems,
+          moduleSlug: module.slug,
+          paginationConfig: module.dataTableSchema.pagination,
+          showPagination: hasData && (paginationEnabled || hasServerSideProps) && hasPageProps
+        });
+        
+        return hasData && 
+               (paginationEnabled || hasServerSideProps) && 
+               hasPageProps;
+      })() && (
         <div className={isLoading ? 'pointer-events-none' : ''}>
           <Pagination
             currentPage={currentPage ?? 1}
