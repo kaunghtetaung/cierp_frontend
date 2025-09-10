@@ -3,6 +3,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MoreHorizontalIcon,
+  Loader2Icon,
 } from "lucide-react";
 
 import { cn } from "../lib/utils";
@@ -18,6 +19,7 @@ interface PaginationProps {
   allowedLimits?: number[];
   currentLanguage?: string;
   className?: string;
+  isLoading?: boolean; // Loading state for pagination changes
 }
 
 function Pagination({
@@ -30,6 +32,7 @@ function Pagination({
   allowedLimits,
   currentLanguage,
   className,
+  isLoading = false,
   ...props
 }: PaginationProps) {
   // Don't show pagination if there's only 1 page or no data
@@ -82,6 +85,49 @@ function Pagination({
 
   const pageNumbers = getPageNumbers();
   console.log("paging is running!");
+
+  // Show loading skeleton when isLoading is true
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10",
+          "opacity-75 pointer-events-none", // Reduced opacity and disable interactions during loading
+          className
+        )}
+      >
+        {/* Loading skeleton for results info */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Loader2Icon className="h-4 w-4 animate-spin text-primary" />
+            <div className="h-4 bg-muted animate-pulse rounded w-48"></div>
+          </div>
+          
+          {/* Loading skeleton for page size selector */}
+          {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
+            <div className="flex items-center gap-2">
+              <div className="h-4 bg-muted animate-pulse rounded w-16"></div>
+              <div className="h-8 bg-muted animate-pulse rounded w-16"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Loading skeleton for pagination controls */}
+        <div className="flex items-center gap-2">
+          {/* Loading skeleton for Previous button */}
+          <div className="h-8 bg-muted animate-pulse rounded w-20"></div>
+          
+          {/* Loading skeleton for page numbers */}
+          {[1,2,3].map((i) => (
+            <div key={i} className="h-8 bg-muted animate-pulse rounded w-10"></div>
+          ))}
+          
+          {/* Loading skeleton for Next button */}
+          <div className="h-8 bg-muted animate-pulse rounded w-16"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

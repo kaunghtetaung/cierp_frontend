@@ -1199,6 +1199,7 @@ export function ModuleDataTable({
                 })))
             }
             currentLanguage={currentLanguage}
+            isLoading={isLoading}
           />
         </div>
       )}
