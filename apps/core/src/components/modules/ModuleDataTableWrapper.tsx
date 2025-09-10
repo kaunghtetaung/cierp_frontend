@@ -121,6 +121,10 @@ export function ModuleDataTableWrapper({
       : [];
   const pagination = moduleResponse?.pagination;
   
+  // Get current page and page size first - needed for chunking logic
+  const currentPage = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
+  const currentPageSize = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : module.dataTableSchema.pagination?.defaultLimit || 10;
+  
   // Determine if we have server-side pagination or need client-side chunking
   const hasServerSidePagination = !!(pagination && pagination.totalPages);
   const needsClientSideChunking = !hasServerSidePagination && fullModuleData.length > currentPageSize;
@@ -148,7 +152,7 @@ export function ModuleDataTableWrapper({
   }
 
   // Check for loading state
-  if (isLoading && !moduleData.length) {
+  if (isLoading && !fullModuleData.length) {
     return (
       <div className="flex items-center justify-center p-8">
         <IconComponent name="Loader2" className="w-8 h-8 animate-spin mr-2" />
@@ -158,10 +162,6 @@ export function ModuleDataTableWrapper({
       </div>
     );
   }
-
-  // Get current page and page size - for client-side paging we still track it in URL for bookmarking
-  const currentPage = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
-  const currentPageSize = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : module.dataTableSchema.pagination?.defaultLimit || 10;
 
   // Calculate pagination values and slice data if needed
   let moduleData: any[];
