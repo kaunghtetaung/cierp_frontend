@@ -21,6 +21,10 @@ export function ModuleDataTableWrapper({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  
+  // State to track if we're in client chunking mode
+  const [isClientChunkingMode, setIsClientChunkingMode] = React.useState(false);
+  const [cachedFullData, setCachedFullData] = React.useState<any[] | null>(null);
 
   // Convert search params to query parameters
   const queryParams = React.useMemo(() => {
@@ -81,6 +85,8 @@ export function ModuleDataTableWrapper({
     // For server-side pagination, initialData will be empty array
     initialData: initialData && initialData.length > 0 ? initialData : undefined,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes to improve performance
+    // Disable API calls when in client chunking mode (except for first load)
+    enabled: !isClientChunkingMode || !cachedFullData,
   });
 
   // Pagination handlers for server-side pagination - MUST be defined before any returns
@@ -114,12 +120,15 @@ export function ModuleDataTableWrapper({
   }, [searchParams, pathname, router]);
 
   // Extract data and pagination from response
-  const fullModuleData = Array.isArray(moduleResponse?.data) 
+  const apiModuleData = Array.isArray(moduleResponse?.data) 
     ? moduleResponse.data 
     : Array.isArray(initialData) 
       ? initialData 
       : [];
   const pagination = moduleResponse?.pagination;
+  
+  // Use cached data if available, otherwise use API data
+  const fullModuleData = cachedFullData || apiModuleData;
   
   // Get current page and page size first - needed for chunking logic
   const currentPage = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
@@ -128,6 +137,15 @@ export function ModuleDataTableWrapper({
   // Determine if we have server-side pagination or need client-side chunking
   const hasServerSidePagination = !!(pagination && pagination.totalPages);
   const needsClientSideChunking = !hasServerSidePagination && fullModuleData.length > currentPageSize;
+  
+  // Cache full data and set client chunking mode when detected
+  React.useEffect(() => {
+    if (needsClientSideChunking && apiModuleData.length > 0 && !cachedFullData) {
+      setCachedFullData(apiModuleData);
+      setIsClientChunkingMode(true);
+      console.log("🔄 Enabling client chunking mode - cached", apiModuleData.length, "records");
+    }
+  }, [needsClientSideChunking, apiModuleData.length, cachedFullData]);
 
   // Check for error state
   if (error) {
@@ -183,14 +201,16 @@ export function ModuleDataTableWrapper({
     // Slice data to show only current page
     moduleData = fullModuleData.slice(startIndex, endIndex);
     
-    console.log("Client-side chunking applied:", {
+    console.log("🔄 Client-side chunking applied:", {
       totalRecords: fullModuleData.length,
       currentPage,
       pageSize: currentPageSize,
       startIndex,
       endIndex,
       displayingRecords: moduleData.length,
-      totalPages
+      totalPages,
+      usingCachedData: !!cachedFullData,
+      apiCallsDisabled: isClientChunkingMode
     });
   } else if (hasServerSidePagination) {
     // Server-side pagination - use data as-is
@@ -221,8 +241,11 @@ export function ModuleDataTableWrapper({
     paginationMode: {
       hasServerSidePagination,
       needsClientSideChunking,
+      isClientChunkingMode,
+      hasCachedData: !!cachedFullData,
       mode: needsClientSideChunking ? 'CLIENT_CHUNKING' : hasServerSidePagination ? 'SERVER_SIDE' : 'CLIENT_SIDE',
-      paginationKeys: pagination ? Object.keys(pagination) : 'none'
+      paginationKeys: pagination ? Object.keys(pagination) : 'none',
+      apiCallsEnabled: !isClientChunkingMode || !cachedFullData
     }
   });
 
