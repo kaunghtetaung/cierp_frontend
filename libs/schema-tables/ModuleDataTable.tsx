@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { useLanguage } from "@repo/language";
@@ -24,7 +24,6 @@ import {
   useHardDeleteModuleItem,
   useBulkModuleOperation,
 } from "@repo/schema-hooks";
-import { DynamicSearch } from "./DynamicSearch";
 import { Pagination } from "@repo/ui";
 import { ExtraActionModal } from "@repo/schema-forms";
 import { generateZodSchema } from "@repo/schema-utils";
@@ -45,7 +44,7 @@ interface ModuleDataTableProps {
   pageSize?: number;
   onSort?: (sortField: string) => void;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   isLoading?: boolean;
   onRefresh?: () => void;
 }
@@ -64,15 +63,16 @@ export function ModuleDataTable({
   sortOrder,
   isLoading,
   onRefresh,
-}: Omit<ModuleDataTableProps, 'currentLanguage'>) {
+}: Omit<ModuleDataTableProps, "currentLanguage">) {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
-  
+  const params = useParams();
+
   // React Query mutations for delete operations
   const deleteItemMutation = useDeleteModuleItem(module.slug);
   const hardDeleteItemMutation = useHardDeleteModuleItem(module.slug);
   const bulkOperationMutation = useBulkModuleOperation(module.slug);
-  
+
   // Debug: Log the actions configuration
   console.log("ModuleDataTable actions config:", {
     hasActions: !!module.dataTableSchema.actions,
@@ -86,15 +86,18 @@ export function ModuleDataTable({
     useState<ExtraAction | null>(null);
   const [isExtraActionModalOpen, setIsExtraActionModalOpen] = useState(false);
   const [rowActionItem, setRowActionItem] = useState<any>(null); // For row-specific actions
-  
+
   // Confirmation dialog states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [extraActionConfirmOpen, setExtraActionConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [pendingDeleteType, setPendingDeleteType] = useState<'soft' | 'hard'>('soft');
-  const [bulkDeleteType, setBulkDeleteType] = useState<'soft' | 'hard'>('soft');
-  const [pendingExtraAction, setPendingExtraAction] = useState<ExtraAction | null>(null);
+  const [pendingDeleteType, setPendingDeleteType] = useState<"soft" | "hard">(
+    "soft"
+  );
+  const [bulkDeleteType, setBulkDeleteType] = useState<"soft" | "hard">("soft");
+  const [pendingExtraAction, setPendingExtraAction] =
+    useState<ExtraAction | null>(null);
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: module.dataTableSchema.pagination?.defaultLimit || 10,
@@ -107,27 +110,29 @@ export function ModuleDataTable({
   // Helper function to get raw nested field values (without language filtering)
   const getRawNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
-    
+
     // For populated fields and complex objects, return the entire object for raw access
-    if (value && typeof value === 'object') {
+    if (value && typeof value === "object") {
       return value; // Return the entire object for raw access
     }
-    
+
     return value;
   };
 
   // Function to detect which languages a column supports
   const detectColumnLanguageSupport = (column: TableColumn) => {
     const fieldName = column.fieldName;
-    
+
     // Check if this is a language-specific field path
-    const isEnglishField = fieldName.includes('.en') || fieldName.endsWith('.en');
-    const isMyanmarField = fieldName.includes('.mm') || fieldName.endsWith('.mm');
-    
+    const isEnglishField =
+      fieldName.includes(".en") || fieldName.endsWith(".en");
+    const isMyanmarField =
+      fieldName.includes(".mm") || fieldName.endsWith(".mm");
+
     let hasEnglish = true;
     let hasMyanmar = true;
     let isLanguageSpecific = false;
-    
+
     if (isEnglishField) {
       // This is an English-specific field
       hasEnglish = true;
@@ -145,117 +150,136 @@ export function ModuleDataTable({
       hasMyanmar = true;
       isLanguageSpecific = false;
     }
-    
+
     // Removed excessive logging to prevent performance issues
-    
+
     return { hasEnglish, hasMyanmar, isLanguageSpecific };
   };
 
   // Function to calculate column visibility based on current language and default limits
-  const calculateLanguageBasedVisibility = (columns: TableColumn[], currentLanguage: string) => {
+  const calculateLanguageBasedVisibility = (
+    columns: TableColumn[],
+    currentLanguage: string
+  ) => {
     const visibility: Record<string, boolean> = {};
-    
+
     // Always show Sr. no column
     visibility["sr"] = true;
-    
+
     // Always show selection column if present
     if (module.dataTableSchema.layout === "withCheckbox") {
       visibility["select"] = true;
     }
-    
+
     // Always show actions column if present
     if (module.dataTableSchema.actions) {
       visibility["actions"] = true;
     }
-    
+
     // Calculate how many data columns we can show by default
     // Target: Show only 6 total columns (Sr. + Selection + 4 data + Actions)
     // If no selection: Sr. + 5 data + Actions = 7 total
     const hasSelection = module.dataTableSchema.layout === "withCheckbox";
     const maxDataColumns = hasSelection ? 4 : 5; // Adjust based on selection presence
-    
+
     // Calculate visibility for data columns with language support and default limit
     let visibleDataColumnCount = 0;
     columns.forEach((column, index) => {
-      const { hasEnglish, hasMyanmar, isLanguageSpecific } = detectColumnLanguageSupport(column);
-      
+      const { hasEnglish, hasMyanmar, isLanguageSpecific } =
+        detectColumnLanguageSupport(column);
+
       let shouldShowBasedOnLanguage = false;
-      if (currentLanguage === 'en') {
+      if (currentLanguage === "en") {
         shouldShowBasedOnLanguage = hasEnglish;
-      } else if (currentLanguage === 'mm') {
+      } else if (currentLanguage === "mm") {
         shouldShowBasedOnLanguage = hasMyanmar;
       } else {
         // Default: show all columns for unknown languages
         shouldShowBasedOnLanguage = true;
       }
-      
+
       // Show column if: language supports it AND within default limit
-      const shouldShowByDefault = shouldShowBasedOnLanguage && visibleDataColumnCount < maxDataColumns;
+      const shouldShowByDefault =
+        shouldShowBasedOnLanguage && visibleDataColumnCount < maxDataColumns;
       visibility[column.fieldName] = shouldShowByDefault;
-      
+
       // Increment counter only if we're showing this column
       if (shouldShowByDefault) {
         visibleDataColumnCount++;
       }
     });
-    
+
     return visibility;
   };
 
   // Hook to detect screen size
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Calculate column visibility based on current language
   const columnVisibility = useMemo(() => {
-    const visibility = calculateLanguageBasedVisibility(module.dataTableSchema.columns, currentLanguage);
+    const visibility = calculateLanguageBasedVisibility(
+      module.dataTableSchema.columns,
+      currentLanguage
+    );
     return visibility;
   }, [currentLanguage]); // Removed module.dataTableSchema.columns dependency to prevent excessive recalculation
-  
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768); // md breakpoint
     };
-    
+
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   // Helper function to get nested field values
   const getNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
-    
+
     // Handle populated reference fields with structure {_id, displayName: {en, mm}, ...}
-    if (value && typeof value === 'object' && value._id && value.displayName) {
+    if (value && typeof value === "object" && value._id && value.displayName) {
       // This is a populated reference field from backend
       if (isMultilingualText(value.displayName)) {
-        return value.displayName[currentLanguage] || value.displayName.en || '';
+        return value.displayName[currentLanguage] || value.displayName.en || "";
       }
       // If displayName is not multilingual, return it directly
-      return value.displayName || value._id || '';
+      return value.displayName || value._id || "";
     }
-    
+
     // Handle populated reference fields with fullName fallback
-    if (value && typeof value === 'object' && value._id && value.fullName && !value.displayName) {
-      return value.fullName || value._id || '';
+    if (
+      value &&
+      typeof value === "object" &&
+      value._id &&
+      value.fullName &&
+      !value.displayName
+    ) {
+      return value.fullName || value._id || "";
     }
-    
+
     // Handle fields with structure {id, value: {en, mm}} (legacy support)
-    if (value && typeof value === 'object' && value.hasOwnProperty('id') && value.hasOwnProperty('value')) {
+    if (
+      value &&
+      typeof value === "object" &&
+      value.hasOwnProperty("id") &&
+      value.hasOwnProperty("value")
+    ) {
       // This is a reference field with id and multilingual value
       if (isMultilingualText(value.value)) {
-        return value.value[currentLanguage] || value.value.en || '';
+        return value.value[currentLanguage] || value.value.en || "";
       }
       // If value is not multilingual, return the value directly
-      return value.value || '';
+      return value.value || "";
     }
-    
+
     // If the value is a multilingual object, return the current language value
     if (isMultilingualText(value)) {
-      return value[currentLanguage] || value.en || '';
+      return value[currentLanguage] || value.en || "";
     }
-    
+
     return value;
   };
 
@@ -271,9 +295,8 @@ export function ModuleDataTable({
 
   const handleEdit = (id: string) => {
     // Navigate to dedicated edit page using Next.js router for client-side navigation
-    router.push(`/${module.slug}/${id}`);
+    router.push(`/${params.appId}/${module.slug}/${id}`);
   };
-
 
   const handleExtraAction = (action: ExtraAction) => {
     if (action.type === "modal") {
@@ -281,13 +304,13 @@ export function ModuleDataTable({
       setRowActionItem(null);
       setActiveExtraAction(action);
       setIsExtraActionModalOpen(true);
-    } else if (action.type === "api") {
-      // Handle API action directly
+    } else if (action.type === "inline") {
+      // Handle inline action directly
       if (action.confirmMessage) {
         setPendingExtraAction(action);
         setExtraActionConfirmOpen(true);
       } else {
-        console.log(`Executing API action: ${action.actionKey}`);
+        console.log(`Executing inline action: ${action.actionKey}`);
         // Here you would call the API
       }
     }
@@ -297,23 +320,30 @@ export function ModuleDataTable({
   // Handle extra actions for single rows (automatically handle selection for actions that need it)
   const handleExtraActionForRow = (action: ExtraAction, item: any) => {
     const itemId = item._id || item.id;
-    console.log(`🎯 handleExtraActionForRow: Processing action "${action.actionKey}" for item ${itemId}`);
-    
+    console.log(
+      `🎯 handleExtraActionForRow: Processing action "${action.actionKey}" for item ${itemId}`
+    );
+
     if (action.type === "modal") {
-      console.log(`🎭 handleExtraActionForRow: Opening modal for "${action.actionKey}" with preselected item ${itemId}`);
+      console.log(
+        `🎭 handleExtraActionForRow: Opening modal for "${action.actionKey}" with preselected item ${itemId}`
+      );
       // Set the row action item and clear bulk selection
       setRowActionItem(item);
       setSelectedItems([]); // Clear any bulk selections
       setActiveExtraAction(action);
       setIsExtraActionModalOpen(true);
-    } else if (action.type === "api") {
-      // For API actions, still use the selectedItems approach
+    } else if (action.type === "inline") {
+      // For inline actions, still use the selectedItems approach
       setSelectedItems([itemId]);
       if (action.confirmMessage) {
         setPendingExtraAction(action);
         setExtraActionConfirmOpen(true);
       } else {
-        console.log(`Executing API action: ${action.actionKey} for item:`, itemId);
+        console.log(
+          `Executing inline action: ${action.actionKey} for item:`,
+          itemId
+        );
         // Here you would call the API
       }
     }
@@ -342,27 +372,34 @@ export function ModuleDataTable({
 
   const executeDelete = async () => {
     if (!pendingDeleteId) return;
-    
+
     try {
       await deleteItemMutation.mutateAsync(pendingDeleteId);
-      
+
       // Show success toast
-      const successMessage = currentLanguage === "mm"
-        ? `${getLocalizedText(module.name, currentLanguage)} အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
-        : `${getLocalizedText(module.name, currentLanguage)} deleted successfully!`;
-      
+      const successMessage =
+        currentLanguage === "mm"
+          ? `${getLocalizedText(
+              module.name,
+              currentLanguage
+            )} အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
+          : `${getLocalizedText(
+              module.name,
+              currentLanguage
+            )} deleted successfully!`;
+
       toastSuccess(successMessage);
-      
     } catch (error) {
       console.error("Failed to delete item:", error);
-      
+
       // Show error toast
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (currentLanguage === "mm" 
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : currentLanguage === "mm"
           ? "ဖျက်ခြင်း မအောင်မြင်ပါ"
-          : "Failed to delete item");
-      
+          : "Failed to delete item";
+
       toastError(errorMessage);
     } finally {
       setPendingDeleteId(null);
@@ -384,23 +421,26 @@ export function ModuleDataTable({
 
       // Clear selection and show success toast
       setSelectedItems([]);
-      
-      const successMessage = currentLanguage === "mm"
-        ? `${selectedItems.length} ခု အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
-        : `${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''} deleted successfully!`;
-      
+
+      const successMessage =
+        currentLanguage === "mm"
+          ? `${selectedItems.length} ခု အောင်မြင်စွာ ဖျက်ပြီးပါပြီ!`
+          : `${selectedItems.length} item${
+              selectedItems.length > 1 ? "s" : ""
+            } deleted successfully!`;
+
       toastSuccess(successMessage);
-      
     } catch (error) {
       console.error("Failed to delete items:", error);
-      
+
       // Show error toast
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (currentLanguage === "mm" 
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : currentLanguage === "mm"
           ? "အစုလိုက် ဖျက်ခြင်း မအောင်မြင်ပါ"
-          : "Failed to delete items");
-      
+          : "Failed to delete items";
+
       toastError(errorMessage);
     }
   };
@@ -556,45 +596,62 @@ export function ModuleDataTable({
           } else if (column.type === "image" && fieldValue) {
             return (
               <div className="flex items-center justify-center">
-                <img 
-                  src={fieldValue} 
+                <img
+                  src={fieldValue}
                   alt="Image"
                   className="w-8 h-8 rounded object-cover"
                   onError={(e) => {
                     // Fallback to placeholder if image fails to load
-                    (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                    (e.target as HTMLImageElement).src =
+                      "/placeholder-image.png";
                   }}
                 />
               </div>
             );
-          } else if (column.populate && rawValue && typeof rawValue === 'object' && rawValue._id) {
+          } else if (
+            column.populate &&
+            rawValue &&
+            typeof rawValue === "object" &&
+            rawValue._id
+          ) {
             // Enhanced display for populated reference fields from backend
             const { displayField, isMultilingual } = column.populate;
             let displayValue = fieldValue;
-            
+
             // If no display value was extracted, try to get it from the populated data
             if (!displayValue && rawValue[displayField]) {
-              if (isMultilingual && typeof rawValue[displayField] === 'object') {
-                displayValue = rawValue[displayField][currentLanguage] || rawValue[displayField].en || '';
+              if (
+                isMultilingual &&
+                typeof rawValue[displayField] === "object"
+              ) {
+                displayValue =
+                  rawValue[displayField][currentLanguage] ||
+                  rawValue[displayField].en ||
+                  "";
               } else {
                 displayValue = rawValue[displayField];
               }
             }
-            
+
             return (
               <div className="font-medium truncate max-w-[250px] group relative">
                 <span title={displayValue || rawValue._id}>
                   {displayValue || rawValue._id || "-"}
                 </span>
                 {/* Show ID on hover for debugging in development */}
-                {process.env.NODE_ENV === 'development' && rawValue._id && (
+                {process.env.NODE_ENV === "development" && rawValue._id && (
                   <span className="invisible group-hover:visible absolute -top-8 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded z-10 whitespace-nowrap">
                     ID: {rawValue._id}
                   </span>
                 )}
               </div>
             );
-          } else if (column.type === "reference" && rawValue && typeof rawValue === 'object' && rawValue.id) {
+          } else if (
+            column.type === "reference" &&
+            rawValue &&
+            typeof rawValue === "object" &&
+            rawValue.id
+          ) {
             // Legacy support for reference fields with {id, value: {en, mm}} structure
             return (
               <div className="font-medium truncate max-w-[250px] group relative">
@@ -602,7 +659,7 @@ export function ModuleDataTable({
                   {fieldValue || rawValue.id || "-"}
                 </span>
                 {/* Optional: Show ID on hover for debugging in development */}
-                {process.env.NODE_ENV === 'development' && rawValue.id && (
+                {process.env.NODE_ENV === "development" && rawValue.id && (
                   <span className="invisible group-hover:visible absolute -top-8 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded z-10">
                     ID: {rawValue.id}
                   </span>
@@ -656,7 +713,9 @@ export function ModuleDataTable({
                   {module.dataTableSchema.actions.view && (
                     <DropdownMenuItem asChild>
                       <Link
-                        href={`/${module.slug}/${item._id || item.id}/view`}
+                        href={`/${params.appId}/${module.slug}/${
+                          item._id || item.id
+                        }/view`}
                         className="cursor-pointer"
                       >
                         <IconComponent name="Eye" className="mr-2 h-4 w-4" />
@@ -689,25 +748,12 @@ export function ModuleDataTable({
 
                   {/* Extra Actions - All actions available from row menu with automatic selection handling */}
                   {module.dataTableSchema.actions.extraActions?.map((action) =>
-                      action.type === "page" ? (
-                        <DropdownMenuItem key={action.actionKey} asChild>
-                          <Link
-                            href={`/${module.slug}/${
-                              item._id || item.id
-                            }/actions/${action.actionKey}`}
-                            className="cursor-pointer"
-                          >
-                            <IconComponent
-                              name={action.icon}
-                              className="mr-2 h-4 w-4"
-                            />
-                            {getLocalizedText(action.label, currentLanguage)}
-                          </Link>
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem
-                          key={action.actionKey}
-                          onClick={() => handleExtraActionForRow(action, item)}
+                    action.type === "page" ? (
+                      <DropdownMenuItem key={action.actionKey} asChild>
+                        <Link
+                          href={`/${params.appId}/${module.slug}/${
+                            item._id || item.id
+                          }/actions/${action.actionKey}`}
                           className="cursor-pointer"
                         >
                           <IconComponent
@@ -715,9 +761,22 @@ export function ModuleDataTable({
                             className="mr-2 h-4 w-4"
                           />
                           {getLocalizedText(action.label, currentLanguage)}
-                        </DropdownMenuItem>
-                      )
-                    )}
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        key={action.actionKey}
+                        onClick={() => handleExtraActionForRow(action, item)}
+                        className="cursor-pointer"
+                      >
+                        <IconComponent
+                          name={action.icon}
+                          className="mr-2 h-4 w-4"
+                        />
+                        {getLocalizedText(action.label, currentLanguage)}
+                      </DropdownMenuItem>
+                    )
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -730,7 +789,6 @@ export function ModuleDataTable({
 
     return cols;
   }, [module.dataTableSchema, currentLanguage, queryParams]);
-
 
   return (
     <div className="space-y-6 w-full min-w-0 overflow-hidden">
@@ -752,31 +810,7 @@ export function ModuleDataTable({
             </p>
           </div>
         </div>
-
-        <Link href={`/${module.slug}/new`}>
-          <Button>
-            <IconComponent name="Plus" className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">
-              {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
-            </span>
-            <span className="sm:hidden">
-              {currentLanguage === "mm" ? "အသစ်" : "New"}
-            </span>
-          </Button>
-        </Link>
       </div>
-
-      {/* Advanced Search */}
-      {module.dataTableSchema.filtering?.enabled &&
-        module.moduleAccessPolicy?.queryAllowedFields && (
-          <DynamicSearch
-            queryAllowedFields={module.moduleAccessPolicy.queryAllowedFields}
-            onFiltersChange={(filters) => {
-              setQueryParams((prev) => ({ ...prev, filters, page: 1 }));
-            }}
-            className="mb-4"
-          />
-        )}
 
       {/* Actions Bar */}
       {selectedItems.length > 0 &&
@@ -841,7 +875,7 @@ export function ModuleDataTable({
       {/* Data Table - Responsive: Cards for mobile and small tablets, Table for large screens */}
       <div className="w-full min-w-0">
         {/* Mobile Card View - Show on mobile and tablet */}
-        <div className="lg:hidden space-y-4">
+        <div className="mobile-view-block space-y-4">
           {data.map((item, index) => (
             <div
               key={item._id || item.id || index}
@@ -859,7 +893,8 @@ export function ModuleDataTable({
                     <Checkbox
                       checked={selectedItems.some(
                         (selected) =>
-                          (selected._id || selected.id) === (item._id || item.id)
+                          (selected._id || selected.id) ===
+                          (item._id || item.id)
                       )}
                       onCheckedChange={(checked) => {
                         if (checked) {
@@ -868,7 +903,8 @@ export function ModuleDataTable({
                           setSelectedItems((prev) =>
                             prev.filter(
                               (selected) =>
-                                (selected._id || selected.id) !== (item._id || item.id)
+                                (selected._id || selected.id) !==
+                                (item._id || item.id)
                             )
                           );
                         }
@@ -939,19 +975,23 @@ export function ModuleDataTable({
                   );
                 } else if (column.type === "image" && fieldValue) {
                   displayValue = (
-                    <img 
-                      src={fieldValue} 
+                    <img
+                      src={fieldValue}
                       alt="Image"
                       className="w-6 h-6 rounded object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                        (e.target as HTMLImageElement).src =
+                          "/placeholder-image.png";
                       }}
                     />
                   );
                 }
 
                 return (
-                  <div key={column.fieldName} className="flex flex-col space-y-1">
+                  <div
+                    key={column.fieldName}
+                    className="flex flex-col space-y-1"
+                  >
                     <span className="text-sm font-medium text-muted-foreground text-left">
                       {getLocalizedText(column.label, currentLanguage)}
                     </span>
@@ -969,7 +1009,11 @@ export function ModuleDataTable({
                     {/* View Action */}
                     {module.dataTableSchema.actions.view && (
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/${module.slug}/${item._id || item.id}/view`}>
+                        <Link
+                          href={`/${params.appId}/${module.slug}/${
+                            item._id || item.id
+                          }/view`}
+                        >
                           <IconComponent name="Eye" className="mr-2 h-4 w-4" />
                           {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
                         </Link>
@@ -1002,35 +1046,41 @@ export function ModuleDataTable({
                     )}
 
                     {/* Extra Actions */}
-                    {module.dataTableSchema.actions.extraActions?.map((action) =>
-                      action.type === "page" ? (
-                        <Button key={action.actionKey} variant="outline" size="sm" asChild>
-                          <Link
-                            href={`/${module.slug}/${
-                              item._id || item.id
-                            }/actions/${action.actionKey}`}
+                    {module.dataTableSchema.actions.extraActions?.map(
+                      (action) =>
+                        action.type === "page" ? (
+                          <Button
+                            key={action.actionKey}
+                            variant="outline"
+                            size="sm"
+                            asChild
+                          >
+                            <Link
+                              href={`/${params.appId}/${module.slug}/${
+                                item._id || item.id
+                              }/actions/${action.actionKey}`}
+                            >
+                              <IconComponent
+                                name={action.icon}
+                                className="mr-2 h-4 w-4"
+                              />
+                              {getLocalizedText(action.label, currentLanguage)}
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            key={action.actionKey}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExtraAction(action)}
                           >
                             <IconComponent
                               name={action.icon}
                               className="mr-2 h-4 w-4"
                             />
                             {getLocalizedText(action.label, currentLanguage)}
-                          </Link>
-                        </Button>
-                      ) : (
-                        <Button
-                          key={action.actionKey}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleExtraAction(action)}
-                        >
-                          <IconComponent
-                            name={action.icon}
-                            className="mr-2 h-4 w-4"
-                          />
-                          {getLocalizedText(action.label, currentLanguage)}
-                        </Button>
-                      )
+                          </Button>
+                        )
                     )}
                   </div>
                 </div>
@@ -1049,16 +1099,16 @@ export function ModuleDataTable({
                 {currentLanguage === "mm" ? "ဒေတာမရှိပါ" : "No data found"}
               </p>
               <p className="text-muted-foreground">
-                {currentLanguage === "mm" 
-                  ? "ဒေတာများထည့်ရန် အသစ်ထည့်မည်ကို နှိပ်ပါ" 
+                {currentLanguage === "mm"
+                  ? "ဒေတာများထည့်ရန် အသစ်ထည့်မည်ကို နှိပ်ပါ"
                   : "Click 'Add New' to create your first entry"}
               </p>
             </div>
           )}
         </div>
 
-        {/* Desktop Table View - Show on desktop screens (1024px+) */}
-        <div className="lg:block w-full min-w-0 overflow-hidden">
+        {/* Desktop Table View - Show on desktop screens (768px+) */}
+        <div className="desktop-view-hidden w-full min-w-0 overflow-hidden">
           <div className="module-data-table">
             <DataTable
               columns={columns}
@@ -1070,19 +1120,33 @@ export function ModuleDataTable({
               searchPlaceholder={
                 currentLanguage === "mm"
                   ? `${
-                      module.dataTableSchema.filtering?.searchFields?.[0] || "ဒေတာ"
+                      module.dataTableSchema.filtering?.searchFields?.[0] ||
+                      "ဒေတာ"
                     } ရှာဖွေမည်...`
                   : `Search ${
-                      module.dataTableSchema.filtering?.searchFields?.[0] || "data"
+                      module.dataTableSchema.filtering?.searchFields?.[0] ||
+                      "data"
                     }...`
               }
               onRowSelectionChange={setSelectedItems}
               initialColumnVisibility={columnVisibility}
               enablePagination={
-                // Enable client-side pagination only if we don't have server-side pagination props
-                !onPageChange && !currentPage && module.dataTableSchema.pagination?.enabled
+                // Enable client-side pagination when:
+                // 1. Module has pagination enabled AND
+                // 2. We have totalPages passed (indicating we're in client-side pagination mode)
+                // OR we don't have server-side handlers (fallback to client-side)
+                module.dataTableSchema.pagination?.enabled &&
+                (totalPages > 1 || (!onPageChange && !currentPage))
               }
               pageSize={module.dataTableSchema.pagination?.defaultLimit || 10}
+              // Pass external pagination props
+              totalPages={totalPages}
+              totalItems={totalItems}
+              currentPage={currentPage}
+              onPageChange={onPageChange}
+              onRefresh={onRefresh}
+              isLoading={isLoading}
+              addNewRoute={`/${params.appId}/${module.slug}/new`}
             />
           </div>
         </div>
@@ -1092,61 +1156,52 @@ export function ModuleDataTable({
       {(() => {
         const hasData = data.length > 0;
         const paginationEnabled = module.dataTableSchema.pagination?.enabled;
-        const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
+        const isServerSidePaging =
+          module.dataTableSchema.pagination?.isClientSidePaging === false;
         const isClientSidePaging = !isServerSidePaging;
-        
+
         // Server-side pagination: requires onPageChange and totalPages
-        const hasServerSideProps = onPageChange && totalPages !== undefined && totalPages >= 1;
-        
+        const hasServerSideProps =
+          onPageChange && totalPages !== undefined && totalPages >= 1;
+
         // Client-side pagination: just needs pagination enabled and data
-        const hasClientSideRequirements = isClientSidePaging && paginationEnabled;
-        
-        const shouldShowPagination = hasData && (
-          (isServerSidePaging && hasServerSideProps) ||
-          (isClientSidePaging && hasClientSideRequirements)
-        );
-        
-        console.log("ModuleDataTable pagination debug:", {
-          hasData,
-          paginationEnabled,
-          isServerSidePaging,
-          isClientSidePaging,
-          hasServerSideProps,
-          hasClientSideRequirements,
-          onPageChange: !!onPageChange,
-          currentPage,
-          totalPages,
-          totalItems,
-          moduleSlug: module.slug,
-          paginationConfig: module.dataTableSchema.pagination,
-          shouldShowPagination,
-          // Enhanced debugging for high page counts
-          pageCountAnalysis: {
-            isHighPageCount: totalPages > 50,
-            exceedsMaxDisplay: totalPages > 5,
-            pageCountCategory: totalPages <= 1 ? 'single' : totalPages <= 5 ? 'small' : totalPages <= 50 ? 'medium' : 'large',
-            shouldRenderPaginationComponent: shouldShowPagination && totalPages > 1
-          }
-        });
-        
+        const hasClientSideRequirements =
+          isClientSidePaging && paginationEnabled;
+
+        const shouldShowPagination =
+          hasData &&
+          ((isServerSidePaging && hasServerSideProps) ||
+            (isClientSidePaging && hasClientSideRequirements));
+
         return shouldShowPagination;
       })() && (
-        <div className={isLoading ? 'pointer-events-none' : ''}>
+        <div className={isLoading ? "pointer-events-none" : ""}>
           <Pagination
             currentPage={currentPage ?? 1}
             totalPages={totalPages}
-            pageSize={pageSize ?? (module.dataTableSchema.pagination?.defaultLimit || 10)}
+            pageSize={
+              pageSize ??
+              (module.dataTableSchema.pagination?.defaultLimit || 10)
+            }
             totalItems={totalItems}
             allowedLimits={module.dataTableSchema.pagination?.allowedLimits}
-            onPageChange={onPageChange || ((page) => setQueryParams((prev) => ({ ...prev, page })))}
-            onPageSizeChange={onPageSizeChange || ((pageSize) =>
-              setQueryParams((prev) => ({ ...prev, limit: pageSize, page: 1 }))
-            )}
+            onPageChange={
+              onPageChange ||
+              ((page) => setQueryParams((prev) => ({ ...prev, page })))
+            }
+            onPageSizeChange={
+              onPageSizeChange ||
+              ((pageSize) =>
+                setQueryParams((prev) => ({
+                  ...prev,
+                  limit: pageSize,
+                  page: 1,
+                })))
+            }
             currentLanguage={currentLanguage}
           />
         </div>
       )}
-
 
       {/* Extra Action Modal */}
       {activeExtraAction && (
@@ -1156,7 +1211,11 @@ export function ModuleDataTable({
             (form) => form.actionKey === activeExtraAction.actionKey
           )}
           module={module}
-          selectedItems={rowActionItem ? [rowActionItem._id || rowActionItem.id] : selectedItems}
+          selectedItems={
+            rowActionItem
+              ? [rowActionItem._id || rowActionItem.id]
+              : selectedItems
+          }
           isOpen={isExtraActionModalOpen}
           isRowAction={!!rowActionItem} // True if this is a row action
           onClose={() => {
@@ -1174,9 +1233,10 @@ export function ModuleDataTable({
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
         title={currentLanguage === "mm" ? "ဖျက်လိုသည်လား?" : "Delete Item"}
-        description={currentLanguage === "mm" 
-          ? "ဤ item ကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။"
-          : "Are you sure you want to delete this item? This action cannot be undone."
+        description={
+          currentLanguage === "mm"
+            ? "ဤ item ကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။"
+            : "Are you sure you want to delete this item? This action cannot be undone."
         }
         confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
         cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
@@ -1189,13 +1249,15 @@ export function ModuleDataTable({
       <ConfirmationDialog
         open={bulkDeleteConfirmOpen}
         onOpenChange={setBulkDeleteConfirmOpen}
-        title={currentLanguage === "mm" 
-          ? `${selectedItems.length} ခု ဖျက်မည်` 
-          : `Delete ${selectedItems.length} Items`
+        title={
+          currentLanguage === "mm"
+            ? `${selectedItems.length} ခု ဖျက်မည်`
+            : `Delete ${selectedItems.length} Items`
         }
-        description={currentLanguage === "mm" 
-          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။`
-          : `Are you sure you want to delete ${selectedItems.length} selected items? This action cannot be undone.`
+        description={
+          currentLanguage === "mm"
+            ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။`
+            : `Are you sure you want to delete ${selectedItems.length} selected items? This action cannot be undone.`
         }
         confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete All"}
         cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
@@ -1210,7 +1272,10 @@ export function ModuleDataTable({
           open={extraActionConfirmOpen}
           onOpenChange={setExtraActionConfirmOpen}
           title={getLocalizedText(pendingExtraAction.label, currentLanguage)}
-          description={getLocalizedText(pendingExtraAction.confirmMessage!, currentLanguage)}
+          description={getLocalizedText(
+            pendingExtraAction.confirmMessage!,
+            currentLanguage
+          )}
           confirmText={currentLanguage === "mm" ? "ရှေ့ဆက်မည်" : "Continue"}
           cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
           onConfirm={executeExtraAction}

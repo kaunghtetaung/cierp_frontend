@@ -71,7 +71,7 @@ export function TableFilterModal<TData>({
           title="Filter Table"
           className="relative h-8"
         >
-          <Filter className="h-4 w-4 mr-1" />
+          <Filter className="h-4 w-4 sm:mr-1" />
           <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
             <Badge 

@@ -19,7 +19,7 @@ import {
 import { cn } from "../lib/utils";
 import { Button } from "./button";
 import { Input } from "./input";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,7 +46,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./dialog";
-import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronsLeftRight, ChevronFirst, ChevronLast, Columns3, Printer, Download, FileText, Plus, X, RotateCcw, Loader2 } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronsLeftRight,
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+  Columns3,
+  Printer,
+  Download,
+  FileText,
+  Plus,
+  X,
+  RotateCcw,
+  Loader2,
+} from "lucide-react";
 import { FilterConfig } from "./table-filters";
 import { TableFilterModal } from "./table-filter-modal";
 import {
@@ -57,6 +74,8 @@ import {
   TableHeader,
   TableRow,
 } from "./table";
+import { Skeleton } from "./skeleton";
+import ModuleLoading from "../../../apps/core/src/app/[appId]/[module]/loading";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -71,6 +90,10 @@ interface DataTableProps<TData, TValue> {
   showFilters?: boolean; // Toggle to show/hide filter row
   enablePagination?: boolean; // Enable client-side pagination
   pageSize?: number; // Initial page size for client-side pagination
+  totalPages?: number; // Total pages for external pagination
+  totalItems?: number; // Total items for external pagination
+  currentPage?: number; // Current page for external pagination
+  onPageChange?: (page: number) => void; // External page change handler
   onRefresh?: () => void; // Refresh callback
   isLoading?: boolean; // Loading state
   addNewRoute?: string; // Custom route for Add New button
@@ -89,21 +112,30 @@ export function DataTable<TData, TValue>({
   showFilters = true,
   enablePagination = false,
   pageSize = 10,
+  totalPages,
+  totalItems,
+  currentPage,
+  onPageChange,
   onRefresh,
   isLoading = false,
   addNewRoute,
 }: DataTableProps<TData, TValue>) {
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+
   // Title management state
   const [selectedTitle, setSelectedTitle] = React.useState<string>(printTitle);
   const [isTitleModalOpen, setIsTitleModalOpen] = React.useState(false);
-  
+
   // Title form schema
   const titleFormSchema = z.object({
-    newTitle: z.string().min(1, "Title is required").max(100, "Title must be less than 100 characters"),
+    newTitle: z
+      .string()
+      .min(1, "Title is required")
+      .max(100, "Title must be less than 100 characters"),
   });
-  
+
   // Title form
   const titleForm = useForm<z.infer<typeof titleFormSchema>>({
     resolver: zodResolver(titleFormSchema),
@@ -111,140 +143,157 @@ export function DataTable<TData, TValue>({
       newTitle: "",
     },
   });
-  
+
   // Generate storage keys based on module and column IDs for this table
   const storageKeys = React.useMemo(() => {
-    const baseKey = moduleId || 'default';
-    const columnIds = columns.map(col => 'id' in col ? col.id : '').filter(Boolean).sort();
-    const tableIdentifier = columnIds.join('-');
-    
+    const baseKey = moduleId || "default";
+    const columnIds = columns
+      .map((col) => ("id" in col ? col.id : ""))
+      .filter(Boolean)
+      .sort();
+    const tableIdentifier = columnIds.join("-");
+
     return {
       columnVisibility: `table-columns-${baseKey}-${tableIdentifier}`,
       sorting: `table-sorting-${baseKey}-${tableIdentifier}`,
       titles: `table-titles-${baseKey}`,
       columnOrder: `table-column-order-${baseKey}`, // Add column order storage key
-      columnSizing: `table-column-sizing-${baseKey}` // Add column sizing storage key
+      columnSizing: `table-column-sizing-${baseKey}`, // Add column sizing storage key
     };
   }, [columns, moduleId]);
 
   // Load sorting from localStorage on mount
   const [sorting, setSorting] = React.useState<SortingState>(() => {
-    if (typeof window === 'undefined') return [];
-    
+    if (typeof window === "undefined") return [];
+
     try {
       const stored = localStorage.getItem(storageKeys.sorting);
       if (stored) {
         return JSON.parse(stored);
       }
     } catch (error) {
-      console.warn('Failed to load sorting from localStorage:', error);
+      console.warn("Failed to load sorting from localStorage:", error);
     }
     return [];
   });
 
   // Load column visibility from localStorage on mount
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(() => {
-    if (typeof window === 'undefined') return initialColumnVisibility;
-    
-    try {
-      const stored = localStorage.getItem(storageKeys.columnVisibility);
-      if (stored) {
-        const parsedStored = JSON.parse(stored);
-        // Merge with initial visibility, giving priority to stored values
-        return { ...initialColumnVisibility, ...parsedStored };
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>(() => {
+      if (typeof window === "undefined") return initialColumnVisibility;
+
+      try {
+        const stored = localStorage.getItem(storageKeys.columnVisibility);
+        if (stored) {
+          const parsedStored = JSON.parse(stored);
+          // Merge with initial visibility, giving priority to stored values
+          return { ...initialColumnVisibility, ...parsedStored };
+        }
+      } catch (error) {
+        console.warn(
+          "Failed to load column visibility from localStorage:",
+          error
+        );
       }
-    } catch (error) {
-      console.warn('Failed to load column visibility from localStorage:', error);
-    }
-    return initialColumnVisibility;
-  });
-  
+      return initialColumnVisibility;
+    });
+
   const [rowSelection, setRowSelection] = React.useState({});
-  
+
   // Column Order state - loaded from localStorage
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
-    if (typeof window === 'undefined') return [];
-    
+    if (typeof window === "undefined") return [];
+
     try {
       const stored = localStorage.getItem(storageKeys.columnOrder);
       if (stored) {
         const order = JSON.parse(stored);
         // Ensure Sr. column is always first if it exists
-        const srIndex = order.indexOf('sr');
+        const srIndex = order.indexOf("sr");
         if (srIndex > 0) {
           order.splice(srIndex, 1);
-          order.unshift('sr');
+          order.unshift("sr");
         }
         return order;
       }
     } catch (error) {
-      console.warn('Failed to load column order from localStorage:', error);
+      console.warn("Failed to load column order from localStorage:", error);
     }
-    
+
     // Default column order with Sr. first
-    const defaultOrder = columns.map(col => 'id' in col ? col.id : '').filter(Boolean);
-    const srIndex = defaultOrder.indexOf('sr');
+    const defaultOrder = columns
+      .map((col) => ("id" in col ? col.id : ""))
+      .filter(Boolean);
+    const srIndex = defaultOrder.indexOf("sr");
     if (srIndex > 0) {
       defaultOrder.splice(srIndex, 1);
-      defaultOrder.unshift('sr');
+      defaultOrder.unshift("sr");
     }
     return defaultOrder as string[];
   });
-  
+
   // Save column order to localStorage when it changes
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     if (columnOrder.length === 0) return;
-    
+
     try {
-      localStorage.setItem(storageKeys.columnOrder, JSON.stringify(columnOrder));
+      localStorage.setItem(
+        storageKeys.columnOrder,
+        JSON.stringify(columnOrder)
+      );
     } catch (error) {
-      console.warn('Failed to save column order to localStorage:', error);
+      console.warn("Failed to save column order to localStorage:", error);
     }
   }, [columnOrder, storageKeys.columnOrder]);
 
   // Column Sizing state - loaded from localStorage with smart defaults
-  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => {
-    if (typeof window === 'undefined') return {};
-    
-    try {
-      const stored = localStorage.getItem(storageKeys.columnSizing);
-      if (stored) {
-        return JSON.parse(stored);
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(
+    () => {
+      if (typeof window === "undefined") return {};
+
+      try {
+        const stored = localStorage.getItem(storageKeys.columnSizing);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (error) {
+        console.warn("Failed to load column sizing from localStorage:", error);
       }
-    } catch (error) {
-      console.warn('Failed to load column sizing from localStorage:', error);
+
+      // Smart default column sizes
+      const defaults: ColumnSizingState = {
+        sr: 60,
+        select: 40,
+        actions: 100,
+      };
+
+      // Add intelligent defaults for other columns
+      columns.forEach((col: any) => {
+        if ("id" in col && col.id && !(col.id in defaults)) {
+          defaults[col.id] = 150; // Default size
+        }
+      });
+
+      return defaults;
     }
-    
-    // Smart default column sizes
-    const defaults: ColumnSizingState = {
-      sr: 60,
-      select: 40,
-      actions: 100,
-    };
-    
-    // Add intelligent defaults for other columns
-    columns.forEach((col: any) => {
-      if ('id' in col && col.id && !(col.id in defaults)) {
-        defaults[col.id] = 150; // Default size
-      }
-    });
-    
-    return defaults;
-  });
+  );
 
   // Debounced save to localStorage for better performance
   const saveColumnSizingDebounced = React.useMemo(() => {
     let timeoutId: NodeJS.Timeout;
     return (sizing: ColumnSizingState) => {
-      if (typeof window === 'undefined') return;
-      
+      if (typeof window === "undefined") return;
+
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         try {
-          localStorage.setItem(storageKeys.columnSizing, JSON.stringify(sizing));
+          localStorage.setItem(
+            storageKeys.columnSizing,
+            JSON.stringify(sizing)
+          );
         } catch (error) {
-          console.warn('Failed to save column sizing to localStorage:', error);
+          console.warn("Failed to save column sizing to localStorage:", error);
         }
       }, 250);
     };
@@ -257,8 +306,8 @@ export function DataTable<TData, TValue>({
 
   // Title management functions
   const getTitlesFromStorage = React.useCallback((): string[] => {
-    if (typeof window === 'undefined') return [];
-    
+    if (typeof window === "undefined") return [];
+
     try {
       const stored = localStorage.getItem(storageKeys.titles);
       if (stored) {
@@ -266,41 +315,59 @@ export function DataTable<TData, TValue>({
         return Array.isArray(titles) ? titles : [];
       }
     } catch (error) {
-      console.warn('Failed to load titles from localStorage:', error);
+      console.warn("Failed to load titles from localStorage:", error);
     }
     return [];
   }, [storageKeys.titles]);
 
-  const [savedTitles, setSavedTitles] = React.useState<string[]>(() => getTitlesFromStorage());
+  const [savedTitles, setSavedTitles] = React.useState<string[]>(() =>
+    getTitlesFromStorage()
+  );
 
-  const saveTitlesToStorage = React.useCallback((titles: string[]) => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      localStorage.setItem(storageKeys.titles, JSON.stringify(titles));
-      setSavedTitles(titles);
-    } catch (error) {
-      console.warn('Failed to save titles to localStorage:', error);
-    }
-  }, [storageKeys.titles]);
+  // Pagination state for the header controls
+  const [currentPageInput, setCurrentPageInput] = React.useState<string>("");
+  const [isPaginationLoading, setIsPaginationLoading] = React.useState<boolean>(false);
 
-  const addTitle = React.useCallback((values: z.infer<typeof titleFormSchema>) => {
-    const title = values.newTitle.trim();
-    if (!title) return;
-    
-    const currentTitles = getTitlesFromStorage();
-    if (!currentTitles.includes(title)) {
-      const newTitles = [...currentTitles, title];
+
+  const saveTitlesToStorage = React.useCallback(
+    (titles: string[]) => {
+      if (typeof window === "undefined") return;
+
+      try {
+        localStorage.setItem(storageKeys.titles, JSON.stringify(titles));
+        setSavedTitles(titles);
+      } catch (error) {
+        console.warn("Failed to save titles to localStorage:", error);
+      }
+    },
+    [storageKeys.titles]
+  );
+
+  const addTitle = React.useCallback(
+    (values: z.infer<typeof titleFormSchema>) => {
+      const title = values.newTitle.trim();
+      if (!title) return;
+
+      const currentTitles = getTitlesFromStorage();
+      if (!currentTitles.includes(title)) {
+        const newTitles = [...currentTitles, title];
+        saveTitlesToStorage(newTitles);
+      }
+      titleForm.reset();
+    },
+    [getTitlesFromStorage, saveTitlesToStorage, titleForm]
+  );
+
+  const removeTitle = React.useCallback(
+    (titleToRemove: string) => {
+      const currentTitles = getTitlesFromStorage();
+      const newTitles = currentTitles.filter(
+        (title) => title !== titleToRemove
+      );
       saveTitlesToStorage(newTitles);
-    }
-    titleForm.reset();
-  }, [getTitlesFromStorage, saveTitlesToStorage, titleForm]);
-
-  const removeTitle = React.useCallback((titleToRemove: string) => {
-    const currentTitles = getTitlesFromStorage();
-    const newTitles = currentTitles.filter(title => title !== titleToRemove);
-    saveTitlesToStorage(newTitles);
-  }, [getTitlesFromStorage, saveTitlesToStorage]);
+    },
+    [getTitlesFromStorage, saveTitlesToStorage]
+  );
 
   // Load titles when storage keys change
   React.useEffect(() => {
@@ -310,54 +377,62 @@ export function DataTable<TData, TValue>({
 
   // Save column visibility to localStorage whenever it changes
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     try {
-      localStorage.setItem(storageKeys.columnVisibility, JSON.stringify(columnVisibility));
+      localStorage.setItem(
+        storageKeys.columnVisibility,
+        JSON.stringify(columnVisibility)
+      );
     } catch (error) {
-      console.warn('Failed to save column visibility to localStorage:', error);
+      console.warn("Failed to save column visibility to localStorage:", error);
     }
   }, [columnVisibility, storageKeys.columnVisibility]);
 
   // Save sorting to localStorage whenever it changes
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     try {
       localStorage.setItem(storageKeys.sorting, JSON.stringify(sorting));
     } catch (error) {
-      console.warn('Failed to save sorting to localStorage:', error);
+      console.warn("Failed to save sorting to localStorage:", error);
     }
   }, [sorting, storageKeys.sorting]);
 
   // Update column visibility when initialColumnVisibility changes
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     try {
       const stored = localStorage.getItem(storageKeys.columnVisibility);
       let storedVisibility = {};
       if (stored) {
         storedVisibility = JSON.parse(stored);
       }
-      
+
       // Merge initial with stored, giving priority to stored values
-      const mergedVisibility = { ...initialColumnVisibility, ...storedVisibility };
-      const hasChanged = JSON.stringify(mergedVisibility) !== JSON.stringify(columnVisibility);
-      
+      const mergedVisibility = {
+        ...initialColumnVisibility,
+        ...storedVisibility,
+      };
+      const hasChanged =
+        JSON.stringify(mergedVisibility) !== JSON.stringify(columnVisibility);
+
       if (hasChanged) {
         setColumnVisibility(mergedVisibility);
       }
     } catch (error) {
-      console.warn('Failed to merge column visibility:', error);
+      console.warn("Failed to merge column visibility:", error);
       setColumnVisibility(initialColumnVisibility);
     }
   }, [JSON.stringify(initialColumnVisibility), storageKeys.columnVisibility]); // Use JSON.stringify for stable comparison
 
   // Custom column visibility change handler
   const handleColumnVisibilityChange = React.useCallback((updater: any) => {
-    setColumnVisibility(prev => {
-      const newVisibility = typeof updater === 'function' ? updater(prev) : updater;
+    setColumnVisibility((prev) => {
+      const newVisibility =
+        typeof updater === "function" ? updater(prev) : updater;
       return newVisibility;
     });
   }, []);
@@ -369,16 +444,16 @@ export function DataTable<TData, TValue>({
       dateRange: (row: any, columnId: string, filterValue: any) => {
         const cellValue = row.getValue(columnId);
         if (!cellValue || !filterValue) return true;
-        
+
         const cellDate = new Date(cellValue);
         if (isNaN(cellDate.getTime())) return true;
-        
+
         switch (filterValue.type) {
-          case 'before':
+          case "before":
             return cellDate < new Date(filterValue.before);
-          case 'after':
+          case "after":
             return cellDate > new Date(filterValue.after);
-          case 'between':
+          case "between":
             const fromDate = new Date(filterValue.from);
             const toDate = new Date(filterValue.to);
             return cellDate >= fromDate && cellDate <= toDate;
@@ -386,36 +461,37 @@ export function DataTable<TData, TValue>({
             return true;
         }
       },
-      
+
       // Number range filter
       numberRange: (row: any, columnId: string, filterValue: any) => {
         const cellValue = row.getValue(columnId);
-        if (cellValue === null || cellValue === undefined || !filterValue) return true;
-        
+        if (cellValue === null || cellValue === undefined || !filterValue)
+          return true;
+
         const numValue = Number(cellValue);
         if (isNaN(numValue)) return true;
-        
+
         switch (filterValue.type) {
-          case 'equal':
+          case "equal":
             return numValue === filterValue.value;
-          case 'less':
+          case "less":
             return numValue < filterValue.value;
-          case 'greater':
+          case "greater":
             return numValue > filterValue.value;
-          case 'between':
+          case "between":
             return numValue >= filterValue.min && numValue <= filterValue.max;
           default:
             return true;
         }
       },
-      
+
       // Boolean filter
       booleanFilter: (row: any, columnId: string, filterValue: string) => {
         if (!filterValue) return true;
         const cellValue = row.getValue(columnId);
         return String(cellValue).toLowerCase() === filterValue.toLowerCase();
       },
-      
+
       // Multi-select filter
       multiSelect: (row: any, columnId: string, filterValue: string[]) => {
         if (!filterValue || filterValue.length === 0) return true;
@@ -439,8 +515,13 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     enableColumnResizing: true,
+    // Configure manual pagination when we have external pagination props
+    ...(totalPages && onPageChange && {
+      manualPagination: true,
+      pageCount: totalPages,
+    }),
     filterFns: {
       dateRange: filterFunctions.dateRange,
       numberRange: filterFunctions.numberRange,
@@ -454,6 +535,13 @@ export function DataTable<TData, TValue>({
       columnOrder,
       columnSizing,
       rowSelection,
+      // Set pagination state for external pagination
+      ...(totalPages && onPageChange && currentPage && {
+        pagination: {
+          pageIndex: currentPage - 1, // TanStack Table uses 0-based indexing
+          pageSize: pageSize,
+        },
+      }),
     },
     initialState: {
       ...(enablePagination && {
@@ -467,21 +555,23 @@ export function DataTable<TData, TValue>({
   // Call onRowSelectionChange when row selection changes
   React.useEffect(() => {
     if (onRowSelectionChange) {
-      const selectedRows = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
+      const selectedRows = table
+        .getFilteredSelectedRowModel()
+        .rows.map((row) => row.original);
       onRowSelectionChange(selectedRows);
     }
   }, [rowSelection, onRowSelectionChange, table]);
 
   // Print functionality
   const handlePrint = React.useCallback(() => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
     // Get visible columns (excluding actions and select columns, but including sr column)
-    const visibleColumns = table.getVisibleFlatColumns().filter(col => 
-      col.id !== 'actions' && col.id !== 'select'
-    );
-    
+    const visibleColumns = table
+      .getVisibleFlatColumns()
+      .filter((col) => col.id !== "actions" && col.id !== "select");
+
     // Generate table HTML
     const tableHtml = `
       <html>
@@ -536,78 +626,104 @@ export function DataTable<TData, TValue>({
           <table>
             <thead>
               <tr>
-                ${visibleColumns.map(column => {
-                  let headerText = column.id;
-                  if (typeof column.columnDef.header === 'function') {
-                    try {
-                      const headerResult = column.columnDef.header({ column, header: column, table } as any);
-                      headerText = typeof headerResult === 'string' ? headerResult : 
-                                  (headerResult?.props?.children || column.id);
-                    } catch (e) {
-                      headerText = column.id;
+                ${visibleColumns
+                  .map((column) => {
+                    let headerText = column.id;
+                    if (typeof column.columnDef.header === "function") {
+                      try {
+                        const headerResult = column.columnDef.header({
+                          column,
+                          header: column,
+                          table,
+                        } as any);
+                        headerText =
+                          typeof headerResult === "string"
+                            ? headerResult
+                            : headerResult?.props?.children || column.id;
+                      } catch (e) {
+                        headerText = column.id;
+                      }
+                    } else if (typeof column.columnDef.header === "string") {
+                      headerText = column.columnDef.header;
                     }
-                  } else if (typeof column.columnDef.header === 'string') {
-                    headerText = column.columnDef.header;
-                  }
-                  return `<th>${headerText}</th>`;
-                }).join('')}
+                    return `<th>${headerText}</th>`;
+                  })
+                  .join("")}
               </tr>
             </thead>
             <tbody>
-              ${table.getRowModel().rows.map(row => 
-                `<tr>
-                  ${visibleColumns.map(column => {
-                    const cell = row.getVisibleCells().find(c => c.column.id === column.id);
-                    if (!cell) return '<td>-</td>';
-                    
-                    // Handle serial number column specially
-                    let textValue;
-                    if (column.id === 'sr') {
-                      // Get the current sorted row position for print
-                      const sortedRows = table.getSortedRowModel().rows;
-                      const sortedIndex = sortedRows.findIndex(r => r.id === row.id);
-                      textValue = String(sortedIndex + 1);
-                    } else {
-                      // Get the raw data value first
-                      const rowData = row.original as any;
-                      const rawValue = column.accessorFn ? column.accessorFn(rowData, row.index) : rowData[column.id];
-                      
-                      // Convert different data types to readable text
-                      if (rawValue === null || rawValue === undefined) {
-                        textValue = '-';
-                      } else if (typeof rawValue === 'boolean') {
-                        textValue = rawValue ? 'Yes' : 'No';
-                      } else if (typeof rawValue === 'number') {
-                        textValue = rawValue.toLocaleString();
-                      } else if (rawValue instanceof Date) {
-                        textValue = rawValue.toLocaleDateString();
-                      } else if (typeof rawValue === 'object') {
-                        // Handle multilingual objects
-                        if (rawValue.en || rawValue.mm) {
-                          textValue = rawValue.en || rawValue.mm || '';
-                        } else if (rawValue.displayName) {
-                          textValue = typeof rawValue.displayName === 'object' 
-                            ? (rawValue.displayName.en || rawValue.displayName.mm || '')
-                            : rawValue.displayName;
-                        } else if (rawValue.name) {
-                          textValue = typeof rawValue.name === 'object'
-                            ? (rawValue.name.en || rawValue.name.mm || '')
-                            : rawValue.name;
+              ${table
+                .getRowModel()
+                .rows.map(
+                  (row) =>
+                    `<tr>
+                  ${visibleColumns
+                    .map((column) => {
+                      const cell = row
+                        .getVisibleCells()
+                        .find((c) => c.column.id === column.id);
+                      if (!cell) return "<td>-</td>";
+
+                      // Handle serial number column specially
+                      let textValue;
+                      if (column.id === "sr") {
+                        // Get the current sorted row position for print
+                        const sortedRows = table.getSortedRowModel().rows;
+                        const sortedIndex = sortedRows.findIndex(
+                          (r) => r.id === row.id
+                        );
+                        textValue = String(sortedIndex + 1);
+                      } else {
+                        // Get the raw data value first
+                        const rowData = row.original as any;
+                        const rawValue = column.accessorFn
+                          ? column.accessorFn(rowData, row.index)
+                          : rowData[column.id];
+
+                        // Convert different data types to readable text
+                        if (rawValue === null || rawValue === undefined) {
+                          textValue = "-";
+                        } else if (typeof rawValue === "boolean") {
+                          textValue = rawValue ? "Yes" : "No";
+                        } else if (typeof rawValue === "number") {
+                          textValue = rawValue.toLocaleString();
+                        } else if (rawValue instanceof Date) {
+                          textValue = rawValue.toLocaleDateString();
+                        } else if (typeof rawValue === "object") {
+                          // Handle multilingual objects
+                          if (rawValue.en || rawValue.mm) {
+                            textValue = rawValue.en || rawValue.mm || "";
+                          } else if (rawValue.displayName) {
+                            textValue =
+                              typeof rawValue.displayName === "object"
+                                ? rawValue.displayName.en ||
+                                  rawValue.displayName.mm ||
+                                  ""
+                                : rawValue.displayName;
+                          } else if (rawValue.name) {
+                            textValue =
+                              typeof rawValue.name === "object"
+                                ? rawValue.name.en || rawValue.name.mm || ""
+                                : rawValue.name;
+                          } else {
+                            textValue = String(rawValue);
+                          }
                         } else {
                           textValue = String(rawValue);
                         }
-                      } else {
-                        textValue = String(rawValue);
+
+                        // Clean up the text value
+                        textValue =
+                          textValue.replace(/\[object Object\]/g, "").trim() ||
+                          "-";
                       }
-                      
-                      // Clean up the text value
-                      textValue = textValue.replace(/\[object Object\]/g, '').trim() || '-';
-                    }
-                    
-                    return `<td>${textValue}</td>`;
-                  }).join('')}
+
+                      return `<td>${textValue}</td>`;
+                    })
+                    .join("")}
                 </tr>`
-              ).join('')}
+                )
+                .join("")}
             </tbody>
           </table>
         </body>
@@ -616,7 +732,7 @@ export function DataTable<TData, TValue>({
 
     printWindow.document.write(tableHtml);
     printWindow.document.close();
-    
+
     // Wait for content to load then print
     printWindow.onload = () => {
       setTimeout(() => {
@@ -629,49 +745,56 @@ export function DataTable<TData, TValue>({
   // Excel export functionality
   const handleExportToExcel = React.useCallback(() => {
     // Get visible columns (excluding actions and select columns, but including sr column)
-    const visibleColumns = table.getVisibleFlatColumns().filter(col => 
-      col.id !== 'actions' && col.id !== 'select'
-    );
+    const visibleColumns = table
+      .getVisibleFlatColumns()
+      .filter((col) => col.id !== "actions" && col.id !== "select");
 
     // Prepare header row
-    const headers = visibleColumns.map(column => {
-      if (typeof column.columnDef.header === 'function') {
+    const headers = visibleColumns.map((column) => {
+      if (typeof column.columnDef.header === "function") {
         try {
-          const headerResult = column.columnDef.header({ column, header: column, table } as any);
-          return typeof headerResult === 'string' ? headerResult : 
-                 (headerResult?.props?.children || column.id);
+          const headerResult = column.columnDef.header({
+            column,
+            header: column,
+            table,
+          } as any);
+          return typeof headerResult === "string"
+            ? headerResult
+            : headerResult?.props?.children || column.id;
         } catch (e) {
           return column.id;
         }
-      } else if (typeof column.columnDef.header === 'string') {
+      } else if (typeof column.columnDef.header === "string") {
         return column.columnDef.header;
       }
       return column.id;
     });
 
     // Prepare data rows
-    const data = table.getSortedRowModel().rows.map(row => {
-      return visibleColumns.map(column => {
+    const data = table.getSortedRowModel().rows.map((row) => {
+      return visibleColumns.map((column) => {
         // Handle serial number column specially
-        if (column.id === 'sr') {
+        if (column.id === "sr") {
           const sortedRows = table.getSortedRowModel().rows;
-          const sortedIndex = sortedRows.findIndex(r => r.id === row.id);
+          const sortedIndex = sortedRows.findIndex((r) => r.id === row.id);
           return sortedIndex + 1;
         }
-        
+
         // Get the raw data value
         const rowData = row.original as any;
-        const rawValue = column.accessorFn ? column.accessorFn(rowData, row.index) : rowData[column.id];
-        
+        const rawValue = column.accessorFn
+          ? column.accessorFn(rowData, row.index)
+          : rowData[column.id];
+
         // Convert different data types to readable text for Excel
         if (rawValue === null || rawValue === undefined) {
-          return '';
-        } else if (typeof rawValue === 'boolean') {
-          return rawValue ? 'Yes' : 'No';
-        } else if (typeof rawValue === 'object' && rawValue !== null) {
+          return "";
+        } else if (typeof rawValue === "boolean") {
+          return rawValue ? "Yes" : "No";
+        } else if (typeof rawValue === "object" && rawValue !== null) {
           // Handle objects (like multilingual text)
           if (rawValue.en || rawValue.mm) {
-            return rawValue.en || rawValue.mm || '';
+            return rawValue.en || rawValue.mm || "";
           }
           return JSON.stringify(rawValue);
         } else {
@@ -687,24 +810,33 @@ export function DataTable<TData, TValue>({
     // Auto-size columns
     const colWidths = headers.map((header, idx) => {
       const headerWidth = header.length;
-      const maxDataWidth = Math.max(...data.map(row => String(row[idx] || '').length));
+      const maxDataWidth = Math.max(
+        ...data.map((row) => String(row[idx] || "").length)
+      );
       return { wch: Math.min(Math.max(headerWidth, maxDataWidth, 10), 50) };
     });
-    worksheet['!cols'] = colWidths;
+    worksheet["!cols"] = colWidths;
 
     // Create workbook
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
 
     // Generate filename with module name, date, and time
     const now = new Date();
-    const dateStr = now.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
-    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, ''); // HHMMSS
-    const filename = `${selectedTitle.replace(/\s+/g, '_').toLowerCase()}_${dateStr}_${timeStr}.xlsx`;
+    const dateStr = now.toISOString().split("T")[0].replace(/-/g, ""); // YYYYMMDD
+    const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, ""); // HHMMSS
+    const filename = `${selectedTitle
+      .replace(/\s+/g, "_")
+      .toLowerCase()}_${dateStr}_${timeStr}.xlsx`;
 
     // Save file
     XLSX.writeFile(workbook, filename);
   }, [table, selectedTitle]);
+
+  // Show ModuleLoading component during pagination loading
+  if (isPaginationLoading) {
+    return <ModuleLoading />;
+  }
 
   return (
     <div className="w-full">
@@ -714,17 +846,24 @@ export function DataTable<TData, TValue>({
           {/* Left side - Title selection */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Title:</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Title:
+              </span>
               <div className="flex items-center gap-2">
                 {/* Display selected title */}
                 <div className="px-3 py-1 bg-white dark:bg-gray-900 border border-border rounded-md min-w-[200px]">
-                  <span className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis block">{selectedTitle || "No title selected"}</span>
+                  <span className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis block">
+                    {selectedTitle || "No title selected"}
+                  </span>
                 </div>
-                
+
                 {/* Select Title Button */}
-                <Dialog open={isTitleModalOpen} onOpenChange={setIsTitleModalOpen}>
+                <Dialog
+                  open={isTitleModalOpen}
+                  onOpenChange={setIsTitleModalOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       variant="outline"
                       size="sm"
                       title="Change Title"
@@ -733,107 +872,125 @@ export function DataTable<TData, TValue>({
                       <FileText className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
-            <DialogContent className="!max-w-[280px] sm:!max-w-[280px]">
-              <DialogHeader>
-                <DialogTitle>Manage Titles</DialogTitle>
-                <DialogDescription>
-                  Select or add titles for print and export.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-3 py-3">
-                {/* Current Title Display */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Current Title:</label>
-                  <div className="p-2 bg-muted rounded-md text-sm">
-                    {selectedTitle}
-                  </div>
-                </div>
+                  <DialogContent className="!max-w-[280px] sm:!max-w-[280px]">
+                    <DialogHeader>
+                      <DialogTitle>Manage Titles</DialogTitle>
+                      <DialogDescription>
+                        Select or add titles for print and export.
+                      </DialogDescription>
+                    </DialogHeader>
 
-                {/* Saved Titles */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Saved Titles:</label>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {savedTitles.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No saved titles yet</p>
-                    ) : (
-                      savedTitles.map((title, index) => (
-                        <div key={index} className="flex items-center justify-between p-1.5 border rounded-md">
-                          <button
-                            onClick={() => {
-                              setSelectedTitle(title);
-                              setIsTitleModalOpen(false);
-                            }}
-                            className="flex-1 text-left text-sm hover:bg-muted px-1.5 py-1 rounded"
-                          >
-                            {title}
-                          </button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeTitle(title)}
-                            className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                    <div className="space-y-3 py-3">
+                      {/* Current Title Display */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Current Title:
+                        </label>
+                        <div className="p-2 bg-muted rounded-md text-sm">
+                          {selectedTitle}
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                      </div>
 
-                {/* Add New Title */}
-                <Form {...titleForm}>
-                  <form onSubmit={titleForm.handleSubmit(addTitle)} className="space-y-2">
-                    <FormField
-                      control={titleForm.control}
-                      name="newTitle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Add New Title:</FormLabel>
-                          <div className="flex gap-2">
-                            <FormControl>
-                              <Input
-                                placeholder="Enter new title..."
-                                {...field}
-                                className="flex-1"
-                              />
-                            </FormControl>
-                            <Button
-                              type="submit"
-                              size="sm"
-                              disabled={!titleForm.watch('newTitle')?.trim()}
-                              className="shrink-0"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </form>
-                </Form>
-              </div>
+                      {/* Saved Titles */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Saved Titles:
+                        </label>
+                        <div className="max-h-32 overflow-y-auto space-y-1">
+                          {savedTitles.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                              No saved titles yet
+                            </p>
+                          ) : (
+                            savedTitles.map((title, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-1.5 border rounded-md"
+                              >
+                                <button
+                                  onClick={() => {
+                                    setSelectedTitle(title);
+                                    setIsTitleModalOpen(false);
+                                  }}
+                                  className="flex-1 text-left text-sm hover:bg-muted px-1.5 py-1 rounded"
+                                >
+                                  {title}
+                                </button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeTitle(title)}
+                                  className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
 
-              <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsTitleModalOpen(false)}
-                >
-                  Close
-                </Button>
-              </DialogFooter>
-            </DialogContent>
+                      {/* Add New Title */}
+                      <Form {...titleForm}>
+                        <form
+                          onSubmit={titleForm.handleSubmit(addTitle)}
+                          className="space-y-2"
+                        >
+                          <FormField
+                            control={titleForm.control}
+                            name="newTitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">
+                                  Add New Title:
+                                </FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Enter new title..."
+                                      {...field}
+                                      className="flex-1"
+                                    />
+                                  </FormControl>
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    disabled={
+                                      !titleForm.watch("newTitle")?.trim()
+                                    }
+                                    className="shrink-0"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </form>
+                      </Form>
+                    </div>
+
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsTitleModalOpen(false)}
+                      >
+                        Close
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
                 </Dialog>
               </div>
             </div>
-            
+
             {/* Search bar if enabled */}
             {searchKey && (
               <Input
                 placeholder={searchPlaceholder}
-                value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+                value={
+                  (table.getColumn(searchKey)?.getFilterValue() as string) ?? ""
+                }
                 onChange={(event) =>
                   table.getColumn(searchKey)?.setFilterValue(event.target.value)
                 }
@@ -841,12 +998,12 @@ export function DataTable<TData, TValue>({
               />
             )}
           </div>
-          
+
           {/* Right side - Action buttons */}
           <div className="flex items-center gap-2">
             {/* Refresh Button */}
             {onRefresh && (
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onRefresh()}
@@ -855,77 +1012,74 @@ export function DataTable<TData, TValue>({
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:mr-1 animate-spin" />
                 ) : (
-                  <RotateCcw className="h-4 w-4 mr-1" />
+                  <RotateCcw className="h-4 w-4 sm:mr-1" />
                 )}
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
             )}
             {/* Print Button */}
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               onClick={handlePrint}
               title="Print Table"
               className="h-8"
             >
-              <Printer className="h-4 w-4 mr-1" />
+              <Printer className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Print</span>
             </Button>
 
             {/* Excel Export Button */}
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               onClick={handleExportToExcel}
               title="Export to Excel"
               className="h-8"
             >
-              <Download className="h-4 w-4 mr-1" />
+              <Download className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Export</span>
             </Button>
-            
+
             {/* Column Visibility Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
+                <Button
                   variant="outline"
                   size="sm"
                   title="Show/Hide Columns"
                   className="h-8"
                 >
-                  <Columns3 className="h-4 w-4 mr-1" />
+                  <Columns3 className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Columns</span>
                 </Button>
               </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
             </DropdownMenu>
 
             {/* Filter Modal Button */}
             {showFilters && (
-              <TableFilterModal
-                table={table}
-                filterConfigs={filterConfigs}
-              />
+              <TableFilterModal table={table} filterConfigs={filterConfigs} />
             )}
 
             {/* Divider line for better separation */}
@@ -934,67 +1088,223 @@ export function DataTable<TData, TValue>({
             {/* Add New Button */}
             {addNewRoute && (
               <Link href={addNewRoute}>
-                <Button 
+                <Button
                   variant="default"
                   size="sm"
                   title="Add New Record"
                   className="h-8 bg-primary hover:bg-primary/90"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-4 w-4 sm:mr-1" />
                   Add New
                 </Button>
               </Link>
             )}
+
+            {/* Header Pagination Controls - Right of Add New Button */}
+            {(() => {
+              // Check if we should show pagination controls
+              const hasExternalPagination = totalPages && totalPages > 1;
+              const hasInternalPagination = enablePagination && table.getPageCount() > 1;
+              const shouldShowPagination = hasExternalPagination || hasInternalPagination;
+
+              // Get current values based on pagination type
+              const pageCount = totalPages || table.getPageCount() || 1;
+              const currentPageIndex = currentPage ? currentPage - 1 : (table.getState().pagination?.pageIndex || 0);
+              const displayCurrentPage = currentPageIndex + 1;
+
+              // Pagination handlers with loading state
+              const handlePreviousPage = async () => {
+                setIsPaginationLoading(true);
+                try {
+                  if (onPageChange && currentPage && currentPage > 1) {
+                    onPageChange(currentPage - 1);
+                  } else if (table.getCanPreviousPage()) {
+                    table.previousPage();
+                  }
+                } finally {
+                  // Show skeleton for at least 300ms for smooth UX
+                  setTimeout(() => setIsPaginationLoading(false), 300);
+                }
+              };
+
+              const handleNextPage = async () => {
+                setIsPaginationLoading(true);
+                try {
+                  if (onPageChange && currentPage && currentPage < pageCount) {
+                    onPageChange(currentPage + 1);
+                  } else if (table.getCanNextPage()) {
+                    table.nextPage();
+                  }
+                } finally {
+                  // Show skeleton for at least 300ms for smooth UX
+                  setTimeout(() => setIsPaginationLoading(false), 300);
+                }
+              };
+
+              const handleGoToPage = async (pageNum: number) => {
+                if (pageNum >= 1 && pageNum <= pageCount) {
+                  setIsPaginationLoading(true);
+                  try {
+                    if (onPageChange) {
+                      onPageChange(pageNum);
+                    } else {
+                      table.setPageIndex(pageNum - 1);
+                    }
+                  } finally {
+                    // Show skeleton for at least 300ms for smooth UX
+                    setTimeout(() => setIsPaginationLoading(false), 300);
+                  }
+                }
+                setCurrentPageInput("");
+              };
+
+              const canGoPrevious = currentPage ? currentPage > 1 : table.getCanPreviousPage();
+              const canGoNext = currentPage ? currentPage < pageCount : table.getCanNextPage();
+
+
+              return shouldShowPagination ? (
+                <>
+                  {isLoading ? (
+                    // Full skeleton loading for module changes
+                    <>
+                      <Skeleton className="h-8 w-8" />
+                      <div className="flex items-center gap-1">
+                        <Skeleton className="h-8 w-16" />
+                        <Skeleton className="h-8 w-12" />
+                      </div>
+                      <Skeleton className="h-8 w-8" />
+                    </>
+                  ) : (
+                    // Normal pagination controls
+                    <>
+                      {/* Previous Page Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousPage}
+                        disabled={!canGoPrevious}
+                        title="Previous Page"
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+
+                      {/* Current Page Input with Go Button */}
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min="1"
+                          max={pageCount}
+                          value={currentPageInput || displayCurrentPage}
+                          onChange={(e) => setCurrentPageInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const pageNum = parseInt(currentPageInput);
+                              handleGoToPage(pageNum);
+                            }
+                          }}
+                          className="h-8 w-16 text-center text-sm"
+                          placeholder={String(displayCurrentPage)}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const pageNum = parseInt(currentPageInput);
+                            handleGoToPage(pageNum);
+                          }}
+                          disabled={
+                            !currentPageInput ||
+                            parseInt(currentPageInput) < 1 ||
+                            parseInt(currentPageInput) > pageCount
+                          }
+                          title="Go to Page"
+                          className="h-8 px-2 text-xs"
+                        >
+                          Go
+                        </Button>
+                      </div>
+
+                      {/* Next Page Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={!canGoNext}
+                        title="Next Page"
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </>
+              ) : null;
+            })()}
           </div>
         </div>
       </div>
       {/* Table Title - Only visible in print view */}
       {selectedTitle && (
         <div className="w-full mb-2 hidden print:block">
-          <h3 className="text-lg font-semibold text-foreground print:text-black">{selectedTitle}</h3>
+          <h3 className="text-lg font-semibold text-foreground print:text-black">
+            {selectedTitle}
+          </h3>
         </div>
       )}
       <div className="rounded-md border border-gray-200 overflow-hidden mt-4">
-        <div className={cn(
-          "overflow-x-auto relative",
-          // Add visual feedback when resizing
-          table.getState().columnSizingInfo?.isResizingColumn && "select-none"
-        )}>
+        <div
+          className={cn(
+            "overflow-x-auto relative",
+            // Add visual feedback when resizing
+            table.getState().columnSizingInfo?.isResizingColumn && "select-none"
+          )}
+        >
           {/* Resize preview line */}
           {table.getState().columnSizingInfo?.isResizingColumn && (
             <div
               className="absolute top-0 bottom-0 w-1 bg-blue-600 shadow-2xl shadow-blue-600/50 z-50 pointer-events-none animate-pulse"
               style={{
-                left: `${(table.getState().columnSizingInfo?.startSize ?? 0) + (table.getState().columnSizingInfo?.deltaOffset ?? 0)}px`,
+                left: `${
+                  (table.getState().columnSizingInfo?.startSize ?? 0) +
+                  (table.getState().columnSizingInfo?.deltaOffset ?? 0)
+                }px`,
               }}
             />
           )}
-          <Table 
-            style={{ 
+          <Table
+            style={{
               width: table.getCenterTotalSize(),
-              transition: table.getState().columnSizingInfo?.isResizingColumn ? 'none' : 'width 0.2s ease-out'
+              transition: table.getState().columnSizingInfo?.isResizingColumn
+                ? "none"
+                : "width 0.2s ease-out",
             }}
             className={cn(
-              table.getState().columnSizingInfo?.isResizingColumn && "cursor-col-resize"
-            )}>
+              table.getState().columnSizingInfo?.isResizingColumn &&
+                "cursor-col-resize"
+            )}
+          >
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header, headerIndex) => {
                     const columnId = header.column.id;
-                    const isDraggable = columnId !== 'sr' && columnId !== 'select' && columnId !== 'actions';
-                    
+                    const isDraggable =
+                      columnId !== "sr" &&
+                      columnId !== "select" &&
+                      columnId !== "actions";
+
                     return (
-                      <TableHead 
-                        key={header.id} 
+                      <TableHead
+                        key={header.id}
                         className={cn(
                           "relative group",
                           isDraggable && "hover:bg-muted/30"
                         )}
                         style={{
                           width: header.getSize(),
-                          position: 'relative',
-                          cursor: isDraggable ? 'grab' : 'auto'
+                          position: "relative",
+                          cursor: isDraggable ? "grab" : "auto",
                         }}
                         draggable={isDraggable}
                         onDragStart={(e) => {
@@ -1002,55 +1312,78 @@ export function DataTable<TData, TValue>({
                             e.preventDefault();
                             return;
                           }
-                          e.dataTransfer.setData('text/plain', columnId);
-                          e.dataTransfer.effectAllowed = 'move';
-                          (e.currentTarget as HTMLElement).style.opacity = '0.5';
-                          (e.currentTarget as HTMLElement).style.cursor = 'grabbing';
+                          e.dataTransfer.setData("text/plain", columnId);
+                          e.dataTransfer.effectAllowed = "move";
+                          (e.currentTarget as HTMLElement).style.opacity =
+                            "0.5";
+                          (e.currentTarget as HTMLElement).style.cursor =
+                            "grabbing";
                         }}
                         onDragEnd={(e) => {
                           if (!isDraggable) return;
-                          (e.currentTarget as HTMLElement).style.opacity = '1';
-                          (e.currentTarget as HTMLElement).style.cursor = 'grab';
+                          (e.currentTarget as HTMLElement).style.opacity = "1";
+                          (e.currentTarget as HTMLElement).style.cursor =
+                            "grab";
                         }}
                         onDragOver={(e) => {
                           if (!isDraggable) return;
                           e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                          (e.currentTarget as HTMLElement).style.borderLeft = '2px solid #3b82f6';
+                          e.dataTransfer.dropEffect = "move";
+                          (e.currentTarget as HTMLElement).style.borderLeft =
+                            "2px solid #3b82f6";
                         }}
                         onDragLeave={(e) => {
                           if (!isDraggable) return;
-                          (e.currentTarget as HTMLElement).style.borderLeft = '';
+                          (e.currentTarget as HTMLElement).style.borderLeft =
+                            "";
                         }}
                         onDrop={(e) => {
                           e.preventDefault();
                           if (!isDraggable) return;
-                          
-                          (e.currentTarget as HTMLElement).style.borderLeft = '';
-                          const draggedColumnId = e.dataTransfer.getData('text/plain');
+
+                          (e.currentTarget as HTMLElement).style.borderLeft =
+                            "";
+                          const draggedColumnId =
+                            e.dataTransfer.getData("text/plain");
                           const targetColumnId = columnId;
-                          
+
                           if (draggedColumnId === targetColumnId) return;
-                          
+
                           // Don't allow dropping on or moving fixed columns
-                          if (targetColumnId === 'sr' || targetColumnId === 'select' || targetColumnId === 'actions') return;
-                          if (draggedColumnId === 'sr' || draggedColumnId === 'select' || draggedColumnId === 'actions') return;
-                          
+                          if (
+                            targetColumnId === "sr" ||
+                            targetColumnId === "select" ||
+                            targetColumnId === "actions"
+                          )
+                            return;
+                          if (
+                            draggedColumnId === "sr" ||
+                            draggedColumnId === "select" ||
+                            draggedColumnId === "actions"
+                          )
+                            return;
+
                           const newColumnOrder = [...columnOrder];
-                          const draggedIndex = newColumnOrder.indexOf(draggedColumnId);
-                          const targetIndex = newColumnOrder.indexOf(targetColumnId);
-                          
+                          const draggedIndex =
+                            newColumnOrder.indexOf(draggedColumnId);
+                          const targetIndex =
+                            newColumnOrder.indexOf(targetColumnId);
+
                           if (draggedIndex !== -1 && targetIndex !== -1) {
                             newColumnOrder.splice(draggedIndex, 1);
-                            newColumnOrder.splice(targetIndex, 0, draggedColumnId);
-                            
+                            newColumnOrder.splice(
+                              targetIndex,
+                              0,
+                              draggedColumnId
+                            );
+
                             // Ensure Sr. column stays first
-                            const srIndex = newColumnOrder.indexOf('sr');
+                            const srIndex = newColumnOrder.indexOf("sr");
                             if (srIndex > 0) {
                               newColumnOrder.splice(srIndex, 1);
-                              newColumnOrder.unshift('sr');
+                              newColumnOrder.unshift("sr");
                             }
-                            
+
                             setColumnOrder(newColumnOrder);
                           }
                         }}
@@ -1064,8 +1397,10 @@ export function DataTable<TData, TValue>({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const newColumnOrder = [...columnOrder];
-                                  const currentIndex = newColumnOrder.indexOf(columnId);
-                                  if (currentIndex > 1) { // Don't move before Sr. column
+                                  const currentIndex =
+                                    newColumnOrder.indexOf(columnId);
+                                  if (currentIndex > 1) {
+                                    // Don't move before Sr. column
                                     newColumnOrder.splice(currentIndex, 1);
                                     newColumnOrder.splice(1, 0, columnId); // Insert after Sr. column
                                     setColumnOrder(newColumnOrder);
@@ -1076,16 +1411,23 @@ export function DataTable<TData, TValue>({
                                 <ChevronFirst className="h-3 w-3" />
                               </button>
                             )}
-                            
+
                             {/* Center content with title and sort indicator */}
                             <div
                               className={cn(
                                 "flex items-center justify-center gap-1 text-center",
                                 "whitespace-nowrap overflow-hidden text-ellipsis min-w-0", // Single line with ellipsis for overflow
-                                header.column.getCanSort() && !isDraggable && "cursor-pointer select-none",
-                                isDraggable && "cursor-grab active:cursor-grabbing"
+                                header.column.getCanSort() &&
+                                  !isDraggable &&
+                                  "cursor-pointer select-none",
+                                isDraggable &&
+                                  "cursor-grab active:cursor-grabbing"
                               )}
-                              onClick={header.column.getCanSort() && !isDraggable ? header.column.getToggleSortingHandler() : undefined}
+                              onClick={
+                                header.column.getCanSort() && !isDraggable
+                                  ? header.column.getToggleSortingHandler()
+                                  : undefined
+                              }
                             >
                               <span className="whitespace-nowrap overflow-hidden text-ellipsis">
                                 {flexRender(
@@ -1105,7 +1447,7 @@ export function DataTable<TData, TValue>({
                                 </span>
                               )}
                             </div>
-                            
+
                             {/* Right move button - move column to last position */}
                             {isDraggable && (
                               <button
@@ -1113,13 +1455,19 @@ export function DataTable<TData, TValue>({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const newColumnOrder = [...columnOrder];
-                                  const currentIndex = newColumnOrder.indexOf(columnId);
-                                  const lastMovableIndex = newColumnOrder.indexOf('actions') > -1 
-                                    ? newColumnOrder.indexOf('actions') - 1 
-                                    : newColumnOrder.length - 1;
+                                  const currentIndex =
+                                    newColumnOrder.indexOf(columnId);
+                                  const lastMovableIndex =
+                                    newColumnOrder.indexOf("actions") > -1
+                                      ? newColumnOrder.indexOf("actions") - 1
+                                      : newColumnOrder.length - 1;
                                   if (currentIndex < lastMovableIndex) {
                                     newColumnOrder.splice(currentIndex, 1);
-                                    newColumnOrder.splice(lastMovableIndex, 0, columnId);
+                                    newColumnOrder.splice(
+                                      lastMovableIndex,
+                                      0,
+                                      columnId
+                                    );
                                     setColumnOrder(newColumnOrder);
                                   }
                                 }}
@@ -1144,43 +1492,46 @@ export function DataTable<TData, TValue>({
                             )}
                             style={{
                               right: 0,
-                              width: '8px',
-                              transform: 'translateX(50%)',
+                              width: "8px",
+                              transform: "translateX(50%)",
                               zIndex: 50,
-                              userSelect: 'none',
-                              touchAction: 'none',
+                              userSelect: "none",
+                              touchAction: "none",
                             }}
                             // Accessibility
                             role="separator"
                             aria-orientation="vertical"
-                            aria-label={`Resize ${flexRender(header.column.columnDef.header, header.getContext())} column`}
+                            aria-label={`Resize ${flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )} column`}
                             tabIndex={0}
                             onKeyDown={(e) => {
                               const step = e.shiftKey ? 50 : 10;
                               const currentSize = header.getSize();
                               const columnId = header.column.id;
-                              
+
                               const updateSize = (newSize: number) => {
                                 table.setColumnSizing((old) => ({
                                   ...old,
                                   [columnId]: newSize,
                                 }));
                               };
-                              
+
                               switch (e.key) {
-                                case 'ArrowLeft':
+                                case "ArrowLeft":
                                   e.preventDefault();
                                   updateSize(Math.max(50, currentSize - step));
                                   break;
-                                case 'ArrowRight':
+                                case "ArrowRight":
                                   e.preventDefault();
                                   updateSize(Math.min(500, currentSize + step));
                                   break;
-                                case 'Home':
+                                case "Home":
                                   e.preventDefault();
                                   updateSize(50);
                                   break;
-                                case 'End':
+                                case "End":
                                   e.preventDefault();
                                   updateSize(500);
                                   break;
@@ -1188,41 +1539,53 @@ export function DataTable<TData, TValue>({
                             }}
                           >
                             {/* Vertical line - visible on hover */}
-                            <div className={cn(
-                              "absolute h-full w-px transition-all duration-200",
-                              "bg-transparent group-hover:bg-border/30",
-                              header.column.getIsResizing() && "bg-blue-600 w-0.5"
-                            )} />
-                            
+                            <div
+                              className={cn(
+                                "absolute h-full w-px transition-all duration-200",
+                                "bg-transparent group-hover:bg-border/30",
+                                header.column.getIsResizing() &&
+                                  "bg-blue-600 w-0.5"
+                              )}
+                            />
+
                             {/* Resize button - only show on hover */}
-                            <div className={cn(
-                              "absolute flex items-center justify-center transition-all duration-200",
-                              "opacity-0 scale-50 pointer-events-none",
-                              "group-hover:opacity-100 group-hover:scale-100",
-                              header.column.getIsResizing() && "opacity-100 scale-110"
-                            )}>
-                              <div className={cn(
-                                "p-1.5 rounded-lg shadow-xl transition-all duration-200",
-                                "group-hover:bg-blue-600 group-hover:border-blue-500",
-                                "border-2 border-transparent",
-                                header.column.getIsResizing() && [
-                                  "bg-blue-700 border-blue-400",
-                                  "shadow-2xl shadow-blue-600/50",
-                                  "animate-pulse"
-                                ]
-                              )}>
-                                <ChevronsLeftRight className={cn(
-                                  "transition-all duration-200",
-                                  "text-transparent group-hover:text-white",
-                                  "h-3 w-3 group-hover:h-4 group-hover:w-4",
-                                  header.column.getIsResizing() && "text-white h-5 w-5"
-                                )} />
+                            <div
+                              className={cn(
+                                "absolute flex items-center justify-center transition-all duration-200",
+                                "opacity-0 scale-50 pointer-events-none",
+                                "group-hover:opacity-100 group-hover:scale-100",
+                                header.column.getIsResizing() &&
+                                  "opacity-100 scale-110"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "p-1.5 rounded-lg shadow-xl transition-all duration-200",
+                                  "group-hover:bg-blue-600 group-hover:border-blue-500",
+                                  "border-2 border-transparent",
+                                  header.column.getIsResizing() && [
+                                    "bg-blue-700 border-blue-400",
+                                    "shadow-2xl shadow-blue-600/50",
+                                    "animate-pulse",
+                                  ]
+                                )}
+                              >
+                                <ChevronsLeftRight
+                                  className={cn(
+                                    "transition-all duration-200",
+                                    "text-transparent group-hover:text-white",
+                                    "h-3 w-3 group-hover:h-4 group-hover:w-4",
+                                    header.column.getIsResizing() &&
+                                      "text-white h-5 w-5"
+                                  )}
+                                />
                               </div>
                             </div>
-                            
+
                             {/* Screen reader instructions */}
                             <span className="sr-only">
-                              Use arrow keys to resize. Shift + arrow for larger steps. Home for minimum, End for maximum width.
+                              Use arrow keys to resize. Shift + arrow for larger
+                              steps. Home for minimum, End for maximum width.
                             </span>
                           </div>
                         )}
@@ -1240,7 +1603,7 @@ export function DataTable<TData, TValue>({
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell 
+                      <TableCell
                         key={cell.id}
                         style={{
                           width: cell.column.getSize(),
@@ -1268,68 +1631,6 @@ export function DataTable<TData, TValue>({
           </Table>
         </div>
       </div>
-      {enablePagination && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Rows per page</p>
-              <select
-                className="h-8 w-[70px] rounded border border-input bg-background px-2 py-1 text-sm"
-                value={table.getState().pagination.pageSize}
-                onChange={(e) => table.setPageSize(Number(e.target.value))}
-              >
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <option key={pageSize} value={pageSize}>
-                    {pageSize}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                ⟪
-              </Button>
-              <Button
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                ⟨
-              </Button>
-              <Button
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                ⟩
-              </Button>
-              <Button
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                ⟫
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

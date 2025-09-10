@@ -110,11 +110,40 @@
 }
 
 @layer base {
-  * {
+  /* Removed global * selector to prevent mobile-first responsive display conflicts */
+  body {
+    @apply bg-background text-foreground border-border;
+  }
+  
+  /* Apply specific border styles only to interactive elements */
+  input, textarea, select, button {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+  
+  /* Ensure proper box-sizing for all elements */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  
+  /* Defensive CSS classes to prevent layout inheritance problems */
+  .mobile-view-block {
+    display: block !important;
+  }
+  
+  .desktop-view-hidden {
+    display: none !important;
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-view-block {
+      display: none !important;
+    }
+    
+    .desktop-view-hidden {
+      display: block !important;
+    }
   }
 }
 
