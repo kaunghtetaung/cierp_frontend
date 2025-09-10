@@ -1090,7 +1090,7 @@ export function ModuleDataTable({
 
       {/* Server-side Pagination - Only show when we have server-side pagination props */}
       {data.length > 0 && 
-       module.dataTableSchema.pagination?.enabled && 
+       (module.dataTableSchema.pagination?.enabled || (onPageChange && totalPages && totalPages > 1)) && 
        (onPageChange || currentPage) && (
         <div className={isLoading ? 'pointer-events-none' : ''}>
           <Pagination
@@ -1098,7 +1098,7 @@ export function ModuleDataTable({
             totalPages={totalPages}
             pageSize={pageSize ?? (module.dataTableSchema.pagination?.defaultLimit || 10)}
             totalItems={totalItems}
-            allowedLimits={module.dataTableSchema.pagination.allowedLimits}
+            allowedLimits={module.dataTableSchema.pagination?.allowedLimits}
             onPageChange={onPageChange || ((page) => setQueryParams((prev) => ({ ...prev, page })))}
             onPageSizeChange={onPageSizeChange || ((pageSize) =>
               setQueryParams((prev) => ({ ...prev, limit: pageSize, page: 1 }))
