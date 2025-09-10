@@ -97,6 +97,7 @@ interface DataTableProps<TData, TValue> {
   onRefresh?: () => void; // Refresh callback
   isLoading?: boolean; // Loading state
   addNewRoute?: string; // Custom route for Add New button
+  isPaginationControlsLoading?: boolean; // External pagination controls loading state (for synchronization)
 }
 
 export function DataTable<TData, TValue>({
@@ -119,6 +120,7 @@ export function DataTable<TData, TValue>({
   onRefresh,
   isLoading = false,
   addNewRoute,
+  isPaginationControlsLoading = false,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -1162,9 +1164,12 @@ export function DataTable<TData, TValue>({
               const canGoNext = currentPage ? currentPage < pageCount : table.getCanNextPage();
 
 
+              // Calculate combined loading state for synchronized pagination controls
+              const isAnyPaginationLoading = isLoading || isPaginationControlsLoading || isPaginationLoading;
+
               return shouldShowPagination ? (
                 <>
-                  {isLoading ? (
+                  {isAnyPaginationLoading ? (
                     // Full skeleton loading for module changes
                     <>
                       <Skeleton className="h-8 w-8" />

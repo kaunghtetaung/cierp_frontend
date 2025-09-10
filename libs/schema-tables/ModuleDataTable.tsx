@@ -1146,6 +1146,7 @@ export function ModuleDataTable({
               onPageChange={onPageChange}
               onRefresh={onRefresh}
               isLoading={isLoading}
+              isPaginationControlsLoading={isLoading} // Sync pagination loading with data loading
               addNewRoute={`/${params.appId}/${module.slug}/new`}
             />
           </div>

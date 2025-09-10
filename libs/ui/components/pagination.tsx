@@ -36,11 +36,12 @@ function Pagination({
   ...props
 }: PaginationProps) {
   // Don't show pagination if there's only 1 page or no data
-  console.log("Pagination component debug:", {
+  console.log("🔍 Pagination component debug:", {
     totalPages,
     totalItems,
     currentPage,
     pageSize,
+    isLoading: isLoading,
     shouldHide: totalPages <= 1 || totalItems === 0,
     willRender: totalPages > 1 && totalItems > 0
   });
@@ -88,26 +89,28 @@ function Pagination({
 
   // Show loading skeleton when isLoading is true
   if (isLoading) {
+    console.log("🔄 PAGINATION LOADING SKELETON ACTIVATED!");
     return (
       <div
         className={cn(
-          "flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10",
+          "flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-red-100 to-red-200",
           "opacity-75 pointer-events-none", // Reduced opacity and disable interactions during loading
           className
         )}
+        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '2px solid red' }} // Make it very obvious for debugging
       >
         {/* Loading skeleton for results info */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <Loader2Icon className="h-4 w-4 animate-spin text-primary" />
-            <div className="h-4 bg-muted animate-pulse rounded w-48"></div>
+            <Loader2Icon className="h-4 w-4 animate-spin text-red-600" />
+            <div className="h-4 bg-red-300 animate-pulse rounded w-48 text-xs flex items-center px-2">LOADING SKELETON</div>
           </div>
           
           {/* Loading skeleton for page size selector */}
           {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
             <div className="flex items-center gap-2">
-              <div className="h-4 bg-muted animate-pulse rounded w-16"></div>
-              <div className="h-8 bg-muted animate-pulse rounded w-16"></div>
+              <div className="h-4 bg-red-300 animate-pulse rounded w-16"></div>
+              <div className="h-8 bg-red-300 animate-pulse rounded w-16"></div>
             </div>
           )}
         </div>
@@ -115,15 +118,15 @@ function Pagination({
         {/* Loading skeleton for pagination controls */}
         <div className="flex items-center gap-2">
           {/* Loading skeleton for Previous button */}
-          <div className="h-8 bg-muted animate-pulse rounded w-20"></div>
+          <div className="h-8 bg-red-300 animate-pulse rounded w-20 text-xs flex items-center justify-center">PREV</div>
           
           {/* Loading skeleton for page numbers */}
           {[1,2,3].map((i) => (
-            <div key={i} className="h-8 bg-muted animate-pulse rounded w-10"></div>
+            <div key={i} className="h-8 bg-red-300 animate-pulse rounded w-10 text-xs flex items-center justify-center">{i}</div>
           ))}
           
           {/* Loading skeleton for Next button */}
-          <div className="h-8 bg-muted animate-pulse rounded w-16"></div>
+          <div className="h-8 bg-red-300 animate-pulse rounded w-16 text-xs flex items-center justify-center">NEXT</div>
         </div>
       </div>
     );
