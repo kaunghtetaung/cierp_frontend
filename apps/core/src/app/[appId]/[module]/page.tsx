@@ -7,6 +7,7 @@ import type { ModuleSchema } from "@repo/types";
 
 interface ModulePageProps {
   params: Promise<{
+    appId: string;
     module: string;
   }>;
   searchParams: Promise<Record<string, string>>;

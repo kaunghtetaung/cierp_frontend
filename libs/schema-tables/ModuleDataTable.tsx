@@ -151,9 +151,12 @@ export function ModuleDataTable({
     return { hasEnglish, hasMyanmar, isLanguageSpecific };
   };
 
-  // Function to calculate column visibility based on current language
+  // Function to calculate column visibility based on current language and default limits
   const calculateLanguageBasedVisibility = (columns: TableColumn[], currentLanguage: string) => {
     const visibility: Record<string, boolean> = {};
+    
+    // Always show Sr. no column
+    visibility["sr"] = true;
     
     // Always show selection column if present
     if (module.dataTableSchema.layout === "withCheckbox") {
@@ -165,17 +168,34 @@ export function ModuleDataTable({
       visibility["actions"] = true;
     }
     
-    // Calculate visibility for data columns
-    columns.forEach(column => {
+    // Calculate how many data columns we can show by default
+    // Target: Show only 6 total columns (Sr. + Selection + 4 data + Actions)
+    // If no selection: Sr. + 5 data + Actions = 7 total
+    const hasSelection = module.dataTableSchema.layout === "withCheckbox";
+    const maxDataColumns = hasSelection ? 4 : 5; // Adjust based on selection presence
+    
+    // Calculate visibility for data columns with language support and default limit
+    let visibleDataColumnCount = 0;
+    columns.forEach((column, index) => {
       const { hasEnglish, hasMyanmar, isLanguageSpecific } = detectColumnLanguageSupport(column);
       
+      let shouldShowBasedOnLanguage = false;
       if (currentLanguage === 'en') {
-        visibility[column.fieldName] = hasEnglish;
+        shouldShowBasedOnLanguage = hasEnglish;
       } else if (currentLanguage === 'mm') {
-        visibility[column.fieldName] = hasMyanmar;
+        shouldShowBasedOnLanguage = hasMyanmar;
       } else {
         // Default: show all columns for unknown languages
-        visibility[column.fieldName] = true;
+        shouldShowBasedOnLanguage = true;
+      }
+      
+      // Show column if: language supports it AND within default limit
+      const shouldShowByDefault = shouldShowBasedOnLanguage && visibleDataColumnCount < maxDataColumns;
+      visibility[column.fieldName] = shouldShowByDefault;
+      
+      // Increment counter only if we're showing this column
+      if (shouldShowByDefault) {
+        visibleDataColumnCount++;
       }
     });
     
@@ -389,7 +409,27 @@ export function ModuleDataTable({
   const columns: ColumnDef<any>[] = useMemo(() => {
     const cols: ColumnDef<any>[] = [];
 
-    // Selection column
+    // Sr. No column - Always first
+    cols.push({
+      id: "sr",
+      size: 60, // Fixed width for serial number column
+      minSize: 60,
+      maxSize: 60,
+      header: () => (
+        <div className="text-center font-medium">
+          {currentLanguage === "mm" ? "စဉ်" : "Sr."}
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="text-center font-medium text-muted-foreground">
+          {row.index + 1}
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    });
+
+    // Selection column - Second if enabled
     if (module.dataTableSchema.layout === "withCheckbox") {
       cols.push({
         id: "select",
@@ -585,13 +625,13 @@ export function ModuleDataTable({
       });
     });
 
-    // Actions column
+    // Actions column - ALWAYS LAST
     if (module.dataTableSchema.actions) {
       cols.push({
         id: "actions",
         header: () => (
           <div className="text-center">
-            {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
+            {currentLanguage === "mm" ? "လুပ်ဆောင်ချက်များ" : "Actions"}
           </div>
         ),
         cell: ({ row }) => {
@@ -807,32 +847,39 @@ export function ModuleDataTable({
               key={item._id || item.id || index}
               className="bg-card border border-border rounded-lg p-4 space-y-3"
             >
-              {/* Selection checkbox for mobile cards */}
-              {module.dataTableSchema.layout === "withCheckbox" && (
-                <div className="flex items-center space-x-2 pb-2 border-b border-border">
-                  <Checkbox
-                    checked={selectedItems.some(
-                      (selected) =>
-                        (selected._id || selected.id) === (item._id || item.id)
-                    )}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedItems((prev) => [...prev, item]);
-                      } else {
-                        setSelectedItems((prev) =>
-                          prev.filter(
-                            (selected) =>
-                              (selected._id || selected.id) !== (item._id || item.id)
-                          )
-                        );
-                      }
-                    }}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {currentLanguage === "mm" ? "ရွေးချယ်မည်" : "Select"}
+              {/* Sr. no and selection for mobile cards */}
+              <div className="flex items-center justify-between pb-2 border-b border-border">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {currentLanguage === "mm" ? "စဉ်" : "Sr."} {index + 1}
                   </span>
                 </div>
-              )}
+                {module.dataTableSchema.layout === "withCheckbox" && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={selectedItems.some(
+                        (selected) =>
+                          (selected._id || selected.id) === (item._id || item.id)
+                      )}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedItems((prev) => [...prev, item]);
+                        } else {
+                          setSelectedItems((prev) =>
+                            prev.filter(
+                              (selected) =>
+                                (selected._id || selected.id) !== (item._id || item.id)
+                            )
+                          );
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {currentLanguage === "mm" ? "ရွေးချယ်မည်" : "Select"}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {/* Card content - each column as a row */}
               {module.dataTableSchema.columns.map((column: TableColumn) => {
@@ -1011,7 +1058,7 @@ export function ModuleDataTable({
         </div>
 
         {/* Desktop Table View - Show on desktop screens (1024px+) */}
-        <div className="hidden lg:block w-full min-w-0 overflow-hidden">
+        <div className="lg:block w-full min-w-0 overflow-hidden">
           <div className="module-data-table">
             <DataTable
               columns={columns}
@@ -1031,14 +1078,20 @@ export function ModuleDataTable({
               }
               onRowSelectionChange={setSelectedItems}
               initialColumnVisibility={columnVisibility}
-              enablePagination={false}
+              enablePagination={
+                // Enable client-side pagination only if we don't have server-side pagination props
+                !onPageChange && !currentPage && module.dataTableSchema.pagination?.enabled
+              }
+              pageSize={module.dataTableSchema.pagination?.defaultLimit || 10}
             />
           </div>
         </div>
       </div>
 
-      {/* Pagination */}
-      {data.length > 0 && module.dataTableSchema.pagination?.enabled && (
+      {/* Server-side Pagination - Only show when we have server-side pagination props */}
+      {data.length > 0 && 
+       module.dataTableSchema.pagination?.enabled && 
+       (onPageChange || currentPage) && (
         <div className={isLoading ? 'pointer-events-none' : ''}>
           <Pagination
             currentPage={currentPage ?? 1}

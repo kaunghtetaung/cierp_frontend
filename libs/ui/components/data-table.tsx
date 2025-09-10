@@ -718,7 +718,7 @@ export function DataTable<TData, TValue>({
               <div className="flex items-center gap-2">
                 {/* Display selected title */}
                 <div className="px-3 py-1 bg-white dark:bg-gray-900 border border-border rounded-md min-w-[200px]">
-                  <span className="text-sm font-medium">{selectedTitle || "No title selected"}</span>
+                  <span className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis block">{selectedTitle || "No title selected"}</span>
                 </div>
                 
                 {/* Select Title Button */}
@@ -1081,13 +1081,13 @@ export function DataTable<TData, TValue>({
                             <div
                               className={cn(
                                 "flex items-center justify-center gap-1 text-center",
-                                "break-words min-w-0", // Allow text wrapping and prevent overflow
+                                "whitespace-nowrap overflow-hidden text-ellipsis min-w-0", // Single line with ellipsis for overflow
                                 header.column.getCanSort() && !isDraggable && "cursor-pointer select-none",
                                 isDraggable && "cursor-grab active:cursor-grabbing"
                               )}
                               onClick={header.column.getCanSort() && !isDraggable ? header.column.getToggleSortingHandler() : undefined}
                             >
-                              <span className="break-words">
+                              <span className="whitespace-nowrap overflow-hidden text-ellipsis">
                                 {flexRender(
                                   header.column.columnDef.header,
                                   header.getContext()
