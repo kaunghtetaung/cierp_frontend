@@ -357,19 +357,111 @@ export function TypeaheadDynamicSelect({
       );
       
       if (!hasObjectsWithIdName) {
-        // For existing array of string IDs, we need to keep them as-is
-        // The badges will only show for options that exist in the options array
+        // For existing array of string IDs (browser storage restoration), fetch names for badge display
+        const fetchOptionsForIds = async () => {
+          try {
+            // Check if all values already exist in options
+            const missingIds = value.filter((id: string) => !options.find(opt => opt.value === id));
+            
+            if (missingIds.length > 0) {
+              // Fetch options to get the names for display
+              const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
+              const result = await getModuleReferenceAction<ApiOption>(module, {});
+              
+              if (result.success) {
+                const responseData = result.data as any;
+                const data = Array.isArray(responseData) 
+                  ? responseData 
+                  : (responseData?.data || responseData?.items || []);
+                
+                const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption) => ({
+                  value: String(item._id || item.id || item.value || ""),
+                  label: {
+                    en: getApiLabel(item, "en"),
+                    mm: getApiLabel(item, "mm"),
+                  },
+                }));
+                
+                // Merge with existing options, avoiding duplicates
+                setOptions(prevOptions => {
+                  const existingValues = prevOptions.map(opt => opt.value);
+                  const newOptions = transformedOptions.filter(opt => !existingValues.includes(opt.value));
+                  return [...prevOptions, ...newOptions];
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch options for multi-select browser storage restoration:', error);
+          }
+        };
+
+        fetchOptionsForIds();
         setDisplayValue("");
         return;
       }
     }
 
-    // Case 5: Simple string value (show as-is, no fetching for typeahead)
-    if (typeof value === 'string' && !selectedOption) {
-      setDisplayValue(String(value));
+    // Case 5: Simple string value (browser storage restoration - should fetch name for display)
+    if (typeof value === 'string' && !selectedOption && value.trim() !== '') {
+      // For browser storage restoration, we need to fetch the option to display the name
+      // This prevents showing just the ID in the textbox
+      const fetchOptionForId = async () => {
+        try {
+          // First check if the option already exists in our options array
+          const existingOption = options.find(opt => opt.value === value);
+          if (existingOption) {
+            setSelectedOption(existingOption);
+            const labelText = typeof existingOption.label === 'string' ? existingOption.label : getLocalizedText(existingOption.label, currentLanguage);
+            setDisplayValue(labelText);
+            return;
+          }
+
+          // If not found in options, fetch all options to find this specific ID
+          const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
+          const result = await getModuleReferenceAction<ApiOption>(module, {});
+          
+          if (result.success) {
+            const responseData = result.data as any;
+            const data = Array.isArray(responseData) 
+              ? responseData 
+              : (responseData?.data || responseData?.items || []);
+            
+            const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption) => ({
+              value: String(item._id || item.id || item.value || ""),
+              label: {
+                en: getApiLabel(item, "en"),
+                mm: getApiLabel(item, "mm"),
+              },
+            }));
+            
+            // Update options array with fetched data
+            setOptions(transformedOptions);
+            
+            // Find the specific option that matches our value
+            const matchingOption = transformedOptions.find(opt => opt.value === value);
+            if (matchingOption) {
+              setSelectedOption(matchingOption);
+              const labelText = typeof matchingOption.label === 'string' ? matchingOption.label : getLocalizedText(matchingOption.label, currentLanguage);
+              setDisplayValue(labelText);
+            } else {
+              // If still not found, show the ID but mark it as potentially invalid
+              setDisplayValue(String(value));
+            }
+          } else {
+            // If fetch fails, fallback to showing the ID
+            setDisplayValue(String(value));
+          }
+        } catch (error) {
+          console.error('Failed to fetch option for browser storage restoration:', error);
+          // Fallback to showing the ID
+          setDisplayValue(String(value));
+        }
+      };
+
+      fetchOptionForId();
       return;
     }
-  }, [value, selectedOption, currentLanguage, isMultiple, onChange]);
+  }, [value, selectedOption, currentLanguage, isMultiple, onChange, options, dropdownConfig.refPath, dataSource.endpoint]);
 
   // Update display value when selected option changes
   useEffect(() => {
