@@ -292,18 +292,18 @@ export function TypeaheadDynamicSelect({
             }
           }));
         
-        // Set options to include the initial values
+        // Set options to include the initial values - IMPORTANT: This ensures names are displayed in badges
         setOptions(prevOptions => {
           const existingValues = prevOptions.map(opt => opt.value);
           const newOptions = transformedOptions.filter(opt => !existingValues.includes(opt.value));
           return [...prevOptions, ...newOptions];
         });
         
-        // Update form with array of ID strings
+        // Update form with array of ID strings for proper form submission
         const idValues = transformedOptions.map(opt => opt.value);
         onChange(idValues);
         
-        // Set display for multi-select (will show as badges)
+        // Set display for multi-select (will show as badges with names)
         setDisplayValue("");
         return;
       }
@@ -328,7 +328,18 @@ export function TypeaheadDynamicSelect({
           mm: String(value.name)
         }
       };
+      
+      // Set the option and ensure it's added to options list for consistency
       setSelectedOption(transformedOption);
+      setOptions(prevOptions => {
+        const existingOption = prevOptions.find(opt => opt.value === transformedOption.value);
+        if (!existingOption) {
+          return [...prevOptions, transformedOption];
+        }
+        return prevOptions;
+      });
+      
+      // Set display value to the name
       setDisplayValue(String(value.name));
       
       // IMPORTANT: Update the form with just the ID string to prevent validation errors
@@ -339,7 +350,21 @@ export function TypeaheadDynamicSelect({
       return;
     }
 
-    // Case 4: Simple string value (show as-is, no fetching for typeahead)
+    // Case 4: Array of string IDs for multi-select (existing data)
+    if (Array.isArray(value) && value.length > 0 && isMultiple) {
+      const hasObjectsWithIdName = value.some(item => 
+        item && typeof item === 'object' && (item.id || item._id) && item.name
+      );
+      
+      if (!hasObjectsWithIdName) {
+        // For existing array of string IDs, we need to keep them as-is
+        // The badges will only show for options that exist in the options array
+        setDisplayValue("");
+        return;
+      }
+    }
+
+    // Case 5: Simple string value (show as-is, no fetching for typeahead)
     if (typeof value === 'string' && !selectedOption) {
       setDisplayValue(String(value));
       return;
