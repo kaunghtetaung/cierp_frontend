@@ -10,6 +10,7 @@ import { Button } from "@repo/ui";
 import { Input } from "@repo/ui";
 import { DataTable, FilterConfig } from "@repo/ui";
 import { Checkbox } from "@repo/ui";
+import { useSidebar } from "@repo/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,10 @@ interface ModuleDataTableProps {
   sortOrder?: "asc" | "desc";
   isLoading?: boolean;
   onRefresh?: () => void;
+  showMonthlySelector?: boolean; // New prop for monthly reports
+  onMonthChange?: (year: number, month: number) => void; // Callback for month selection
+  selectedYear?: number;
+  selectedMonth?: number;
 }
 
 export function ModuleDataTable({
@@ -63,10 +68,62 @@ export function ModuleDataTable({
   sortOrder,
   isLoading,
   onRefresh,
+  showMonthlySelector = false,
+  onMonthChange,
+  selectedYear = new Date().getFullYear(),
+  selectedMonth = new Date().getMonth() + 1,
 }: Omit<ModuleDataTableProps, "currentLanguage">) {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
   const params = useParams();
+  const { state: sidebarState } = useSidebar();
+
+  // Monthly selector helper functions
+  const getMonthName = (monthNum: number) => {
+    const months = {
+      en: [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ],
+      mm: [
+        "ဇန်နဝါရီ", "ဖေဖေါ်ဝါရီ", "မတ်", "ဧပြီ", "မေ", "ဇွန်",
+        "ဇူလိုင်", "သြဂုတ်", "စက်တင်ဘာ", "အောက်တိုဘာ", "နိုဝင်ဘာ", "ဒီဇင်ဘာ"
+      ]
+    };
+    return months[currentLanguage === "mm" ? "mm" : "en"][monthNum - 1];
+  };
+
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear; i >= currentYear - 5; i--) {
+      years.push(i);
+    }
+    return years;
+  };
+
+  const generateMonthOptions = () => {
+    return Array.from({ length: 12 }, (_, i) => ({
+      value: i + 1,
+      label: getMonthName(i + 1)
+    }));
+  };
+
+  const handleMonthChange = (year: number, month: number) => {
+    if (onMonthChange) {
+      onMonthChange(year, month);
+    }
+  };
+
+  // Generate print title with monthly information
+  const getPrintTitle = () => {
+    const baseTitle = getLocalizedText(module.name, currentLanguage);
+    if (showMonthlySelector) {
+      const monthName = getMonthName(selectedMonth);
+      return `${baseTitle} - ${monthName} ${selectedYear} ${currentLanguage === "mm" ? "လစဉ်အစီရင်ခံစာ" : "Monthly Report"}`;
+    }
+    return baseTitle;
+  };
 
   // React Query mutations for delete operations
   const deleteItemMutation = useDeleteModuleItem(module.slug);
@@ -469,7 +526,118 @@ export function ModuleDataTable({
       enableHiding: false,
     });
 
-    // Selection column - Second if enabled
+    // Actions column - Always second if present
+    if (module.dataTableSchema.actions) {
+      cols.push({
+        id: "actions",
+        size: 80, // Fixed width for actions column
+        minSize: 80,
+        maxSize: 80,
+        header: () => (
+          <div className="text-center">
+            <IconComponent name="Settings" className="h-4 w-4 mx-auto" />
+            <span className="sr-only">
+              {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
+            </span>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const item = row.original;
+
+          return (
+            <div className="flex items-center justify-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <IconComponent name="MoreHorizontal" className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>
+                    {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  {/* View Action */}
+                  {module.dataTableSchema.actions.view && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={`/${params.appId}/${module.slug}/${
+                          item._id || item.id
+                        }/view`}
+                        className="cursor-pointer"
+                      >
+                        <IconComponent name="Eye" className="mr-2 h-4 w-4" />
+                        {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Edit Action - Show by default unless explicitly disabled */}
+                  {module.dataTableSchema.actions.edit !== false && (
+                    <DropdownMenuItem
+                      onClick={() => handleEdit(item._id || item.id)}
+                      className="cursor-pointer"
+                    >
+                      <IconComponent name="Pencil" className="mr-2 h-4 w-4" />
+                      {currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Edit"}
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Delete Action - Show by default unless explicitly disabled */}
+                  {module.dataTableSchema.actions.delete !== false && (
+                    <DropdownMenuItem
+                      onClick={() => handleDelete(item._id || item.id)}
+                      className="cursor-pointer text-destructive"
+                    >
+                      <IconComponent name="Trash2" className="mr-2 h-4 w-4" />
+                      {currentLanguage === "mm" ? "ဖျက်မည်" : "Delete"}
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Extra Actions */}
+                  {module.dataTableSchema.actions.extraActions?.map((action) =>
+                    action.type === "page" ? (
+                      <DropdownMenuItem key={action.actionKey} asChild>
+                        <Link
+                          href={`/${params.appId}/${module.slug}/${
+                            item._id || item.id
+                          }/actions/${action.actionKey}`}
+                          className="cursor-pointer"
+                        >
+                          <IconComponent
+                            name={action.icon}
+                            className="mr-2 h-4 w-4"
+                          />
+                          {getLocalizedText(action.label, currentLanguage)}
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        key={action.actionKey}
+                        onClick={() => handleExtraActionForRow(action, item)}
+                        className="cursor-pointer"
+                      >
+                        <IconComponent
+                          name={action.icon}
+                          className="mr-2 h-4 w-4"
+                        />
+                        {getLocalizedText(action.label, currentLanguage)}
+                      </DropdownMenuItem>
+                    )
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+        enableSorting: false,
+        enableHiding: false,
+      });
+    }
+
+    // Selection column - Third if enabled
     if (module.dataTableSchema.layout === "withCheckbox") {
       cols.push({
         id: "select",
@@ -581,20 +749,28 @@ export function ModuleDataTable({
                   : "Inactive"}
               </span>
             );
-          } else if (column.type === "icon" && fieldValue) {
-            return (
+          } else if (column.type === "icon") {
+            return fieldValue ? (
               <div className="flex items-center justify-center">
                 <IconComponent name={fieldValue} size={20} />
               </div>
+            ) : (
+              <span className="text-muted-foreground text-xs">
+                {currentLanguage === "mm" ? "မရှိပါ" : "N/A"}
+              </span>
             );
-          } else if (column.type === "number" && fieldValue) {
-            return (
+          } else if (column.type === "number") {
+            return fieldValue ? (
               <div className="font-medium text-right">
                 {fieldValue.toLocaleString()}
               </div>
+            ) : (
+              <span className="text-muted-foreground text-xs">
+                {currentLanguage === "mm" ? "မရှိပါ" : "N/A"}
+              </span>
             );
-          } else if (column.type === "image" && fieldValue) {
-            return (
+          } else if (column.type === "image") {
+            return fieldValue ? (
               <div className="flex items-center justify-center">
                 <img
                   src={fieldValue}
@@ -607,6 +783,10 @@ export function ModuleDataTable({
                   }}
                 />
               </div>
+            ) : (
+              <span className="text-muted-foreground text-xs">
+                {currentLanguage === "mm" ? "မရှိပါ" : "N/A"}
+              </span>
             );
           } else if (
             column.populate &&
@@ -636,7 +816,15 @@ export function ModuleDataTable({
             return (
               <div className="font-medium truncate max-w-[250px] group relative">
                 <span title={displayValue || rawValue._id}>
-                  {displayValue || rawValue._id || "-"}
+                  {isLoading ? (
+                    <div className="h-4 bg-muted animate-pulse rounded w-20"></div>
+                  ) : (
+                    displayValue || rawValue._id || (
+                      <span className="text-muted-foreground text-xs">
+                        {currentLanguage === "mm" ? "မရှိပါ" : "N/A"}
+                      </span>
+                    )
+                  )}
                 </span>
                 {/* Show ID on hover for debugging in development */}
                 {process.env.NODE_ENV === "development" && rawValue._id && (
@@ -682,8 +870,8 @@ export function ModuleDataTable({
       });
     });
 
-    // Actions column - ALWAYS LAST
-    if (module.dataTableSchema.actions) {
+    // Actions column moved to second position above
+    if (false && module.dataTableSchema.actions) {
       cols.push({
         id: "actions",
         header: () => (
@@ -791,7 +979,7 @@ export function ModuleDataTable({
   }, [module.dataTableSchema, currentLanguage, queryParams]);
 
   return (
-    <div className="space-y-6 w-full min-w-0 overflow-hidden">
+    <div className="space-y-6 w-full min-w-0 max-w-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -811,6 +999,61 @@ export function ModuleDataTable({
           </div>
         </div>
       </div>
+
+      {/* Monthly Report Selector */}
+      {showMonthlySelector && (
+        <div className="bg-muted/30 border border-border rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {currentLanguage === "mm" ? "လစဉ် အစီရင်ခံစာ" : "Monthly Report"}
+              </h3>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              {/* Year Selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">
+                  {currentLanguage === "mm" ? "နှစ်" : "Year"}:
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => handleMonthChange(parseInt(e.target.value), selectedMonth)}
+                  className="px-3 py-1 text-sm border border-border rounded bg-background text-foreground min-w-[80px]"
+                >
+                  {generateYearOptions().map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Month Selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">
+                  {currentLanguage === "mm" ? "လ" : "Month"}:
+                </label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => handleMonthChange(selectedYear, parseInt(e.target.value))}
+                  className="px-3 py-1 text-sm border border-border rounded bg-background text-foreground min-w-[120px]"
+                >
+                  {generateMonthOptions().map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selected Period Display */}
+              <div className="text-sm text-primary font-medium bg-primary/10 px-3 py-1 rounded-md">
+                {getMonthName(selectedMonth)} {selectedYear}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Actions Bar */}
       {selectedItems.length > 0 &&
@@ -873,7 +1116,14 @@ export function ModuleDataTable({
         )}
 
       {/* Data Table - Responsive: Cards for mobile and small tablets, Table for large screens */}
-      <div className="w-full min-w-0">
+      <div 
+        className="w-full min-w-0 overflow-hidden" 
+        style={{ 
+          maxWidth: sidebarState === "collapsed" 
+            ? 'calc(100vw - 80px)'   // More space when sidebar is collapsed (~48px + padding)
+            : 'calc(100vw - 320px)'  // Less space when sidebar is expanded (~256px + padding)
+        }}
+      >
         {/* Mobile Card View - Show on mobile and tablet */}
         <div className="mobile-view-block space-y-4">
           {data.map((item, index) => (
@@ -961,20 +1211,20 @@ export function ModuleDataTable({
                         : "Inactive"}
                     </span>
                   );
-                } else if (column.type === "icon" && fieldValue) {
-                  displayValue = (
+                } else if (column.type === "icon") {
+                  displayValue = fieldValue ? (
                     <div className="flex items-center">
                       <IconComponent name={fieldValue} size={20} />
                     </div>
-                  );
-                } else if (column.type === "number" && fieldValue) {
-                  displayValue = (
+                  ) : null;
+                } else if (column.type === "number") {
+                  displayValue = fieldValue ? (
                     <span className="font-medium">
                       {fieldValue.toLocaleString()}
                     </span>
-                  );
-                } else if (column.type === "image" && fieldValue) {
-                  displayValue = (
+                  ) : null;
+                } else if (column.type === "image") {
+                  displayValue = fieldValue ? (
                     <img
                       src={fieldValue}
                       alt="Image"
@@ -984,7 +1234,12 @@ export function ModuleDataTable({
                           "/placeholder-image.png";
                       }}
                     />
-                  );
+                  ) : null;
+                }
+
+                // Hide column if data is empty/null and not loading
+                if (!isLoading && !displayValue && !fieldValue) {
+                  return null;
                 }
 
                 return (
@@ -996,11 +1251,15 @@ export function ModuleDataTable({
                       {getLocalizedText(column.label, currentLanguage)}
                     </span>
                     <div className="text-sm text-foreground ml-4">
-                      {displayValue || "-"}
+                      {isLoading ? (
+                        <div className="h-4 bg-muted animate-pulse rounded w-24"></div>
+                      ) : (
+                        displayValue
+                      )}
                     </div>
                   </div>
                 );
-              })}
+              }).filter(Boolean)}
 
               {/* Actions for mobile cards */}
               {module.dataTableSchema.actions && (
@@ -1109,7 +1368,14 @@ export function ModuleDataTable({
 
         {/* Desktop Table View - Show on desktop screens (768px+) */}
         <div className="desktop-view-hidden w-full min-w-0 overflow-hidden">
-          <div className="module-data-table">
+          <div 
+            className="module-data-table w-full" 
+            style={{ 
+              maxWidth: sidebarState === "collapsed" 
+                ? 'calc(100vw - 80px)'   // More space when sidebar is collapsed
+                : 'calc(100vw - 320px)'  // Less space when sidebar is expanded
+            }}
+          >
             <DataTable
               columns={columns}
               data={data}
@@ -1148,6 +1414,7 @@ export function ModuleDataTable({
               isLoading={isLoading}
               isPaginationControlsLoading={isLoading} // Sync pagination loading with data loading
               addNewRoute={`/${params.appId}/${module.slug}/new`}
+              printTitle={getPrintTitle()}
             />
           </div>
         </div>

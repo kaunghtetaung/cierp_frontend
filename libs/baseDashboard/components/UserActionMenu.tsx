@@ -50,7 +50,7 @@ export function UserActionMenu({
   isLoading = false, 
   onLogout 
 }: UserActionMenuProps) {
-  const { isMobile } = useSidebar();
+  const { isMobile, state } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   if (isLoading || !user) {
@@ -118,6 +118,104 @@ export function UserActionMenu({
     }
   };
 
+  // Show simplified avatar-only version when collapsed
+  if (state === "collapsed") {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="default"
+                className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                tooltip={getUserDisplayName()}
+              >
+                <Avatar className="h-6 w-6 rounded-md">
+                  <AvatarImage src={undefined} alt={getUserDisplayName()} />
+                  <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
+                    {getInitials(getUserDisplayName())}
+                  </AvatarFallback>
+                </Avatar>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-card border-border"
+              side="right"
+              align="start"
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={undefined} alt={getUserDisplayName()} />
+                    <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                      {getInitials(getUserDisplayName())}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {getUserDisplayName()}
+                    </span>
+                    <span className="truncate text-xs">{user.email}</span>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <DropdownMenuItem>
+                  <User className="h-4 w-4" />
+                  {getMenuText("Profile")}
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="h-4 w-4" />
+                  {getMenuText("Settings")}
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Bell className="h-4 w-4" />
+                  {getMenuText("Notifications")}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+
+              {user.roles?.includes("admin") && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                      <BadgeCheck className="h-4 w-4" />
+                      {getMenuText("Admin Panel")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <CreditCard className="h-4 w-4" />
+                      {getMenuText("Billing")}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </>
+              )}
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="text-destructive focus:text-destructive cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="h-4 w-4" />
+                )}
+                {isLoggingOut
+                  ? getMenuText("Signing out...")
+                  : getMenuText("Sign Out")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  // Show full layout when expanded
   return (
     <SidebarMenu>
       <SidebarMenuItem>

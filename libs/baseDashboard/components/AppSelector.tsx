@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import type { TenantSettings, TenantApplication } from "@repo/types";
 import { getLocalizedText } from "@repo/utils";
 import { extractBaseDomain } from "@repo/utils/common/url";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { IconComponent } from "@repo/ui";
 
 import {
@@ -20,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@repo/ui";
 
 interface AppSelectorProps {
@@ -30,6 +30,7 @@ interface AppSelectorProps {
 export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { state } = useSidebar();
 
   console.log(
     "Tenant applications loaded in AppSelector",
@@ -154,6 +155,85 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
     );
   }
 
+  // Show simplified icon-only version when collapsed
+  if (state === "collapsed") {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="default"
+                className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                tooltip={getLocalizedText(currentApp.displayName, currentLanguage)}
+              >
+                <div className="flex aspect-square size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  {getIcon(currentApp.iconName, "size-4")}
+                </div>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-card border-border"
+              align="start"
+              side="right"
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {getLocalizedText(tenant.displayName, currentLanguage)} -
+                Applications
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              {apps.map((app, index) => (
+                <DropdownMenuItem
+                  key={
+                    app.slug ||
+                    getLocalizedText(app.displayShortName, currentLanguage) ||
+                    index
+                  }
+                  onClick={() => handleAppSelect(app)}
+                  className="gap-2 p-2 cursor-pointer"
+                >
+                  <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                    {getIcon(app.iconName, "size-3")}
+                  </div>
+                  <div className="flex-1 grid text-left">
+                    <span className="font-medium text-sm">
+                      {getLocalizedText(app.displayName, currentLanguage)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {getLocalizedText(
+                        app.localizedDescription,
+                        currentLanguage
+                      )}
+                    </span>
+                  </div>
+                  {(currentApp.slug ||
+                    getLocalizedText(
+                      currentApp.displayShortName,
+                      currentLanguage
+                    )) ===
+                    (app.slug ||
+                      getLocalizedText(
+                        app.displayShortName,
+                        currentLanguage
+                      )) && <IconComponent name="Check" className="size-4 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 p-2 text-muted-foreground">
+                <IconComponent name="Plus" className="size-4" />
+                <span>Request new app</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  // Show full layout when expanded
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -171,7 +251,7 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
                   {getLocalizedText(currentApp.displayName, currentLanguage)}
                 </span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <IconComponent name="ChevronsUpDown" className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -219,13 +299,13 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
                     getLocalizedText(
                       app.displayShortName,
                       currentLanguage
-                    )) && <Check className="size-4 text-primary" />}
+                    )) && <IconComponent name="Check" className="size-4 text-primary" />}
               </DropdownMenuItem>
             ))}
 
             <DropdownMenuSeparator />
             <DropdownMenuItem className="gap-2 p-2 text-muted-foreground">
-              <Plus className="size-4" />
+              <IconComponent name="Plus" className="size-4" />
               <span>Request new app</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

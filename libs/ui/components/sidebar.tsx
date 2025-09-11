@@ -25,12 +25,36 @@ import {
   TooltipTrigger,
 } from "./tooltip"
 
+const SIDEBAR_STORAGE_KEY = "sidebar_state"
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+
+// Helper functions for localStorage persistence
+const getSavedSidebarState = (): boolean | null => {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    return saved !== null ? JSON.parse(saved) : null
+  } catch {
+    return null
+  }
+}
+
+const saveSidebarState = (open: boolean): void => {
+  if (typeof window === 'undefined') return
+  
+  try {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(open))
+  } catch {
+    // Fallback to cookie if localStorage fails
+    document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+  }
+}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -69,9 +93,12 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // This is the internal state of the sidebar.
+  // This is the internal state of the sidebar with localStorage persistence.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  const [_open, _setOpen] = React.useState(() => {
+    const savedState = getSavedSidebarState()
+    return savedState !== null ? savedState : defaultOpen
+  })
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -82,8 +109,8 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      // Save to localStorage and fallback to cookie
+      saveSidebarState(openState)
     },
     [setOpenProp, open]
   )
@@ -139,7 +166,7 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex h-screen max-h-screen w-full overflow-hidden",
             className
           )}
           {...props}
@@ -229,7 +256,7 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          `fixed inset-y-0 z-[${Z_INDEX.sidebar}] hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex`,
+          `fixed inset-y-0 z-[${Z_INDEX.sidebar}] hidden h-screen w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex`,
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -309,7 +336,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "bg-background relative flex w-full flex-1 flex-col",
+        "bg-background relative flex w-full flex-1 flex-col h-full max-h-screen overflow-hidden",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}
@@ -374,7 +401,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 h-full max-h-full overflow-auto group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
       {...props}

@@ -638,16 +638,37 @@ export function DataTable<TData, TValue>({
                           header: column,
                           table,
                         } as any);
-                        headerText =
-                          typeof headerResult === "string"
-                            ? headerResult
-                            : headerResult?.props?.children || column.id;
+                        
+                        // Better extraction of header text from React components
+                        if (typeof headerResult === "string") {
+                          headerText = headerResult;
+                        } else if (headerResult?.props?.children) {
+                          const children = headerResult.props.children;
+                          if (typeof children === "string") {
+                            headerText = children;
+                          } else if (Array.isArray(children)) {
+                            // Extract text from array of children
+                            headerText = children
+                              .map(child => typeof child === "string" ? child : "")
+                              .join("").trim() || column.id;
+                          } else if (children?.props?.children) {
+                            headerText = children.props.children || column.id;
+                          } else {
+                            headerText = column.id;
+                          }
+                        } else {
+                          headerText = column.id;
+                        }
                       } catch (e) {
                         headerText = column.id;
                       }
                     } else if (typeof column.columnDef.header === "string") {
                       headerText = column.columnDef.header;
                     }
+                    
+                    // Clean up any remaining object references
+                    headerText = String(headerText).replace(/\[object Object\]/g, "").trim() || column.id;
+                    
                     return `<th>${headerText}</th>`;
                   })
                   .join("")}
@@ -692,32 +713,70 @@ export function DataTable<TData, TValue>({
                         } else if (rawValue instanceof Date) {
                           textValue = rawValue.toLocaleDateString();
                         } else if (typeof rawValue === "object") {
-                          // Handle multilingual objects
+                          // Handle multilingual objects and complex nested objects
                           if (rawValue.en || rawValue.mm) {
                             textValue = rawValue.en || rawValue.mm || "";
                           } else if (rawValue.displayName) {
-                            textValue =
-                              typeof rawValue.displayName === "object"
-                                ? rawValue.displayName.en ||
-                                  rawValue.displayName.mm ||
-                                  ""
-                                : rawValue.displayName;
+                            if (typeof rawValue.displayName === "object") {
+                              textValue = rawValue.displayName.en || rawValue.displayName.mm || "";
+                            } else {
+                              textValue = rawValue.displayName;
+                            }
                           } else if (rawValue.name) {
-                            textValue =
-                              typeof rawValue.name === "object"
-                                ? rawValue.name.en || rawValue.name.mm || ""
-                                : rawValue.name;
+                            if (typeof rawValue.name === "object") {
+                              textValue = rawValue.name.en || rawValue.name.mm || "";
+                            } else {
+                              textValue = rawValue.name;
+                            }
+                          } else if (rawValue.title) {
+                            if (typeof rawValue.title === "object") {
+                              textValue = rawValue.title.en || rawValue.title.mm || "";
+                            } else {
+                              textValue = rawValue.title;
+                            }
+                          } else if (rawValue.label) {
+                            if (typeof rawValue.label === "object") {
+                              textValue = rawValue.label.en || rawValue.label.mm || "";
+                            } else {
+                              textValue = rawValue.label;
+                            }
+                          } else if (rawValue.value) {
+                            if (typeof rawValue.value === "object") {
+                              textValue = rawValue.value.en || rawValue.value.mm || "";
+                            } else {
+                              textValue = rawValue.value;
+                            }
+                          } else if (rawValue._id) {
+                            // If it's a reference object with just an ID
+                            textValue = rawValue._id;
+                          } else if (Array.isArray(rawValue)) {
+                            // Handle arrays by joining their string representations
+                            textValue = rawValue
+                              .map(item => typeof item === "string" ? item : (item?.name || item?.title || item?.displayName || ""))
+                              .filter(Boolean)
+                              .join(", ");
                           } else {
-                            textValue = String(rawValue);
+                            // Last resort - try to extract any meaningful text
+                            const keys = Object.keys(rawValue);
+                            const textFields = keys.filter(key => 
+                              typeof rawValue[key] === "string" && rawValue[key].length > 0
+                            );
+                            if (textFields.length > 0) {
+                              textValue = rawValue[textFields[0]];
+                            } else {
+                              textValue = JSON.stringify(rawValue);
+                            }
                           }
                         } else {
                           textValue = String(rawValue);
                         }
 
-                        // Clean up the text value
-                        textValue =
-                          textValue.replace(/\[object Object\]/g, "").trim() ||
-                          "-";
+                        // Clean up the text value more thoroughly
+                        textValue = String(textValue || "")
+                          .replace(/\[object Object\]/g, "")
+                          .replace(/^\s*,\s*|\s*,\s*$/g, "") // Remove leading/trailing commas
+                          .replace(/\s*,\s*,\s*/g, ", ") // Clean up multiple commas
+                          .trim() || "-";
                       }
 
                       return `<td>${textValue}</td>`;
@@ -1257,13 +1316,62 @@ export function DataTable<TData, TValue>({
           </h3>
         </div>
       )}
-      <div className="rounded-md border border-gray-200 overflow-hidden mt-4">
+      <div className="rounded-md border border-gray-200 mt-4 w-full">
         <div
-          className={cn(
-            "overflow-x-auto relative",
-            // Add visual feedback when resizing
-            table.getState().columnSizingInfo?.isResizingColumn && "select-none"
-          )}
+          className="relative w-full overflow-x-auto"
+          style={{ 
+            maxWidth: '100%',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+          onMouseEnter={(e) => {
+            // Show scrollbar on hover - works even with table row hovers
+            const target = e.currentTarget;
+            target.style.scrollbarWidth = 'thin';
+            target.style.scrollbarColor = '#3b82f6 #f3f4f6';
+            
+            // Create unique class to avoid conflicts
+            const uniqueClass = 'table-scrollbar-' + Date.now();
+            target.classList.add(uniqueClass);
+            
+            // Add webkit scrollbar styles
+            const style = document.createElement('style');
+            style.id = uniqueClass;
+            style.textContent = `
+              .${uniqueClass}::-webkit-scrollbar {
+                height: 12px !important;
+              }
+              .${uniqueClass}::-webkit-scrollbar-track {
+                background: #f3f4f6 !important;
+                border-radius: 6px !important;
+              }
+              .${uniqueClass}::-webkit-scrollbar-thumb {
+                background: #3b82f6 !important;
+                border-radius: 6px !important;
+              }
+              .${uniqueClass}::-webkit-scrollbar-thumb:hover {
+                background: #2563eb !important;
+              }
+            `;
+            document.head.appendChild(style);
+          }}
+          onMouseLeave={(e) => {
+            // Hide scrollbar when leaving container
+            const target = e.currentTarget;
+            target.style.scrollbarWidth = 'none';
+            
+            // Remove webkit styles
+            const classes = Array.from(target.classList);
+            classes.forEach(className => {
+              if (className.startsWith('table-scrollbar-')) {
+                target.classList.remove(className);
+                const style = document.getElementById(className);
+                if (style) {
+                  style.remove();
+                }
+              }
+            });
+          }}
         >
           {/* Resize preview line */}
           {table.getState().columnSizingInfo?.isResizingColumn && (
@@ -1277,18 +1385,21 @@ export function DataTable<TData, TValue>({
               }}
             />
           )}
-          <Table
-            style={{
-              width: table.getCenterTotalSize(),
-              transition: table.getState().columnSizingInfo?.isResizingColumn
-                ? "none"
-                : "width 0.2s ease-out",
-            }}
-            className={cn(
-              table.getState().columnSizingInfo?.isResizingColumn &&
-                "cursor-col-resize"
-            )}
-          >
+          <div className="relative w-full">
+            <table
+              style={{
+                width: table.getCenterTotalSize(),
+                minWidth: table.getCenterTotalSize(),
+                transition: table.getState().columnSizingInfo?.isResizingColumn
+                  ? "none"
+                  : "width 0.2s ease-out",
+              }}
+              className={cn(
+                "caption-bottom text-sm table-fixed border-separate border-spacing-0",
+                table.getState().columnSizingInfo?.isResizingColumn &&
+                  "cursor-col-resize"
+              )}
+            >
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -1308,6 +1419,8 @@ export function DataTable<TData, TValue>({
                         )}
                         style={{
                           width: header.getSize(),
+                          minWidth: header.getSize(),
+                          maxWidth: header.getSize(),
                           position: "relative",
                           cursor: isDraggable ? "grab" : "auto",
                         }}
@@ -1612,7 +1725,10 @@ export function DataTable<TData, TValue>({
                         key={cell.id}
                         style={{
                           width: cell.column.getSize(),
+                          minWidth: cell.column.getSize(),
+                          maxWidth: cell.column.getSize(),
                         }}
+                        className="whitespace-nowrap"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -1633,7 +1749,8 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+            </table>
+          </div>
         </div>
       </div>
     </div>

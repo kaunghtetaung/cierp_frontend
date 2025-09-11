@@ -91,89 +91,45 @@ function Pagination({
   if (isLoading) {
     console.log("🔄 PAGINATION LOADING SKELETON ACTIVATED!");
     return (
-      <div
-        className={cn(
-          "flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-red-100 to-red-200",
-          "opacity-75 pointer-events-none", // Reduced opacity and disable interactions during loading
-          className
-        )}
-        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '2px solid red' }} // Make it very obvious for debugging
-      >
-        {/* Loading skeleton for results info */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Loader2Icon className="h-4 w-4 animate-spin text-red-600" />
-            <div className="h-4 bg-red-300 animate-pulse rounded w-48 text-xs flex items-center px-2">LOADING SKELETON</div>
-          </div>
-          
-          {/* Loading skeleton for page size selector */}
-          {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
-            <div className="flex items-center gap-2">
-              <div className="h-4 bg-red-300 animate-pulse rounded w-16"></div>
-              <div className="h-8 bg-red-300 animate-pulse rounded w-16"></div>
-            </div>
-          )}
-        </div>
-
-        {/* Loading skeleton for pagination controls */}
-        <div className="flex items-center gap-2">
+      <div className={cn("space-y-3 opacity-75 pointer-events-none", className)}>
+        {/* Loading skeleton for pagination controls - Outside and above */}
+        <div className="flex items-center justify-center md:justify-end gap-2 px-4">
           {/* Loading skeleton for Previous button */}
-          <div className="h-8 bg-red-300 animate-pulse rounded w-20 text-xs flex items-center justify-center">PREV</div>
+          <div className="h-8 bg-muted animate-pulse rounded w-20"></div>
           
           {/* Loading skeleton for page numbers */}
           {[1,2,3].map((i) => (
-            <div key={i} className="h-8 bg-red-300 animate-pulse rounded w-10 text-xs flex items-center justify-center">{i}</div>
+            <div key={i} className="h-8 bg-muted animate-pulse rounded w-10"></div>
           ))}
           
           {/* Loading skeleton for Next button */}
-          <div className="h-8 bg-red-300 animate-pulse rounded w-16 text-xs flex items-center justify-center">NEXT</div>
+          <div className="h-8 bg-muted animate-pulse rounded w-16"></div>
+        </div>
+
+        {/* Loading skeleton for results info container - Two column layout */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10">
+          {/* Loading skeleton for results info - Left aligned */}
+          <div className="flex items-center gap-2">
+            <Loader2Icon className="h-4 w-4 animate-spin" />
+            <div className="h-4 bg-muted animate-pulse rounded w-48"></div>
+          </div>
+          
+          {/* Loading skeleton for page size selector - Right aligned */}
+          {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
+            <div className="flex items-center gap-2">
+              <div className="h-4 bg-muted animate-pulse rounded w-16"></div>
+              <div className="h-8 bg-muted animate-pulse rounded w-16"></div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10",
-        className
-      )}
-    >
-      {/* Results info */}
-      <div className="flex items-center gap-4">
-        <div className="text-sm text-muted-foreground">
-          {currentLanguage === "mm"
-            ? `${
-                startIndex + 1
-              } မှ ${endIndex} အထိ ပြသနေသည် (စုစုပေါင်း ${totalItems} ခု)`
-            : `Showing ${
-                startIndex + 1
-              } to ${endIndex} of ${totalItems} results`}
-        </div>
-
-        {/* Page size selector */}
-        {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {currentLanguage === "mm" ? "စာမျက်နှာအလိုက်" : "Per page"}:
-            </span>
-            <select
-              value={pageSize}
-              onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
-              className="px-2 py-1 text-sm border border-border rounded bg-background text-foreground"
-            >
-              {allowedLimits.map((limit) => (
-                <option key={limit} value={limit}>
-                  {limit}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      {/* Pagination controls */}
-      <div className="flex items-center gap-2">
+    <div className={cn("space-y-3", className)}>
+      {/* Pagination controls - Moved outside and above */}
+      <div className="flex items-center justify-center md:justify-end gap-2 px-4">
         {/* Previous button */}
         <button
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
@@ -209,6 +165,40 @@ function Pagination({
           {currentLanguage === "mm" ? "နောက်တစ်မျက်နှာ" : "Next"}
           <ChevronRightIcon className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* Results info container - Two column layout */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-gradient-to-r from-muted/30 to-primary/10">
+        {/* Results info - Left aligned */}
+        <div className="text-sm text-muted-foreground">
+          {currentLanguage === "mm"
+            ? `${
+                startIndex + 1
+              } မှ ${endIndex} အထိ ပြသနေသည် (စুစုပေါင်း ${totalItems} ခု)`
+            : `Showing ${
+                startIndex + 1
+              } to ${endIndex} of ${totalItems} results`}
+        </div>
+
+        {/* Page size selector - Right aligned */}
+        {allowedLimits && allowedLimits.length > 1 && onPageSizeChange && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {currentLanguage === "mm" ? "စာမျက်နှာအလိုက်" : "Per page"}:
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
+              className="px-2 py-1 text-sm border border-border rounded bg-background text-foreground"
+            >
+              {allowedLimits.map((limit) => (
+                <option key={limit} value={limit}>
+                  {limit}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ export function AppLayout({
 
         <DashboardErrorBoundary>
           <main className={cn(
-            "flex flex-1 flex-col min-w-0",
+            "flex flex-1 flex-col min-w-0 h-full max-h-full",
             isDashboard 
               ? "overflow-auto bg-muted/20" 
               : "overflow-hidden p-4"
