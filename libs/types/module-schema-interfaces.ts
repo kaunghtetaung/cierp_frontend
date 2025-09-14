@@ -6,6 +6,7 @@ import { MultilingualText, LucideIconName, ServiceName, SupportedLanguage } from
 import { FormLayout, FormField, WizardFormConfig, WizardStep } from './form-types';
 import { DataTableSchema, ExtraActionForm } from './table-types';
 import { ModuleAccessPolicy } from './access-policy-types';
+import { DetailViewSchema } from './detail-view-types';
 
 // Module schema interface
 export interface ModuleSchema {
@@ -28,6 +29,9 @@ export interface ModuleSchema {
   
   // Extra action forms for custom operations beyond CRUD
   extraActionForms: ExtraActionForm[];
+  
+  // Detail view schema for displaying record details
+  detailViewSchema?: DetailViewSchema;
   
   // Module access policy for role-based permissions (only included in initialize endpoint)
   moduleAccessPolicy?: ModuleAccessPolicy;

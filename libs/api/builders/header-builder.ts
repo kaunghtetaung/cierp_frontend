@@ -63,6 +63,7 @@ export class StandardHeaderBuilder implements HeaderBuilder {
     const resolvedTenantId = await getValidTenantId(tenantId);
     if (resolvedTenantId) {
       headers[MIDDLEWARE_HEADERS.TENANT_ID] = resolvedTenantId;
+      console.log('✅ [HEADER BUILDER] Added x-tenant-id header:', resolvedTenantId);
     } else {
       console.error('CRITICAL: No valid tenant ID resolved for API request - request may fail');
       // Still proceed but log the issue for debugging

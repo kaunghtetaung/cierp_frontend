@@ -101,7 +101,23 @@ export class StandardResponseHandler implements ResponseHandler {
         };
       }
       
-      // For non-paginated responses, extract the data as before
+      // Check if this is a response with navigation metadata (has both data and navigation object)
+      if (data && typeof data === 'object' && 'data' in data && 'navigation' in data) {
+        console.log('📍 [RESPONSE HANDLER] Detected navigation response structure:', {
+          hasData: 'data' in data,
+          hasNavigation: 'navigation' in data,
+          navigation: data.navigation
+        });
+        // Return the full response structure for navigation responses
+        return {
+          data: data, // Return the entire object including both data and navigation
+          message: data.message || "Success",
+          success: data.success !== false,
+          timestamp: new Date(),
+        };
+      }
+      
+      // For non-paginated/non-navigation responses, extract the data as before
       return {
         data: data.data || data,
         message: data.message || "Success",

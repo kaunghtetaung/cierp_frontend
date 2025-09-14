@@ -26,6 +26,7 @@ import type {
   ModuleListParams,
   BulkOperationParams,
   ExtraActionParams,
+  ModuleItemWithNavigation,
 } from "./types";
 
 /**
@@ -106,6 +107,24 @@ export const getModuleItem = cache(
   async <T = any>(module: string, id: string): Promise<T> => {
     const moduleService = await createServiceInstance();
     return await moduleService.getItem<T>(module, id);
+  }
+);
+
+/**
+ * Get a single module item by ID with navigation metadata using React.cache.
+ */
+export const getModuleItemWithNavigation = cache(
+  async <T = any>(
+    module: string, 
+    id: string,
+    options?: {
+      includeNavigation?: boolean
+      sortBy?: string
+      sortOrder?: 'asc' | 'desc'
+    }
+  ): Promise<ModuleItemWithNavigation<T>> => {
+    const moduleService = await createServiceInstance();
+    return await moduleService.getItemWithNavigation<T>(module, id, options);
   }
 );
 

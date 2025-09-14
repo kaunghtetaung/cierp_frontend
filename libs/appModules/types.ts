@@ -34,3 +34,17 @@ export interface ExtraActionParams {
   id: string
   data?: any
 }
+
+export interface NavigationMetadata {
+  previousId: string | null
+  nextId: string | null
+  currentIndex: number
+  totalRecords: number
+  hasPrevious: boolean
+  hasNext: boolean
+}
+
+export interface ModuleItemWithNavigation<T = any> {
+  data: T
+  navigation?: NavigationMetadata
+}

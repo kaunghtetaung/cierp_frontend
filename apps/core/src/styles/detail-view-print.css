@@ -1,0 +1,209 @@
+/* Step 1: Hide sidebar and header FIRST to prevent any interference */
+@media print {
+  /* PRIORITY 1: Hide all navigation and UI elements */
+  header,
+  nav,
+  aside,
+  footer,
+  .sidebar,
+  .app-sidebar,
+  .navbar,
+  .app-header,
+  [data-slot="sidebar"],
+  [data-slot="header"],
+  [data-slot="navbar"],
+  [role="navigation"],
+  [role="banner"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  /* PRIORITY 2: Hide action buttons and controls */
+  button,
+  .print\\:hidden {
+    display: none !important;
+  }
+  
+  /* Step 2: Basic page setup */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  
+  /* Step 3: Reset body and html */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    width: 100% !important;
+  }
+  
+  /* Step 4: Main content area - ensure full width and proper flow */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  /* Step 5: Detail view container - maintain screen layout */
+  #detail-view-container {
+    margin: 0 auto !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  /* Step 6: Card wrapper - preserve screen appearance */
+  .shadow-xl.bg-white.border-0 {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: 1px solid #e5e5e5 !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+    background: white !important;
+    page-break-inside: auto !important;
+  }
+  
+  /* Step 7: Card content - maintain exact screen spacing */
+  .p-8.md\\:p-12 {
+    padding: 20mm !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  /* Step 8: Content flow management */
+  * {
+    max-height: none !important;
+    min-height: 0 !important;
+    position: static !important;
+  }
+  
+  /* Step 9: Section and field layout preservation */
+  .space-y-8 > *, .space-y-6 > *, .space-y-4 > * {
+    page-break-inside: avoid !important;
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+  
+  /* Step 10: Grid layouts - maintain screen appearance */
+  .grid {
+    display: grid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .grid-cols-1 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .md\\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .gap-4 {
+    gap: 1rem !important;
+  }
+  
+  /* Step 11: Table handling - prevent breaks */
+  table {
+    page-break-inside: avoid !important;
+    width: 100% !important;
+  }
+  
+  /* Step 12: Typography and spacing */
+  h3, h4 {
+    page-break-after: avoid !important;
+  }
+  
+  dl, dd, dt {
+    page-break-inside: avoid !important;
+  }
+  
+  /* Step 13: Ensure content visibility */
+  .text-sm, .text-xs, .text-base, .text-lg {
+    font-size: inherit !important;
+    line-height: 1.5 !important;
+  }
+  
+  .text-muted-foreground {
+    color: #666 !important;
+  }
+  
+  .font-medium {
+    font-weight: 500 !important;
+  }
+  
+  .font-semibold {
+    font-weight: 600 !important;
+  }
+  
+  /* Step 14: Show print-only elements */
+  .print\\:block {
+    display: block !important;
+  }
+  
+  .print\\:mt-8 {
+    margin-top: 2rem !important;
+  }
+  
+  .print\\:pt-4 {
+    padding-top: 1rem !important;
+  }
+  
+  .print\\:border-t {
+    border-top-width: 1px !important;
+  }
+  
+  .print\\:text-center {
+    text-align: center !important;
+  }
+  
+  .print\\:text-xs {
+    font-size: 0.75rem !important;
+  }
+  
+  .print\\:text-gray-600 {
+    color: rgb(75 85 99) !important;
+  }
+  
+  /* Step 15: Force content to flow naturally across pages */
+  .space-y-8 {
+    display: block !important;
+  }
+  
+  /* Step 16: Ensure sections maintain their layout */
+  .border-b-2 {
+    border-bottom-width: 2px !important;
+  }
+  
+  .border-muted {
+    border-color: #e5e5e5 !important;
+  }
+  
+  /* Step 17: Badge and list items */
+  .flex.flex-wrap.gap-1 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+  }
+}

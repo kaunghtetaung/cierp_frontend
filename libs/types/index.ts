@@ -51,6 +51,7 @@ export type {
 export * from './form-types';
 export * from './table-types';
 export * from './access-policy-types';
+export * from './detail-view-types';
 export * from './module-schema-interfaces';
 export * from './type-guards';
 

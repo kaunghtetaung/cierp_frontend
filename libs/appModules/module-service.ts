@@ -3,6 +3,7 @@ import type {
   ModuleListParams,
   BulkOperationParams,
   ExtraActionParams,
+  ModuleItemWithNavigation,
 } from "./types";
 
 /**
@@ -134,6 +135,87 @@ export class ModuleService {
     }
 
     return response.data;
+  }
+
+  /**
+   * Fetch single module item by ID with navigation metadata
+   */
+  async getItemWithNavigation<T = any>(
+    module: string, 
+    id: string,
+    options?: {
+      includeNavigation?: boolean
+      sortBy?: string
+      sortOrder?: 'asc' | 'desc'
+    }
+  ): Promise<ModuleItemWithNavigation<T>> {
+    let endpoint = `/${this.appName}/${module}/${id}`;
+    
+    // Build query parameters for navigation
+    if (options?.includeNavigation) {
+      const queryParams = new URLSearchParams();
+      queryParams.set("includeNavigation", "true");
+      
+      if (options.sortBy) {
+        queryParams.set("sortBy", options.sortBy);
+      }
+      
+      if (options.sortOrder) {
+        queryParams.set("sortOrder", options.sortOrder);
+      }
+      
+      endpoint += `?${queryParams.toString()}`;
+    }
+
+    console.log('📡 [MODULE SERVICE] Requesting:', endpoint);
+    console.log('🔑 [MODULE SERVICE] With context:', {
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      appName: this.appName
+    });
+    
+    const response = await this.httpClient.request<any>(`${endpoint}`, {
+      method: "GET",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+    });
+
+    console.log('📦 [MODULE SERVICE] Raw response:', {
+      success: response.success,
+      hasData: !!response.data,
+      dataType: typeof response.data,
+      dataKeys: response.data && typeof response.data === 'object' ? Object.keys(response.data) : [],
+      sampleData: JSON.stringify(response.data).substring(0, 200)
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to fetch module item with navigation");
+    }
+
+    // If navigation is not requested, return data in the expected format
+    if (!options?.includeNavigation) {
+      console.log('📤 [MODULE SERVICE] Returning without navigation');
+      return { data: response.data };
+    }
+
+    // Backend returns { data: {...}, navigation: {...} } when includeNavigation=true
+    // The response.data contains the full backend response
+    // Check if the response has the expected structure
+    if (response.data && typeof response.data === 'object' && 'data' in response.data && 'navigation' in response.data) {
+      console.log('✅ [MODULE SERVICE] Response has navigation structure:', {
+        hasData: 'data' in response.data,
+        hasNavigation: 'navigation' in response.data,
+        navigation: response.data.navigation
+      });
+      return response.data as ModuleItemWithNavigation<T>;
+    }
+    
+    // Fallback if backend doesn't return navigation structure
+    console.log('⚠️ [MODULE SERVICE] Response missing navigation structure, returning data only');
+    return { data: response.data };
   }
 
   /**

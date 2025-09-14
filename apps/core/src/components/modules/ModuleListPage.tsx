@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useLanguage } from "@repo/language";
 import { getLocalizedText } from "@repo/utils";
 import { Button } from "@repo/ui";
@@ -43,6 +43,7 @@ interface ModuleListPageProps {
 
 export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
   const router = useRouter();
+  const params = useParams();
   const { currentLanguage } = useLanguage();
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -106,12 +107,19 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
   const bulkOperationMutation = useBulkModuleOperation(module.slug);
 
   const handleCreate = () => {
-    router.push(`/${module.slug}/new`);
+    const appId = params.appId as string;
+    router.push(`/${appId}/${module.slug}/new`);
   };
 
   const handleEdit = (id: string) => {
     setEditingItemId(id);
     setIsEditModalOpen(true);
+  };
+
+  const handleView = (id: string) => {
+    // Navigate to the view page with proper appId
+    const appId = params.appId as string;
+    router.push(`/${appId}/${module.slug}/${id}/view`);
   };
 
   const handleEditSuccess = (data: any) => {
@@ -362,6 +370,13 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
                   {currentLanguage === "mm" ? "လုပ်ဆောင်ချက်များ" : "Actions"}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleView(item._id)}
+                  className="cursor-pointer"
+                >
+                  <IconComponent name="Eye" className="mr-2 h-4 w-4" />
+                  {currentLanguage === "mm" ? "ကြည့်မည်" : "View"}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleEdit(item._id)}
                   className="cursor-pointer"
