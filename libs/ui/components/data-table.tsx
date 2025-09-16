@@ -752,7 +752,15 @@ export function DataTable<TData, TValue>({
                           } else if (Array.isArray(rawValue)) {
                             // Handle arrays by joining their string representations
                             textValue = rawValue
-                              .map(item => typeof item === "string" ? item : (item?.name || item?.title || item?.displayName || ""))
+                              .map(item => {
+                                if (typeof item === "string") return item;
+                                // Handle accession number objects
+                                if (item?.accessionNo) {
+                                  return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                                }
+                                // Handle other common fields
+                                return item?.name || item?.title || item?.displayName || "";
+                              })
                               .filter(Boolean)
                               .join(", ");
                           } else {
@@ -852,6 +860,20 @@ export function DataTable<TData, TValue>({
           return "";
         } else if (typeof rawValue === "boolean") {
           return rawValue ? "Yes" : "No";
+        } else if (Array.isArray(rawValue)) {
+          // Handle arrays
+          return rawValue
+            .map(item => {
+              if (typeof item === "string") return item;
+              // Handle accession number objects
+              if (item?.accessionNo) {
+                return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+              }
+              // Handle other common fields
+              return item?.name || item?.title || item?.displayName || "";
+            })
+            .filter(Boolean)
+            .join(", ");
         } else if (typeof rawValue === "object" && rawValue !== null) {
           // Handle objects (like multilingual text)
           if (rawValue.en || rawValue.mm) {

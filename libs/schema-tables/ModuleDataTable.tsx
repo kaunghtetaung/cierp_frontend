@@ -11,6 +11,7 @@ import { Input } from "@repo/ui";
 import { DataTable, FilterConfig } from "@repo/ui";
 import { Checkbox } from "@repo/ui";
 import { useSidebar } from "@repo/ui";
+import { Badge } from "@repo/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -788,6 +789,123 @@ export function ModuleDataTable({
                 {currentLanguage === "mm" ? "မရှိပါ" : "N/A"}
               </span>
             );
+          } else if (column.renderAs === "badge" && fieldValue) {
+            return (
+              <Badge variant={column.badgeVariant || "secondary"}>
+                {fieldValue}
+              </Badge>
+            );
+          } else if (column.renderAs === "link" && fieldValue) {
+            return (
+              <a 
+                href={String(fieldValue)} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 hover:underline truncate max-w-[250px] inline-block"
+              >
+                {fieldValue}
+              </a>
+            );
+          } else if (column.type === "textArea" && fieldValue) {
+            return (
+              <div className="whitespace-pre-wrap text-sm max-w-[350px] line-clamp-3">
+                {fieldValue}
+              </div>
+            );
+          } else if (column.renderAs === "array") {
+            // Handle array rendering - check both rawValue and fieldValue
+            const arrayData = Array.isArray(rawValue) ? rawValue : (Array.isArray(fieldValue) ? fieldValue : []);
+            
+            if (!arrayData || arrayData.length === 0) {
+              return (
+                <span className="text-muted-foreground text-xs">
+                  {currentLanguage === "mm" ? "မရှိပါ" : "-"}
+                </span>
+              );
+            }
+            
+            // Handle arrayFormat configuration - could be empty object or have fields
+            if (column.arrayFormat && Object.keys(column.arrayFormat).length > 0) {
+              const { fields, separator = " - ", displayFormat = "concatenated" } = column.arrayFormat;
+              
+              const formattedItems = arrayData.map((item: any) => {
+                if (typeof item === 'object' && item !== null) {
+                  // If fields are specified, use them
+                  if (fields && fields.length > 0) {
+                    return fields
+                      .map(field => item[field])
+                      .filter(val => val !== null && val !== undefined)
+                      .join(separator);
+                  }
+                  // No fields specified - intelligently extract display values
+                  if (item.accessionNo) {
+                    return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                  } else if (item.name || item.displayName || item.title) {
+                    return item.name || item.displayName || item.title;
+                  } else {
+                    // Try to find meaningful fields
+                    const meaningfulFields = Object.entries(item)
+                      .filter(([key, val]) => key !== '_id' && key !== 'id' && val !== null && val !== undefined)
+                      .map(([_, val]) => String(val));
+                    return meaningfulFields.length > 0 ? meaningfulFields.join(separator) : JSON.stringify(item);
+                  }
+                }
+                // Fallback for non-objects
+                return String(item);
+              });
+
+              if (displayFormat === "list") {
+                return (
+                  <div className="flex flex-col gap-1 print:block">
+                    {formattedItems.map((item: string, index: number) => (
+                      <span key={index} className="text-sm print:block">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                );
+              } else if (displayFormat === "badges") {
+                return (
+                  <div className="flex flex-wrap gap-1 print:inline">
+                    {formattedItems.map((item: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs print:inline-block print:mr-1">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                );
+              } else {
+                // Default: concatenated
+                return (
+                  <span className="text-sm print:inline">
+                    {formattedItems.length > 0 ? formattedItems.join(", ") : "-"}
+                  </span>
+                );
+              }
+            } else {
+              // No arrayFormat specified, intelligently format array items
+              return (
+                <span className="text-sm print:inline">
+                  {arrayData.length > 0 ? arrayData.map((item: any) => {
+                    if (typeof item === 'object' && item !== null) {
+                      // Intelligently extract display values for objects
+                      if (item.accessionNo) {
+                        return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                      } else if (item.name || item.displayName || item.title) {
+                        return item.name || item.displayName || item.title;
+                      } else {
+                        // Try to find meaningful fields
+                        const meaningfulFields = Object.entries(item)
+                          .filter(([key, val]) => key !== '_id' && key !== 'id' && val !== null && val !== undefined)
+                          .map(([_, val]) => String(val));
+                        return meaningfulFields.length > 0 ? meaningfulFields.join(' - ') : JSON.stringify(item);
+                      }
+                    }
+                    return String(item);
+                  }).join(", ") : "-"}
+                </span>
+              );
+            }
           } else if (
             column.populate &&
             rawValue &&
@@ -856,12 +974,68 @@ export function ModuleDataTable({
             );
           }
 
+          // Handle arrays that don't have renderAs: "array" specified
+          if (Array.isArray(fieldValue)) {
+            const displayValue = fieldValue.map((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                // For objects, try to extract meaningful display values
+                if (item.accessionNo) {
+                  // Special handling for accession numbers
+                  return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                } else if (item.name || item.displayName || item.title) {
+                  // Common display fields
+                  return item.name || item.displayName || item.title;
+                } else if (item._id && item.id) {
+                  // If it has both _id and id, it might be a populated reference
+                  return item.id;
+                } else {
+                  // Fallback: stringify the object
+                  return JSON.stringify(item);
+                }
+              }
+              return String(item);
+            }).join(", ");
+
+            return (
+              <div
+                className="font-medium truncate max-w-[250px]"
+                title={displayValue || "-"}
+              >
+                {displayValue || "-"}
+              </div>
+            );
+          }
+
+          // Default fallback - ensure we handle arrays properly
+          let displayContent = fieldValue;
+          let titleContent = fieldValue;
+          
+          if (Array.isArray(fieldValue)) {
+            // Convert array to string for display
+            displayContent = fieldValue.map((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                // For objects, extract meaningful display values
+                if (item.accessionNo) {
+                  return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                } else if (item.name || item.displayName || item.title) {
+                  return item.name || item.displayName || item.title;
+                } else if (item._id && item.id) {
+                  return item.id;
+                } else {
+                  return JSON.stringify(item);
+                }
+              }
+              return String(item);
+            }).join(", ");
+            titleContent = displayContent; // Use the same string for title
+          }
+          
           return (
             <div
               className="font-medium truncate max-w-[250px]"
-              title={fieldValue || "-"}
+              title={typeof titleContent === 'string' ? titleContent : JSON.stringify(titleContent) || "-"}
             >
-              {fieldValue || "-"}
+              {typeof displayContent === 'object' ? JSON.stringify(displayContent) : (displayContent || "-")}
             </div>
           );
         },
@@ -1235,6 +1409,100 @@ export function ModuleDataTable({
                       }}
                     />
                   ) : null;
+                } else if (column.renderAs === "badge" && fieldValue) {
+                  displayValue = (
+                    <Badge variant={column.badgeVariant || "secondary"}>
+                      {fieldValue}
+                    </Badge>
+                  );
+                } else if (column.renderAs === "link" && fieldValue) {
+                  displayValue = (
+                    <a 
+                      href={String(fieldValue)} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-600 hover:underline"
+                    >
+                      {fieldValue}
+                    </a>
+                  );
+                } else if (column.type === "textArea" && fieldValue) {
+                  displayValue = (
+                    <div className="whitespace-pre-wrap text-sm">
+                      {fieldValue}
+                    </div>
+                  );
+                } else if (column.renderAs === "array" && Array.isArray(fieldValue)) {
+                  // Handle array rendering for mobile view
+                  const arrayFormat = column.arrayFormat || {};
+                  const { fields, separator = ", ", displayFormat = "concatenated" } = arrayFormat;
+                  
+                  const formattedItems = fieldValue.map((item: any) => {
+                    if (typeof item === 'object' && item !== null) {
+                      if (fields && fields.length > 0) {
+                        return fields
+                          .map(field => item[field])
+                          .filter(val => val !== null && val !== undefined)
+                          .join(separator);
+                      }
+                      // Intelligent extraction for objects without fields specified
+                      if (item.accessionNo) {
+                        return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                      } else if (item.name || item.displayName || item.title) {
+                        return item.name || item.displayName || item.title;
+                      } else {
+                        const meaningfulFields = Object.entries(item)
+                          .filter(([key, val]) => key !== '_id' && key !== 'id' && val !== null && val !== undefined)
+                          .map(([_, val]) => String(val));
+                        return meaningfulFields.length > 0 ? meaningfulFields.join(separator) : JSON.stringify(item);
+                      }
+                    }
+                    return String(item);
+                  });
+
+                  if (displayFormat === "list") {
+                    displayValue = (
+                      <div className="flex flex-col gap-1">
+                        {formattedItems.map((item: string, index: number) => (
+                          <span key={index} className="text-sm">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  } else if (displayFormat === "badges") {
+                    displayValue = (
+                      <div className="flex flex-wrap gap-1">
+                        {formattedItems.map((item: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    displayValue = <span className="text-sm">{formattedItems.join(", ")}</span>;
+                  }
+                } else if (Array.isArray(fieldValue)) {
+                  // Handle arrays without renderAs specification
+                  displayValue = fieldValue.map((item: any) => {
+                    if (typeof item === 'object' && item !== null) {
+                      if (item.accessionNo) {
+                        return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                      } else if (item.name || item.displayName || item.title) {
+                        return item.name || item.displayName || item.title;
+                      } else {
+                        const meaningfulFields = Object.entries(item)
+                          .filter(([key, val]) => key !== '_id' && key !== 'id' && val !== null && val !== undefined)
+                          .map(([_, val]) => String(val));
+                        return meaningfulFields.length > 0 ? meaningfulFields.join(' - ') : JSON.stringify(item);
+                      }
+                    }
+                    return String(item);
+                  }).join(", ");
+                } else if (typeof fieldValue === 'object' && fieldValue !== null && !React.isValidElement(displayValue)) {
+                  // Handle any other objects that might slip through
+                  displayValue = JSON.stringify(fieldValue);
                 }
 
                 // Hide column if data is empty/null and not loading

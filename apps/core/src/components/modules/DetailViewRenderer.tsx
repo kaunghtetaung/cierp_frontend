@@ -10,11 +10,22 @@ import type { ModuleSchema, DetailViewSection, DetailViewField } from '@repo/typ
 import type { NavigationMetadata } from '@repo/app-modules'
 
 // Helper functions moved to top
-function getFieldValue(data: any, fieldPath: string): any {
-  return fieldPath.split('.').reduce((obj, key) => obj?.[key], data)
+function getFieldValue(data: any, fieldPath: string, isMultilingual?: boolean, currentLanguage?: string): any {
+  const value = fieldPath.split('.').reduce((obj, key) => obj?.[key], data)
+  
+  // If field is multilingual and value is an object with language keys
+  if (isMultilingual && value && typeof value === 'object' && !Array.isArray(value)) {
+    // Check if this is a multilingual object (has 'en' or 'mm' properties)
+    if ('en' in value || 'mm' in value) {
+      // Return the value for current language, fallback to 'en', then 'mm'
+      return value[currentLanguage || 'en'] || value['en'] || value['mm'] || ''
+    }
+  }
+  
+  return value
 }
 
-function formatFieldValue(value: any, field: DetailViewField): string | any[] | null {
+function formatFieldValue(value: any, field: DetailViewField, currentLanguage?: string): string | any[] | null {
   if (value === null || value === undefined) return null
 
   // Handle arrays
@@ -22,12 +33,19 @@ function formatFieldValue(value: any, field: DetailViewField): string | any[] | 
     if (field.renderAs === 'list' || field.renderAs === 'table') {
       return value
     }
-    return value.map(item => 
-      typeof item === 'object' ? item.name || item.title || String(item) : String(item)
-    ).join(', ')
+    return value.map(item => {
+      if (typeof item === 'object') {
+        // Check if item has multilingual properties
+        if (field.isMultilingual && ('en' in item || 'mm' in item)) {
+          return item[currentLanguage || 'en'] || item['en'] || item['mm'] || String(item)
+        }
+        return item.name || item.title || String(item)
+      }
+      return String(item)
+    }).join(', ')
   }
 
-  // Handle objects
+  // Handle objects - already handled by getFieldValue for multilingual
   if (typeof value === 'object') {
     return value.name || value.title || String(value)
   }
@@ -157,8 +175,8 @@ export function DetailViewRenderer({ module, itemData, appId, navigation }: Deta
             if (!shouldAlwaysShow) {
               // Check if section has any visible fields with data
               const hasVisibleFields = section.fields.some(field => {
-                const fieldValue = getFieldValue(itemData, field.fieldName)
-                const displayValue = formatFieldValue(fieldValue, field)
+                const fieldValue = getFieldValue(itemData, field.fieldName, field.isMultilingual, currentLanguage)
+                const displayValue = formatFieldValue(fieldValue, field, currentLanguage)
                 
                 return field.visible && 
                        displayValue !== null && 
@@ -388,8 +406,8 @@ interface DetailViewFieldProps {
 function DetailViewField({ field, itemData, currentLanguage }: DetailViewFieldProps) {
   if (!field.visible) return null
 
-  const fieldValue = getFieldValue(itemData, field.fieldName)
-  const displayValue = formatFieldValue(fieldValue, field)
+  const fieldValue = getFieldValue(itemData, field.fieldName, field.isMultilingual, currentLanguage)
+  const displayValue = formatFieldValue(fieldValue, field, currentLanguage)
 
   // Hide fields with null, undefined, empty string, or empty arrays
   if (displayValue === null || 
@@ -473,7 +491,21 @@ function DetailViewField({ field, itemData, currentLanguage }: DetailViewFieldPr
               <span>{fieldValue ? (currentLanguage === 'mm' ? 'ရှိသည်' : 'Yes') : (currentLanguage === 'mm' ? 'မရှိ' : 'No')}</span>
             </div>
           ) : (
-            <span>{displayValue}</span>
+            <span>
+              {Array.isArray(displayValue) ? 
+                displayValue.map((item, idx) => {
+                  if (typeof item === 'object' && item !== null) {
+                    // For objects, extract meaningful display values
+                    const display = item.accessionNo 
+                      ? `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`
+                      : item.name || item.displayName || item.title || JSON.stringify(item);
+                    return <span key={idx}>{idx > 0 ? ', ' : ''}{display}</span>;
+                  }
+                  return <span key={idx}>{idx > 0 ? ', ' : ''}{String(item)}</span>;
+                })
+                : displayValue
+              }
+            </span>
           )}
         </dd>
       </dl>
