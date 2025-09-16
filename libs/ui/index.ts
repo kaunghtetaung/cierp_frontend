@@ -33,6 +33,7 @@ export * from "./components/avatar";
 
 // Layout components
 export * from "./components/sidebar";
+export * from "./components/tabs";
 
 // Data display
 export * from "./components/table";
