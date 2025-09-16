@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
 import { PasswordField } from "../PasswordField";
 import { getLocalizedText } from "@repo/utils";
-import type { PreBuiltFormProps } from "../ExtraActionFormRouter";
+import type { PreBuiltFormProps } from "@repo/schema-forms";
 
 // Password reset modes
 type PasswordResetMode = "generate" | "custom";

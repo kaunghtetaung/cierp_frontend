@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
 import { DynamicSelect } from "../DynamicSelect";
 import { getLocalizedText } from "@repo/utils";
-import type { PreBuiltFormProps } from "../ExtraActionFormRouter";
+import type { PreBuiltFormProps } from "@repo/schema-forms";
 import type { FormField } from "@repo/types";
 
 // Form data interface
