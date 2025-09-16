@@ -32,9 +32,11 @@ const PreBuiltFormComponents: Record<string, React.ComponentType<any>> = {
   // Department management forms
   DepartmentUserManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.DepartmentUserManageForm }))),
   
-  // Bibliography management forms
+  // Bibliography management forms - multiple naming conventions for compatibility
   AccessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
   AccessionManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
+  accessionManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
+  accessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
   
   // Add more pre-built form components as needed
 };
@@ -115,7 +117,8 @@ export function ExtraActionFormRouter({
       actionKey: action.actionKey,
       formName: action.formName,
       componentFound: !!PreBuiltComponent,
-      availableComponents: Object.keys(PreBuiltFormComponents),
+      availableComponents: Object.keys(PreBuiltFormComponents).filter(k => k.toLowerCase().includes('accession')),
+      allComponents: Object.keys(PreBuiltFormComponents),
       onSubmitType: typeof onSubmit
     });
     
