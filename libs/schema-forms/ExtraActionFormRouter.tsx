@@ -2,6 +2,7 @@
 
 import React from "react";
 import { DynamicExtraActionForm } from "./DynamicExtraActionForm";
+import { DynamicExtraActionFormWithSections } from "./DynamicExtraActionFormWithSections";
 import type { ExtraActionForm } from "@repo/types";
 
 interface ExtraActionFormRouterProps {
@@ -33,11 +34,8 @@ const PreBuiltFormComponents: Record<string, React.ComponentType<any>> = {
   // Department management forms
   DepartmentUserManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.DepartmentUserManageForm }))),
   
-  // Bibliography management forms - multiple naming conventions for compatibility
-  AccessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
-  AccessionManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
-  accessionManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
-  accessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
+  // Note: AccessionNumberManagementForm and variants now use schema-driven approach
+  // The backend provides the complete form schema via API
   
   // Add more pre-built form components as needed
 };
@@ -63,7 +61,26 @@ export function ExtraActionFormRouter({
     formName: action.formName,
   });
 
-  // Schema-driven approach
+  // Check if form has sections (new approach)
+  const hasSections = !!(action as any).sections?.length;
+
+  // Schema-driven approach with sections
+  if (formApproach === 'schema-driven' && hasSections) {
+    console.log(`📋 ExtraActionFormRouter: Using schema-driven approach with sections for "${action.actionKey}"`);
+    return (
+      <DynamicExtraActionFormWithSections
+        action={action}
+        selectedItems={selectedItems}
+        currentLanguage={currentLanguage}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+        hideHeader={hideHeader}
+        moduleSlug={moduleSlug}
+      />
+    );
+  }
+
+  // Schema-driven approach (standard)
   if (formApproach === 'schema-driven' && action.formFields && action.formFields.length > 0) {
     console.log(`📋 ExtraActionFormRouter: Using schema-driven approach for "${action.actionKey}"`);
     return (
@@ -81,7 +98,21 @@ export function ExtraActionFormRouter({
 
   // Hybrid approach - check which method to use
   if (formApproach === 'hybrid') {
-    // Prefer schema-driven if formFields are available
+    // Prefer sectioned forms if available
+    if (hasSections) {
+      return (
+        <DynamicExtraActionFormWithSections
+          action={action}
+          selectedItems={selectedItems}
+          currentLanguage={currentLanguage}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+          hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
+        />
+      );
+    }
+    // Then check for standard form fields
     if (action.formFields && action.formFields.length > 0) {
       return (
         <DynamicExtraActionForm
@@ -91,6 +122,7 @@ export function ExtraActionFormRouter({
           onSubmit={onSubmit}
           onCancel={onCancel}
           hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
         />
       );
     }

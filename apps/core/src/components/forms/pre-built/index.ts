@@ -6,8 +6,7 @@ export { UserPasswordChangeForm } from './UserPasswordChangeForm';
 // Role assignment form
 export { RoleAssignForm } from './RoleAssignForm';
 
-// Re-export bibliography forms from schema-forms library
-export { AccessionNumberManagementForm } from '@repo/schema-forms/pre-built';
+// Note: AccessionNumberManagementForm now uses schema-driven approach from backend
 
 export const GroupAssignForm = () => null;
 export const BulkRoleAssignForm = () => null;
