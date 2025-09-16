@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@repo/ui";
 import { getLocalizedText } from "@repo/utils";
+import { getSchemaApiService } from "../api/schema-api";
 
 interface TableColumn {
   fieldName: string;
@@ -86,38 +87,22 @@ export function FormTableSection({
   // Fetch data from endpoint
   useEffect(() => {
     const fetchData = async () => {
-      if (!selectedItemId) {
+      if (!selectedItemId || !section.endpoint) {
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        // Replace :id with actual ID
-        const endpoint = section.endpoint.replace(':id', selectedItemId);
         
-        // This would be replaced with actual API call
-        // For now, returning mock data for demonstration
-        const mockData = [
-          {
-            id: "1",
-            accessionNo: "ACC-001",
-            status: "Available",
-            classNo: "823.914",
-            accessionGroup: "General Collection"
-          },
-          {
-            id: "2", 
-            accessionNo: "ACC-002",
-            status: "Checked Out",
-            classNo: "823.914",
-            accessionGroup: "Reference"
-          }
-        ];
+        // Use the schema API service for fetching table data
+        const schemaApiService = getSchemaApiService();
+        const tableData = await schemaApiService.fetchTableData(section.endpoint, selectedItemId);
         
-        setData(mockData);
+        setData(tableData);
       } catch (error) {
         console.error("Failed to fetch table data:", error);
+        setData([]);
       } finally {
         setIsLoading(false);
       }
