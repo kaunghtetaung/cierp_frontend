@@ -50,8 +50,11 @@ export async function fetchFormSchemaAction(
   try {
     const { httpClient, context } = await createHttpClient();
     
-    // Construct endpoint following backend pattern
-    const endpoint = `/api/v1/${moduleSlug}/form-schema/${formName}`;
+    // Construct endpoint following the same pattern as ModuleService
+    // Format: /{appName}/{module}/form-schema/{formName}
+    const endpoint = `/${context.appName}/${moduleSlug}/form-schema/${formName}`;
+    
+    console.log(`📥 Fetching form schema from: ${endpoint}`);
     
     const response = await httpClient.request<any>(endpoint, {
       method: "GET",
@@ -89,7 +92,24 @@ export async function fetchFormTableDataAction(
     const { httpClient, context } = await createHttpClient();
     
     // Replace :id placeholder with actual ID
-    const finalEndpoint = endpoint.replace(':id', itemId);
+    let finalEndpoint = endpoint.replace(':id', itemId);
+    
+    // Ensure endpoint follows the correct pattern
+    // If it doesn't start with /{appName}, prepend it
+    if (!finalEndpoint.startsWith(`/${context.appName}/`)) {
+      // If it starts with /api/v1/, replace with /{appName}/
+      if (finalEndpoint.startsWith('/api/v1/')) {
+        finalEndpoint = finalEndpoint.replace('/api/v1/', `/${context.appName}/`);
+      } else if (finalEndpoint.startsWith('/')) {
+        // If it starts with just /, prepend appName
+        finalEndpoint = `/${context.appName}${finalEndpoint}`;
+      } else {
+        // No leading slash, add appName prefix
+        finalEndpoint = `/${context.appName}/${finalEndpoint}`;
+      }
+    }
+    
+    console.log(`📥 Fetching table data from: ${finalEndpoint}`);
     
     const response = await httpClient.request<any[]>(finalEndpoint, {
       method: "GET",
