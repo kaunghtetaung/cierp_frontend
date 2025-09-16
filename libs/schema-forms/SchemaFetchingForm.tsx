@@ -5,7 +5,7 @@ import { DynamicExtraActionFormWithSections } from "./DynamicExtraActionFormWith
 import { DynamicExtraActionForm } from "./DynamicExtraActionForm";
 import { IconComponent } from "@repo/ui";
 import type { ExtraActionForm } from "@repo/types";
-import { getSchemaApiService } from "./api/schema-api";
+import { httpClient } from "@repo/api/clients/client";
 
 interface SchemaFetchingFormProps {
   action: ExtraActionForm;
@@ -41,10 +41,17 @@ export function SchemaFetchingForm({
       try {
         console.log(`📥 SchemaFetchingForm: Fetching schema for ${action.formName} from ${moduleSlug}`);
         
-        // Use the schema API service for fetching
-        const schemaApiService = getSchemaApiService();
-        const schema = await schemaApiService.fetchFormSchema(moduleSlug, action.formName);
+        // Construct the API endpoint based on module slug
+        // This matches backend pattern: /api/v1/{module}/form-schema/{formName}
+        const endpoint = `/v1/${moduleSlug}/form-schema/${action.formName}`;
         
+        const response = await httpClient.get<any>(endpoint);
+
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to fetch form schema');
+        }
+
+        const schema = response.data;
         console.log(`✅ SchemaFetchingForm: Schema fetched successfully`, schema);
         
         // Merge the fetched schema with the action

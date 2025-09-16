@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@repo/ui";
 import { getLocalizedText } from "@repo/utils";
-import { getSchemaApiService } from "../api/schema-api";
+import { httpClient } from "@repo/api/clients/client";
 
 interface TableColumn {
   fieldName: string;
@@ -95,11 +95,18 @@ export function FormTableSection({
       try {
         setIsLoading(true);
         
-        // Use the schema API service for fetching table data
-        const schemaApiService = getSchemaApiService();
-        const tableData = await schemaApiService.fetchTableData(section.endpoint, selectedItemId);
+        // Replace :id with actual ID in the endpoint
+        const endpoint = section.endpoint.replace(':id', selectedItemId);
         
-        setData(tableData);
+        // Fetch data from the API
+        const response = await httpClient.get<any[]>(endpoint);
+        
+        if (response.success && response.data) {
+          setData(response.data);
+        } else {
+          // Fallback to empty array if no data
+          setData([]);
+        }
       } catch (error) {
         console.error("Failed to fetch table data:", error);
         setData([]);
