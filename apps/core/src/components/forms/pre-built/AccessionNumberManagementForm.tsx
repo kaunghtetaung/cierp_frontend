@@ -31,6 +31,12 @@ import {
 } from "@repo/ui";
 import { getLocalizedText } from "@repo/utils";
 import type { PreBuiltFormProps } from "../ExtraActionFormRouter";
+import {
+  getAccessionNumbers,
+  addAccessionNumber,
+  updateAccessionNumber,
+  deleteAccessionNumber,
+} from "./accession-actions";
 
 // Form data interface
 interface AccessionNumberFormData {
@@ -111,19 +117,13 @@ export function AccessionNumberManagementForm({
       }
 
       try {
-        // Fetch existing accession numbers for the selected bibliography
-        const response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
+        // Fetch existing accession numbers using server action
+        const result = await getAccessionNumbers(selectedItems[0]);
         
-        if (response.ok) {
-          const data = await response.json();
-          // The response structure might be { data: [...] } or { accessions: [...] }
-          setAccessionNumbers(data.data || data.accessions || data || []);
+        if (result.success) {
+          setAccessionNumbers(result.data || []);
+        } else {
+          console.error("Failed to load accession numbers:", result.error);
         }
       } catch (error) {
         console.error("Failed to load accession numbers:", error);
@@ -145,44 +145,34 @@ export function AccessionNumberManagementForm({
     setSubmitResult(null);
 
     try {
-      let response;
+      let result;
       
       if (editingItem) {
-        // Update existing accession number using PATCH endpoint
-        response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions/${editingItem.accessionNumber}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
+        // Update existing accession number using server action
+        result = await updateAccessionNumber(
+          selectedItems[0],
+          editingItem.accessionNumber,
+          {
             accessionNumber: data.accessionNumber,
             location: data.location,
             notes: data.notes,
-          }),
-        });
+          }
+        );
       } else {
-        // Add new accession number using POST endpoint
-        response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions/add`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
+        // Add new accession number using server action
+        result = await addAccessionNumber(
+          selectedItems[0],
+          {
             accessionNumber: data.accessionNumber,
             location: data.location,
             notes: data.notes,
-          }),
-        });
+          }
+        );
       }
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save accession number');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save accession number');
       }
-
-      const result = await response.json();
 
       // Update local state with response data
       if (editingItem) {
@@ -272,18 +262,14 @@ export function AccessionNumberManagementForm({
     setIsSubmitting(true);
 
     try {
-      // Delete accession number using DELETE endpoint
-      const response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions/${deletingItem.accessionNumber}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
+      // Delete accession number using server action
+      const result = await deleteAccessionNumber(
+        selectedItems[0],
+        deletingItem.accessionNumber
+      );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to remove accession number');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to remove accession number');
       }
 
       // Update local state
