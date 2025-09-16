@@ -3,6 +3,7 @@
 import React from "react";
 import { DynamicExtraActionForm } from "./DynamicExtraActionForm";
 import { DynamicExtraActionFormWithSections } from "./DynamicExtraActionFormWithSections";
+import { SchemaFetchingForm } from "./SchemaFetchingForm";
 import type { ExtraActionForm } from "@repo/types";
 
 interface ExtraActionFormRouterProps {
@@ -49,42 +50,75 @@ export function ExtraActionFormRouter({
   hideHeader = false,
   moduleSlug,
 }: ExtraActionFormRouterProps) {
-  // Determine form approach - default to 'pre-built' for backward compatibility
-  const formApproach = action.formApproach || 'pre-built';
+  // Determine form approach
+  // For forms like accessionManagementForm that are now schema-driven, check if they have sections or formFields
+  const hasSections = !!(action as any).sections?.length;
+  const hasFormFields = !!action.formFields?.length;
+  
+  // Auto-detect schema-driven forms
+  let formApproach = action.formApproach;
+  if (!formApproach) {
+    // If has sections or formFields, it's schema-driven
+    if (hasSections || hasFormFields) {
+      formApproach = 'schema-driven';
+    } else if (action.formName) {
+      // Check if the form name is in our pre-built registry
+      const isPreBuilt = !!PreBuiltFormComponents[action.formName];
+      formApproach = isPreBuilt ? 'pre-built' : 'schema-driven';
+    } else {
+      // Default to schema-driven for new forms
+      formApproach = 'schema-driven';
+    }
+  }
 
   console.log(`🎭 ExtraActionFormRouter: Routing form for action "${action.actionKey}"`, {
     actionKey: action.actionKey,
     formApproach,
-    hasFormFields: !!action.formFields?.length,
+    hasFormFields,
+    hasSections,
     formFieldsCount: action.formFields?.length,
     hasFormName: !!action.formName,
     formName: action.formName,
   });
 
-  // Check if form has sections (new approach)
-  const hasSections = !!(action as any).sections?.length;
-
-  // Schema-driven approach with sections
-  if (formApproach === 'schema-driven' && hasSections) {
-    console.log(`📋 ExtraActionFormRouter: Using schema-driven approach with sections for "${action.actionKey}"`);
+  // Schema-driven approach
+  if (formApproach === 'schema-driven') {
+    // If we already have sections, use the sectioned form
+    if (hasSections) {
+      console.log(`📋 ExtraActionFormRouter: Using schema-driven approach with sections for "${action.actionKey}"`);
+      return (
+        <DynamicExtraActionFormWithSections
+          action={action}
+          selectedItems={selectedItems}
+          currentLanguage={currentLanguage}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+          hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
+        />
+      );
+    }
+    
+    // If we have formFields, use the standard dynamic form
+    if (hasFormFields) {
+      console.log(`📋 ExtraActionFormRouter: Using schema-driven approach for "${action.actionKey}"`);
+      return (
+        <DynamicExtraActionForm
+          action={action}
+          selectedItems={selectedItems}
+          currentLanguage={currentLanguage}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+          hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
+        />
+      );
+    }
+    
+    // Otherwise, we need to fetch the schema from backend
+    console.log(`📋 ExtraActionFormRouter: Fetching schema for "${action.actionKey}"`);
     return (
-      <DynamicExtraActionFormWithSections
-        action={action}
-        selectedItems={selectedItems}
-        currentLanguage={currentLanguage}
-        onSubmit={onSubmit}
-        onCancel={onCancel}
-        hideHeader={hideHeader}
-        moduleSlug={moduleSlug}
-      />
-    );
-  }
-
-  // Schema-driven approach (standard)
-  if (formApproach === 'schema-driven' && action.formFields && action.formFields.length > 0) {
-    console.log(`📋 ExtraActionFormRouter: Using schema-driven approach for "${action.actionKey}"`);
-    return (
-      <DynamicExtraActionForm
+      <SchemaFetchingForm
         action={action}
         selectedItems={selectedItems}
         currentLanguage={currentLanguage}
