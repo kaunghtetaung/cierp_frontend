@@ -112,10 +112,18 @@ export function AccessionNumberManagementForm({
 
       try {
         // Fetch existing accession numbers for the selected bibliography
-        const response = await fetch(`/api/bibliographies/${selectedItems[0]}/accessions`);
+        const response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
         if (response.ok) {
           const data = await response.json();
-          setAccessionNumbers(data.accessions || []);
+          // The response structure might be { data: [...] } or { accessions: [...] }
+          setAccessionNumbers(data.data || data.accessions || data || []);
         }
       } catch (error) {
         console.error("Failed to load accession numbers:", error);
@@ -137,51 +145,75 @@ export function AccessionNumberManagementForm({
     setSubmitResult(null);
 
     try {
-      // Create FormData for server action
-      const formData = new FormData();
-
-      // Add metadata
-      formData.append("actionKey", action.actionKey);
-      formData.append("id", selectedItems[0]);
-      formData.append("accessionNumber", data.accessionNumber);
+      let response;
       
-      if (data.location) {
-        formData.append("location", data.location);
-      }
-      if (data.notes) {
-        formData.append("notes", data.notes);
-      }
-
-      // If editing, add the item ID
       if (editingItem) {
-        formData.append("itemId", editingItem.id);
-        formData.append("action", "update");
+        // Update existing accession number using PATCH endpoint
+        response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions/${editingItem.accessionNumber}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            accessionNumber: data.accessionNumber,
+            location: data.location,
+            notes: data.notes,
+          }),
+        });
       } else {
-        formData.append("action", "add");
+        // Add new accession number using POST endpoint
+        response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions/add`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            accessionNumber: data.accessionNumber,
+            location: data.location,
+            notes: data.notes,
+          }),
+        });
       }
 
-      // Submit to server action
-      await onSubmit(formData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save accession number');
+      }
 
-      // Update local state
+      const result = await response.json();
+
+      // Update local state with response data
       if (editingItem) {
         setAccessionNumbers(prev => 
           prev.map(item => 
-            item.id === editingItem.id 
-              ? { ...item, ...data }
+            item.accessionNumber === editingItem.accessionNumber 
+              ? { ...item, ...data, id: item.id }
               : item
           )
         );
         setEditingItem(null);
       } else {
         const newItem: AccessionNumberItem = {
-          id: Date.now().toString(),
+          id: result.data?.id || Date.now().toString(),
           accessionNumber: data.accessionNumber,
           location: data.location,
           notes: data.notes,
-          createdAt: new Date().toISOString(),
+          createdAt: result.data?.createdAt || new Date().toISOString(),
         };
         setAccessionNumbers(prev => [...prev, newItem]);
+      }
+      
+      // Optionally notify parent component about successful save
+      // This allows the parent to refresh data if needed
+      if (action.formType === 'modal') {
+        // For modal forms, we might want to keep it open to allow multiple additions
+        // But still call onSubmit to notify parent
+        const formData = new FormData();
+        formData.append("success", "true");
+        formData.append("action", editingItem ? "update" : "add");
+        onSubmit(formData);
       }
 
       const successResult = {
@@ -240,18 +272,22 @@ export function AccessionNumberManagementForm({
     setIsSubmitting(true);
 
     try {
-      // Create FormData for server action
-      const formData = new FormData();
-      formData.append("actionKey", action.actionKey);
-      formData.append("id", selectedItems[0]);
-      formData.append("itemId", deletingItem.id);
-      formData.append("action", "delete");
+      // Delete accession number using DELETE endpoint
+      const response = await fetch(`/api/v1/bibliographies/${selectedItems[0]}/accessions/${deletingItem.accessionNumber}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
 
-      // Submit to server action
-      await onSubmit(formData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove accession number');
+      }
 
       // Update local state
-      setAccessionNumbers(prev => prev.filter(item => item.id !== deletingItem.id));
+      setAccessionNumbers(prev => prev.filter(item => item.accessionNumber !== deletingItem.accessionNumber));
       
       setSubmitResult({
         success: true,
