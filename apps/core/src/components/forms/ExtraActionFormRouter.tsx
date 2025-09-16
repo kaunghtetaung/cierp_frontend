@@ -32,6 +32,9 @@ const PreBuiltFormComponents: Record<string, React.ComponentType<any>> = {
   // Department management forms
   DepartmentUserManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.DepartmentUserManageForm }))),
   
+  // Bibliography management forms
+  AccessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
+  
   // Add more pre-built form components as needed
 };
 
