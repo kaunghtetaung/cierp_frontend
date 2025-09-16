@@ -5,6 +5,10 @@ export { UserPasswordChangeForm } from './UserPasswordChangeForm';
 
 // Role assignment form
 export { RoleAssignForm } from './RoleAssignForm';
+
+// Bibliography management forms
+export { AccessionNumberManagementForm } from './AccessionNumberManagementForm';
+
 export const GroupAssignForm = () => null;
 export const BulkRoleAssignForm = () => null;
 export const BulkGroupAssignForm = () => null;
