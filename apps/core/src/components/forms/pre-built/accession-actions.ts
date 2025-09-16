@@ -1,6 +1,6 @@
 "use server";
 
-import { ModuleService } from '@repo/appModules/module-service';
+import { ModuleService } from '@repo/app-modules';
 import { getApiDomain } from "@repo/utils/server";
 import { getCurrentUser, getCurrentSession } from "@repo/auth/server";
 

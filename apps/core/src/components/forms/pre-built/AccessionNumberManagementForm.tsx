@@ -424,7 +424,7 @@ export function AccessionNumberManagementForm({
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                variant={editingItem ? "default" : "primary"}
+                variant="default"
               >
                 {isSubmitting && <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />}
                 {isSubmitting
