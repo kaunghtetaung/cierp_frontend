@@ -10,7 +10,7 @@ import {
 } from "@repo/ui";
 import { ExtraActionFormRouter } from "./ExtraActionFormRouter";
 import { getLocalizedText, toastSuccess, toastError } from "@repo/utils";
-import { executeExtraAction } from "@repo/app-modules/server-actions";
+import { submitExtraActionForm, submitBulkExtraActionForm } from "./server-actions/form-actions";
 import type { ModuleSchema, ExtraAction, ExtraActionForm } from "@repo/types";
 
 interface ExtraActionModalProps {
@@ -42,40 +42,39 @@ export function ExtraActionModal({
     setIsSubmitting(true);
     
     try {
-      // Add action metadata
-      formData.append('actionKey', action.actionId); // Use actionKey for server compatibility
-      formData.append('actionId', action.actionId); // Keep actionId for backwards compatibility
-      formData.append('moduleSlug', module.slug);
-      
-      // Add selected items with both naming conventions for compatibility
-      selectedItems.forEach((item, index) => {
-        const itemId = typeof item === 'string' ? item : (item._id || item.id);
-        if (itemId) {
-          formData.append('selectedIds', itemId); // Server expects selectedIds as array
-          formData.append(`selectedItems[${index}]`, itemId); // Keep indexed format for backwards compatibility
-        }
-      });
-      
-      // If this is a row action, add the specific item ID
-      if (isRowAction && selectedItems.length === 1) {
-        const itemId = typeof selectedItems[0] === 'string' ? selectedItems[0] : (selectedItems[0]._id || selectedItems[0].id);
-        if (itemId) {
-          formData.append('id', itemId);
-        }
-      }
+      // Extract item IDs from selected items
+      const itemIds = selectedItems.map(item => 
+        typeof item === 'string' ? item : (item._id || item.id)
+      ).filter(Boolean);
 
       console.log('ExtraActionModal: Submitting form data', {
         actionKey: action.actionId,
-        actionId: action.actionId,
         moduleSlug: module.slug,
-        selectedItemsCount: selectedItems.length,
+        selectedItemsCount: itemIds.length,
         isRowAction: isRowAction,
-        hasId: formData.has('id'),
-        id: formData.get('id')
       });
 
-      // Execute the action
-      const result = await executeExtraAction(formData);
+      // Execute the action using server actions
+      let result;
+      if (isRowAction && itemIds.length === 1) {
+        // Single item action
+        result = await submitExtraActionForm(
+          module.slug,
+          action.actionId,
+          itemIds[0],
+          formData
+        );
+      } else if (itemIds.length > 1) {
+        // Bulk action
+        result = await submitBulkExtraActionForm(
+          module.slug,
+          action.actionId,
+          itemIds,
+          formData
+        );
+      } else {
+        throw new Error('No items selected for action');
+      }
       
       if (result?.success) {
         const successMessage = getLocalizedText(

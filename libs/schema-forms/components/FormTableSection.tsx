@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@repo/ui";
 import { getLocalizedText } from "@repo/utils";
-import { httpClient } from "@repo/api/clients/client";
+import { fetchFormTableDataAction } from "../server-actions/form-actions";
 
 interface TableColumn {
   fieldName: string;
@@ -95,11 +95,8 @@ export function FormTableSection({
       try {
         setIsLoading(true);
         
-        // Replace :id with actual ID in the endpoint
-        const endpoint = section.endpoint.replace(':id', selectedItemId);
-        
-        // Fetch data from the API
-        const response = await httpClient.get<any[]>(endpoint);
+        // Use server action to fetch table data
+        const response = await fetchFormTableDataAction(section.endpoint, selectedItemId);
         
         if (response.success && response.data) {
           setData(response.data);
