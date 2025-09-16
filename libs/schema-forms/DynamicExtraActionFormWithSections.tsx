@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useForm, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getLocalizedText } from "@repo/utils";
-import { Button, IconComponent, Form, Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
+import { Button, IconComponent, Form } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { FormTableSection } from "./components/FormTableSection";
 import { generateZodSchema } from "@repo/schema-utils";
@@ -172,7 +172,7 @@ export function DynamicExtraActionFormWithSections({
     const formSection = sections.find((s: any) => s.type === "form");
     const tableSection = sections.find((s: any) => s.type === "table");
 
-    // If we have both form and table sections, use tabs
+    // If we have both form and table sections, display them vertically (form on top, table below)
     if (formSection && tableSection) {
       return (
         <div className="space-y-6">
@@ -202,75 +202,74 @@ export function DynamicExtraActionFormWithSections({
             </div>
           )}
 
-          <Tabs defaultValue="form" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="form">
-                {getLocalizedText(formSection.title, currentLanguage) || 
-                 (currentLanguage === "mm" ? "ဖောင်မ်" : "Form")}
-              </TabsTrigger>
-              <TabsTrigger value="table">
-                {getLocalizedText(tableSection.title, currentLanguage) ||
-                 (currentLanguage === "mm" ? "စာရင်း" : "List")}
-              </TabsTrigger>
-            </TabsList>
+          {/* Form Section */}
+          <div className="space-y-4">
+            {formSection.title && (
+              <h3 className="text-base font-medium">
+                {getLocalizedText(formSection.title, currentLanguage)}
+              </h3>
+            )}
+            
+            <Form {...form}>
+              <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+                <div className={formSection.layout === "grid" && formSection.columns ? 
+                  `grid grid-cols-${formSection.columns} gap-4` : "space-y-4"}>
+                  {formSection.fields.map((field: any) =>
+                    <FormFieldRenderer
+                      key={field.fieldName}
+                      field={field}
+                      currentLanguage={currentLanguage}
+                      isVerticalLayout={isVerticalLayout}
+                      errors={errors}
+                      watch={watch}
+                    />
+                  )}
+                </div>
 
-            <TabsContent value="form" className="space-y-4">
-              <Form {...form}>
-                <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-                  <div className={isVerticalLayout ? "space-y-4" : "space-y-4"}>
-                    {formSection.fields.map((field: any) =>
-                      <FormFieldRenderer
-                        key={field.fieldName}
-                        field={field}
-                        currentLanguage={currentLanguage}
-                        isVerticalLayout={isVerticalLayout}
-                        errors={errors}
-                        watch={watch}
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4 border-t">
-                    {editingItem && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingItem(null);
-                          reset();
-                        }}
-                      >
-                        {currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel Edit"}
-                      </Button>
-                    )}
+                <div className="flex justify-end gap-3">
+                  {editingItem && (
                     <Button
-                      type="submit"
-                      disabled={isSubmitting}
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingItem(null);
+                        reset();
+                      }}
                     >
-                      {isSubmitting && (
-                        <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
-                      )}
-                      {editingItem
-                        ? (currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Update")
-                        : (currentLanguage === "mm" ? "ထည့်သွင်းမည်" : "Add")
-                      }
+                      {currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel Edit"}
                     </Button>
-                  </div>
-                </form>
-              </Form>
-            </TabsContent>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    variant={formSection.submitButton?.style || "primary"}
+                  >
+                    {isSubmitting && (
+                      <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+                    )}
+                    {editingItem
+                      ? (currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Update")
+                      : getLocalizedText(formSection.submitButton?.label || 
+                        { en: "Add", mm: "ထည့်သွင်းမည်" }, currentLanguage)
+                    }
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
 
-            <TabsContent value="table">
-              <FormTableSection
-                section={tableSection}
-                currentLanguage={currentLanguage}
-                selectedItemId={selectedItems?.[0]}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                refreshTrigger={refreshTrigger}
-              />
-            </TabsContent>
-          </Tabs>
+          {/* Separator */}
+          <div className="border-t pt-6" />
+
+          {/* Table Section */}
+          <FormTableSection
+            section={tableSection}
+            currentLanguage={currentLanguage}
+            selectedItemId={selectedItems?.[0]}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            refreshTrigger={refreshTrigger}
+          />
 
           {/* Close Button */}
           <div className="flex justify-end pt-4 border-t">
