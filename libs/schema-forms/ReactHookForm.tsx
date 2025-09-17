@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller, FieldValues, FormProvider } from "react-hook-form";
+import {
+  useForm,
+  Controller,
+  FieldValues,
+  FormProvider,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { toastSuccess, toastError } from "@repo/utils";
@@ -25,10 +30,6 @@ interface ReactHookFormProps {
   currentLanguage: string;
 }
 
-
-
-
-
 export function ReactHookForm({
   module,
   action,
@@ -46,13 +47,15 @@ export function ReactHookForm({
   const filteredFormFields = module.formFields.filter((field) => {
     // Filter out hidden fields
     if (field.hidden) return false;
-    
+
     // Filter out password fields in edit mode (use password reset action instead)
-    if (action === 'update' && field.fieldType === 'password') {
-      console.log(`🔒 ReactHookForm: Skipping password field "${field.fieldName}" in edit mode`);
+    if (action === "update" && field.fieldType === "password") {
+      console.log(
+        `🔒 ReactHookForm: Skipping password field "${field.fieldName}" in edit mode`
+      );
       return false;
     }
-    
+
     return true;
   });
   const validationSchema = generateZodSchema(filteredFormFields);
@@ -83,11 +86,11 @@ export function ReactHookForm({
   const onSubmit = async (data: FieldValues) => {
     setSubmitError(null);
     setIsSubmittingForm(true);
-    
+
     try {
       // Convert form data to FormData for server action
       const formData = new FormData();
-      
+
       // For update operations, include version and other metadata fields
       if (action === "update" && initialData) {
         // Include version for optimistic concurrency control
@@ -95,7 +98,7 @@ export function ReactHookForm({
           formData.append("version", String(initialData.version));
         }
       }
-      
+
       Object.entries(data).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           // Debug logging to understand the issue
@@ -104,17 +107,25 @@ export function ReactHookForm({
             type: typeof value,
             isObject: typeof value === "object",
             hasEn: typeof value === "object" && value?.en !== undefined,
-            isStringWithEn: typeof value === "string" && value.startsWith('{"en":'),
-            valuePreview: typeof value === "string" ? value.substring(0, 50) : value
+            isStringWithEn:
+              typeof value === "string" && value.startsWith('{"en":'),
+            valuePreview:
+              typeof value === "string" ? value.substring(0, 50) : value,
           });
-          
+
           if (typeof value === "object" && value.en !== undefined) {
             // Handle multi-language fields - send as nested JSON object
-            console.log(`✅ Serializing object multi-lang field "${key}":`, value);
+            console.log(
+              `✅ Serializing object multi-lang field "${key}":`,
+              value
+            );
             formData.append(key, JSON.stringify(value));
           } else if (typeof value === "string" && value.startsWith('{"en":')) {
             // Handle pre-serialized multi-language fields - don't double-stringify
-            console.log(`✅ Using pre-serialized multi-lang field "${key}":`, value);
+            console.log(
+              `✅ Using pre-serialized multi-lang field "${key}":`,
+              value
+            );
             formData.append(key, value);
           } else if (Array.isArray(value)) {
             // Handle array values (multi-select)
@@ -136,84 +147,153 @@ export function ReactHookForm({
         itemId,
         true // skipRedirect - we'll handle navigation on client-side
       );
-      
+
       console.log("Server action result:", result);
-      
+
       if (!result.success) {
         if (result.fieldErrors && result.fieldErrors.length > 0) {
           // Handle backend field validation errors
-          console.log("🔍 Backend field validation errors:", result.fieldErrors);
+          console.log(
+            "🔍 Backend field validation errors:",
+            result.fieldErrors
+          );
           const fieldErrorsText = result.fieldErrors.join("\n");
-          const mainError = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
-          const traceInfo = result.traceId ? `\n\nTrace ID: ${result.traceId}` : '';
+          const mainError =
+            result.error ||
+            getLocalizedErrorMessage(
+              "FORM_SUBMISSION_FAILED",
+              currentLanguage as "en" | "mm"
+            );
+          const traceInfo = result.traceId
+            ? `\n\nTrace ID: ${result.traceId}`
+            : "";
           const errorMessage = `${mainError}\n\nField errors:\n${fieldErrorsText}${traceInfo}`;
-          
+
           // Show error toast for immediate feedback
           toastError(mainError);
-          
+
           throw new Error(errorMessage);
         } else if (result.errors) {
           // Handle other validation errors (legacy format)
           const errorMessages = Object.entries(result.errors)
-            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
+            .map(
+              ([field, messages]) =>
+                `${field}: ${
+                  Array.isArray(messages) ? messages.join(", ") : messages
+                }`
+            )
             .join("\n");
           // Show error toast for immediate feedback
-          const toastErrorMessage = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
+          const toastErrorMessage =
+            result.error ||
+            getLocalizedErrorMessage(
+              "FORM_SUBMISSION_FAILED",
+              currentLanguage as "en" | "mm"
+            );
           toastError(toastErrorMessage);
-          
+
           throw new Error(errorMessages);
         } else {
-          const errorMessage = result.error || getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
+          const errorMessage =
+            result.error ||
+            getLocalizedErrorMessage(
+              "FORM_SUBMISSION_FAILED",
+              currentLanguage as "en" | "mm"
+            );
           // Show error toast for immediate feedback
           toastError(errorMessage);
-          
+
           throw new Error(errorMessage);
         }
       }
-      
+
       // Success - show toast and handle client-side navigation
       console.log("Form submitted successfully");
-      
+
       // Invalidate React Query cache to force data refetch
-      console.log(`🔄 Invalidating React Query cache for module: ${moduleSlug}`);
-      await queryClient.invalidateQueries({ 
+      console.log(
+        `🔄 Invalidating React Query cache for module: ${moduleSlug}`
+      );
+      
+      // Remove all cached queries for this module to force complete refresh
+      await queryClient.removeQueries({
         queryKey: [...moduleKeys.lists(), moduleSlug],
-        exact: false 
+        exact: false
       });
       
+      // Invalidate all list queries for this module
+      await queryClient.invalidateQueries({
+        queryKey: [...moduleKeys.lists(), moduleSlug],
+        exact: false,
+        refetchType: 'all' // Force refetch all matching queries
+      });
+
       // If updating, also invalidate the specific item detail
       if (action === "update" && itemId) {
+        await queryClient.removeQueries({
+          queryKey: moduleKeys.detail(moduleSlug, itemId)
+        });
         await queryClient.invalidateQueries({
           queryKey: moduleKeys.detail(moduleSlug, itemId),
+          refetchType: 'all'
         });
       }
       
+      // Clear all module-related caches to ensure fresh data
+      await queryClient.invalidateQueries({
+        queryKey: ['modules'],
+        exact: false,
+        refetchType: 'all'
+      });
+
       // Show success toast with multilingual support
-      const successMessage = action === "create" 
-        ? (currentLanguage === "mm" 
-          ? `${getLocalizedText(module.name, currentLanguage)} အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!`
-          : `${getLocalizedText(module.name, currentLanguage)} created successfully!`)
-        : (currentLanguage === "mm"
-          ? `${getLocalizedText(module.name, currentLanguage)} အောင်မြင်စွာ အပ်ဒိတ်လုပ်ပြီးပါပြီ!`
-          : `${getLocalizedText(module.name, currentLanguage)} updated successfully!`);
-      
+      const successMessage =
+        action === "create"
+          ? currentLanguage === "mm"
+            ? `${getLocalizedText(
+                module.name,
+                currentLanguage
+              )} အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!`
+            : `${getLocalizedText(
+                module.name,
+                currentLanguage
+              )} created successfully!`
+          : currentLanguage === "mm"
+          ? `${getLocalizedText(
+              module.name,
+              currentLanguage
+            )} အောင်မြင်စွာ အပ်ဒိတ်လုပ်ပြီးပါပြီ!`
+          : `${getLocalizedText(
+              module.name,
+              currentLanguage
+            )} updated successfully!`;
+
       toastSuccess(successMessage);
-      
+
       // Redirect to module datatable page with user-friendly delay
       setTimeout(() => {
+        // One more invalidation before navigation to be absolutely sure
+        queryClient.invalidateQueries({
+          queryKey: [...moduleKeys.lists(), moduleSlug],
+          exact: false
+        });
+        
+        // Navigate to the list page
         router.push(`/${moduleSlug}`);
       }, 1500); // Give user time to see success message
-      
     } catch (error) {
       console.error("Form submission error:", error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : getLocalizedErrorMessage('FORM_SUBMISSION_FAILED', currentLanguage as 'en' | 'mm');
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : getLocalizedErrorMessage(
+              "FORM_SUBMISSION_FAILED",
+              currentLanguage as "en" | "mm"
+            );
       setSubmitError(errorMessage);
-      
+
       // Show error toast for immediate feedback
       toastError(errorMessage);
-      
     } finally {
       setIsSubmittingForm(false);
     }
@@ -250,86 +330,105 @@ export function ReactHookForm({
                 : "grid grid-cols-1 md:grid-cols-2 gap-6" // Multi-column for horizontal
             }`}
           >
-            {filteredFormFields
-              .map((field) => (
-                <FormFieldRenderer
-                  key={field.fieldName}
-                  field={field}
-                  currentLanguage={currentLanguage}
-                  isVerticalLayout={isVerticalLayout}
-                  errors={errors}
-                  watch={watch}
-                />
-              ))}
+            {filteredFormFields.map((field) => (
+              <FormFieldRenderer
+                key={field.fieldName}
+                field={field}
+                currentLanguage={currentLanguage}
+                isVerticalLayout={isVerticalLayout}
+                errors={errors}
+                watch={watch}
+              />
+            ))}
           </div>
 
-        {/* Error Display */}
-        {submitError && (
-          <div className="p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
-            <div className="flex items-start gap-2">
-              <IconComponent name="AlertCircle" className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="font-medium text-destructive mb-2">
-                  {currentLanguage === "mm" ? "ဖောင်း validation မအောင်မြင်ပါ" : "Form validation failed"}
-                </h4>
-                <div className="text-sm text-destructive/90 space-y-1">
-                  {submitError.split('\n').map((line, index) => (
-                    <div key={index} className={line.startsWith('Field errors:') ? 'font-medium mt-2' : ''}>
-                      {line.startsWith('Field errors:') ? (
-                        <span className="text-destructive font-medium">
-                          {currentLanguage === "mm" ? "ဖောင်းအမှားများ:" : "Field errors:"}
-                        </span>
-                      ) : line.startsWith('Trace ID:') ? (
-                        <div className="mt-2 p-2 bg-muted/50 rounded text-xs font-mono text-muted-foreground">
-                          {line}
-                        </div>
-                      ) : line.trim() ? (
-                        <div className="flex items-start gap-1">
-                          <span className="text-destructive/70 mt-1">•</span>
-                          <span>{line}</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
+          {/* Error Display */}
+          {submitError && (
+            <div className="p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
+              <div className="flex items-start gap-2">
+                <IconComponent
+                  name="AlertCircle"
+                  className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0"
+                />
+                <div className="flex-1">
+                  <h4 className="font-medium text-destructive mb-2">
+                    {currentLanguage === "mm"
+                      ? "ဖောင်း validation မအောင်မြင်ပါ"
+                      : "Form validation failed"}
+                  </h4>
+                  <div className="text-sm text-destructive/90 space-y-1">
+                    {submitError.split("\n").map((line, index) => (
+                      <div
+                        key={index}
+                        className={
+                          line.startsWith("Field errors:")
+                            ? "font-medium mt-2"
+                            : ""
+                        }
+                      >
+                        {line.startsWith("Field errors:") ? (
+                          <span className="text-destructive font-medium">
+                            {currentLanguage === "mm"
+                              ? "ဖောင်းအမှားများ:"
+                              : "Field errors:"}
+                          </span>
+                        ) : line.startsWith("Trace ID:") ? (
+                          <div className="mt-2 p-2 bg-muted/50 rounded text-xs font-mono text-muted-foreground">
+                            {line}
+                          </div>
+                        ) : line.trim() ? (
+                          <div className="flex items-start gap-1">
+                            <span className="text-destructive/70 mt-1">•</span>
+                            <span>{line}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-3 pt-6 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={() => router.back()}
+              disabled={isSubmittingForm || isSubmitting}
+            >
+              <IconComponent name="ArrowLeft" className="w-4 h-4 mr-2" />
+              {currentLanguage === "mm" ? "မလုပ်တော့ပါ" : "Cancel"}
+            </Button>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSubmittingForm || isSubmitting}
+            >
+              {isSubmittingForm || isSubmitting ? (
+                <>
+                  <IconComponent
+                    name="Loader2"
+                    className="w-4 h-4 mr-2 animate-spin"
+                  />
+                  {currentLanguage === "mm" ? "သိမ်းနေသည়..." : "Saving..."}
+                </>
+              ) : (
+                <>
+                  <IconComponent name="Save" className="w-4 h-4 mr-2" />
+                  {action === "create"
+                    ? currentLanguage === "mm"
+                      ? "ဖန်တီးမည်"
+                      : "Create"
+                    : currentLanguage === "mm"
+                    ? "အပ်ဒိတ်လုပ်မည်"
+                    : "Update"}
+                </>
+              )}
+            </Button>
           </div>
-        )}
-
-
-        {/* Form Actions */}
-        <div className="flex justify-end space-x-3 pt-6 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={() => router.back()}
-            disabled={isSubmittingForm || isSubmitting}
-          >
-            <IconComponent name="ArrowLeft" className="w-4 h-4 mr-2" />
-            {currentLanguage === "mm" ? "မလုပ်တော့ပါ" : "Cancel"}
-          </Button>
-          <Button type="submit" size="lg" disabled={isSubmittingForm || isSubmitting}>
-            {(isSubmittingForm || isSubmitting) ? (
-              <>
-                <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
-                {currentLanguage === "mm" ? "သိမ်းနေသည়..." : "Saving..."}
-              </>
-            ) : (
-              <>
-                <IconComponent name="Save" className="w-4 h-4 mr-2" />
-                {action === "create"
-                  ? currentLanguage === "mm"
-                    ? "ဖန်တီးမည်"
-                    : "Create"
-                  : currentLanguage === "mm"
-                  ? "အပ်ဒိတ်လုပ်မည်"
-                  : "Update"}
-              </>
-            )}
-          </Button>
-        </div>
         </form>
       </FormProvider>
     </div>

@@ -1392,17 +1392,37 @@ export function ReactHookWizardForm({
       
       // Invalidate React Query cache to force data refetch
       console.log(`🔄 Invalidating React Query cache for module: ${moduleSlug}`);
+      
+      // Remove all cached queries for this module to force complete refresh
+      await queryClient.removeQueries({
+        queryKey: [...moduleKeys.lists(), moduleSlug],
+        exact: false
+      });
+      
+      // Invalidate all list queries for this module
       await queryClient.invalidateQueries({ 
         queryKey: [...moduleKeys.lists(), moduleSlug],
-        exact: false 
+        exact: false,
+        refetchType: 'all' // Force refetch all matching queries
       });
       
       // If updating, also invalidate the specific item detail
       if (action === "update" && itemId) {
+        await queryClient.removeQueries({
+          queryKey: moduleKeys.detail(moduleSlug, itemId)
+        });
         await queryClient.invalidateQueries({
           queryKey: moduleKeys.detail(moduleSlug, itemId),
+          refetchType: 'all'
         });
       }
+      
+      // Clear all module-related caches to ensure fresh data
+      await queryClient.invalidateQueries({
+        queryKey: ['modules'],
+        exact: false,
+        refetchType: 'all'
+      });
       
       // Show success toast with multilingual support
       const successMessage = action === "create" 
@@ -1418,6 +1438,13 @@ export function ReactHookWizardForm({
       // Controlled redirect with user-friendly delay for both create and update
       console.log(`🧙 Scheduling redirect to module list after successful ${action}`);
       setTimeout(() => {
+        // One more invalidation before navigation to be absolutely sure
+        queryClient.invalidateQueries({
+          queryKey: [...moduleKeys.lists(), moduleSlug],
+          exact: false
+        });
+        
+        // Navigate to the list page
         router.push(`/${moduleSlug}`);
       }, 1500); // Give user time to see success message
     } catch (error) {
