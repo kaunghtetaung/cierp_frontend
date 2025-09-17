@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { fetchLayoutData } from '@/lib/layout-data'
-import { getModuleItem } from '@repo/app-modules'
+import { getModuleItemWithNavigation } from '@repo/app-modules'
 import { submitModuleForm } from '@repo/app-modules/server-actions'
 import { FormWithLanguage } from '@repo/schema-forms'
 import { generateZodSchema } from '@repo/schema-utils'
@@ -9,14 +9,17 @@ import type { ModuleSchema } from '@repo/types'
 
 interface ModuleDetailPageProps {
   params: Promise<{
+    appId: string
     module: string
     id: string
   }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
+export default async function ModuleDetail({ params, searchParams }: ModuleDetailPageProps) {
   const { appSchemaData } = await fetchLayoutData()
   const resolvedParams = await params
+  const resolvedSearchParams = await searchParams
   
   if (!appSchemaData?.modules) {
     notFound()
@@ -36,11 +39,28 @@ export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
 
   const isCreateMode = resolvedParams.id === 'new'
 
-  // Fetch initial data for edit mode
+  // Fetch initial data for edit mode with navigation
   let initialData = null
+  let navigation = undefined
+  
   if (!isCreateMode) {
     try {
-      initialData = await getModuleItem(resolvedParams.module, resolvedParams.id)
+      // Get sort parameters from search params (inherited from list view)
+      const sortBy = (resolvedSearchParams.sortBy as string) || 'createdAt'
+      const sortOrder = (resolvedSearchParams.sortOrder as 'asc' | 'desc') || 'desc'
+      
+      const itemResponse = await getModuleItemWithNavigation(
+        resolvedParams.module,
+        resolvedParams.id,
+        {
+          includeNavigation: true,
+          sortBy,
+          sortOrder
+        }
+      )
+      
+      initialData = itemResponse.data
+      navigation = itemResponse.navigation
     } catch (error) {
       console.error('Failed to fetch module item:', error)
       notFound()
@@ -62,12 +82,14 @@ export default async function ModuleDetail({ params }: ModuleDetailPageProps) {
         moduleSlug={resolvedParams.module}
         itemId={isCreateMode ? undefined : resolvedParams.id}
         isWizard={isWizardForm}
+        navigation={navigation}
+        appId={resolvedParams.appId}
       />
     </div>
   )
 }
 
-export async function generateMetadata({ params }: ModuleDetailPageProps) {
+export async function generateMetadata({ params, searchParams }: ModuleDetailPageProps) {
   const { appSchemaData } = await fetchLayoutData()
   const resolvedParams = await params
   
