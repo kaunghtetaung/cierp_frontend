@@ -266,6 +266,7 @@ export function DynamicExtraActionFormWithSections({
             section={tableSection}
             currentLanguage={currentLanguage}
             selectedItemId={selectedItems?.[0]}
+            moduleSlug={moduleSlug}
             onEdit={handleEdit}
             onDelete={handleDelete}
             refreshTrigger={refreshTrigger}

@@ -67,6 +67,7 @@ interface FormTableSectionProps {
   };
   currentLanguage: string;
   selectedItemId?: string;
+  moduleSlug?: string; // Module context for API calls
   onEdit?: (item: any) => void;
   onDelete?: (item: any) => void;
   refreshTrigger?: number; // Incremented to trigger refresh
@@ -76,6 +77,7 @@ export function FormTableSection({
   section,
   currentLanguage,
   selectedItemId,
+  moduleSlug,
   onEdit,
   onDelete,
   refreshTrigger,
@@ -95,8 +97,8 @@ export function FormTableSection({
       try {
         setIsLoading(true);
         
-        // Use server action to fetch table data
-        const response = await fetchFormTableDataAction(section.endpoint, selectedItemId);
+        // Use server action to fetch table data with module context
+        const response = await fetchFormTableDataAction(section.endpoint, selectedItemId, moduleSlug);
         
         if (response.success && response.data) {
           setData(response.data);

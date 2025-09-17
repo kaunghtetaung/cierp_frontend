@@ -86,7 +86,8 @@ export async function fetchFormSchemaAction(
  */
 export async function fetchFormTableDataAction(
   endpoint: string,
-  itemId: string
+  itemId: string,
+  moduleSlug?: string
 ): Promise<ActionResponse<any[]>> {
   try {
     const { httpClient, context } = await createHttpClient();
@@ -94,8 +95,16 @@ export async function fetchFormTableDataAction(
     // Replace :id placeholder with actual ID
     let finalEndpoint = endpoint.replace(':id', itemId);
     
-    // Ensure endpoint follows the correct pattern
-    // If it doesn't start with /{appName}, prepend it
+    // If endpoint pattern is like "/:id/accessions", prepend module slug
+    // This transforms "/{id}/accessions" to "/bibliographies/{id}/accessions"
+    if (finalEndpoint.match(/^\/[^\/]+\/accessions/)) {
+      // Already has the correct format, just needs ID replacement (done above)
+    } else if (moduleSlug && finalEndpoint.startsWith('/') && !finalEndpoint.startsWith(`/${moduleSlug}/`)) {
+      // Prepend module slug if not already present
+      finalEndpoint = `/${moduleSlug}${finalEndpoint}`;
+    }
+    
+    // Ensure endpoint follows the correct pattern with appName
     if (!finalEndpoint.startsWith(`/${context.appName}/`)) {
       // If it starts with /api/v1/, replace with /{appName}/
       if (finalEndpoint.startsWith('/api/v1/')) {
