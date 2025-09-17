@@ -51,6 +51,16 @@ export function ReactHookFormEnhanced({
 }: ReactHookFormEnhancedProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  
+  // Debug navigation data
+  console.log("🔍 ReactHookFormEnhanced navigation debug:", {
+    action,
+    hasNavigation: !!navigation,
+    navigation,
+    moduleSlug,
+    itemId,
+    appId
+  });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const [showHelp, setShowHelp] = useState(false);

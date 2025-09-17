@@ -38,6 +38,14 @@ export function FormWithLanguage({
   appId,
 }: FormWithLanguageProps) {
   const { currentLanguage } = useLanguage();
+  
+  // Debug navigation passing
+  console.log("🔄 FormWithLanguage - Navigation props:", {
+    hasNavigation: !!navigation,
+    navigation,
+    isEnhanced,
+    willPassNavigation: isEnhanced && navigation
+  });
 
   // Select the appropriate form component
   const FormComponent = isWizard 

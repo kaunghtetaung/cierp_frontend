@@ -61,6 +61,13 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
       
       initialData = itemResponse.data
       navigation = itemResponse.navigation
+      
+      console.log("📊 Edit Page - Navigation data fetched:", {
+        hasNavigation: !!navigation,
+        navigation,
+        moduleSlug: resolvedParams.module,
+        itemId: resolvedParams.id
+      })
     } catch (error) {
       console.error('Failed to fetch module item:', error)
       notFound()
