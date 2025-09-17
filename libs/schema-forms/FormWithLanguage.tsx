@@ -3,6 +3,7 @@
 import React from "react";
 import { useLanguage } from "@repo/language";
 import { ReactHookForm } from "./ReactHookForm";
+import { ReactHookFormEnhanced } from "./ReactHookFormEnhanced";
 import { ReactHookWizardForm } from "./ReactHookWizardForm";
 import type { ModuleSchema } from "@repo/types";
 
@@ -13,6 +14,7 @@ interface FormWithLanguageProps {
   moduleSlug: string;
   itemId?: string;
   isWizard?: boolean;
+  isEnhanced?: boolean;
 }
 
 export function FormWithLanguage({
@@ -22,10 +24,16 @@ export function FormWithLanguage({
   moduleSlug,
   itemId,
   isWizard = false,
+  isEnhanced = true, // Default to enhanced for better UX
 }: FormWithLanguageProps) {
   const { currentLanguage } = useLanguage();
 
-  const FormComponent = isWizard ? ReactHookWizardForm : ReactHookForm;
+  // Select the appropriate form component
+  const FormComponent = isWizard 
+    ? ReactHookWizardForm 
+    : isEnhanced 
+      ? ReactHookFormEnhanced 
+      : ReactHookForm;
 
   return (
     <FormComponent
