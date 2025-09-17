@@ -378,10 +378,10 @@ export function ReactHookFormEnhanced({
         )}
 
         {/* Main Form Content */}
-        <Card className="shadow-xl border-0">
+        <Card className="relative z-0 shadow-xl border-0">
           <CardContent className="p-0">
             <FormProvider {...form}>
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <form onSubmit={handleSubmit(onSubmit)} className="relative">
                 {/* Tab-based Field Groups */}
                 <Tabs defaultValue="main" className="w-full">
                   <TabsList className="w-full justify-start rounded-none border-b bg-muted/50 h-auto p-0">
@@ -416,7 +416,7 @@ export function ReactHookFormEnhanced({
 
                   {/* Form Fields Tab */}
                   {fieldGroups.main.length > 0 && (
-                    <TabsContent value="main" className="p-6 space-y-6">
+                    <TabsContent value="main" className="relative z-0 p-6 space-y-6">
                       <div className={`${
                         isVerticalLayout
                           ? "space-y-6"
@@ -447,7 +447,7 @@ export function ReactHookFormEnhanced({
 
                   {/* Metadata Tab */}
                   {fieldGroups.metadata.length > 0 && action === "update" && (
-                    <TabsContent value="metadata" className="p-6 space-y-6">
+                    <TabsContent value="metadata" className="relative z-0 p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {fieldGroups.metadata.map((field) => (
                           <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
@@ -507,7 +507,7 @@ export function ReactHookFormEnhanced({
                 )}
 
                 {/* Enhanced Form Actions */}
-                <div className="sticky bottom-0 z-10 bg-gradient-to-t from-background to-background/95 border-t p-6">
+                <div className="sticky bottom-0 z-20 bg-background border-t p-6 shadow-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       {hasErrors ? (
