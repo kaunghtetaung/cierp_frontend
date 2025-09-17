@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation";
 import { useForm, Controller, FieldValues, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { toastSuccess, toastError, toastWarning, toastInfo } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { Button } from "@repo/ui";
@@ -11,6 +12,7 @@ import { IconComponent } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@repo/schema-utils";
 import { useWizardStorage } from "@repo/schema-hooks/use-wizard-storage";
+import { moduleKeys } from "@repo/schema-hooks";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
 import { ConfirmationDialog } from "@repo/ui";
 import type { ModuleSchema, FormField } from "@repo/types";
