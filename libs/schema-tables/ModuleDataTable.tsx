@@ -419,8 +419,11 @@ export function ModuleDataTable({
     setIsExtraActionModalOpen(false);
     setActiveExtraAction(null);
     setRowActionItem(null); // Clear row action item
+    // Refresh the table data after successful action
+    if (onRefresh) {
+      onRefresh();
+    }
     // Note: The ExtraActionModal already shows success toasts
-    // Data refetching is handled by the individual mutations in the modal
   };
 
   const handleDelete = (id: string) => {

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, FieldValues, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { Button } from "@repo/ui";
@@ -12,6 +13,7 @@ import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@repo/schema-utils";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
 import { getLocalizedErrorMessage } from "@repo/api/messages";
+import { moduleKeys } from "@repo/schema-hooks";
 import type { ModuleSchema, FormField, LocalizedText } from "@repo/types";
 
 interface ReactHookFormProps {
@@ -36,6 +38,7 @@ export function ReactHookForm({
   currentLanguage,
 }: ReactHookFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
@@ -170,6 +173,20 @@ export function ReactHookForm({
       
       // Success - show toast and handle client-side navigation
       console.log("Form submitted successfully");
+      
+      // Invalidate React Query cache to force data refetch
+      console.log(`🔄 Invalidating React Query cache for module: ${moduleSlug}`);
+      await queryClient.invalidateQueries({ 
+        queryKey: [...moduleKeys.lists(), moduleSlug],
+        exact: false 
+      });
+      
+      // If updating, also invalidate the specific item detail
+      if (action === "update" && itemId) {
+        await queryClient.invalidateQueries({
+          queryKey: moduleKeys.detail(moduleSlug, itemId),
+        });
+      }
       
       // Show success toast with multilingual support
       const successMessage = action === "create" 

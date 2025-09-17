@@ -809,6 +809,7 @@ export function ReactHookWizardForm({
   console.log('🧙 ReactHookWizardForm: Initializing hooks...');
   
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
@@ -1387,6 +1388,21 @@ export function ReactHookWizardForm({
       // Clear stored draft after successful submission
       wizardStorage.clearStorage();
       
+      // Invalidate React Query cache to force data refetch
+      console.log(`🔄 Invalidating React Query cache for module: ${moduleSlug}`);
+      const queryClient = useQueryClient();
+      await queryClient.invalidateQueries({ 
+        queryKey: [...moduleKeys.lists(), moduleSlug],
+        exact: false 
+      });
+      
+      // If updating, also invalidate the specific item detail
+      if (action === "update" && itemId) {
+        await queryClient.invalidateQueries({
+          queryKey: moduleKeys.detail(moduleSlug, itemId),
+        });
+      }
+      
       // Show success toast with multilingual support
       const successMessage = action === "create" 
         ? (currentLanguage === "mm" 
@@ -1398,13 +1414,11 @@ export function ReactHookWizardForm({
       
       toastSuccess(successMessage);
       
-      // Controlled redirect with user-friendly delay
-      if (action === 'create') {
-        console.log('🧙 Scheduling redirect to module list after successful creation');
-        setTimeout(() => {
-          router.push(`/${moduleSlug}`);
-        }, 1500); // Give user time to see success message
-      }
+      // Controlled redirect with user-friendly delay for both create and update
+      console.log(`🧙 Scheduling redirect to module list after successful ${action}`);
+      setTimeout(() => {
+        router.push(`/${moduleSlug}`);
+      }, 1500); // Give user time to see success message
     } catch (error) {
       console.error("🧙 Wizard form submission error:", error);
       

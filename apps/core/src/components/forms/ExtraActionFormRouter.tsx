@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { DynamicExtraActionForm } from "./DynamicExtraActionForm";
+import { DynamicExtraActionFormWithSections } from "@repo/schema-forms";
 import type { ExtraActionForm } from "@repo/types";
 
 interface ExtraActionFormRouterProps {
@@ -11,6 +11,7 @@ interface ExtraActionFormRouterProps {
   onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
   hideHeader?: boolean; // Hide the form header to prevent duplication in modals
+  moduleSlug?: string; // Module context for API calls
 }
 
 // Pre-built form components registry
@@ -48,6 +49,7 @@ export function ExtraActionFormRouter({
   onSubmit,
   onCancel,
   hideHeader = false,
+  moduleSlug,
 }: ExtraActionFormRouterProps) {
   // Determine form approach - default to 'pre-built' for backward compatibility
   const formApproach = action.formApproach || 'pre-built';
@@ -65,13 +67,14 @@ export function ExtraActionFormRouter({
   if (formApproach === 'schema-driven' && action.formFields && action.formFields.length > 0) {
     console.log(`📋 ExtraActionFormRouter: Using schema-driven approach for "${action.actionKey}"`);
     return (
-      <DynamicExtraActionForm
+      <DynamicExtraActionFormWithSections
         action={action}
         selectedItems={selectedItems}
         currentLanguage={currentLanguage}
         onSubmit={onSubmit}
         onCancel={onCancel}
         hideHeader={hideHeader}
+        moduleSlug={moduleSlug}
       />
     );
   }
@@ -81,13 +84,14 @@ export function ExtraActionFormRouter({
     // Prefer schema-driven if formFields are available
     if (action.formFields && action.formFields.length > 0) {
       return (
-        <DynamicExtraActionForm
+        <DynamicExtraActionFormWithSections
           action={action}
           selectedItems={selectedItems}
           currentLanguage={currentLanguage}
           onSubmit={onSubmit}
           onCancel={onCancel}
           hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
         />
       );
     }
@@ -103,6 +107,7 @@ export function ExtraActionFormRouter({
             onSubmit={onSubmit}
             onCancel={onCancel}
             hideHeader={hideHeader}
+            moduleSlug={moduleSlug}
           />
         </React.Suspense>
       );
@@ -153,6 +158,7 @@ export function ExtraActionFormRouter({
           }}
           onCancel={onCancel}
           hideHeader={hideHeader}
+          moduleSlug={moduleSlug}
         />
       </React.Suspense>
     );
@@ -195,4 +201,5 @@ export interface PreBuiltFormProps {
   onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
   hideHeader?: boolean;
+  moduleSlug?: string;
 }
