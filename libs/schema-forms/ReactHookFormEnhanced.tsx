@@ -13,7 +13,6 @@ import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { Button } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
-import { Progress } from "@repo/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
@@ -44,7 +43,6 @@ export function ReactHookFormEnhanced({
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
-  const [completedFields, setCompletedFields] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
   // Generate Zod schema for validation (exclude password fields in edit mode)
@@ -71,18 +69,6 @@ export function ReactHookFormEnhanced({
     reset,
   } = form;
 
-  // Track form completion progress
-  const watchedValues = watch();
-  useEffect(() => {
-    const filledFields = Object.keys(watchedValues).filter(
-      (key) => watchedValues[key] !== null && watchedValues[key] !== undefined && watchedValues[key] !== ""
-    ).length;
-    setCompletedFields(filledFields);
-  }, [watchedValues]);
-
-  const progressPercentage = Math.round(
-    (completedFields / filteredFormFields.length) * 100
-  );
 
   // Reset form when initialData changes
   useEffect(() => {
@@ -96,22 +82,19 @@ export function ReactHookFormEnhanced({
   // Group fields for better organization
   const fieldGroups = React.useMemo(() => {
     const groups: { [key: string]: typeof filteredFormFields } = {
-      required: [],
-      optional: [],
+      main: [],
       metadata: [],
     };
 
     filteredFormFields.forEach((field) => {
-      if (field.required) {
-        groups.required.push(field);
-      } else if (
+      if (
         field.fieldName.includes("created") ||
         field.fieldName.includes("updated") ||
         field.fieldName.includes("deleted")
       ) {
         groups.metadata.push(field);
       } else {
-        groups.optional.push(field);
+        groups.main.push(field);
       }
     });
 
@@ -332,19 +315,6 @@ export function ReactHookFormEnhanced({
               </Button>
             </div>
 
-            {/* Progress Indicator */}
-            <div className="mt-6 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {currentLanguage === "mm" 
-                    ? `ဖြည့်စွက်ပြီး - ${completedFields}/${filteredFormFields.length}`
-                    : `Progress - ${completedFields}/${filteredFormFields.length} fields`}
-                </span>
-                <span className="font-medium">{progressPercentage}%</span>
-              </div>
-              <Progress value={progressPercentage} className="h-2" />
-            </div>
-
             {/* Status Pills */}
             <div className="flex items-center gap-2 mt-4">
               {isSubmittingForm ? (
@@ -413,32 +383,21 @@ export function ReactHookFormEnhanced({
             <FormProvider {...form}>
               <form onSubmit={handleSubmit(onSubmit)}>
                 {/* Tab-based Field Groups */}
-                <Tabs defaultValue="required" className="w-full">
+                <Tabs defaultValue="main" className="w-full">
                   <TabsList className="w-full justify-start rounded-none border-b bg-muted/50 h-auto p-0">
-                    {fieldGroups.required.length > 0 && (
+                    {fieldGroups.main.length > 0 && (
                       <TabsTrigger 
-                        value="required" 
+                        value="main" 
                         className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
                       >
                         <div className="flex items-center gap-2">
                           <IconComponent name="FileText" className="w-4 h-4" />
-                          <span>{currentLanguage === "mm" ? "အဓိက အချက်အလက်များ" : "Required Fields"}</span>
-                          {fieldGroups.required.some(f => errors[f.fieldName]) && (
+                          <span>{currentLanguage === "mm" ? "အဓိက အချက်အလက်များ" : "Form Fields"}</span>
+                          {fieldGroups.main.some(f => errors[f.fieldName]) && (
                             <span className="ml-2 px-1.5 py-0.5 bg-destructive text-destructive-foreground text-xs rounded-full">
                               !
                             </span>
                           )}
-                        </div>
-                      </TabsTrigger>
-                    )}
-                    {fieldGroups.optional.length > 0 && (
-                      <TabsTrigger 
-                        value="optional"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <IconComponent name="Plus" className="w-4 h-4" />
-                          <span>{currentLanguage === "mm" ? "အပိုဆောင်း အချက်အလက်များ" : "Optional Fields"}</span>
                         </div>
                       </TabsTrigger>
                     )}
@@ -455,15 +414,15 @@ export function ReactHookFormEnhanced({
                     )}
                   </TabsList>
 
-                  {/* Required Fields Tab */}
-                  {fieldGroups.required.length > 0 && (
-                    <TabsContent value="required" className="p-6 space-y-6">
+                  {/* Form Fields Tab */}
+                  {fieldGroups.main.length > 0 && (
+                    <TabsContent value="main" className="p-6 space-y-6">
                       <div className={`${
                         isVerticalLayout
                           ? "space-y-6"
                           : "grid grid-cols-1 md:grid-cols-2 gap-6"
                       }`}>
-                        {fieldGroups.required.map((field) => (
+                        {fieldGroups.main.map((field) => (
                           <div
                             key={field.fieldName}
                             className={`${
@@ -485,35 +444,6 @@ export function ReactHookFormEnhanced({
                     </TabsContent>
                   )}
 
-                  {/* Optional Fields Tab */}
-                  {fieldGroups.optional.length > 0 && (
-                    <TabsContent value="optional" className="p-6 space-y-6">
-                      <div className={`${
-                        isVerticalLayout
-                          ? "space-y-6"
-                          : "grid grid-cols-1 md:grid-cols-2 gap-6"
-                      }`}>
-                        {fieldGroups.optional.map((field) => (
-                          <div
-                            key={field.fieldName}
-                            className={`${
-                              field.fieldType === "textArea" || field.fieldType === "htmlContent"
-                                ? "md:col-span-2"
-                                : ""
-                            } animate-in slide-in-from-bottom-2`}
-                          >
-                            <FormFieldRenderer
-                              field={field}
-                              currentLanguage={currentLanguage}
-                              isVerticalLayout={isVerticalLayout}
-                              errors={errors}
-                              watch={watch}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-                  )}
 
                   {/* Metadata Tab */}
                   {fieldGroups.metadata.length > 0 && action === "update" && (
