@@ -391,7 +391,7 @@ export function ReactHookForm({
           )}
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-6 border-t">
+          <div className="relative z-10 flex justify-end space-x-3 pt-6 border-t">
             <Button
               type="button"
               variant="outline"
