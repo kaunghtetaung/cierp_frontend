@@ -15,6 +15,15 @@ interface FormWithLanguageProps {
   itemId?: string;
   isWizard?: boolean;
   isEnhanced?: boolean;
+  navigation?: {
+    hasNext: boolean;
+    hasPrevious: boolean;
+    nextId?: string;
+    previousId?: string;
+    currentIndex?: number;
+    totalRecords?: number;
+  };
+  appId?: string;
 }
 
 export function FormWithLanguage({
@@ -25,6 +34,8 @@ export function FormWithLanguage({
   itemId,
   isWizard = false,
   isEnhanced = true, // Default to enhanced for better UX
+  navigation,
+  appId,
 }: FormWithLanguageProps) {
   const { currentLanguage } = useLanguage();
 
@@ -43,6 +54,7 @@ export function FormWithLanguage({
       moduleSlug={moduleSlug}
       itemId={itemId}
       currentLanguage={currentLanguage}
+      {...(isEnhanced && navigation ? { navigation, appId } : {})}
     />
   );
 }

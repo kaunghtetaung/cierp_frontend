@@ -28,6 +28,15 @@ interface ReactHookFormEnhancedProps {
   moduleSlug: string;
   itemId?: string;
   currentLanguage: string;
+  navigation?: {
+    hasNext: boolean;
+    hasPrevious: boolean;
+    nextId?: string;
+    previousId?: string;
+    currentIndex?: number;
+    totalRecords?: number;
+  };
+  appId?: string;
 }
 
 export function ReactHookFormEnhanced({
@@ -37,6 +46,8 @@ export function ReactHookFormEnhanced({
   moduleSlug,
   itemId,
   currentLanguage,
+  navigation,
+  appId = "core",
 }: ReactHookFormEnhancedProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -75,6 +86,38 @@ export function ReactHookFormEnhanced({
       reset(initialData);
     }
   }, [initialData, reset]);
+
+  // Add keyboard shortcuts for navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement ||
+          e.target instanceof HTMLSelectElement) {
+        return;
+      }
+
+      // Alt + Left arrow - Previous record
+      if (e.altKey && e.key === "ArrowLeft" && navigation?.hasPrevious && navigation?.previousId) {
+        e.preventDefault();
+        router.push(`/${appId}/${moduleSlug}/${navigation.previousId}`);
+      }
+      
+      // Alt + Right arrow - Next record  
+      if (e.altKey && e.key === "ArrowRight" && navigation?.hasNext && navigation?.nextId) {
+        e.preventDefault();
+        router.push(`/${appId}/${moduleSlug}/${navigation.nextId}`);
+      }
+    };
+
+    if (action === "update" && navigation) {
+      window.addEventListener("keydown", handleKeyDown);
+      
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [navigation, appId, moduleSlug, router, action]);
 
   const isVerticalLayout = module.formLayout === "vertical";
 
@@ -302,16 +345,61 @@ export function ReactHookFormEnhanced({
                 </div>
               </div>
 
-              {/* Help Toggle */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowHelp(!showHelp)}
-                className="rounded-full"
-              >
-                <IconComponent name={showHelp ? "X" : "HelpCircle"} className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Navigation Controls */}
+                {action === "update" && navigation && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (navigation.previousId) {
+                          router.push(`/${appId}/${moduleSlug}/${navigation.previousId}`)
+                        }
+                      }}
+                      disabled={!navigation.hasPrevious}
+                      title={currentLanguage === "mm" ? "ယခင်မှတ်တမ်း (←)" : "Previous Record (←)"}
+                    >
+                      <IconComponent name="ChevronLeft" className="w-4 h-4" />
+                    </Button>
+                    
+                    {navigation.currentIndex && navigation.totalRecords && (
+                      <div className="px-3 py-1 bg-background border border-border/30 rounded-md">
+                        <span className="text-sm font-medium">
+                          {navigation.currentIndex} / {navigation.totalRecords}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (navigation.nextId) {
+                          router.push(`/${appId}/${moduleSlug}/${navigation.nextId}`)
+                        }
+                      }}
+                      disabled={!navigation.hasNext}
+                      title={currentLanguage === "mm" ? "နောက်မှတ်တမ်း (→)" : "Next Record (→)"}
+                    >
+                      <IconComponent name="ChevronRight" className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Help Toggle */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHelp(!showHelp)}
+                  className="rounded-full"
+                >
+                  <IconComponent name={showHelp ? "X" : "HelpCircle"} className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
 
             {/* Status Pills */}
