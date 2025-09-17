@@ -1392,7 +1392,6 @@ export function ReactHookWizardForm({
       
       // Invalidate React Query cache to force data refetch
       console.log(`🔄 Invalidating React Query cache for module: ${moduleSlug}`);
-      const queryClient = useQueryClient();
       await queryClient.invalidateQueries({ 
         queryKey: [...moduleKeys.lists(), moduleSlug],
         exact: false 
