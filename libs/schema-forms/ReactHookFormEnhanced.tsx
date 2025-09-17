@@ -14,7 +14,6 @@ import { getLocalizedText } from "@repo/utils";
 import { Button } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { generateZodSchema } from "@repo/schema-utils";
 import { submitModuleForm } from "@repo/app-modules/server-actions";
@@ -382,41 +381,8 @@ export function ReactHookFormEnhanced({
           <CardContent className="p-0">
             <FormProvider {...form}>
               <form onSubmit={handleSubmit(onSubmit)} className="relative">
-                {/* Tab-based Field Groups */}
-                <Tabs defaultValue="main" className="w-full">
-                  <TabsList className="w-full justify-start rounded-none border-b bg-muted/50 h-auto p-0">
-                    {fieldGroups.main.length > 0 && (
-                      <TabsTrigger 
-                        value="main" 
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <IconComponent name="FileText" className="w-4 h-4" />
-                          <span>{currentLanguage === "mm" ? "အဓိက အချက်အလက်များ" : "Form Fields"}</span>
-                          {fieldGroups.main.some(f => errors[f.fieldName]) && (
-                            <span className="ml-2 px-1.5 py-0.5 bg-destructive text-destructive-foreground text-xs rounded-full">
-                              !
-                            </span>
-                          )}
-                        </div>
-                      </TabsTrigger>
-                    )}
-                    {fieldGroups.metadata.length > 0 && action === "update" && (
-                      <TabsTrigger 
-                        value="metadata"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <IconComponent name="Clock" className="w-4 h-4" />
-                          <span>{currentLanguage === "mm" ? "စနစ် အချက်အလက်များ" : "System Info"}</span>
-                        </div>
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {/* Form Fields Tab */}
-                  {fieldGroups.main.length > 0 && (
-                    <TabsContent value="main" className="relative z-0 p-6 space-y-6">
+                {/* Form Fields */}
+                <div className="relative z-0 p-6 space-y-6">
                       <div className={`${
                         isVerticalLayout
                           ? "space-y-6"
@@ -441,14 +407,15 @@ export function ReactHookFormEnhanced({
                           </div>
                         ))}
                       </div>
-                    </TabsContent>
-                  )}
+                </div>
 
-
-                  {/* Metadata Tab */}
-                  {fieldGroups.metadata.length > 0 && action === "update" && (
-                    <TabsContent value="metadata" className="relative z-0 p-6 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Metadata Section */}
+                {fieldGroups.metadata.length > 0 && action === "update" && (
+                  <div className="relative z-0 p-6 space-y-6 border-t border-border/50">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                      {currentLanguage === "mm" ? "စနစ် အချက်အလက်များ" : "System Information"}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {fieldGroups.metadata.map((field) => (
                           <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
                             <FormFieldRenderer
@@ -461,9 +428,8 @@ export function ReactHookFormEnhanced({
                           </div>
                         ))}
                       </div>
-                    </TabsContent>
-                  )}
-                </Tabs>
+                  </div>
+                )}
 
                 {/* Error Display */}
                 {submitError && (
@@ -507,7 +473,7 @@ export function ReactHookFormEnhanced({
                 )}
 
                 {/* Enhanced Form Actions */}
-                <div className="sticky bottom-0 z-20 bg-background border-t p-6 shadow-lg">
+                <div className="sticky bottom-0 z-20 bg-background border-t border-border/30 p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       {hasErrors ? (
