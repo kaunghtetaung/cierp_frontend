@@ -90,9 +90,13 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
     const dropdownConfig: any = {
       type: "dynamic",
       refPath: field.dataSource.endpoint,
-      searchable: true,
+      searchable: field.dataSource.enableTypeahead !== false, // Enable typeahead by default
       clearable: true,
-      preloadData: field.fieldType === "dynamicSelect" ? true : false
+      preloadData: !field.dataSource.enableTypeahead, // Don't preload if typeahead is enabled
+      labelField: field.dataSource.labelField || 'name',
+      valueField: field.dataSource.valueField || 'id',
+      minSearchLength: field.dataSource.minSearchLength || 2,
+      debounceMs: field.dataSource.debounceMs || 300
     };
 
     // Handle dependent fields
@@ -100,9 +104,15 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
       dropdownConfig.dependsOn = [field.dataSource.dependentField];
     }
 
+    // Preserve the original field type for dynamicSelect (don't convert to select)
+    let finalFieldType = field.fieldType;
+    if (field.fieldType === "multiDependentSelect") {
+      finalFieldType = "multiSelect";
+    }
+
     return {
       ...field,
-      fieldType: field.fieldType === "multiDependentSelect" ? "multiSelect" : "select",
+      fieldType: finalFieldType,
       dropdownConfig
     };
   }

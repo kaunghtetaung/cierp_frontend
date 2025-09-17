@@ -38,6 +38,8 @@ export function DynamicExtraActionFormWithSections({
     hasSections: !!(action as any).sections,
     hasFormFields: !!action.formFields?.length,
     selectedItemsCount: selectedItems?.length,
+    selectedItems: selectedItems,
+    moduleSlug: moduleSlug,
   });
 
   // Check if this is a sectioned form
@@ -122,7 +124,14 @@ export function DynamicExtraActionFormWithSections({
             formData.append(key, JSON.stringify(value));
           } else if (Array.isArray(value)) {
             // Handle array values (multi-select)
-            value.forEach((item) => formData.append(key, String(item)));
+            value.forEach((item) => {
+              // Extract ID if item is an object, otherwise use as-is
+              if (typeof item === 'object' && (item.id || item._id || item.value)) {
+                formData.append(key, String(item.id || item._id || item.value));
+              } else {
+                formData.append(key, String(item));
+              }
+            });
           } else {
             // Safe serialization
             formData.append(key, String(value));

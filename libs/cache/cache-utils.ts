@@ -67,6 +67,9 @@ export const CacheKeys = {
   appModules: (appId: string, tenantId: string) => `ciApp:${tenantId}:App:Modules:${appId}`,
   appModule: (appId: string, tenantId: string, moduleSlug: string) => `ciApp:${tenantId}:App:Module:${appId}:${moduleSlug}`,
   
+  // Extra Action Forms
+  extraActionForm: (tenantId: string, formName: string) => `ciApp:${tenantId}:ExtraActionForm:${formName}`,
+  
   // Content:Page module
   page: (tenantId: string, pageId?: string) => 
     pageId ? `ciApp:${tenantId}:Content:Page:${pageId}` : `ciApp:${tenantId}:Content:Page`,

@@ -89,7 +89,18 @@ export function FormTableSection({
   // Fetch data from endpoint
   useEffect(() => {
     const fetchData = async () => {
+      console.log('🔍 FormTableSection: Fetching data', {
+        selectedItemId,
+        endpoint: section.endpoint,
+        moduleSlug,
+        sectionName: section.name
+      });
+      
       if (!selectedItemId || !section.endpoint) {
+        console.log('⚠️ FormTableSection: Missing selectedItemId or endpoint', {
+          selectedItemId,
+          endpoint: section.endpoint
+        });
         setIsLoading(false);
         return;
       }
@@ -100,10 +111,17 @@ export function FormTableSection({
         // Use server action to fetch table data with module context
         const response = await fetchFormTableDataAction(section.endpoint, selectedItemId, moduleSlug);
         
+        console.log('📥 FormTableSection: Response received', {
+          success: response.success,
+          dataLength: response.data?.length,
+          data: response.data
+        });
+        
         if (response.success && response.data) {
           setData(response.data);
         } else {
           // Fallback to empty array if no data
+          console.log('⚠️ FormTableSection: No data in response');
           setData([]);
         }
       } catch (error) {

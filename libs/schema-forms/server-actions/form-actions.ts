@@ -5,6 +5,7 @@ import { getApiDomain } from "@repo/utils/server";
 import { getCachedServerHttpClient } from "@repo/api/server-only";
 import { getCurrentUser, getCurrentSession } from "@repo/auth/server";
 import { headers } from "next/headers";
+import { getCacheInstance, CacheKeys } from "@repo/cache";
 
 export interface ActionResponse<T = any> {
   success: boolean;
@@ -41,7 +42,7 @@ async function createHttpClient() {
 }
 
 /**
- * Server action to fetch form schema for extra actions
+ * Server action to fetch form schema for extra actions with Redis caching
  */
 export async function fetchFormSchemaAction(
   moduleSlug: string,
@@ -50,11 +51,32 @@ export async function fetchFormSchemaAction(
   try {
     const { httpClient, context } = await createHttpClient();
     
+    // Check if we have a tenantId for caching
+    if (context.tenantId) {
+      // Get cache instance
+      const cache = getCacheInstance();
+      
+      // Build cache key
+      const cacheKey = CacheKeys.extraActionForm(context.tenantId, formName);
+      
+      // Try to get from cache first
+      console.log(`🔍 Checking cache for form schema: ${cacheKey}`);
+      const cachedData = await cache.get(cacheKey);
+      
+      if (cachedData) {
+        console.log(`✅ Form schema found in cache: ${formName}`);
+        return {
+          success: true,
+          data: cachedData,
+        };
+      }
+    }
+    
     // Construct endpoint following the same pattern as ModuleService
     // Format: /{appName}/{module}/form-schema/{formName}
     const endpoint = `/${context.appName}/${moduleSlug}/form-schema/${formName}`;
     
-    console.log(`📥 Fetching form schema from: ${endpoint}`);
+    console.log(`📥 Fetching form schema from API: ${endpoint}`);
     
     const response = await httpClient.request<any>(endpoint, {
       method: "GET",
@@ -66,6 +88,18 @@ export async function fetchFormSchemaAction(
 
     if (!response.success) {
       throw new Error(response.error || `Failed to fetch form schema for ${formName}`);
+    }
+
+    // Cache the response if we have a tenantId
+    if (context.tenantId && response.data) {
+      const cache = getCacheInstance();
+      const cacheKey = CacheKeys.extraActionForm(context.tenantId, formName);
+      
+      // Cache for 1 hour (3600 seconds)
+      const ttl = 3600;
+      
+      console.log(`💾 Caching form schema for ${ttl} seconds: ${cacheKey}`);
+      await cache.set(cacheKey, response.data, ttl);
     }
 
     return {
@@ -89,18 +123,30 @@ export async function fetchFormTableDataAction(
   itemId: string,
   moduleSlug?: string
 ): Promise<ActionResponse<any[]>> {
+  console.log('🔍 fetchFormTableDataAction: Input params', {
+    endpoint,
+    itemId,
+    moduleSlug
+  });
+  
   try {
     const { httpClient, context } = await createHttpClient();
     
-    // Replace :id placeholder with actual ID
-    let finalEndpoint = endpoint.replace(':id', itemId);
+    // Handle endpoint construction based on pattern
+    let finalEndpoint = endpoint;
     
-    // If endpoint pattern is like "/:id/accessions", prepend module slug
-    // This transforms "/{id}/accessions" to "/bibliographies/{id}/accessions"
-    if (finalEndpoint.match(/^\/[^\/]+\/accessions/)) {
-      // Already has the correct format, just needs ID replacement (done above)
-    } else if (moduleSlug && finalEndpoint.startsWith('/') && !finalEndpoint.startsWith(`/${moduleSlug}/`)) {
-      // Prepend module slug if not already present
+    // Check if this is a pattern like "/:id/accessions" BEFORE replacing the ID
+    if (endpoint.startsWith('/:id/') && moduleSlug) {
+      // Transform "/:id/accessions" to "/bibliographies/:id/accessions"
+      finalEndpoint = `/${moduleSlug}${endpoint}`;
+    }
+    
+    // Now replace :id placeholder with actual ID
+    finalEndpoint = finalEndpoint.replace(':id', itemId);
+    
+    // Handle other patterns that might not have :id
+    if (!finalEndpoint.includes(itemId) && moduleSlug && finalEndpoint.startsWith('/') && !finalEndpoint.startsWith(`/${moduleSlug}/`)) {
+      // Prepend module slug if not already present and no ID was replaced
       finalEndpoint = `/${moduleSlug}${finalEndpoint}`;
     }
     
@@ -118,7 +164,11 @@ export async function fetchFormTableDataAction(
       }
     }
     
-    console.log(`📥 Fetching table data from: ${finalEndpoint}`);
+    console.log(`📥 Fetching table data from: ${finalEndpoint}`, {
+      tenantId: context.tenantId,
+      appName: context.appName,
+      moduleSlug
+    });
     
     const response = await httpClient.request<any[]>(finalEndpoint, {
       method: "GET",
@@ -237,6 +287,143 @@ export async function submitExtraActionForm(
 /**
  * Server action for bulk extra actions (when multiple items are selected)
  */
+/**
+ * Server action to clear cached form schema
+ */
+export async function clearFormSchemaCache(
+  formName: string
+): Promise<ActionResponse> {
+  try {
+    const headerStore = await headers();
+    const [session, user] = await Promise.all([
+      getCurrentSession(headerStore),
+      getCurrentUser(headerStore)
+    ]);
+    
+    const tenantId = user?.tenantId || session?.tenantId || headerStore.get("x-tenant-id");
+    
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Unable to determine tenant context",
+      };
+    }
+    
+    const cache = getCacheInstance();
+    const cacheKey = CacheKeys.extraActionForm(tenantId, formName);
+    
+    console.log(`🗑️ Clearing form schema cache: ${cacheKey}`);
+    await cache.delete(cacheKey);
+    
+    return {
+      success: true,
+      data: { message: `Cache cleared for form: ${formName}` },
+    };
+  } catch (error) {
+    console.error(`Error clearing form schema cache:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to clear cache",
+    };
+  }
+}
+
+/**
+ * Server action to clear all form schema caches for a tenant
+ */
+export async function clearAllFormSchemaCache(): Promise<ActionResponse> {
+  try {
+    const headerStore = await headers();
+    const [session, user] = await Promise.all([
+      getCurrentSession(headerStore),
+      getCurrentUser(headerStore)
+    ]);
+    
+    const tenantId = user?.tenantId || session?.tenantId || headerStore.get("x-tenant-id");
+    
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Unable to determine tenant context",
+      };
+    }
+    
+    const cache = getCacheInstance();
+    const pattern = `ciApp:${tenantId}:ExtraActionForm:*`;
+    
+    console.log(`🗑️ Clearing all form schema caches for tenant: ${pattern}`);
+    
+    // Get all keys matching the pattern
+    const keys = await cache.keys(pattern);
+    
+    if (keys.length > 0) {
+      // Delete all matching keys
+      await Promise.all(keys.map(key => cache.delete(key)));
+      console.log(`✅ Cleared ${keys.length} form schema cache entries`);
+    }
+    
+    return {
+      success: true,
+      data: { message: `Cleared ${keys.length} form schema cache entries` },
+    };
+  } catch (error) {
+    console.error(`Error clearing all form schema caches:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to clear caches",
+    };
+  }
+}
+
+/**
+ * Server action to get cache statistics for form schemas
+ */
+export async function getFormSchemaCacheStats(): Promise<ActionResponse> {
+  try {
+    const headerStore = await headers();
+    const [session, user] = await Promise.all([
+      getCurrentSession(headerStore),
+      getCurrentUser(headerStore)
+    ]);
+    
+    const tenantId = user?.tenantId || session?.tenantId || headerStore.get("x-tenant-id");
+    
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Unable to determine tenant context",
+      };
+    }
+    
+    const cache = getCacheInstance();
+    const pattern = `ciApp:${tenantId}:ExtraActionForm:*`;
+    
+    // Get all keys matching the pattern
+    const keys = await cache.keys(pattern);
+    
+    // Extract form names from keys
+    const formNames = keys.map(key => {
+      const parts = key.split(':');
+      return parts[parts.length - 1]; // Last part is the form name
+    });
+    
+    return {
+      success: true,
+      data: {
+        totalCached: keys.length,
+        formNames,
+        cacheKeyPattern: pattern,
+      },
+    };
+  } catch (error) {
+    console.error(`Error getting form schema cache stats:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to get cache stats",
+    };
+  }
+}
+
 export async function submitBulkExtraActionForm(
   moduleSlug: string,
   actionKey: string,

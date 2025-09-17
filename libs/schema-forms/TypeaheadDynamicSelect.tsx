@@ -45,27 +45,58 @@ export function TypeaheadDynamicSelect({
   watch,
   errors,
 }: TypeaheadDynamicSelectProps) {
-  // Defensive value processing: ensure we handle objects properly from the start
-  const processedValue = useMemo(() => {
-    // Case 1: Array for multi-select (process each item)
+  // Convert object values to appropriate format
+  const normalizedValue = useMemo(() => {
+    // Single-select: convert object to string
+    if (!field.multiple && !Array.isArray(value)) {
+      if (value && typeof value === 'object') {
+        // Support both {id, name} and {id, label, value} formats
+        const idValue = value.id || value._id || value.value;
+        if (idValue) {
+          return String(idValue);
+        }
+      }
+      return value;
+    }
+    
+    // Multi-select: convert array of objects to array of strings for validation
     if (Array.isArray(value)) {
       return value.map((item: any) => {
-        // If array item is an object with id/name, extract ID
-        if (item && typeof item === 'object' && (item.id || item._id) && item.name) {
-          return String(item.id || item._id);
+        if (item && typeof item === 'object') {
+          // Store the label in localStorage when we encounter an object
+          const itemId = String(item.id || item._id || item.value || '');
+          const itemLabel = String(item.name || item.label || '');
+          if (typeof window !== 'undefined' && field.fieldName && itemId && itemLabel) {
+            const cacheKey = `typeahead_label_${field.fieldName}_${itemId}`;
+            localStorage.setItem(cacheKey, itemLabel);
+          }
+          return itemId;
         }
-        return String(item);
+        return String(item || '');
       });
     }
     
-    // Case 2: Single object with id/name (bibliography format), extract ID for form handling
-    if (value && typeof value === 'object' && !Array.isArray(value) && (value.id || value._id) && value.name) {
-      return String(value.id || value._id);
-    }
-    
-    // Case 3: Return as-is (string, null, undefined)
     return value;
-  }, [value]);
+  }, [value, field.fieldName]);
+  
+  // Call onChange if we need to update the value
+  useEffect(() => {
+    // Convert objects to proper format for validation
+    if (value !== normalizedValue && normalizedValue !== undefined) {
+      // For single-select: convert object to string
+      if (!field.multiple && typeof value === 'object' && !Array.isArray(value)) {
+        onChange(normalizedValue);
+      }
+      // For multi-select: convert array of objects to array of strings
+      else if (field.multiple && Array.isArray(value) && value.length > 0 && 
+               typeof value[0] === 'object') {
+        onChange(normalizedValue);
+      }
+    }
+  }, [normalizedValue, field.multiple, value]);
+  
+  // Use normalized value for all operations
+  const processedValue = normalizedValue;
   const [options, setOptions] = useState<LocalSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +107,7 @@ export function TypeaheadDynamicSelect({
   const [isSearching, setIsSearching] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const hasProcessedInitialValue = useRef(false);
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
     left: number;
@@ -87,25 +119,21 @@ export function TypeaheadDynamicSelect({
   const isMultiple = dropdownConfig.multiple || field.multiple || field.fieldType === "multiSelect";
   const validationError = errors?.[field.fieldName];
 
-  // Notify parent of processed value if it changed (to fix validation)
-  // NOTE: Only notify for single-select fields to convert {id,name} objects to strings
-  useEffect(() => {
-    // Only process single object conversion for single-select fields
-    if (!isMultiple && processedValue !== value && processedValue !== undefined && !Array.isArray(value)) {
-      onChange(processedValue);
-    }
-  }, [processedValue, value, onChange, isMultiple]);
+  // No need for auto-conversion since we're using localStorage for label caching
   
   // Typeahead configuration
   const enableTypeahead = dropdownConfig.enableTypeahead || dataSource.enableTypeahead;
 
   const minSearchLength = dropdownConfig.minSearchLength || dataSource.minSearchLength || 2;
-  const debounceMs = dropdownConfig.debounceMs || dataSource.debounceMs || 300;
+  const debounceMs = dropdownConfig.debounceMs || dataSource.debounceMs || 800; // Increased to 800ms for better debouncing
   const searchParam = dropdownConfig.searchParam || dataSource.searchParam || 'search';
   const emptyMessage = dropdownConfig.emptyMessage || dataSource.emptyMessage;
   
   // Refs for debouncing and focus
   const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const lastSearchRef = useRef<string>("");
+  const requestInProgressRef = useRef<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -182,11 +210,33 @@ export function TypeaheadDynamicSelect({
 
   // Fetch options with search support
   const fetchOptions = useCallback(async (search: string = "") => {
-    // For typeahead, don't fetch if search is too short
-    if (enableTypeahead && search.length > 0 && search.length < minSearchLength) {
-      setOptions([]);
+    // For typeahead mode, REQUIRE search input - don't fetch all data
+    if (enableTypeahead) {
+      if (!search || search.length < minSearchLength) {
+        setOptions([]);
+        return;
+      }
+    }
+
+    // Skip if this is the same search as last time
+    if (search === lastSearchRef.current && options.length > 0) {
       return;
     }
+    
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Skip if a request is already in progress
+    if (requestInProgressRef.current) {
+      return;
+    }
+    
+    lastSearchRef.current = search;
+    requestInProgressRef.current = true;
+    abortControllerRef.current = new AbortController();
 
     setIsSearching(true);
     setError(null);
@@ -237,14 +287,19 @@ export function TypeaheadDynamicSelect({
       
       setOptions(transformedOptions);
       
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to load options";
-      setError(errorMsg);
-      setOptions([]);
+    } catch (error: any) {
+      // Don't show error for aborted requests
+      if (error?.name !== 'AbortError') {
+        const errorMsg = error instanceof Error ? error.message : "Failed to load options";
+        setError(errorMsg);
+        setOptions([]);
+      }
     } finally {
       setIsSearching(false);
+      requestInProgressRef.current = false;
+      abortControllerRef.current = null;
     }
-  }, [currentLanguage, dropdownConfig, dataSource, enableTypeahead, minSearchLength, searchParam, watch]);
+  }, [currentLanguage, dropdownConfig, dataSource, enableTypeahead, minSearchLength, searchParam, watch]); // Removed options.length to prevent loops
 
   // Debounced search handler
   const handleSearchChange = useCallback((value: string) => {
@@ -252,19 +307,25 @@ export function TypeaheadDynamicSelect({
     setDisplayValue(value);
     setHighlightedIndex(-1);
     
-    // Show dropdown when typing
-    if (value.length >= minSearchLength) {
-      const position = calculateDropdownPosition();
-      setDropdownPosition(position);
-      setOpen(true);
-    }
-
-    // Clear existing timer
+    // Clear existing timer FIRST
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = undefined;
     }
 
-    // Set new timer
+    // If value is too short, close dropdown and don't search
+    if (value.length < minSearchLength) {
+      setOpen(false);
+      setOptions([]);
+      return;
+    }
+    
+    // Show dropdown when typing
+    const position = calculateDropdownPosition();
+    setDropdownPosition(position);
+    setOpen(true);
+
+    // Set new timer for search
     debounceTimerRef.current = setTimeout(() => {
       fetchOptions(value);
     }, debounceMs);
@@ -272,23 +333,71 @@ export function TypeaheadDynamicSelect({
 
   // Handle initial value for edit scenarios
   useEffect(() => {
-    if (!value) return;
+    // Use normalizedValue instead of raw value
+    if (!normalizedValue) {
+      hasProcessedInitialValue.current = false;
+      return;
+    }
+    
+    // Skip if we've already processed this value to prevent loops
+    if (hasProcessedInitialValue.current) return;
+    
+    // If the original value was an object, we need to handle display
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Support both {id, name} and {id, label} formats
+      let displayText = value.label || value.name || value.title;
+      
+      // Special handling for language objects with code
+      if (value.code && value.name) {
+        displayText = `${value.code} - ${value.name}`;
+      }
+      
+      if (displayText) {
+        const labelText = typeof displayText === 'string' ? displayText : getLocalizedText(displayText, currentLanguage);
+        setDisplayValue(labelText);
+        
+        // Create option for display
+        const optionToAdd = {
+          value: normalizedValue,
+          label: typeof displayText === 'string' ? {
+            en: displayText,
+            mm: displayText
+          } : displayText
+        };
+        
+        setSelectedOption(optionToAdd);
+        setOptions(prev => {
+          if (!prev.find(opt => opt.value === normalizedValue)) {
+            return [...prev, optionToAdd];
+          }
+          return prev;
+        });
+        
+        // Save to localStorage
+        if (typeof window !== 'undefined' && field.fieldName && normalizedValue) {
+          const cacheKey = `typeahead_label_${field.fieldName}_${normalizedValue}`;
+          localStorage.setItem(cacheKey, labelText);
+        }
+      }
+      hasProcessedInitialValue.current = true;
+      return;
+    }
 
-    // Case 1: Array of objects for multi-select edit (bibliography edit format)
+    // Case 1: Array of objects for multi-select edit (original value check)
     if (Array.isArray(value) && value.length > 0 && isMultiple) {
       const hasObjectsWithIdName = value.some(item => 
-        item && typeof item === 'object' && (item.id || item._id) && item.name
+        item && typeof item === 'object' && (item.id || item._id) && (item.name || item.label)
       );
       
       if (hasObjectsWithIdName) {
-        // Transform array of {id, name} objects to our standard format
+        // Transform array of {id, name} or {id, label} objects to our standard format
         const transformedOptions = value
-          .filter(item => item && typeof item === 'object' && (item.id || item._id) && item.name)
+          .filter(item => item && typeof item === 'object' && (item.id || item._id) && (item.name || item.label))
           .map(item => ({
-            value: String(item.id || item._id),
+            value: String(item.id || item._id || item.value),
             label: {
-              en: String(item.name),
-              mm: String(item.name)
+              en: String(item.name || item.label || ''),
+              mm: String(item.name || item.label || '')
             }
           }));
         
@@ -299,34 +408,74 @@ export function TypeaheadDynamicSelect({
           return [...prevOptions, ...newOptions];
         });
         
-        // Update form with array of ID strings for proper form submission
-        const idValues = transformedOptions.map(opt => opt.value);
-        onChange(idValues);
+        // Store labels in localStorage for each item
+        if (typeof window !== 'undefined' && field.fieldName) {
+          value.forEach((item: any) => {
+            if (item && typeof item === 'object') {
+              const itemId = String(item.id || item._id || item.value);
+              const itemLabel = String(item.name || item.label || '');
+              if (itemId && itemLabel) {
+                const cacheKey = `typeahead_label_${field.fieldName}_${itemId}`;
+                localStorage.setItem(cacheKey, itemLabel);
+              }
+            }
+          });
+        }
         
         // Set display for multi-select (will show as badges with names)
         setDisplayValue("");
+        hasProcessedInitialValue.current = true;
         return;
       }
     }
 
-    // Case 2: Value is an object with label (standard format)
-    if (typeof value === 'object' && !Array.isArray(value) && value.label && selectedOption) return;
+    // Case 2: Value is an object with label (API format from backend)
+    if (typeof value === 'object' && !Array.isArray(value) && value.label && selectedOption) {
+      hasProcessedInitialValue.current = true;
+      return;
+    }
     if (typeof value === 'object' && !Array.isArray(value) && value.label) {
-      setSelectedOption(value);
+      // Extract the ID from the object
+      const idValue = String(value.id || value._id || value.value || "");
+      
+      // Create standard option format
+      const transformedOption = {
+        value: idValue,
+        label: value.label
+      };
+      
+      setSelectedOption(transformedOption);
       const labelText = typeof value.label === 'string' ? value.label : getLocalizedText(value.label, currentLanguage);
       setDisplayValue(labelText);
+      
+      // Store label in localStorage for future use
+      if (typeof window !== 'undefined' && field.fieldName && idValue) {
+        const cacheKey = `typeahead_label_${field.fieldName}_${idValue}`;
+        localStorage.setItem(cacheKey, labelText);
+      }
+      
+      // IMPORTANT: Convert to string ID for form validation
+      if (idValue) {
+        onChange(idValue);
+      }
+      
+      hasProcessedInitialValue.current = true;
       return;
     }
 
-    // Case 3: Single object with id and name (bibliography edit format)
-    if (typeof value === 'object' && !Array.isArray(value) && (value.id || value._id) && value.name) {
+    // Case 3: Single object with id and label (old cache format - convert to string)
+    if (typeof value === 'object' && !Array.isArray(value) && (value.id || value._id) && (value.label || value.name)) {
+      // This is an old cached object, convert it to string ID
+      const idValue = String(value.id || value._id || value.value);
+      const displayText = value.label || value.name;
+      
       // Transform to our standard format
       const transformedOption = {
-        value: String(value.id || value._id),
-        label: {
-          en: String(value.name),
-          mm: String(value.name)
-        }
+        value: idValue,
+        label: typeof displayText === 'string' ? {
+          en: displayText,
+          mm: displayText
+        } : displayText
       };
       
       // Set the option and ensure it's added to options list for consistency
@@ -339,34 +488,42 @@ export function TypeaheadDynamicSelect({
         return prevOptions;
       });
       
-      // Set display value to the name
-      setDisplayValue(String(value.name));
+      // Set display value
+      const labelText = typeof displayText === 'string' 
+        ? displayText 
+        : getLocalizedText(displayText, currentLanguage);
+      setDisplayValue(labelText);
       
-      // IMPORTANT: Update the form with just the ID string to prevent validation errors
-      const idValue = String(value.id || value._id);
-      if (idValue !== value) {
-        onChange(idValue);
-      }
+      // Convert the object to string ID for form validation
+      onChange(idValue);
+      
+      hasProcessedInitialValue.current = true;
       return;
     }
 
     // Case 4: Array of string IDs for multi-select (existing data)
     if (Array.isArray(value) && value.length > 0 && isMultiple) {
       const hasObjectsWithIdName = value.some(item => 
-        item && typeof item === 'object' && (item.id || item._id) && item.name
+        item && typeof item === 'object' && (item.id || item._id) && (item.name || item.label)
       );
       
       if (!hasObjectsWithIdName) {
-        // For existing array of string IDs (browser storage restoration), fetch names for badge display
-        const fetchOptionsForIds = async () => {
-          try {
-            // Check if all values already exist in options
-            const missingIds = value.filter((id: string) => !options.find(opt => opt.value === id));
-            
-            if (missingIds.length > 0) {
-              // Fetch options to get the names for display
-              const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
-              const result = await getModuleReferenceAction<ApiOption>(module, {});
+        // For array of string IDs, labels will be retrieved from localStorage or fetched
+        // when displaying badges
+        setDisplayValue("");
+        hasProcessedInitialValue.current = true;
+        
+        // For non-typeahead mode, fetch options to get labels
+        if (!enableTypeahead) {
+          const fetchOptionsForIds = async () => {
+            try {
+              // Check if all values already exist in options
+              const missingIds = value.filter((id: string) => !options.find(opt => opt.value === id));
+              
+              if (missingIds.length > 0) {
+                // Fetch options to get the names for display
+                const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
+                const result = await getModuleReferenceAction<ApiOption>(module, {});
               
               if (result.success) {
                 const responseData = result.data as any;
@@ -388,23 +545,57 @@ export function TypeaheadDynamicSelect({
                   const newOptions = transformedOptions.filter(opt => !existingValues.includes(opt.value));
                   return [...prevOptions, ...newOptions];
                 });
+                  // Store labels in localStorage for fetched options
+                  if (typeof window !== 'undefined' && field.fieldName) {
+                    transformedOptions.forEach(opt => {
+                      if (value.includes(opt.value)) {
+                        const labelText = typeof opt.label === 'string' 
+                          ? opt.label 
+                          : getLocalizedText(opt.label, currentLanguage);
+                        const cacheKey = `typeahead_label_${field.fieldName}_${opt.value}`;
+                        localStorage.setItem(cacheKey, labelText);
+                      }
+                    });
+                  }
+                }
               }
+            } catch (error) {
+              console.error('Failed to fetch options for multi-select browser storage restoration:', error);
             }
-          } catch (error) {
-            console.error('Failed to fetch options for multi-select browser storage restoration:', error);
-          }
-        };
+          };
 
-        fetchOptionsForIds();
-        setDisplayValue("");
+          fetchOptionsForIds();
+        }
         return;
       }
     }
 
-    // Case 5: Simple string value (browser storage restoration - should fetch name for display)
+    // Case 5: Simple string value (standard format from form)
     if (typeof value === 'string' && !selectedOption && value.trim() !== '') {
-      // For browser storage restoration, we need to fetch the option to display the name
-      // This prevents showing just the ID in the textbox
+      // Try to get cached label from localStorage
+      if (typeof window !== 'undefined' && field.fieldName) {
+        const cacheKey = `typeahead_label_${field.fieldName}_${value}`;
+        const cachedLabel = localStorage.getItem(cacheKey);
+        if (cachedLabel) {
+          setDisplayValue(cachedLabel);
+          const transformedOption = {
+            value: value,
+            label: { en: cachedLabel, mm: cachedLabel }
+          };
+          setSelectedOption(transformedOption);
+          hasProcessedInitialValue.current = true;
+          return;
+        }
+      }
+      
+      // For typeahead mode, just show the ID if no cached label
+      if (enableTypeahead) {
+        setDisplayValue(value);
+        hasProcessedInitialValue.current = true;
+        return;
+      }
+      
+      // For non-typeahead mode, fetch the option to display the name
       const fetchOptionForId = async () => {
         try {
           // First check if the option already exists in our options array
@@ -459,9 +650,13 @@ export function TypeaheadDynamicSelect({
       };
 
       fetchOptionForId();
+      hasProcessedInitialValue.current = true;
       return;
     }
-  }, [value, selectedOption, currentLanguage, isMultiple, onChange, options, dropdownConfig.refPath, dataSource.endpoint]);
+    
+    // Mark as processed for any other value types
+    hasProcessedInitialValue.current = true;
+  }, [value, normalizedValue, currentLanguage, isMultiple, field.fieldName]); // Added normalizedValue to dependencies
 
   // Update display value when selected option changes
   useEffect(() => {
@@ -487,19 +682,47 @@ export function TypeaheadDynamicSelect({
 
   // Handle selection
   const handleSelect = (optionValue: string) => {
+    const selected = options.find(opt => opt.value === optionValue);
+    
     if (isMultiple) {
+      // For multi-select, manage array of strings and store labels separately
       const currentValues = Array.isArray(processedValue) ? processedValue : [];
       const newValues = currentValues.includes(optionValue)
         ? currentValues.filter((v: string) => v !== optionValue)
         : [...currentValues, optionValue];
+      
       onChange(newValues);
+      
+      // Store/remove label in localStorage
+      if (selected && typeof window !== 'undefined' && field.fieldName) {
+        const labelText = typeof selected.label === 'string' 
+          ? selected.label 
+          : getLocalizedText(selected.label, currentLanguage);
+        const cacheKey = `typeahead_label_${field.fieldName}_${optionValue}`;
+        
+        if (currentValues.includes(optionValue)) {
+          // Removing - delete from localStorage
+          localStorage.removeItem(cacheKey);
+        } else {
+          // Adding - save to localStorage  
+          localStorage.setItem(cacheKey, labelText);
+        }
+      }
     } else {
+      // For single select, pass just the ID string for validation
       onChange(optionValue);
-      const selected = options.find(opt => opt.value === optionValue);
-      setSelectedOption(selected || null);
       if (selected) {
-        const labelText = typeof selected.label === 'string' ? selected.label : getLocalizedText(selected.label, currentLanguage);
+        setSelectedOption(selected);
+        const labelText = typeof selected.label === 'string' 
+          ? selected.label 
+          : getLocalizedText(selected.label, currentLanguage);
         setDisplayValue(labelText);
+        
+        // Store the label in localStorage separately for display purposes
+        if (typeof window !== 'undefined' && field.fieldName) {
+          const cacheKey = `typeahead_label_${field.fieldName}_${optionValue}`;
+          localStorage.setItem(cacheKey, labelText);
+        }
       }
       setOpen(false);
       setDropdownPosition(null);
@@ -554,12 +777,20 @@ export function TypeaheadDynamicSelect({
   // Handle focus
   const handleFocus = () => {
     setIsFocused(true);
-    setDisplayValue(searchTerm);
-    // Open dropdown when focusing
-    if (searchTerm.length >= minSearchLength) {
+    // Clear display to allow typing for typeahead
+    if (enableTypeahead) {
+      setDisplayValue("");
+      setSearchTerm("");
+    } else if (searchTerm) {
+      setDisplayValue(searchTerm);
+    }
+    // Only open dropdown if we have valid search for typeahead
+    if (!enableTypeahead || (searchTerm.length >= minSearchLength)) {
       const position = calculateDropdownPosition();
       setDropdownPosition(position);
-      setOpen(true);
+      if (!enableTypeahead) {
+        setOpen(true);
+      }
     }
   };
 
@@ -586,6 +817,19 @@ export function TypeaheadDynamicSelect({
       searchInputRef.current.focus();
     }
   };
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      requestInProgressRef.current = false;
+    };
+  }, []);
 
   // Handle click outside and position updates
   useEffect(() => {
@@ -652,6 +896,60 @@ export function TypeaheadDynamicSelect({
 
   return (
     <div className="relative" ref={inputContainerRef}>
+      {/* Display selected items as badges for multi-select */}
+      {isMultiple && Array.isArray(processedValue) && processedValue.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {processedValue.map((itemId: string, index: number) => {
+            // Item is always a string ID now
+            let label = itemId;
+            
+            // Try to get cached label
+            if (typeof window !== 'undefined' && field.fieldName) {
+              const cacheKey = `typeahead_label_${field.fieldName}_${itemId}`;
+              const cachedLabel = localStorage.getItem(cacheKey);
+              if (cachedLabel) {
+                label = cachedLabel;
+              }
+            }
+            
+            // If not in cache, try to find in options
+            if (label === itemId) {
+              const option = options.find(opt => opt.value === itemId);
+              if (option) {
+                label = typeof option.label === 'string' 
+                  ? option.label 
+                  : getLocalizedText(option.label, currentLanguage);
+              }
+            }
+            
+            return (
+              <Badge key={itemId || index} variant="secondary" className="gap-1">
+                {label}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Remove from selection
+                    const newValues = processedValue.filter((v: string) => v !== itemId);
+                    onChange(newValues);
+                    
+                    // Remove from localStorage
+                    if (typeof window !== 'undefined' && field.fieldName) {
+                      const cacheKey = `typeahead_label_${field.fieldName}_${itemId}`;
+                      localStorage.removeItem(cacheKey);
+                    }
+                  }}
+                  className="ml-1 hover:bg-secondary-foreground/20 rounded"
+                >
+                  <IconComponent name="X" className="h-3 w-3" />
+                </button>
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+      
       {/* Search Input - Always visible */}
       <div className="relative">
         <Input
@@ -670,6 +968,7 @@ export function TypeaheadDynamicSelect({
           onClick={handleInputClick}
           disabled={false}
           readOnly={false}
+          autoFocus={false}
           className={cn(
             "w-full pr-10 cursor-text",
             validationError && "border-destructive",
@@ -688,12 +987,22 @@ export function TypeaheadDynamicSelect({
           {isSearching && (
             <IconComponent name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
-          {processedValue && !isSearching && (
+          {((isMultiple && Array.isArray(processedValue) && processedValue.length > 0) || 
+           (!isMultiple && processedValue)) && !isSearching && (
             <button
               type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                
+                // Clear all cached labels for multi-select
+                if (isMultiple && Array.isArray(processedValue) && typeof window !== 'undefined' && field.fieldName) {
+                  processedValue.forEach((val: string) => {
+                    const cacheKey = `typeahead_label_${field.fieldName}_${val}`;
+                    localStorage.removeItem(cacheKey);
+                  });
+                }
+                
                 onChange(isMultiple ? [] : null);
                 setSelectedOption(null);
                 setDisplayValue("");
@@ -782,39 +1091,12 @@ export function TypeaheadDynamicSelect({
         )
       }
 
-      {/* Multi-select badges */}
-      {isMultiple && Array.isArray(processedValue) && processedValue.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {processedValue.map((val) => {
-            const option = options.find(opt => opt.value === val);
-            if (!option) return null;
-            return (
-              <Badge
-                key={val}
-                variant="secondary"
-                className="text-xs"
-              >
-                {typeof option.label === 'string' ? option.label : getLocalizedText(option.label, currentLanguage)}
-                <button
-                  type="button"
-                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelect(val);
-                  }}
-                >
-                  <IconComponent name="X" className="h-3 w-3" />
-                </button>
-              </Badge>
-            );
-          })}
-        </div>
-      )}
       
       {validationError && (
         <p className="mt-1 text-sm text-destructive">
-          {validationError.message || "This field is required"}
+          {typeof validationError === 'string' 
+            ? validationError 
+            : (validationError?.message || "This field is required")}
         </p>
       )}
     </div>

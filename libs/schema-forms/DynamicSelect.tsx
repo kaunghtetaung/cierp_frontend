@@ -51,6 +51,9 @@ export function DynamicSelect({
   watch,
   errors,
 }: DynamicSelectProps) {
+  // Generate a unique instance ID for debugging multiple renders
+  const instanceId = useMemo(() => Math.random().toString(36).substr(2, 9), []);
+  
   // Check if this should be a typeahead field and redirect if necessary
   const isTypeaheadField = Boolean(
     field.dataSource?.enableTypeahead || 
@@ -126,6 +129,8 @@ export function DynamicSelect({
   const lastFetchedDependencyKey = useRef<string>("");
   const hasInitialized = useRef(false);
   const isFetching = useRef(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout>();
+  const isMountedRef = useRef(true);
 
   // Parse module from refPath (e.g., "/departments/ref" -> "departments")
   const getModuleFromRefPath = (refPath: string): string => {
@@ -177,9 +182,12 @@ export function DynamicSelect({
   const fetchOptions = useCallback(async () => {
     // Prevent concurrent requests
     if (isFetching.current || loading) {
+      console.log(`🚫 DynamicSelect[${field.fieldName}#${instanceId}]: Skipping fetch - already in progress`);
       return;
     }
 
+    console.log(`🔍 DynamicSelect[${field.fieldName}#${instanceId}]: Starting fetch`);
+    
     // Mark as fetching to prevent concurrent calls
     isFetching.current = true;
     setLoading(true);
@@ -248,7 +256,7 @@ export function DynamicSelect({
       setLoading(false);
       isFetching.current = false;
     }
-  }, [dependencyValues, dependencyKey, dropdownConfig, field.fieldName]);
+  }, [dependencyKey, dropdownConfig.refPath, dropdownConfig.dependsOn, currentLanguage, field.fieldName, instanceId]);
 
   // Single useEffect to handle all option loading logic
   useEffect(() => {
@@ -289,24 +297,60 @@ export function DynamicSelect({
 
     // Determine if we need to fetch - only fetch when absolutely necessary
     const shouldFetch = (
-      // First time initialization
-      !hasInitialized.current ||
+      // First time initialization with no dependencies
+      (!hasInitialized.current && !dropdownConfig.dependsOn) ||
+      // First time initialization with satisfied dependencies  
+      (!hasInitialized.current && dependenciesSatisfied) ||
       // Dependencies have changed (e.g., organization changed for department dropdown)
-      lastFetchedDependencyKey.current !== dependencyKey
+      (hasInitialized.current && lastFetchedDependencyKey.current !== dependencyKey && dependenciesSatisfied)
     );
 
-    if (shouldFetch && !isFetching.current) {
-      hasInitialized.current = true;
-      fetchOptions();
+    if (shouldFetch && !isFetching.current && !loading) {
+      console.log(`🔄 DynamicSelect[${field.fieldName}#${instanceId}]: Scheduling fetch`, {
+        shouldFetch,
+        hasInitialized: hasInitialized.current,
+        dependenciesSatisfied,
+        dependencyKey,
+        lastFetchedKey: lastFetchedDependencyKey.current,
+        refPath: dropdownConfig.refPath
+      });
+      
+      // Clear any existing timeout
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      
+      // Add a larger delay to batch rapid changes and avoid multiple requests
+      fetchTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current && !isFetching.current) {
+          console.log(`⚡ DynamicSelect[${field.fieldName}#${instanceId}]: Executing fetch`);
+          hasInitialized.current = true;
+          fetchOptions();
+        }
+      }, 300); // Increased to 300ms delay to better batch updates
     }
   }, [
     // Only include stable dependencies that actually affect fetching logic
     dropdownConfig.type,
     dropdownConfig.refPath,
+    dropdownConfig.dependsOn,
     dependenciesSatisfied,
     dependencyKey,
-    fetchOptions
+    loading,
+    isMultiple
+    // Note: Removed fetchOptions, value, and onChange to prevent unnecessary re-fetches
   ]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      isFetching.current = false;
+    };
+  }, []);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
