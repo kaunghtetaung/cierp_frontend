@@ -355,65 +355,21 @@ export function ReactHookFormEnhanced({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Navigation Controls */}
-                {action === "update" && navigation && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (navigation.previousId) {
-                          router.push(`/${appId}/${moduleSlug}/${navigation.previousId}`)
-                        }
-                      }}
-                      disabled={!navigation.hasPrevious}
-                      title={currentLanguage === "mm" ? "ယခင်မှတ်တမ်း (←)" : "Previous Record (←)"}
-                    >
-                      <IconComponent name="ChevronLeft" className="w-4 h-4" />
-                    </Button>
-                    
-                    {navigation.currentIndex && navigation.totalRecords && (
-                      <div className="px-3 py-1 bg-background border border-border/30 rounded-md">
-                        <span className="text-sm font-medium">
-                          {navigation.currentIndex} / {navigation.totalRecords}
-                        </span>
-                      </div>
-                    )}
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (navigation.nextId) {
-                          router.push(`/${appId}/${moduleSlug}/${navigation.nextId}`)
-                        }
-                      }}
-                      disabled={!navigation.hasNext}
-                      title={currentLanguage === "mm" ? "နောက်မှတ်တမ်း (→)" : "Next Record (→)"}
-                    >
-                      <IconComponent name="ChevronRight" className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Help Toggle */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHelp(!showHelp)}
-                  className="rounded-full"
-                >
-                  <IconComponent name={showHelp ? "X" : "HelpCircle"} className="w-5 h-5" />
-                </Button>
-              </div>
+              {/* Help Toggle */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHelp(!showHelp)}
+                className="rounded-full"
+              >
+                <IconComponent name={showHelp ? "X" : "HelpCircle"} className="w-5 h-5" />
+              </Button>
             </div>
 
-            {/* Status Pills */}
-            <div className="flex items-center gap-2 mt-4">
+            {/* Status Pills and Navigation */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
               {isSubmittingForm ? (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full animate-pulse">
                   <IconComponent name="Loader2" className="w-4 h-4 animate-spin" />
@@ -441,6 +397,50 @@ export function ReactHookFormEnhanced({
                   <span className="text-sm text-success font-medium">
                     {currentLanguage === "mm" ? "အဆင်သင့်" : "Ready"}
                   </span>
+                </div>
+              )}
+              </div>
+
+              {/* Navigation Controls */}
+              {action === "update" && navigation && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (navigation.previousId) {
+                        router.push(`/${appId}/${moduleSlug}/${navigation.previousId}`)
+                      }
+                    }}
+                    disabled={!navigation.hasPrevious}
+                    title={currentLanguage === "mm" ? "ယခင်မှတ်တမ်း (Alt+←)" : "Previous Record (Alt+←)"}
+                  >
+                    <IconComponent name="ChevronLeft" className="w-4 h-4" />
+                  </Button>
+                  
+                  {navigation.currentIndex && navigation.totalRecords && (
+                    <div className="px-3 py-1 bg-background border border-border/30 rounded-md">
+                      <span className="text-sm font-medium">
+                        {navigation.currentIndex} / {navigation.totalRecords}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (navigation.nextId) {
+                        router.push(`/${appId}/${moduleSlug}/${navigation.nextId}`)
+                      }
+                    }}
+                    disabled={!navigation.hasNext}
+                    title={currentLanguage === "mm" ? "နောက်မှတ်တမ်း (Alt+→)" : "Next Record (Alt+→)"}
+                  >
+                    <IconComponent name="ChevronRight" className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
             </div>
