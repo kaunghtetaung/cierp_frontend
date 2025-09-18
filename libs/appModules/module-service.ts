@@ -53,13 +53,21 @@ export class ModuleService {
     if (params.order) queryParams.set("sortOrder", params.order);
 
     // Add field filters with operators (e.g., filter[name][$regex]=test)
+    // Or direct values for prefilters (e.g., catalogType.name=value)
     if (params.filters) {
-      Object.entries(params.filters).forEach(([fieldName, operators]) => {
-        Object.entries(operators).forEach(([operator, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            queryParams.set(`filter[${fieldName}][${operator}]`, String(value));
-          }
-        });
+      Object.entries(params.filters).forEach(([fieldName, filterValue]) => {
+        // Check if filterValue is a string (direct value for prefilters)
+        if (typeof filterValue === 'string' || typeof filterValue === 'number') {
+          // Direct value - used for prefilters (e.g., catalogType.name)
+          queryParams.set(fieldName, String(filterValue));
+        } else if (typeof filterValue === 'object' && filterValue !== null) {
+          // Object with operators - used for regular filters
+          Object.entries(filterValue).forEach(([operator, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              queryParams.set(`filter[${fieldName}][${operator}]`, String(value));
+            }
+          });
+        }
       });
     }
 
