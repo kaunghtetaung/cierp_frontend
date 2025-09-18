@@ -121,13 +121,16 @@ export function ModuleDataTable({
   // Prefilter state management
   const [prefilterValues, setPrefilterValues] = useState<Record<string, string>>(() => {
     const values: Record<string, string> = {};
-    // Initialize from URL params
-    searchParams.forEach((value, key) => {
-      if (key.startsWith('prefilter[') && key.endsWith(']')) {
-        const fieldName = key.slice(10, -1);
-        values[fieldName] = value;
-      }
-    });
+    // Initialize from URL params - look for prefilter field patterns
+    if (module.dataTableSchema?.prefilters?.fields) {
+      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+        const paramKey = `${field.fieldName}.id`;
+        const paramValue = searchParams.get(paramKey);
+        if (paramValue) {
+          values[field.fieldName] = paramValue;
+        }
+      });
+    }
     return values;
   });
 
@@ -145,15 +148,15 @@ export function ModuleDataTable({
     const newSearchParams = new URLSearchParams(searchParams.toString());
     
     // Remove all existing prefilter params
-    Array.from(newSearchParams.keys()).forEach(key => {
-      if (key.startsWith('prefilter[')) {
-        newSearchParams.delete(key);
-      }
-    });
+    if (module.dataTableSchema?.prefilters?.fields) {
+      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+        newSearchParams.delete(`${field.fieldName}.id`);
+      });
+    }
     
-    // Add new prefilter params
+    // Add new prefilter params using field.id format
     Object.entries(newValues).forEach(([field, val]) => {
-      newSearchParams.set(`prefilter[${field}]`, val);
+      newSearchParams.set(`${field}.id`, val);
     });
     
     // Reset to page 1 when prefilters change
@@ -1244,11 +1247,11 @@ export function ModuleDataTable({
                     setPrefilterValues({});
                     // Clear all prefilter params from URL
                     const newSearchParams = new URLSearchParams(searchParams.toString());
-                    Array.from(newSearchParams.keys()).forEach(key => {
-                      if (key.startsWith('prefilter[')) {
-                        newSearchParams.delete(key);
-                      }
-                    });
+                    if (module.dataTableSchema?.prefilters?.fields) {
+                      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+                        newSearchParams.delete(`${field.fieldName}.id`);
+                      });
+                    }
                     newSearchParams.set('page', '1');
                     router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
                   }}

@@ -55,15 +55,17 @@ export function ClientSidePaginationWrapper({
       }
     }
     
-    // Get prefilter params
-    for (const [key, value] of searchParams.entries()) {
-      if (key.startsWith('prefilter[') && key.endsWith(']')) {
-        const fieldName = key.slice(10, -1);
-        if (!params.filters) params.filters = {};
-        if (!params.filters[fieldName]) params.filters[fieldName] = {};
-        // Prefilters use exact match, not regex
-        params.filters[fieldName] = value;
-      }
+    // Get prefilter params - check for field.id pattern
+    if (module.dataTableSchema?.prefilters?.fields) {
+      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+        const paramKey = `${field.fieldName}.id`;
+        const paramValue = searchParams.get(paramKey);
+        if (paramValue) {
+          if (!params.filters) params.filters = {};
+          // Use the exact field path for filtering (e.g., catalogType.id)
+          params.filters[paramKey] = paramValue;
+        }
+      });
     }
     
     // Get sort params for initial load
