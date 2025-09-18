@@ -392,6 +392,13 @@ export class ModuleService {
     queryParams?: Record<string, string>
   ): Promise<T[]> {
     let endpoint = `/${this.appName}/${module}/ref`;
+    
+    console.log('🔍 [MODULE SERVICE] getReference:', {
+      appName: this.appName,
+      module,
+      endpoint,
+      queryParams
+    });
 
     // Build query parameters
     if (queryParams && Object.keys(queryParams).length > 0) {

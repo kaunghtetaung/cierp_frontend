@@ -79,6 +79,14 @@ async function createServiceInstance(serviceName?: string) {
   // Use serviceName if provided, otherwise use appName from headers
   const effectiveAppName = serviceName || appName;
   
+  console.log('🔧 [WRAPPER] createServiceInstance:', {
+    serviceName,
+    appNameFromHeaders: appName,
+    effectiveAppName,
+    tenantId,
+    userSessionId
+  });
+  
   // Pass authentication context to ModuleService
   const options = {
     tenantId,
