@@ -55,15 +55,25 @@ export function ClientSidePaginationWrapper({
       }
     }
     
-    // Get prefilter params - check for field.id pattern
+    // Get prefilter params - check for configured field patterns
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        const paramKey = `${field.fieldName}.id`;
-        const paramValue = searchParams.get(paramKey);
+        // Use labelField if specified, otherwise default to 'name'
+        const filterField = field.dataSource?.labelField || 'name';
+        const paramKey = `${field.fieldName}.${filterField}`;
+        let paramValue = searchParams.get(paramKey);
+        
+        // Fallback to .id if the preferred field doesn't exist
+        if (!paramValue) {
+          const idKey = `${field.fieldName}.id`;
+          paramValue = searchParams.get(idKey);
+        }
+        
         if (paramValue) {
           if (!params.filters) params.filters = {};
-          // Use the exact field path for filtering (e.g., catalogType.id)
-          params.filters[paramKey] = paramValue;
+          // Use the exact field path for filtering
+          const filterKey = paramValue === searchParams.get(paramKey) ? paramKey : `${field.fieldName}.id`;
+          params.filters[filterKey] = paramValue;
         }
       });
     }

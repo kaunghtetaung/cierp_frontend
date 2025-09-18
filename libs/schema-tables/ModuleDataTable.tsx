@@ -124,8 +124,17 @@ export function ModuleDataTable({
     // Initialize from URL params - look for prefilter field patterns
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        const paramKey = `${field.fieldName}.id`;
-        const paramValue = searchParams.get(paramKey);
+        // Use labelField if specified, otherwise default to 'name', fallback to 'id'
+        const filterField = field.dataSource?.labelField || 'name';
+        const paramKey = `${field.fieldName}.${filterField}`;
+        let paramValue = searchParams.get(paramKey);
+        
+        // Fallback to .id if the preferred field doesn't exist in URL
+        if (!paramValue) {
+          const idKey = `${field.fieldName}.id`;
+          paramValue = searchParams.get(idKey);
+        }
+        
         if (paramValue) {
           values[field.fieldName] = paramValue;
         }
@@ -150,14 +159,23 @@ export function ModuleDataTable({
     // Remove all existing prefilter params
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+        const filterField = field.dataSource?.labelField || 'name';
+        // Remove both possible keys
+        newSearchParams.delete(`${field.fieldName}.${filterField}`);
         newSearchParams.delete(`${field.fieldName}.id`);
       });
     }
     
-    // Add new prefilter params using field.id format
-    Object.entries(newValues).forEach(([field, val]) => {
-      newSearchParams.set(`${field}.id`, val);
-    });
+    // Add new prefilter params using configured field path
+    if (module.dataTableSchema?.prefilters?.fields) {
+      Object.entries(newValues).forEach(([fieldName, val]) => {
+        const field = module.dataTableSchema.prefilters.fields.find((f: any) => f.fieldName === fieldName);
+        if (field) {
+          const filterField = field.dataSource?.labelField || 'name';
+          newSearchParams.set(`${fieldName}.${filterField}`, val);
+        }
+      });
+    }
     
     // Reset to page 1 when prefilters change
     newSearchParams.set('page', '1');
@@ -1249,6 +1267,9 @@ export function ModuleDataTable({
                     const newSearchParams = new URLSearchParams(searchParams.toString());
                     if (module.dataTableSchema?.prefilters?.fields) {
                       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+                        const filterField = field.dataSource?.labelField || 'name';
+                        // Remove both possible keys
+                        newSearchParams.delete(`${field.fieldName}.${filterField}`);
                         newSearchParams.delete(`${field.fieldName}.id`);
                       });
                     }

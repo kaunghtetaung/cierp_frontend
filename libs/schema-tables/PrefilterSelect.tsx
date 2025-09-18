@@ -77,20 +77,25 @@ export function PrefilterSelect({
           
           // Extract label based on labelField configuration
           let label = "";
+          let filterValue = "";
           const labelField = field.dataSource?.labelField || "name";
           
           const labelValue = item[labelField] || item.label || item.displayName || item.name;
           
           if (typeof labelValue === "object" && labelValue !== null) {
             label = labelValue[currentLanguage] || labelValue.en || itemId;
+            // For multilingual, use the specific language value as filter
+            filterValue = labelValue[currentLanguage] || labelValue.en || itemId;
           } else if (labelValue) {
             label = String(labelValue);
+            filterValue = String(labelValue);
           } else {
             label = itemId;
+            filterValue = itemId;
           }
 
           return {
-            value: itemId,
+            value: filterValue, // Use the actual field value for filtering
             label: label,
           };
         });
