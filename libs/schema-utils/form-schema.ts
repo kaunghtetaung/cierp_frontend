@@ -53,17 +53,66 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         })
         break
       case 'select':
-        fieldSchema = z.string()
+        // Accept either string ID or object with id/_id field
+        fieldSchema = z.union([
+          z.string(),
+          z.object({
+            id: z.string().optional(),
+            _id: z.string().optional()
+          }).passthrough()
+        ]).transform((val) => {
+          // Transform object to ID string for validation
+          if (typeof val === 'string') return val
+          if (val && typeof val === 'object') return val._id || val.id || val
+          return val
+        })
         break
       case 'multiSelect':
-        fieldSchema = z.array(z.string())
+        // For multi-select, handle array of strings or objects
+        fieldSchema = z.array(
+          z.union([
+            z.string(),
+            z.object({
+              id: z.string().optional(),
+              _id: z.string().optional()
+            }).passthrough()
+          ]).transform((val) => {
+            if (typeof val === 'string') return val
+            if (val && typeof val === 'object') return val._id || val.id || val
+            return val
+          })
+        )
         break
       case 'dynamicSelect':
+      case 'dependentSelect':
+      case 'typeaheadSelect':
         // Check if this is a multi-select dynamic field
-        if (field.multiple) {
-          fieldSchema = z.array(z.string())
+        if (field.multiple || field.dropdownConfig?.multiple) {
+          fieldSchema = z.array(
+            z.union([
+              z.string(),
+              z.object({
+                id: z.string().optional(),
+                _id: z.string().optional()
+              }).passthrough()
+            ]).transform((val) => {
+              if (typeof val === 'string') return val
+              if (val && typeof val === 'object') return val._id || val.id || val
+              return val
+            })
+          )
         } else {
-          fieldSchema = z.string()
+          fieldSchema = z.union([
+            z.string(),
+            z.object({
+              id: z.string().optional(),
+              _id: z.string().optional()
+            }).passthrough()
+          ]).transform((val) => {
+            if (typeof val === 'string') return val
+            if (val && typeof val === 'object') return val._id || val.id || val
+            return val
+          })
         }
         break
       case 'icon':
