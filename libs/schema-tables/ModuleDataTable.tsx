@@ -129,18 +129,21 @@ export function ModuleDataTable({
         const filterField = field.dataSource?.labelField || 'name';
         const paramKey = `${field.fieldName}.${filterField}`;
         
-        // Check for multiple values
-        const paramValues = searchParams.getAll(paramKey);
+        let paramValue = searchParams.get(paramKey);
         
         // Fallback to .id if the preferred field doesn't exist in URL
-        if (paramValues.length === 0) {
+        if (!paramValue) {
           const idKey = `${field.fieldName}.id`;
-          const idValues = searchParams.getAll(idKey);
-          if (idValues.length > 0) {
-            values[field.fieldName] = field.multiple && idValues.length > 1 ? idValues : idValues[0];
+          paramValue = searchParams.get(idKey);
+        }
+        
+        if (paramValue) {
+          // For multiple fields, split comma-separated values
+          if (field.multiple && paramValue.includes(',')) {
+            values[field.fieldName] = paramValue.split(',').map(v => v.trim());
+          } else {
+            values[field.fieldName] = paramValue;
           }
-        } else {
-          values[field.fieldName] = field.multiple && paramValues.length > 1 ? paramValues : paramValues[0];
         }
       });
     }
@@ -181,10 +184,8 @@ export function ModuleDataTable({
         if (field) {
           const filterField = field.dataSource?.labelField || 'name';
           if (Array.isArray(val)) {
-            // For multiple values, add each as a separate param with array notation
-            val.forEach((v, index) => {
-              newSearchParams.append(`${fieldName}.${filterField}`, v);
-            });
+            // For multiple values, join with comma
+            newSearchParams.set(`${fieldName}.${filterField}`, val.join(','));
           } else {
             newSearchParams.set(`${fieldName}.${filterField}`, val as string);
           }

@@ -61,25 +61,21 @@ export function ClientSidePaginationWrapper({
         // Use labelField if specified, otherwise default to 'name'
         const filterField = field.dataSource?.labelField || 'name';
         const paramKey = `${field.fieldName}.${filterField}`;
-        const paramValues = searchParams.getAll(paramKey);
+        let paramValue = searchParams.get(paramKey);
         
         // Fallback to .id if the preferred field doesn't exist
-        let filterValues = paramValues;
         let actualKey = paramKey;
-        if (paramValues.length === 0) {
+        if (!paramValue) {
           const idKey = `${field.fieldName}.id`;
-          filterValues = searchParams.getAll(idKey);
+          paramValue = searchParams.get(idKey);
           actualKey = idKey;
         }
         
-        if (filterValues.length > 0) {
+        if (paramValue) {
           if (!params.filters) params.filters = {};
-          // For multiple values, send as array; for single value, send as string
-          if (field.multiple && filterValues.length > 1) {
-            params.filters[actualKey] = filterValues;
-          } else {
-            params.filters[actualKey] = filterValues[0];
-          }
+          // For multiple values, send as comma-separated string
+          // Backend should handle splitting if needed
+          params.filters[actualKey] = paramValue;
         }
       });
     }

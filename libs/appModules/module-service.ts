@@ -59,12 +59,11 @@ export class ModuleService {
         // Check if filterValue is a string/number (direct value for prefilters)
         if (typeof filterValue === 'string' || typeof filterValue === 'number') {
           // Direct value - used for prefilters (e.g., catalogType.name)
+          // This already handles comma-separated values as a single string
           queryParams.set(fieldName, String(filterValue));
         } else if (Array.isArray(filterValue)) {
-          // Array of values - used for multiple selection prefilters
-          filterValue.forEach((val) => {
-            queryParams.append(fieldName, String(val));
-          });
+          // Array of values - join with comma for multiple selection
+          queryParams.set(fieldName, filterValue.join(','));
         } else if (typeof filterValue === 'object' && filterValue !== null) {
           // Object with operators - used for regular filters
           Object.entries(filterValue).forEach(([operator, value]) => {
