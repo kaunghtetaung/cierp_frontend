@@ -17,68 +17,11 @@ import { PhoneInput } from './PhoneInput'
 import { IconComponent, IconSelector } from '@repo/ui'
 import type { FormField as SchemaFormField } from '@repo/types'
 
-// Auto-configure dropdownConfig for common organizational fields
+// Auto-configure dropdownConfig - NO HARDCODING
+// All configuration should come from backend schema
 function autoConfigureDropdown(field: SchemaFormField): SchemaFormField {
-  // Skip if already has dropdownConfig
-  if (field.dropdownConfig) {
-    return field;
-  }
-
-  // Auto-configure organization fields
-  if (field.fieldName === 'organizationId' || 
-      field.fieldName === 'organization' ||
-      field.fieldName.toLowerCase().includes('organization')) {
-    console.log('🏗️ FormFieldRenderer: Auto-configuring organization field with serviceName=core:', field.fieldName);
-    return {
-      ...field,
-      dropdownConfig: {
-        type: "dynamic",
-        refPath: "/organizations/ref",
-        searchable: true,
-        clearable: false,
-        preloadData: true,
-        serviceName: "core" // Cross-service reference to core service for organizations
-      }
-    };
-  }
-
-  // Auto-configure department fields (dependent on organization)
-  if (field.fieldName === 'departmentId' || 
-      field.fieldName === 'department' ||
-      field.fieldName.toLowerCase().includes('department')) {
-    return {
-      ...field,
-      dropdownConfig: {
-        type: "dynamic",
-        refPath: "/departments/ref",
-        dependsOn: ["organizationId", "organization"],
-        searchable: true,
-        clearable: true,
-        preloadData: false,
-        serviceName: "core" // Cross-service reference to core service for departments
-      }
-    };
-  }
-
-  // Auto-configure user fields
-  if (field.fieldName === 'userId' || 
-      field.fieldName === 'user' ||
-      field.fieldName === 'assignedTo' ||
-      field.fieldName.toLowerCase().includes('user')) {
-    return {
-      ...field,
-      dropdownConfig: {
-        type: "dynamic",
-        refPath: "/users/ref",
-        searchable: true,
-        clearable: true,
-        preloadData: false,
-        serviceName: "core" // Cross-service reference to core service for users
-      }
-    };
-  }
-
-  // Return original field if no auto-configuration applies
+  // Simply return the field as-is
+  // Backend should provide complete configuration
   return field;
 }
 
@@ -168,15 +111,6 @@ export function FormFieldRenderer({
   let field = convertDataSourceToDropdownConfig(originalField);
   if (!originalField.dataSource) {
     field = autoConfigureDropdown(field);
-  }
-  
-  // Special handling for organization fields - always ensure they use core service
-  if ((field.fieldName === 'organizationId' || 
-       field.fieldName === 'organization' ||
-       field.fieldName.toLowerCase().includes('organization')) &&
-      field.dropdownConfig && !field.dropdownConfig.serviceName) {
-    console.log('🔧 FormFieldRenderer: Adding serviceName=core to organization field:', field.fieldName);
-    field.dropdownConfig.serviceName = "core";
   }
   
   // Early validation - ensure field has required properties
@@ -347,7 +281,7 @@ function FormFieldInput({
         <Controller
           control={control}
           name={field.fieldName}
-          render={({ field: { onChange, value, name } }) => (
+          render={({ field: { onChange, value } }) => (
             <PhoneInput
               value={value || ''}
               onChange={onChange}

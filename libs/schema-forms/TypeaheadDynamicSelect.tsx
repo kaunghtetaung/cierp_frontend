@@ -264,35 +264,22 @@ export function TypeaheadDynamicSelect({
 
 
       // Pass serviceName if specified in dataSource or dropdownConfig
-      // For organization fields, default to 'core' if not specified
-      let serviceName = dataSource?.serviceName || dropdownConfig?.serviceName;
-      
-      // Special handling for organization fields - always use core service
-      if ((field.fieldName === 'organizationId' || 
-           field.fieldName === 'organization' ||
-           field.fieldName.toLowerCase().includes('organization')) && 
-          !serviceName) {
-        serviceName = 'core';
-      }
+      const serviceName = dataSource?.serviceName || dropdownConfig?.serviceName;
       
       console.log('🔍 TypeaheadDynamicSelect - API call config:', {
         fieldName: field.fieldName,
         dataSource,
         dropdownConfig,
-        extractedServiceName: serviceName,
+        serviceName,
         module,
         endpoint: dropdownConfig.refPath || dataSource.endpoint,
         hasDropdownConfig: !!dropdownConfig,
         hasDataSource: !!dataSource,
         dropdownServiceName: dropdownConfig?.serviceName,
-        dataSourceServiceName: dataSource?.serviceName,
-        finalServiceName: serviceName
+        dataSourceServiceName: dataSource?.serviceName
       });
       
-      // Ensure serviceName is a string or undefined (not null or empty string)
-      const serviceNameParam = serviceName || undefined;
-      
-      const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceNameParam);
+      const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName || undefined);
       
       if (!result.success) {
         const errorMsg = result.error || 'Failed to load options';

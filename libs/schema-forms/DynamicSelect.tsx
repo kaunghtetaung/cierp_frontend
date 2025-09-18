@@ -216,15 +216,7 @@ export function DynamicSelect({
 
 
       // Extract serviceName from dataSource or dropdownConfig
-      let serviceName = field.dataSource?.serviceName || dropdownConfig?.serviceName;
-      
-      // Special handling for organization fields - always use core service
-      if ((field.fieldName === 'organizationId' || 
-           field.fieldName === 'organization' ||
-           field.fieldName.toLowerCase().includes('organization')) && 
-          !serviceName) {
-        serviceName = 'core';
-      }
+      const serviceName = field.dataSource?.serviceName || dropdownConfig?.serviceName;
       
       console.log('🔍 DynamicSelect - API call config:', {
         fieldName: field.fieldName,
