@@ -263,8 +263,18 @@ export function TypeaheadDynamicSelect({
       }
 
 
-      // Pass serviceName if specified in dataSource
-      const serviceName = dataSource?.serviceName || undefined;
+      // Pass serviceName if specified in dataSource or dropdownConfig
+      const serviceName = dataSource?.serviceName || dropdownConfig?.serviceName || undefined;
+      
+      console.log('🔍 TypeaheadDynamicSelect - API call config:', {
+        fieldName: field.fieldName,
+        dataSource,
+        dropdownConfig,
+        serviceName,
+        module,
+        endpoint: dropdownConfig.refPath || dataSource.endpoint
+      });
+      
       const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName);
       
       if (!result.success) {

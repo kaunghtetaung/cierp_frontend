@@ -97,6 +97,7 @@ export interface DropdownConfig {
   preloadData?: boolean; // Preload data on component mount
   labelField?: string; // Field name for option labels (default: 'displayName')
   valueField?: string; // Field name for option values (default: '_id')
+  serviceName?: string; // Service name for cross-service references (e.g., 'core', 'library')
   
   // Typeahead configuration (for typeaheadSelect fields)
   enableTypeahead?: boolean; // Enable typeahead functionality
