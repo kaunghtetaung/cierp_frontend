@@ -270,9 +270,13 @@ export function TypeaheadDynamicSelect({
         fieldName: field.fieldName,
         dataSource,
         dropdownConfig,
-        serviceName,
+        extractedServiceName: serviceName,
         module,
-        endpoint: dropdownConfig.refPath || dataSource.endpoint
+        endpoint: dropdownConfig.refPath || dataSource.endpoint,
+        hasDropdownConfig: !!dropdownConfig,
+        hasDataSource: !!dataSource,
+        dropdownServiceName: dropdownConfig?.serviceName,
+        dataSourceServiceName: dataSource?.serviceName
       });
       
       const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName);

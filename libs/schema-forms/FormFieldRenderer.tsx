@@ -28,6 +28,7 @@ function autoConfigureDropdown(field: SchemaFormField): SchemaFormField {
   if (field.fieldName === 'organizationId' || 
       field.fieldName === 'organization' ||
       field.fieldName.toLowerCase().includes('organization')) {
+    console.log('🏗️ FormFieldRenderer: Auto-configuring organization field with serviceName=core:', field.fieldName);
     return {
       ...field,
       dropdownConfig: {
@@ -35,7 +36,8 @@ function autoConfigureDropdown(field: SchemaFormField): SchemaFormField {
         refPath: "/organizations/ref",
         searchable: true,
         clearable: false,
-        preloadData: true
+        preloadData: true,
+        serviceName: "core" // Cross-service reference to core service for organizations
       }
     };
   }
@@ -52,7 +54,8 @@ function autoConfigureDropdown(field: SchemaFormField): SchemaFormField {
         dependsOn: ["organizationId", "organization"],
         searchable: true,
         clearable: true,
-        preloadData: false
+        preloadData: false,
+        serviceName: "core" // Cross-service reference to core service for departments
       }
     };
   }
@@ -69,7 +72,8 @@ function autoConfigureDropdown(field: SchemaFormField): SchemaFormField {
         refPath: "/users/ref",
         searchable: true,
         clearable: true,
-        preloadData: false
+        preloadData: false,
+        serviceName: "core" // Cross-service reference to core service for users
       }
     };
   }
@@ -87,6 +91,12 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
 
   // Handle fields with dataSource configuration
   if (field.dataSource) {
+    console.log('🔄 FormFieldRenderer - Converting dataSource to dropdownConfig:', {
+      fieldName: field.fieldName,
+      dataSource: field.dataSource,
+      serviceName: field.dataSource.serviceName
+    });
+    
     const dropdownConfig: any = {
       type: "dynamic",
       refPath: field.dataSource.endpoint,
@@ -158,6 +168,15 @@ export function FormFieldRenderer({
   let field = convertDataSourceToDropdownConfig(originalField);
   if (!originalField.dataSource) {
     field = autoConfigureDropdown(field);
+  }
+  
+  // Special handling for organization fields - always ensure they use core service
+  if ((field.fieldName === 'organizationId' || 
+       field.fieldName === 'organization' ||
+       field.fieldName.toLowerCase().includes('organization')) &&
+      field.dropdownConfig && !field.dropdownConfig.serviceName) {
+    console.log('🔧 FormFieldRenderer: Adding serviceName=core to organization field:', field.fieldName);
+    field.dropdownConfig.serviceName = "core";
   }
   
   // Early validation - ensure field has required properties
