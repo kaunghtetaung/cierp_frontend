@@ -56,10 +56,15 @@ export class ModuleService {
     // Or direct values for prefilters (e.g., catalogType.name=value)
     if (params.filters) {
       Object.entries(params.filters).forEach(([fieldName, filterValue]) => {
-        // Check if filterValue is a string (direct value for prefilters)
+        // Check if filterValue is a string/number (direct value for prefilters)
         if (typeof filterValue === 'string' || typeof filterValue === 'number') {
           // Direct value - used for prefilters (e.g., catalogType.name)
           queryParams.set(fieldName, String(filterValue));
+        } else if (Array.isArray(filterValue)) {
+          // Array of values - used for multiple selection prefilters
+          filterValue.forEach((val) => {
+            queryParams.append(fieldName, String(val));
+          });
         } else if (typeof filterValue === 'object' && filterValue !== null) {
           // Object with operators - used for regular filters
           Object.entries(filterValue).forEach(([operator, value]) => {

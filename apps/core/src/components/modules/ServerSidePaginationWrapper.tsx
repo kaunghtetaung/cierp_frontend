@@ -61,19 +61,25 @@ export function ServerSidePaginationWrapper({
         // Use labelField if specified, otherwise default to 'name'
         const filterField = field.dataSource?.labelField || 'name';
         const paramKey = `${field.fieldName}.${filterField}`;
-        let paramValue = searchParams.get(paramKey);
+        const paramValues = searchParams.getAll(paramKey);
         
         // Fallback to .id if the preferred field doesn't exist
-        if (!paramValue) {
+        let filterValues = paramValues;
+        let actualKey = paramKey;
+        if (paramValues.length === 0) {
           const idKey = `${field.fieldName}.id`;
-          paramValue = searchParams.get(idKey);
+          filterValues = searchParams.getAll(idKey);
+          actualKey = idKey;
         }
         
-        if (paramValue) {
+        if (filterValues.length > 0) {
           if (!params.filters) params.filters = {};
-          // Use the exact field path for filtering
-          const filterKey = paramValue === searchParams.get(paramKey) ? paramKey : `${field.fieldName}.id`;
-          params.filters[filterKey] = paramValue;
+          // For multiple values, send as array; for single value, send as string
+          if (field.multiple && filterValues.length > 1) {
+            params.filters[actualKey] = filterValues;
+          } else {
+            params.filters[actualKey] = filterValues[0];
+          }
         }
       });
     }

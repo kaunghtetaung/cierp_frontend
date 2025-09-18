@@ -31,6 +31,7 @@ import { ExtraActionModal } from "@repo/schema-forms";
 import { generateZodSchema } from "@repo/schema-utils";
 import { ConfirmationDialog } from "@repo/ui";
 import { PrefilterSelect } from "./PrefilterSelect";
+import { PrefilterTypeahead } from "./PrefilterTypeahead";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -119,24 +120,27 @@ export function ModuleDataTable({
   };
 
   // Prefilter state management
-  const [prefilterValues, setPrefilterValues] = useState<Record<string, string>>(() => {
-    const values: Record<string, string> = {};
+  const [prefilterValues, setPrefilterValues] = useState<Record<string, string | string[]>>(() => {
+    const values: Record<string, string | string[]> = {};
     // Initialize from URL params - look for prefilter field patterns
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
         // Use labelField if specified, otherwise default to 'name', fallback to 'id'
         const filterField = field.dataSource?.labelField || 'name';
         const paramKey = `${field.fieldName}.${filterField}`;
-        let paramValue = searchParams.get(paramKey);
+        
+        // Check for multiple values
+        const paramValues = searchParams.getAll(paramKey);
         
         // Fallback to .id if the preferred field doesn't exist in URL
-        if (!paramValue) {
+        if (paramValues.length === 0) {
           const idKey = `${field.fieldName}.id`;
-          paramValue = searchParams.get(idKey);
-        }
-        
-        if (paramValue) {
-          values[field.fieldName] = paramValue;
+          const idValues = searchParams.getAll(idKey);
+          if (idValues.length > 0) {
+            values[field.fieldName] = field.multiple && idValues.length > 1 ? idValues : idValues[0];
+          }
+        } else {
+          values[field.fieldName] = field.multiple && paramValues.length > 1 ? paramValues : paramValues[0];
         }
       });
     }
@@ -144,9 +148,9 @@ export function ModuleDataTable({
   });
 
   // Handle prefilter changes
-  const handlePrefilterChange = (fieldName: string, value: string | undefined) => {
+  const handlePrefilterChange = (fieldName: string, value: string | string[] | undefined) => {
     const newValues = { ...prefilterValues };
-    if (value) {
+    if (value !== undefined && (Array.isArray(value) ? value.length > 0 : value)) {
       newValues[fieldName] = value;
     } else {
       delete newValues[fieldName];
@@ -160,9 +164,13 @@ export function ModuleDataTable({
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
         const filterField = field.dataSource?.labelField || 'name';
-        // Remove both possible keys
-        newSearchParams.delete(`${field.fieldName}.${filterField}`);
-        newSearchParams.delete(`${field.fieldName}.id`);
+        // Remove both possible keys (including array indices for multiple values)
+        Array.from(newSearchParams.keys()).forEach(key => {
+          if (key.startsWith(`${field.fieldName}.${filterField}`) || 
+              key.startsWith(`${field.fieldName}.id`)) {
+            newSearchParams.delete(key);
+          }
+        });
       });
     }
     
@@ -172,7 +180,14 @@ export function ModuleDataTable({
         const field = module.dataTableSchema.prefilters.fields.find((f: any) => f.fieldName === fieldName);
         if (field) {
           const filterField = field.dataSource?.labelField || 'name';
-          newSearchParams.set(`${fieldName}.${filterField}`, val);
+          if (Array.isArray(val)) {
+            // For multiple values, add each as a separate param with array notation
+            val.forEach((v, index) => {
+              newSearchParams.append(`${fieldName}.${filterField}`, v);
+            });
+          } else {
+            newSearchParams.set(`${fieldName}.${filterField}`, val as string);
+          }
         }
       });
     }
@@ -1284,16 +1299,31 @@ export function ModuleDataTable({
               )}
             </div>
             <div className="flex flex-wrap gap-4">
-              {module.dataTableSchema.prefilters?.fields?.map((field: any) => (
-                <PrefilterSelect
-                  key={field.fieldName}
-                  field={field}
-                  value={prefilterValues[field.fieldName]}
-                  onChange={(value) => handlePrefilterChange(field.fieldName, value)}
-                  currentLanguage={currentLanguage}
-                  moduleSlug={module.slug}
-                />
-              ))}
+              {module.dataTableSchema.prefilters?.fields?.map((field: any) => {
+                if (field.type === 'typeaheadDynamicSelect') {
+                  return (
+                    <PrefilterTypeahead
+                      key={field.fieldName}
+                      field={field}
+                      value={prefilterValues[field.fieldName]}
+                      onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                      currentLanguage={currentLanguage}
+                      moduleSlug={module.slug}
+                    />
+                  );
+                } else {
+                  return (
+                    <PrefilterSelect
+                      key={field.fieldName}
+                      field={field}
+                      value={prefilterValues[field.fieldName]}
+                      onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                      currentLanguage={currentLanguage}
+                      moduleSlug={module.slug}
+                    />
+                  );
+                }
+              })}
             </div>
           </div>
         </div>
