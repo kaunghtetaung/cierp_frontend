@@ -263,7 +263,9 @@ export function TypeaheadDynamicSelect({
       }
 
 
-      const result = await getModuleReferenceAction<ApiOption>(module, queryParams);
+      // Pass serviceName if specified in dataSource
+      const serviceName = dataSource?.serviceName || undefined;
+      const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName);
       
       if (!result.success) {
         const errorMsg = result.error || 'Failed to load options';
@@ -523,7 +525,8 @@ export function TypeaheadDynamicSelect({
               if (missingIds.length > 0) {
                 // Fetch options to get the names for display
                 const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
-                const result = await getModuleReferenceAction<ApiOption>(module, {});
+                const serviceName = dataSource?.serviceName || undefined;
+          const result = await getModuleReferenceAction<ApiOption>(module, {}, serviceName);
               
               if (result.success) {
                 const responseData = result.data as any;
@@ -609,7 +612,8 @@ export function TypeaheadDynamicSelect({
 
           // If not found in options, fetch all options to find this specific ID
           const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
-          const result = await getModuleReferenceAction<ApiOption>(module, {});
+          const serviceName = dataSource?.serviceName || undefined;
+          const result = await getModuleReferenceAction<ApiOption>(module, {}, serviceName);
           
           if (result.success) {
             const responseData = result.data as any;

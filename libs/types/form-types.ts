@@ -155,6 +155,7 @@ export interface FormField {
   dataSource?: {
     endpoint: string;
     method?: 'GET' | 'POST';
+    serviceName?: string; // Optional service name for cross-service references (e.g., 'core', 'library')
     dependentField?: string;
     labelField?: string;
     valueField?: string;

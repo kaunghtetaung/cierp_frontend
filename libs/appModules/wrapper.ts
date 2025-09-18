@@ -31,8 +31,9 @@ import type {
 
 /**
  * Helper to create a ModuleService instance with required auth details.
+ * @param serviceName - Optional service name to override the default appName
  */
-async function createServiceInstance() {
+async function createServiceInstance(serviceName?: string) {
   const apiUrl = await getApiDomain();
   
   let tenantId: string | undefined;
@@ -75,12 +76,15 @@ async function createServiceInstance() {
     // Continue with undefined context - TokenManager will handle appropriately
   }
 
+  // Use serviceName if provided, otherwise use appName from headers
+  const effectiveAppName = serviceName || appName;
+  
   // Pass authentication context to ModuleService
   const options = {
     tenantId,
     userSessionId,
     userId,
-    appName,
+    appName: effectiveAppName,
   };
 
   return new ModuleService(apiUrl, options);
@@ -190,9 +194,10 @@ export async function executeModuleExtraAction<T = any>(
 export const getModuleReference = cache(
   async <T = any>(
     module: string,
-    queryParams?: Record<string, string>
+    queryParams?: Record<string, string>,
+    serviceName?: string
   ): Promise<T[]> => {
-    const moduleService = await createServiceInstance();
+    const moduleService = await createServiceInstance(serviceName);
     return await moduleService.getReference<T>(module, queryParams);
   }
 );
