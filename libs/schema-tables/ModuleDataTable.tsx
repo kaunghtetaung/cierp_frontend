@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { toastSuccess, toastError } from "@repo/utils";
 import { getLocalizedText } from "@repo/utils";
 import { useLanguage } from "@repo/language";
@@ -30,6 +30,7 @@ import { Pagination } from "@repo/ui";
 import { ExtraActionModal } from "@repo/schema-forms";
 import { generateZodSchema } from "@repo/schema-utils";
 import { ConfirmationDialog } from "@repo/ui";
+import { PrefilterSelect } from "./PrefilterSelect";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -77,6 +78,7 @@ export function ModuleDataTable({
   const { currentLanguage } = useLanguage();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { state: sidebarState } = useSidebar();
 
   // Monthly selector helper functions
@@ -115,6 +117,55 @@ export function ModuleDataTable({
       onMonthChange(year, month);
     }
   };
+
+  // Prefilter state management
+  const [prefilterValues, setPrefilterValues] = useState<Record<string, string>>(() => {
+    const values: Record<string, string> = {};
+    // Initialize from URL params
+    searchParams.forEach((value, key) => {
+      if (key.startsWith('prefilter[') && key.endsWith(']')) {
+        const fieldName = key.slice(10, -1);
+        values[fieldName] = value;
+      }
+    });
+    return values;
+  });
+
+  // Handle prefilter changes
+  const handlePrefilterChange = (fieldName: string, value: string | undefined) => {
+    const newValues = { ...prefilterValues };
+    if (value) {
+      newValues[fieldName] = value;
+    } else {
+      delete newValues[fieldName];
+    }
+    setPrefilterValues(newValues);
+    
+    // Update URL with prefilter params
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    
+    // Remove all existing prefilter params
+    Array.from(newSearchParams.keys()).forEach(key => {
+      if (key.startsWith('prefilter[')) {
+        newSearchParams.delete(key);
+      }
+    });
+    
+    // Add new prefilter params
+    Object.entries(newValues).forEach(([field, val]) => {
+      newSearchParams.set(`prefilter[${field}]`, val);
+    });
+    
+    // Reset to page 1 when prefilters change
+    newSearchParams.set('page', '1');
+    
+    // Navigate with new params
+    router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
+  };
+
+  // Check if prefilters are enabled and available
+  const hasPrefilters = module.dataTableSchema?.prefilters?.enabled && 
+                        module.dataTableSchema?.prefilters?.fields?.length > 0;
 
   // Generate print title with monthly information
   const getPrintTitle = () => {
@@ -1176,6 +1227,53 @@ export function ModuleDataTable({
           </div>
         </div>
       </div>
+
+      {/* Prefilter Section */}
+      {hasPrefilters && (
+        <div className="bg-muted/20 border border-border/50 rounded-lg p-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {currentLanguage === "mm" ? "စစ်ထုတ်ရန်" : "Filters"}
+              </h3>
+              {Object.keys(prefilterValues).length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPrefilterValues({});
+                    // Clear all prefilter params from URL
+                    const newSearchParams = new URLSearchParams(searchParams.toString());
+                    Array.from(newSearchParams.keys()).forEach(key => {
+                      if (key.startsWith('prefilter[')) {
+                        newSearchParams.delete(key);
+                      }
+                    });
+                    newSearchParams.set('page', '1');
+                    router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
+                  }}
+                  className="text-xs"
+                >
+                  <IconComponent name="X" className="h-3 w-3 mr-1" />
+                  Clear all
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {module.dataTableSchema.prefilters?.fields?.map((field: any) => (
+                <PrefilterSelect
+                  key={field.fieldName}
+                  field={field}
+                  value={prefilterValues[field.fieldName]}
+                  onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                  currentLanguage={currentLanguage}
+                  moduleSlug={module.slug}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Monthly Report Selector */}
       {showMonthlySelector && (

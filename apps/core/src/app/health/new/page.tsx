@@ -1,9 +1,6 @@
 import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
-import { ReactHookForm } from "@repo/schema-forms";
-import { ReactHookWizardForm } from "@repo/schema-forms";
-import { submitModuleForm } from "@repo/app-modules/server-actions";
-import { generateZodSchema } from "@repo/schema-utils";
+import { FormWithLanguage } from "@repo/schema-forms";
 import { enableCommonMultilangFields } from "@/lib/enable-multilang";
 import type { ModuleSchema } from "@repo/types";
 
@@ -14,7 +11,7 @@ interface ModuleNewPageProps {
 }
 
 export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
-  const { appSchemaData, middlewareData } = await fetchLayoutData();
+  const { appSchemaData } = await fetchLayoutData();
   const resolvedParams = await params;
 
   if (!appSchemaData?.modules) {
@@ -35,15 +32,15 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
 
   // Choose form component based on layout type
   const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
-  const FormComponent = isWizardForm ? ReactHookWizardForm : ReactHookForm;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <FormComponent
+      <FormWithLanguage
         module={moduleWithMultilang}
         action="create"
         moduleSlug={module.slug}
-        currentLanguage={middlewareData.language}
+        isWizard={isWizardForm}
+        // No navigation needed for new records
       />
     </div>
   );

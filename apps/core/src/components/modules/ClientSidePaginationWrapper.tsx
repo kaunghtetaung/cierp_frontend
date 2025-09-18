@@ -55,11 +55,29 @@ export function ClientSidePaginationWrapper({
       }
     }
     
+    // Get prefilter params
+    for (const [key, value] of searchParams.entries()) {
+      if (key.startsWith('prefilter[') && key.endsWith(']')) {
+        const fieldName = key.slice(10, -1);
+        if (!params.filters) params.filters = {};
+        if (!params.filters[fieldName]) params.filters[fieldName] = {};
+        // Prefilters use exact match, not regex
+        params.filters[fieldName] = value;
+      }
+    }
+    
     // Get sort params for initial load
     const sortBy = searchParams.get('sortBy') || searchParams.get('sort');
     const sortOrder = searchParams.get('sortOrder') || searchParams.get('order');
-    if (sortBy) params.sort = sortBy;
-    if (sortOrder) params.order = sortOrder as 'asc' | 'desc';
+    
+    // Apply default sort if no sort is specified
+    if (!sortBy && module.dataTableSchema?.sorting?.enabled && module.dataTableSchema?.sorting?.defaultSort) {
+      params.sort = module.dataTableSchema.sorting.defaultSort.field;
+      params.order = module.dataTableSchema.sorting.defaultSort.direction;
+    } else {
+      if (sortBy) params.sort = sortBy;
+      if (sortOrder) params.order = sortOrder as 'asc' | 'desc';
+    }
     
     return params;
   }, []); // Only compute once for initial load
