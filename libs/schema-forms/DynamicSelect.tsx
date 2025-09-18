@@ -54,6 +54,25 @@ export function DynamicSelect({
   // Generate a unique instance ID for debugging multiple renders
   const instanceId = useMemo(() => Math.random().toString(36).substr(2, 9), []);
   
+  // Normalize value to handle both string IDs and object values
+  const normalizedValue = useMemo(() => {
+    if (!value) return value;
+    
+    // If it's an array, normalize each item
+    if (Array.isArray(value)) {
+      return value.map(v => {
+        if (typeof v === 'string') return v;
+        if (v && typeof v === 'object') return v._id || v.id || v;
+        return v;
+      });
+    }
+    
+    // Single value normalization
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') return value._id || value.id || value;
+    return value;
+  }, [value]);
+  
   // Check if this should be a typeahead field and redirect if necessary
   const isTypeaheadField = Boolean(
     field.dataSource?.enableTypeahead || 
@@ -375,16 +394,16 @@ export function DynamicSelect({
 
   // Get selected option(s) for display
   const selectedOptions = useMemo(() => {
-    if (!value) return [];
+    if (!normalizedValue) return [];
     
-    const selectedValues = Array.isArray(value) ? value : [value];
+    const selectedValues = Array.isArray(normalizedValue) ? normalizedValue : [normalizedValue];
     return options.filter((option) => selectedValues.includes(option.value));
-  }, [value, options]);
+  }, [normalizedValue, options]);
 
   // Handle option selection
   const handleSelect = (optionValue: string) => {
     if (isMultiple) {
-      const currentValues = Array.isArray(value) ? value : [];
+      const currentValues = Array.isArray(normalizedValue) ? normalizedValue : [];
       const newValues = currentValues.includes(optionValue)
         ? currentValues.filter((v) => v !== optionValue)
         : [...currentValues, optionValue];
@@ -402,24 +421,24 @@ export function DynamicSelect({
 
   // Remove single item in multi-select
   const handleRemove = (optionValue: string) => {
-    if (isMultiple && Array.isArray(value)) {
-      const newValues = value.filter((v) => v !== optionValue);
+    if (isMultiple && Array.isArray(normalizedValue)) {
+      const newValues = normalizedValue.filter((v) => v !== optionValue);
       onChange(newValues);
     }
   };
 
   // Display text for the select trigger
   const getDisplayText = () => {
-    if (!value || (Array.isArray(value) && value.length === 0)) {
+    if (!normalizedValue || (Array.isArray(normalizedValue) && normalizedValue.length === 0)) {
       return field.placeHolder || "Select option";
     }
 
-    if (isMultiple && Array.isArray(value)) {
-      return `${value.length} selected`;
+    if (isMultiple && Array.isArray(normalizedValue)) {
+      return `${normalizedValue.length} selected`;
     }
 
     // For single select, find the option with matching value (ID)
-    const selectedOption = options.find((option) => option.value === value);
+    const selectedOption = options.find((option) => option.value === normalizedValue);
     if (selectedOption) {
       const labelText = typeof selectedOption.label === 'string' ? selectedOption.label : getLocalizedText(selectedOption.label, currentLanguage);
       return labelText;
@@ -427,7 +446,7 @@ export function DynamicSelect({
 
     // If option not found but we have a value, show loading state or placeholder
     // This happens when form loads with existing data before options are fetched
-    if (loading) {
+    if (loading && normalizedValue) {
       return currentLanguage === "mm" ? "ရွေးချယ်ထားသည်..." : "Loading selection...";
     }
 
