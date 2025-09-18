@@ -215,8 +215,27 @@ export function DynamicSelect({
       
 
 
+      // Extract serviceName from dataSource or dropdownConfig
+      let serviceName = field.dataSource?.serviceName || dropdownConfig?.serviceName;
+      
+      // Special handling for organization fields - always use core service
+      if ((field.fieldName === 'organizationId' || 
+           field.fieldName === 'organization' ||
+           field.fieldName.toLowerCase().includes('organization')) && 
+          !serviceName) {
+        serviceName = 'core';
+      }
+      
+      console.log('🔍 DynamicSelect - API call config:', {
+        fieldName: field.fieldName,
+        module,
+        serviceName,
+        dropdownConfig,
+        dataSource: field.dataSource
+      });
+      
       // Use server action instead of direct fetch
-      const result = await getModuleReferenceAction<ApiOption>(module, queryParams);
+      const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName || undefined);
       
       if (!result.success) {
         const errorMsg = result.error || getLocalizedErrorMessage('DATA_LOAD_FAILED', currentLanguage as 'en' | 'mm');

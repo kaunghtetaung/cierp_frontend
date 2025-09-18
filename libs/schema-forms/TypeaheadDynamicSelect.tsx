@@ -264,7 +264,16 @@ export function TypeaheadDynamicSelect({
 
 
       // Pass serviceName if specified in dataSource or dropdownConfig
-      const serviceName = dataSource?.serviceName || dropdownConfig?.serviceName || undefined;
+      // For organization fields, default to 'core' if not specified
+      let serviceName = dataSource?.serviceName || dropdownConfig?.serviceName;
+      
+      // Special handling for organization fields - always use core service
+      if ((field.fieldName === 'organizationId' || 
+           field.fieldName === 'organization' ||
+           field.fieldName.toLowerCase().includes('organization')) && 
+          !serviceName) {
+        serviceName = 'core';
+      }
       
       console.log('🔍 TypeaheadDynamicSelect - API call config:', {
         fieldName: field.fieldName,
@@ -276,10 +285,14 @@ export function TypeaheadDynamicSelect({
         hasDropdownConfig: !!dropdownConfig,
         hasDataSource: !!dataSource,
         dropdownServiceName: dropdownConfig?.serviceName,
-        dataSourceServiceName: dataSource?.serviceName
+        dataSourceServiceName: dataSource?.serviceName,
+        finalServiceName: serviceName
       });
       
-      const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName);
+      // Ensure serviceName is a string or undefined (not null or empty string)
+      const serviceNameParam = serviceName || undefined;
+      
+      const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceNameParam);
       
       if (!result.success) {
         const errorMsg = result.error || 'Failed to load options';
@@ -344,7 +357,7 @@ export function TypeaheadDynamicSelect({
     // Set new timer for search
     debounceTimerRef.current = setTimeout(() => {
       fetchOptions(value);
-    }, debounceMs);
+    }, debounceMs) as unknown as NodeJS.Timeout;
   }, [minSearchLength, debounceMs, fetchOptions, calculateDropdownPosition]);
 
   // Handle initial value for edit scenarios

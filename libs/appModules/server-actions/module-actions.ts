@@ -612,9 +612,15 @@ export async function getModuleReferenceAction<T = any>(
   serviceName?: string
 ): Promise<ActionResponse<T[]>> {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 getModuleReferenceAction: Starting request for module "${module}" with params:`, queryParams, 'serviceName:', serviceName);
-    }
+    // Always log serviceName to debug cross-service issues
+    console.log(`🚀 getModuleReferenceAction: Starting request for module "${module}"`, {
+      queryParams,
+      serviceName,
+      serviceNameType: typeof serviceName,
+      isServiceNameDefined: serviceName !== undefined,
+      isServiceNameNull: serviceName === null,
+      isServiceNameEmpty: serviceName === ''
+    });
     
     const data = await getModuleReference<T>(module, queryParams, serviceName);
     
