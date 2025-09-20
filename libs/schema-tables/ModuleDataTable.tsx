@@ -659,11 +659,17 @@ export function ModuleDataTable({
   };
 
   const handleExtraActionSuccess = () => {
-    setIsExtraActionModalOpen(false);
-    setActiveExtraAction(null);
-    setRowActionItem(null); // Clear row action item
-    // React Query mutations handle data refresh automatically via query invalidation
+    // Don't close the modal - let user continue with more operations
+    // Modal now stays open after successful operations for better workflow
+    
+    // Trigger data refresh using the onRefresh callback
+    if (onRefresh && typeof onRefresh === 'function') {
+      // Call the refresh function to refetch data (usually triggers React Query refetch)
+      onRefresh();
+    }
+    
     // Note: The ExtraActionModal already shows success toasts
+    // and the modal will stay open for more operations
   };
 
   const handleDelete = (id: string) => {
