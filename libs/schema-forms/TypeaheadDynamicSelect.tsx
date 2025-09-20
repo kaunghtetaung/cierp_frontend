@@ -160,7 +160,22 @@ export function TypeaheadDynamicSelect({
   }, []);
 
   // Extract label from API response
-  const getApiLabel = (item: ApiOption, language: string): string => {
+  const getApiLabel = (item: ApiOption, language: string, labelField?: string): string => {
+    // If labelField is specified, try to use it first
+    if (labelField) {
+      const fieldValue = item[labelField];
+      if (fieldValue) {
+        // Handle string values
+        if (typeof fieldValue === "string") {
+          return fieldValue;
+        }
+        // Handle multilingual objects
+        if (typeof fieldValue === "object") {
+          return fieldValue[language] || fieldValue.en || fieldValue.mm || "";
+        }
+      }
+    }
+    
     // Handle fullName for authors
     if (item.fullName && typeof item.fullName === "string") {
       return item.fullName;
@@ -293,13 +308,26 @@ export function TypeaheadDynamicSelect({
         ? responseData 
         : (responseData?.data || responseData?.items || []);
       
-      const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption) => ({
-        value: String(item._id || item.id || item.value || ""),
-        label: {
-          en: getApiLabel(item, "en"),
-          mm: getApiLabel(item, "mm"),
-        },
-      }));
+      // Use configured valueField and labelField from dropdownConfig or dataSource
+      const valueField = dropdownConfig.valueField || dataSource.valueField || 'id';
+      const labelField = dropdownConfig.labelField || dataSource.labelField || 'name';
+      
+      const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => {
+        // Extract value using configured field
+        let itemValue = item[valueField];
+        if (!itemValue) {
+          // Fallback to common ID fields
+          itemValue = item._id || item.id || item.value || `missing-id-${index}`;
+        }
+        
+        return {
+          value: String(itemValue),
+          label: {
+            en: getApiLabel(item, "en", labelField),
+            mm: getApiLabel(item, "mm", labelField),
+          },
+        };
+      });
       
       setOptions(transformedOptions);
       

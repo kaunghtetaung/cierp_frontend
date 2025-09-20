@@ -158,8 +158,24 @@ export function DynamicSelect({
     return cleaned;
   };
 
-  // Extract label from API response
-  const getApiLabel = (item: ApiOption, language: string): string => {
+  // Extract label from API response using configured field
+  const getApiLabel = (item: ApiOption, language: string, labelField?: string): string => {
+    // If labelField is specified, try to use it first
+    if (labelField) {
+      const fieldValue = item[labelField];
+      if (fieldValue) {
+        // Handle string values
+        if (typeof fieldValue === "string") {
+          return fieldValue;
+        }
+        // Handle multilingual objects
+        if (typeof fieldValue === "object") {
+          return fieldValue[language] || fieldValue.en || fieldValue.mm || "";
+        }
+      }
+    }
+    
+    // Fallback to default behavior if labelField not found
     // Handle string labels first (common case)
     if (item.label && typeof item.label === "string") {
       return item.label;
@@ -263,11 +279,22 @@ export function DynamicSelect({
       
       // Transform API response to LocalSelectOption format
       const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => {
+        // Use configured valueField and labelField from dropdownConfig or dataSource
+        const valueField = dropdownConfig.valueField || field.dataSource?.valueField || 'id';
+        const labelField = dropdownConfig.labelField || field.dataSource?.labelField || 'name';
+        
+        // Extract value using configured field
+        let itemValue = item[valueField];
+        if (!itemValue) {
+          // Fallback to common ID fields
+          itemValue = item._id || item.id || item.value || `missing-id-${index}`;
+        }
+        
         const transformedOption = {
-          value: String(item._id || item.id || item.value || `missing-id-${index}`),
+          value: String(itemValue),
           label: {
-            en: getApiLabel(item, "en"),
-            mm: getApiLabel(item, "mm"),
+            en: getApiLabel(item, "en", labelField),
+            mm: getApiLabel(item, "mm", labelField),
           },
         };
         
