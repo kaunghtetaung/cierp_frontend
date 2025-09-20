@@ -151,9 +151,10 @@ export class UnifiedCache {
       // Create a timeout promise
       const timeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => {
-          if (this.config.enableLogging) {
-            console.warn(`[Cache] Redis GET timeout for key: ${key}`);
-          }
+          // Silently handle timeout - commenting out to reduce noise
+          // if (this.config.enableLogging) {
+          //   console.warn(`[Cache] Redis GET timeout for key: ${key}`);
+          // }
           resolve(null);
         }, this.config.commandTimeout || 2000);
       });
@@ -210,9 +211,10 @@ export class UnifiedCache {
       // Create timeout promise
       const timeoutPromise = new Promise<boolean>((resolve) => {
         setTimeout(() => {
-          if (this.config.enableLogging) {
-            console.warn(`[Cache] Redis SET timeout for key: ${key}`);
-          }
+          // Silently handle timeout - commenting out to reduce noise
+          // if (this.config.enableLogging) {
+          //   console.warn(`[Cache] Redis SET timeout for key: ${key}`);
+          // }
           resolve(false);
         }, this.config.commandTimeout || 2000);
       });
