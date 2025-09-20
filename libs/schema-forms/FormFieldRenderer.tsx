@@ -37,7 +37,9 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
     console.log('🔄 FormFieldRenderer - Converting dataSource to dropdownConfig:', {
       fieldName: field.fieldName,
       dataSource: field.dataSource,
-      serviceName: field.dataSource.serviceName
+      serviceName: field.dataSource.serviceName,
+      valueFieldFromDataSource: field.dataSource.valueField,
+      labelFieldFromDataSource: field.dataSource.labelField
     });
     
     const dropdownConfig: any = {
@@ -64,11 +66,22 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
     if (field.fieldType === "multiDependentSelect") {
       finalFieldType = "multiSelect";
     }
+    
+    // Debug log for accessionGroup
+    if (field.fieldName === 'accessionGroup') {
+      console.log('🎯 FormFieldRenderer - Final dropdownConfig for accessionGroup:', {
+        fieldName: field.fieldName,
+        dropdownConfig,
+        dropdownConfigValueField: dropdownConfig.valueField,
+        dropdownConfigLabelField: dropdownConfig.labelField
+      });
+    }
 
     return {
       ...field,
       fieldType: finalFieldType,
-      dropdownConfig
+      dropdownConfig,
+      dataSource: field.dataSource // Preserve dataSource for backward compatibility
     };
   }
 

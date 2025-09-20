@@ -283,6 +283,20 @@ export function DynamicSelect({
         const valueField = dropdownConfig.valueField || field.dataSource?.valueField || 'id';
         const labelField = dropdownConfig.labelField || field.dataSource?.labelField || 'name';
         
+        // Debug log for accessionGroup field
+        if (field.fieldName === 'accessionGroup') {
+          console.log('🎯 DynamicSelect - accessionGroup configuration:', {
+            fieldName: field.fieldName,
+            valueField,
+            labelField,
+            dropdownConfigValueField: dropdownConfig.valueField,
+            dataSourceValueField: field.dataSource?.valueField,
+            item,
+            itemNameField: item.name,
+            itemIdField: item.id || item._id
+          });
+        }
+        
         // Extract value using configured field
         let itemValue = item[valueField];
         if (!itemValue) {
