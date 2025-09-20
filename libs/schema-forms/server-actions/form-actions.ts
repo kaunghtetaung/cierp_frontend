@@ -253,9 +253,19 @@ export async function submitExtraActionForm(
       }
     });
     
-    // Extract operation type and item identifier if present
+    // Extract operation type and item identifier before removing them from data
     const operation = processedData.action || 'add';  // 'add', 'update', 'delete' - default to 'add'
     const itemIdentifier = processedData.itemId || processedData.accessionNo;  // For update/delete
+    
+    // Remove internal routing fields that backend doesn't expect
+    const fieldsToRemove = ['actionKey', 'moduleSlug', 'action', 'itemId', 'id'];
+    const cleanedData: Record<string, any> = {};
+    
+    Object.entries(processedData).forEach(([key, value]) => {
+      if (!fieldsToRemove.includes(key)) {
+        cleanedData[key] = value;
+      }
+    });
     
     // Construct endpoint based on backend schema or fallback to legacy pattern
     let endpoint: string;
@@ -298,7 +308,7 @@ export async function submitExtraActionForm(
     
     const response = await httpClient.request<any>(endpoint, {
       method,
-      body: processedData,
+      body: cleanedData,  // Send cleaned data without internal fields
       tenantId: context.tenantId,
       userSessionId: context.userSessionId,
       userId: context.userId,
