@@ -141,6 +141,10 @@ export function DynamicExtraActionForm({
     }
   };
 
+  // Get current form values for debug display
+  const formValues = watch();
+  const [showDebugPanel, setShowDebugPanel] = useState(true); // Show by default for debugging
+
   return (
     <div className="space-y-6">
       {/* Form Header - Only render if we have title or description and not hidden */}
@@ -238,6 +242,60 @@ export function DynamicExtraActionForm({
           </div>
         </form>
       </Form>
+      
+      {/* Debug Panel - Shows current form data */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6 border-t pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <IconComponent name="Bug" className="w-4 h-4" />
+              Debug: Form Data Preview
+            </h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDebugPanel(!showDebugPanel)}
+              className="h-6 px-2"
+            >
+              <IconComponent 
+                name={showDebugPanel ? "ChevronUp" : "ChevronDown"} 
+                className="w-4 h-4" 
+              />
+            </Button>
+          </div>
+          
+          {showDebugPanel && (
+            <div className="space-y-2">
+              <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs overflow-x-auto">
+                <div className="text-muted-foreground mb-2">Form values that will be submitted:</div>
+                <pre className="whitespace-pre-wrap break-words">
+                  {JSON.stringify(formValues, null, 2)}
+                </pre>
+              </div>
+              
+              {/* Highlight specific fields */}
+              {formValues.accessionGroup && (
+                <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
+                  <div className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                    ⚠️ AccessionGroup Field Value:
+                  </div>
+                  <div className="font-mono text-xs">
+                    Type: {typeof formValues.accessionGroup}<br/>
+                    Value: {JSON.stringify(formValues.accessionGroup)}<br/>
+                    Expected: Should be the 'name' value, not ID
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-xs text-muted-foreground">
+                <strong>Note:</strong> This panel shows the raw form data that will be sent on submission.
+                Check if field values match expected formats (e.g., accessionGroup should be name, not ID).
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

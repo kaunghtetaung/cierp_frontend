@@ -275,6 +275,16 @@ export function DynamicExtraActionFormWithSections({
                 </div>
               </form>
             </Form>
+            
+            {/* Debug Panel for Form Section */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-3 bg-muted/30 rounded-lg font-mono text-xs">
+                <div className="text-muted-foreground mb-1">Form Section Values:</div>
+                <pre className="whitespace-pre-wrap break-words">
+                  {JSON.stringify(watch(), null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Separator */}
@@ -374,6 +384,45 @@ export function DynamicExtraActionFormWithSections({
           </div>
         </form>
       </Form>
+      
+      {/* Debug Panel - Shows current form data */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6 border-t pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <IconComponent name="Bug" className="w-4 h-4" />
+              Debug: Form Data Preview
+            </h3>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs overflow-x-auto">
+              <div className="text-muted-foreground mb-2">Form values that will be submitted:</div>
+              <pre className="whitespace-pre-wrap break-words">
+                {JSON.stringify(watch(), null, 2)}
+              </pre>
+            </div>
+            
+            {/* Highlight specific fields */}
+            {watch('accessionGroup') && (
+              <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
+                <div className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                  ⚠️ AccessionGroup Field Value:
+                </div>
+                <div className="font-mono text-xs">
+                  Type: {typeof watch('accessionGroup')}<br/>
+                  Value: {JSON.stringify(watch('accessionGroup'))}<br/>
+                  Expected: Should be the 'name' value, not ID
+                </div>
+              </div>
+            )}
+            
+            <div className="text-xs text-muted-foreground">
+              <strong>Note:</strong> This panel shows the raw form data that will be sent on submission.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
