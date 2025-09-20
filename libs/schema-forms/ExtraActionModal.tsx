@@ -7,9 +7,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  IconComponent,
 } from "@repo/ui";
 import { ExtraActionFormRouter } from "./ExtraActionFormRouter";
-import { getLocalizedText, toastSuccess, toastError } from "@repo/utils";
+import { getLocalizedText } from "@repo/utils";
 import { submitExtraActionForm, submitBulkExtraActionForm } from "./server-actions/form-actions";
 import type { ModuleSchema, ExtraAction, ExtraActionForm } from "@repo/types";
 
@@ -38,6 +39,7 @@ export function ExtraActionModal({
 }: ExtraActionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Force refresh of form components
+  const [footerMessage, setFooterMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
   const handleFormSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
@@ -90,7 +92,14 @@ export function ExtraActionModal({
           action.successMessage || { en: "Action completed successfully" },
           currentLanguage
         );
-        toastSuccess(successMessage);
+        
+        // Show success message in footer instead of toast
+        setFooterMessage({ type: 'success', text: successMessage });
+        
+        // Clear the message after 5 seconds
+        setTimeout(() => {
+          setFooterMessage(null);
+        }, 5000);
         
         // Call onSuccess to refresh the table data, but don't close the modal
         onSuccess();
@@ -107,12 +116,26 @@ export function ExtraActionModal({
             action.errorMessage || { en: "Action failed" },
             currentLanguage
           );
-        toastError(errorMessage);
+        
+        // Show error message in footer instead of toast
+        setFooterMessage({ type: 'error', text: errorMessage });
+        
+        // Clear error message after 7 seconds
+        setTimeout(() => {
+          setFooterMessage(null);
+        }, 7000);
       }
     } catch (error) {
       console.error('ExtraActionModal: Error submitting form', error);
       const errorMessage = error instanceof Error ? error.message : "An error occurred";
-      toastError(errorMessage);
+      
+      // Show error message in footer instead of toast
+      setFooterMessage({ type: 'error', text: errorMessage });
+      
+      // Clear error message after 7 seconds
+      setTimeout(() => {
+        setFooterMessage(null);
+      }, 7000);
     } finally {
       setIsSubmitting(false);
     }
@@ -139,8 +162,16 @@ export function ExtraActionModal({
     ? getLocalizedText(actionForm.description, currentLanguage)
     : undefined;
 
+  // Clear footer message when modal is closed
+  const handleModalClose = (open: boolean) => {
+    if (!open) {
+      setFooterMessage(null);
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleModalClose}>
       <DialogContent className={`${getModalWidth()} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>{modalTitle}</DialogTitle>
@@ -161,6 +192,21 @@ export function ExtraActionModal({
           hideHeader={true}
           moduleSlug={module.slug}
         />
+        
+        {/* Footer Message Area */}
+        {footerMessage && (
+          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+            footerMessage.type === 'success' 
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+              : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+          }`}>
+            <IconComponent 
+              name={footerMessage.type === 'success' ? 'CheckCircle' : 'AlertCircle'} 
+              className="w-5 h-5 flex-shrink-0"
+            />
+            <span className="text-sm font-medium">{footerMessage.text}</span>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
