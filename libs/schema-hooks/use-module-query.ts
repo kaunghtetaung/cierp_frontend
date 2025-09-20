@@ -207,10 +207,11 @@ export function useDeleteModuleItem(module: string) {
       return result;
     },
     onSuccess: async () => {
-      // Invalidate all list queries for this module
+      // Invalidate and immediately refetch all list queries for this module
       await queryClient.invalidateQueries({ 
         queryKey: [...moduleKeys.lists(), module],
-        exact: false 
+        exact: false,
+        refetchType: 'all' // Force immediate refetch
       });
     },
     onError: (error) => {
@@ -302,17 +303,19 @@ export function useBulkModuleOperation(module: string) {
       return result;
     },
     onSuccess: async (data, variables) => {
-      // Invalidate all list queries for this module
+      // Invalidate and immediately refetch all list queries for this module
       await queryClient.invalidateQueries({ 
         queryKey: [...moduleKeys.lists(), module],
-        exact: false 
+        exact: false,
+        refetchType: 'all' // Force immediate refetch
       });
       
       // If operation affects deleted items, also invalidate deleted items list
       if (variables.operation === 'restore' || variables.operation === 'hard-delete') {
         await queryClient.invalidateQueries({ 
           queryKey: [...moduleKeys.all, module, "deleted"],
-          exact: false 
+          exact: false,
+          refetchType: 'all' // Force immediate refetch
         });
       }
     },

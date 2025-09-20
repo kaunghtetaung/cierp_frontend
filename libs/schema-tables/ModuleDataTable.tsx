@@ -662,10 +662,7 @@ export function ModuleDataTable({
     setIsExtraActionModalOpen(false);
     setActiveExtraAction(null);
     setRowActionItem(null); // Clear row action item
-    // Refresh the table data after successful action
-    if (onRefresh) {
-      onRefresh();
-    }
+    // React Query mutations handle data refresh automatically via query invalidation
     // Note: The ExtraActionModal already shows success toasts
   };
 
@@ -703,10 +700,8 @@ export function ModuleDataTable({
 
       toastSuccess(successMessage);
       
-      // Refresh the data after successful deletion
-      if (onRefresh) {
-        onRefresh();
-      }
+      // React Query mutations already invalidate queries which triggers automatic refetch
+      // The onSuccess handler in the mutation hook handles query invalidation
     } catch (error) {
       console.error("Failed to delete item:", error);
 
@@ -768,10 +763,8 @@ export function ModuleDataTable({
 
       toastSuccess(successMessage);
       
-      // Refresh the data after successful deletion
-      if (onRefresh) {
-        onRefresh();
-      }
+      // React Query mutations already invalidate queries which triggers automatic refetch
+      // The onSuccess handler in the mutation hook handles query invalidation
     } catch (error) {
       console.error("Failed to delete items:", error);
 
