@@ -293,7 +293,9 @@ export function DynamicSelect({
             dataSourceValueField: field.dataSource?.valueField,
             item,
             itemNameField: item.name,
-            itemIdField: item.id || item._id
+            itemIdField: item.id || item._id,
+            extractedValue: item[valueField],
+            willFallback: !item[valueField]
           });
         }
         
@@ -302,6 +304,17 @@ export function DynamicSelect({
         if (!itemValue) {
           // Fallback to common ID fields
           itemValue = item._id || item.id || item.value || `missing-id-${index}`;
+          
+          // Debug log the fallback for accessionGroup
+          if (field.fieldName === 'accessionGroup') {
+            console.log('⚠️ DynamicSelect - accessionGroup fallback:', {
+              fieldName: field.fieldName,
+              requestedValueField: valueField,
+              notFound: `item.${valueField} is null/undefined`,
+              fallingBackTo: itemValue,
+              availableFields: Object.keys(item)
+            });
+          }
         }
         
         const transformedOption = {
