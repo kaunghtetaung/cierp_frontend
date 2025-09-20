@@ -55,27 +55,51 @@ export function ClientSidePaginationWrapper({
       }
     }
     
-    // Get prefilter params - check for configured field patterns
+    // Get prefilter params - handle text fields with operators
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        // Use labelField if specified, otherwise default to 'name'
-        const filterField = field.dataSource?.labelField || 'name';
-        const paramKey = `${field.fieldName}.${filterField}`;
-        let paramValue = searchParams.get(paramKey);
-        
-        // Fallback to .id if the preferred field doesn't exist
-        let actualKey = paramKey;
-        if (!paramValue) {
-          const idKey = `${field.fieldName}.id`;
-          paramValue = searchParams.get(idKey);
-          actualKey = idKey;
-        }
-        
-        if (paramValue) {
-          if (!params.filters) params.filters = {};
-          // For multiple values, send as comma-separated string
-          // Backend should handle splitting if needed
-          params.filters[actualKey] = paramValue;
+        if (field.type === 'text') {
+          // Check for operator-based params for text fields
+          const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+          for (const op of operators) {
+            const paramValue = searchParams.get(`${field.fieldName}[${op.value}]`);
+            if (paramValue) {
+              if (!params.filters) params.filters = {};
+              // Send with operator structure for backend
+              if (!params.filters[field.fieldName]) params.filters[field.fieldName] = {};
+              params.filters[field.fieldName][op.value] = paramValue;
+              break;
+            }
+          }
+        } else if (field.type === 'yearRange') {
+          // Check for year range params
+          const exactValue = searchParams.get(field.fieldName) || searchParams.get(`${field.fieldName}[$eq]`);
+          if (exactValue) {
+            if (!params.filters) params.filters = {};
+            params.filters[field.fieldName] = exactValue;
+          } else {
+            // Check for range operators
+            const rangeOps = ['$gte', '$lte', '$gt', '$lt'];
+            let hasRange = false;
+            rangeOps.forEach(op => {
+              const paramValue = searchParams.get(`${field.fieldName}[${op}]`);
+              if (paramValue) {
+                if (!params.filters) params.filters = {};
+                if (!params.filters[field.fieldName]) params.filters[field.fieldName] = {};
+                params.filters[field.fieldName][op] = paramValue;
+                hasRange = true;
+              }
+            });
+          }
+        } else {
+          // For other field types, use direct fieldName
+          const paramValue = searchParams.get(field.fieldName);
+          if (paramValue) {
+            if (!params.filters) params.filters = {};
+            // For multiple values, send as comma-separated string
+            // Backend should handle splitting if needed
+            params.filters[field.fieldName] = paramValue;
+          }
         }
       });
     }

@@ -32,6 +32,9 @@ import { generateZodSchema } from "@repo/schema-utils";
 import { ConfirmationDialog } from "@repo/ui";
 import { PrefilterSelect } from "./PrefilterSelect";
 import { PrefilterTypeahead } from "./PrefilterTypeahead";
+import { PrefilterText } from "./PrefilterText";
+import { PrefilterYearRange } from "./PrefilterYearRange";
+import { PrefilterSort } from "./PrefilterSort";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -119,30 +122,49 @@ export function ModuleDataTable({
     }
   };
 
-  // Prefilter state management
+  // Prefilter state management - includes operators for text fields
   const [prefilterValues, setPrefilterValues] = useState<Record<string, string | string[]>>(() => {
     const values: Record<string, string | string[]> = {};
-    // Initialize from URL params - look for prefilter field patterns
+    // Initialize from URL params - use fieldName directly from backend
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        // Use labelField if specified, otherwise default to 'name', fallback to 'id'
-        const filterField = field.dataSource?.labelField || 'name';
-        const paramKey = `${field.fieldName}.${filterField}`;
-        
-        let paramValue = searchParams.get(paramKey);
-        
-        // Fallback to .id if the preferred field doesn't exist in URL
-        if (!paramValue) {
-          const idKey = `${field.fieldName}.id`;
-          paramValue = searchParams.get(idKey);
-        }
-        
-        if (paramValue) {
-          // For multiple fields, split comma-separated values
-          if (field.multiple && paramValue.includes(',')) {
-            values[field.fieldName] = paramValue.split(',').map(v => v.trim());
+        // For text fields, check for operator-based params
+        if (field.type === 'text') {
+          // Check for different operators in URL
+          const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+          for (const op of operators) {
+            const paramValue = searchParams.get(`${field.fieldName}[${op.value}]`);
+            if (paramValue) {
+              values[field.fieldName] = paramValue;
+              values[`${field.fieldName}_operator`] = op.value;
+              break;
+            }
+          }
+        } else if (field.type === 'yearRange') {
+          // Check for year range params
+          const exactValue = searchParams.get(`${field.fieldName}`) || searchParams.get(`${field.fieldName}[$eq]`);
+          if (exactValue) {
+            values[field.fieldName] = exactValue;
+            values[`${field.fieldName}_operator`] = '$eq';
           } else {
-            values[field.fieldName] = paramValue;
+            // Check for range operators
+            const fromValue = searchParams.get(`${field.fieldName}[$gte]`);
+            const toValue = searchParams.get(`${field.fieldName}[$lte]`);
+            if (fromValue || toValue) {
+              values[field.fieldName] = { from: fromValue || '', to: toValue || '' };
+              values[`${field.fieldName}_operator`] = 'between';
+            }
+          }
+        } else {
+          // For other field types, use direct fieldName
+          const paramValue = searchParams.get(field.fieldName);
+          if (paramValue) {
+            // Handle multiple values (comma-separated)
+            if (field.multiple && paramValue.includes(',')) {
+              values[field.fieldName] = paramValue.split(',').map(v => v.trim());
+            } else {
+              values[field.fieldName] = paramValue;
+            }
           }
         }
       });
@@ -150,13 +172,18 @@ export function ModuleDataTable({
     return values;
   });
 
-  // Handle prefilter changes
-  const handlePrefilterChange = (fieldName: string, value: string | string[] | undefined) => {
+  // Handle prefilter changes - now with operator support for text fields
+  const handlePrefilterChange = (fieldName: string, value: string | string[] | undefined, operator?: string) => {
     const newValues = { ...prefilterValues };
+    
     if (value !== undefined && (Array.isArray(value) ? value.length > 0 : value)) {
       newValues[fieldName] = value;
+      if (operator) {
+        newValues[`${fieldName}_operator`] = operator;
+      }
     } else {
       delete newValues[fieldName];
+      delete newValues[`${fieldName}_operator`];
     }
     setPrefilterValues(newValues);
     
@@ -166,32 +193,53 @@ export function ModuleDataTable({
     // Remove all existing prefilter params
     if (module.dataTableSchema?.prefilters?.fields) {
       module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        const filterField = field.dataSource?.labelField || 'name';
-        // Remove both possible keys (including array indices for multiple values)
-        Array.from(newSearchParams.keys()).forEach(key => {
-          if (key.startsWith(`${field.fieldName}.${filterField}`) || 
-              key.startsWith(`${field.fieldName}.id`)) {
-            newSearchParams.delete(key);
-          }
-        });
-      });
-    }
-    
-    // Add new prefilter params using configured field path
-    if (module.dataTableSchema?.prefilters?.fields) {
-      Object.entries(newValues).forEach(([fieldName, val]) => {
-        const field = module.dataTableSchema.prefilters.fields.find((f: any) => f.fieldName === fieldName);
-        if (field) {
-          const filterField = field.dataSource?.labelField || 'name';
-          if (Array.isArray(val)) {
-            // For multiple values, join with comma
-            newSearchParams.set(`${fieldName}.${filterField}`, val.join(','));
-          } else {
-            newSearchParams.set(`${fieldName}.${filterField}`, val as string);
-          }
+        if (field.type === 'text') {
+          // Clear all operator-based params for text fields
+          const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+          operators.forEach((op: any) => {
+            newSearchParams.delete(`${field.fieldName}[${op.value}]`);
+          });
+        } else if (field.type === 'yearRange') {
+          // Clear year range params
+          newSearchParams.delete(field.fieldName);
+          newSearchParams.delete(`${field.fieldName}[$eq]`);
+          newSearchParams.delete(`${field.fieldName}[$gte]`);
+          newSearchParams.delete(`${field.fieldName}[$lte]`);
+          newSearchParams.delete(`${field.fieldName}[$gt]`);
+          newSearchParams.delete(`${field.fieldName}[$lt]`);
+        } else {
+          newSearchParams.delete(field.fieldName);
         }
       });
     }
+    
+    // Add new prefilter params
+    Object.entries(newValues).forEach(([key, val]) => {
+      // Skip operator keys (they're handled with their corresponding field)
+      if (key.endsWith('_operator')) return;
+      
+      const field = module.dataTableSchema?.prefilters?.fields?.find((f: any) => f.fieldName === key);
+      if (field?.type === 'text' && newValues[`${key}_operator`]) {
+        // For text fields, use operator-based param (e.g., title[$eq]=value)
+        const op = newValues[`${key}_operator`] as string;
+        newSearchParams.set(`${key}[${op}]`, val as string);
+      } else if (field?.type === 'yearRange' && newValues[`${key}_operator`]) {
+        const op = newValues[`${key}_operator`] as string;
+        if (op === 'between' && typeof val === 'object' && val && 'from' in val && 'to' in val) {
+          // For range, use $gte and $lte
+          if (val.from) newSearchParams.set(`${key}[$gte]`, val.from);
+          if (val.to) newSearchParams.set(`${key}[$lte]`, val.to);
+        } else if (op === '$eq' && typeof val === 'string') {
+          // For exact match
+          newSearchParams.set(`${key}`, val);
+        }
+      } else if (Array.isArray(val)) {
+        // For multiple values, join with comma
+        newSearchParams.set(key, val.join(','));
+      } else {
+        newSearchParams.set(key, val as string);
+      }
+    });
     
     // Reset to page 1 when prefilters change
     newSearchParams.set('page', '1');
@@ -203,6 +251,113 @@ export function ModuleDataTable({
   // Check if prefilters are enabled and available
   const hasPrefilters = module.dataTableSchema?.prefilters?.enabled && 
                         module.dataTableSchema?.prefilters?.fields?.length > 0;
+  
+  // State for showing/hiding advanced filters - auto-open if there are active filters
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(Object.keys(prefilterValues).filter(k => !k.endsWith('_operator')).length > 0);
+  
+  // Generate filter summary
+  const getFilterSummary = () => {
+    const summaryParts: string[] = [];
+    
+    if (!module.dataTableSchema?.prefilters?.fields) return null;
+    
+    module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+      const value = prefilterValues[field.fieldName];
+      const operator = prefilterValues[`${field.fieldName}_operator`];
+      
+      if (value) {
+        const fieldLabel = getLocalizedText(field.label, currentLanguage);
+        
+        if (field.type === 'text' && operator) {
+          const opLabel = operator === '$eq' ? '=' : '~';
+          summaryParts.push(`${fieldLabel} ${opLabel} "${value}"`);
+        } else if (field.type === 'yearRange') {
+          if (typeof value === 'object' && 'from' in value && 'to' in value) {
+            if (value.from && value.to) {
+              summaryParts.push(`${fieldLabel}: ${value.from}-${value.to}`);
+            } else if (value.from) {
+              summaryParts.push(`${fieldLabel} ≥ ${value.from}`);
+            } else if (value.to) {
+              summaryParts.push(`${fieldLabel} ≤ ${value.to}`);
+            }
+          } else {
+            summaryParts.push(`${fieldLabel}: ${value}`);
+          }
+        } else if (Array.isArray(value)) {
+          summaryParts.push(`${fieldLabel}: ${value.join(', ')}`);
+        } else {
+          summaryParts.push(`${fieldLabel}: ${value}`);
+        }
+      }
+    });
+    
+    return summaryParts.length > 0 ? summaryParts : null;
+  };
+  
+  const filterSummary = getFilterSummary();
+  
+  // Get sort options from schema
+  const getSortOptions = () => {
+    const options: { field: string; label: any }[] = [];
+    
+    // Add sortable fields from sortAllowedFieldList or columns
+    if (module.dataTableSchema?.sorting?.sortAllowedFieldList) {
+      // Use allowed fields list if available
+      module.dataTableSchema.sorting.sortAllowedFieldList.forEach((field: string) => {
+        // Find matching column for label
+        const column = module.dataTableSchema.columns.find(
+          (col: TableColumn) => col.fieldName === field
+        );
+        if (column) {
+          options.push({
+            field: field,
+            label: column.label
+          });
+        } else {
+          // Create label from field name if column not found
+          const label = field.split('.').pop()?.replace(/([A-Z])/g, ' $1').trim() || field;
+          options.push({
+            field: field,
+            label: { en: label, mm: label }
+          });
+        }
+      });
+    } else {
+      // Fallback to sortable columns
+      module.dataTableSchema?.columns?.forEach((column: TableColumn) => {
+        if (column.sortable) {
+          options.push({
+            field: column.fieldName,
+            label: column.label
+          });
+        }
+      });
+    }
+    
+    // Add common sort options if not already included
+    const commonFields = [
+      { field: 'createdAt', label: { en: 'Created Date', mm: 'ဖန်တီးသည့်ရက်' } },
+      { field: 'updatedAt', label: { en: 'Updated Date', mm: 'ပြင်ဆင်သည့်ရက်' } }
+    ];
+    
+    commonFields.forEach(common => {
+      if (!options.find(opt => opt.field === common.field)) {
+        options.push(common);
+      }
+    });
+    
+    return options;
+  };
+  
+  const sortOptions = getSortOptions();
+  
+  // Handle sort change
+  const handleSortChange = (field: string, order: "asc" | "desc") => {
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('sortBy', field);
+    newSearchParams.set('sortOrder', order);
+    router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
+  };
 
   // Generate print title with monthly information
   const getPrintTitle = () => {
@@ -1265,68 +1420,171 @@ export function ModuleDataTable({
         </div>
       </div>
 
-      {/* Prefilter Section */}
+      {/* Advanced Filter Section */}
       {hasPrefilters && (
-        <div className="bg-muted/20 border border-border/50 rounded-lg p-4">
-          <div className="flex flex-col gap-4">
+        <div className="space-y-3">
+          {/* Filter Summary when collapsed */}
+          {filterSummary && !showAdvancedFilters && (
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {currentLanguage === "mm" ? "စစ်ထုတ်ရန်" : "Filters"}
-              </h3>
-              {Object.keys(prefilterValues).length > 0 && (
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Active filters:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {filterSummary.map((summary, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {summary}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <span className="text-muted-foreground/50">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">Found:</span>
+                  <Badge variant="default" className="text-xs">
+                    {totalItems.toLocaleString()} {currentLanguage === "mm" ? "မှတ်တမ်း" : "records"}
+                  </Badge>
+                </div>
+              </div>
+              
+              {/* Clear All Button */}
+              {filterSummary && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setPrefilterValues({});
-                    // Clear all prefilter params from URL
-                    const newSearchParams = new URLSearchParams(searchParams.toString());
-                    if (module.dataTableSchema?.prefilters?.fields) {
-                      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-                        const filterField = field.dataSource?.labelField || 'name';
-                        // Remove both possible keys
-                        newSearchParams.delete(`${field.fieldName}.${filterField}`);
-                        newSearchParams.delete(`${field.fieldName}.id`);
-                      });
-                    }
-                    newSearchParams.set('page', '1');
-                    router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
-                  }}
-                  className="text-xs"
-                >
-                  <IconComponent name="X" className="h-3 w-3 mr-1" />
-                  Clear all
-                </Button>
+                  setPrefilterValues({});
+                  // Clear all prefilter params from URL
+                  const newSearchParams = new URLSearchParams(searchParams.toString());
+                  if (module.dataTableSchema?.prefilters?.fields) {
+                    module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+                      if (field.type === 'text') {
+                        // Clear all operator-based params for text fields
+                        const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+                        operators.forEach((op: any) => {
+                          newSearchParams.delete(`${field.fieldName}[${op.value}]`);
+                        });
+                      } else if (field.type === 'yearRange') {
+                        // Clear year range params
+                        newSearchParams.delete(field.fieldName);
+                        newSearchParams.delete(`${field.fieldName}[$eq]`);
+                        newSearchParams.delete(`${field.fieldName}[$gte]`);
+                        newSearchParams.delete(`${field.fieldName}[$lte]`);
+                        newSearchParams.delete(`${field.fieldName}[$gt]`);
+                        newSearchParams.delete(`${field.fieldName}[$lt]`);
+                      } else {
+                        newSearchParams.delete(field.fieldName);
+                      }
+                    });
+                  }
+                  newSearchParams.set('page', '1');
+                  router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
+                  setShowAdvancedFilters(false);
+                }}
+                className="text-xs"
+              >
+                <IconComponent name="X" className="h-3 w-3 mr-1" />
+                Clear all filters
+              </Button>
+            )}
+            </div>
+          )}
+          
+          {/* Collapsible Filter Panel */}
+          {showAdvancedFilters && (
+            <div className="bg-muted/30 border border-border/50 rounded-lg p-6 animate-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {module.dataTableSchema.prefilters?.fields?.map((field: any, index: number) => {
+                  // Render different field types - all fields take 1 column in a 3-column grid
+                  if (field.type === 'text') {
+                    return (
+                      <PrefilterText
+                        key={field.fieldName}
+                        field={field}
+                        value={prefilterValues[field.fieldName] as string | undefined}
+                        operator={prefilterValues[`${field.fieldName}_operator`] as string || field.searchOptions?.defaultOperator || '$regex'}
+                        onChange={(value, operator) => handlePrefilterChange(field.fieldName, value, operator)}
+                        currentLanguage={currentLanguage}
+                      />
+                    );
+                  } else if (field.type === 'yearRange') {
+                    return (
+                      <PrefilterYearRange
+                        key={field.fieldName}
+                        field={field}
+                        value={prefilterValues[field.fieldName] as string | { from: string; to: string } | undefined}
+                        operator={prefilterValues[`${field.fieldName}_operator`] as string || field.yearRangeOptions?.defaultOperator || '$eq'}
+                        onChange={(value, operator) => handlePrefilterChange(field.fieldName, value, operator)}
+                        currentLanguage={currentLanguage}
+                      />
+                    );
+                  } else if (field.type === 'typeaheadDynamicSelect') {
+                    return (
+                      <PrefilterTypeahead
+                        key={field.fieldName}
+                        field={field}
+                        value={prefilterValues[field.fieldName]}
+                        onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                        currentLanguage={currentLanguage}
+                        moduleSlug={module.slug}
+                      />
+                    );
+                  } else {
+                    return (
+                      <PrefilterSelect
+                        key={field.fieldName}
+                        field={field}
+                        value={prefilterValues[field.fieldName]}
+                        onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                        currentLanguage={currentLanguage}
+                        moduleSlug={module.slug}
+                      />
+                    );
+                  }
+                })}
+                
+                {/* Sort option at the end */}
+                {sortOptions.length > 0 && (
+                  <PrefilterSort
+                    sortOptions={sortOptions}
+                    currentSort={searchParams.get('sortBy') || searchParams.get('sort') || module.dataTableSchema?.sorting?.defaultSort?.field || ''}
+                    currentOrder={(searchParams.get('sortOrder') || searchParams.get('order') || module.dataTableSchema?.sorting?.defaultSort?.direction || 'asc') as 'asc' | 'desc'}
+                    onChange={handleSortChange}
+                    currentLanguage={currentLanguage}
+                  />
+                )}
+              </div>
+              
+              {/* Search Summary at bottom of filter panel */}
+              {(filterSummary || totalItems > 0) && (
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {currentLanguage === "mm" ? "ရှာဖွေမှု အကျဉ်းချုပ်:" : "Search Summary:"}
+                      </span>
+                      {filterSummary && (
+                        <div className="flex flex-wrap gap-1">
+                          {filterSummary.map((summary, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {summary}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {currentLanguage === "mm" ? "စုစုပေါင်း မှတ်တမ်း:" : "Total Records:"}
+                      </span>
+                      <Badge variant="outline" className="text-xs font-bold">
+                        {totalItems.toLocaleString()}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="flex flex-wrap gap-4">
-              {module.dataTableSchema.prefilters?.fields?.map((field: any) => {
-                if (field.type === 'typeaheadDynamicSelect') {
-                  return (
-                    <PrefilterTypeahead
-                      key={field.fieldName}
-                      field={field}
-                      value={prefilterValues[field.fieldName]}
-                      onChange={(value) => handlePrefilterChange(field.fieldName, value)}
-                      currentLanguage={currentLanguage}
-                      moduleSlug={module.slug}
-                    />
-                  );
-                } else {
-                  return (
-                    <PrefilterSelect
-                      key={field.fieldName}
-                      field={field}
-                      value={prefilterValues[field.fieldName]}
-                      onChange={(value) => handlePrefilterChange(field.fieldName, value)}
-                      currentLanguage={currentLanguage}
-                      moduleSlug={module.slug}
-                    />
-                  );
-                }
-              })}
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1839,6 +2097,10 @@ export function ModuleDataTable({
               isPaginationControlsLoading={isLoading} // Sync pagination loading with data loading
               addNewRoute={`/${params.appId}/${module.slug}/new`}
               printTitle={getPrintTitle()}
+              showAdvancedFilter={hasPrefilters}
+              onAdvancedFilterToggle={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              isAdvancedFilterOpen={showAdvancedFilters}
+              activeFilterCount={filterSummary ? filterSummary.length : 0}
             />
           </div>
         </div>

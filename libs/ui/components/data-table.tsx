@@ -63,6 +63,8 @@ import {
   X,
   RotateCcw,
   Loader2,
+  Filter,
+  FilterX,
 } from "lucide-react";
 import { FilterConfig } from "./table-filters";
 import { TableFilterModal } from "./table-filter-modal";
@@ -98,6 +100,10 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean; // Loading state
   addNewRoute?: string; // Custom route for Add New button
   isPaginationControlsLoading?: boolean; // External pagination controls loading state (for synchronization)
+  showAdvancedFilter?: boolean; // Show advanced filter button
+  onAdvancedFilterToggle?: () => void; // Advanced filter toggle callback
+  isAdvancedFilterOpen?: boolean; // Advanced filter open state
+  activeFilterCount?: number; // Number of active filters
 }
 
 export function DataTable<TData, TValue>({
@@ -121,6 +127,10 @@ export function DataTable<TData, TValue>({
   isLoading = false,
   addNewRoute,
   isPaginationControlsLoading = false,
+  showAdvancedFilter = false,
+  onAdvancedFilterToggle,
+  isAdvancedFilterOpen = false,
+  activeFilterCount = 0,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -1160,13 +1170,28 @@ export function DataTable<TData, TValue>({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Filter Modal Button */}
-            {showFilters && (
-              <TableFilterModal table={table} filterConfigs={filterConfigs} />
+            {/* Advanced Filter Button */}
+            {showAdvancedFilter && (
+              <Button
+                variant={isAdvancedFilterOpen ? "default" : "outline"}
+                size="sm"
+                onClick={onAdvancedFilterToggle}
+                title="Toggle Advanced Filters"
+                className="h-8 gap-1"
+              >
+                {isAdvancedFilterOpen ? (
+                  <FilterX className="h-4 w-4" />
+                ) : (
+                  <Filter className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Advanced Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-xs font-medium">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
             )}
-
-            {/* Divider line for better separation */}
-            <div className="h-8 w-px bg-border" />
 
             {/* Add New Button */}
             {addNewRoute && (

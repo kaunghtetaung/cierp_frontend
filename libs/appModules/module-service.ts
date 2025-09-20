@@ -65,10 +65,17 @@ export class ModuleService {
           // Array of values - join with comma for multiple selection
           queryParams.set(fieldName, filterValue.join(','));
         } else if (typeof filterValue === 'object' && filterValue !== null) {
-          // Object with operators - used for regular filters
+          // Object with operators
           Object.entries(filterValue).forEach(([operator, value]) => {
             if (value !== undefined && value !== null && value !== "") {
-              queryParams.set(`filter[${fieldName}][${operator}]`, String(value));
+              // Check if operator starts with $ (MongoDB operators) - these are typically prefilters
+              // Prefilters use direct format: fieldName[$operator]=value
+              // Regular filters use filter[fieldName][operator]=value format
+              if (operator.startsWith('$')) {
+                queryParams.set(`${fieldName}[${operator}]`, String(value));
+              } else {
+                queryParams.set(`filter[${fieldName}][${operator}]`, String(value));
+              }
             }
           });
         }
