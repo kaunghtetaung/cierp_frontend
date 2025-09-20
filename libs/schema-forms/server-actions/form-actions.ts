@@ -254,7 +254,7 @@ export async function submitExtraActionForm(
     });
     
     // Extract operation type and item identifier if present
-    const operation = processedData.action || 'create';  // 'add', 'update', 'delete'
+    const operation = processedData.action || 'add';  // 'add', 'update', 'delete' - default to 'add'
     const itemIdentifier = processedData.itemId || processedData.accessionNo;  // For update/delete
     
     // Construct endpoint based on backend schema or fallback to legacy pattern
@@ -273,11 +273,8 @@ export async function submitExtraActionForm(
         endpoint = `${endpoint}/${itemIdentifier}`;
         method = 'DELETE';
       } else if (operation === 'add') {
-        // Some backends may use /add suffix for explicit add operations
-        if (!endpoint.endsWith('/add')) {
-          // Check if backend expects /add suffix (could be configured)
-          // For now, use base endpoint for add
-        }
+        // For add operations, append /add to the endpoint
+        endpoint = `${endpoint}/add`;
         method = actionMethod || 'POST';
       } else {
         method = actionMethod || 'POST';
