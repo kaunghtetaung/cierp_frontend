@@ -111,8 +111,9 @@ export function ExtraActionModal({
         }, 5000);
         
         // Mark that data has been changed (will trigger refetch on modal close)
-        console.log('📝 ExtraActionModal - Marking data as changed');
+        console.log('📝 ExtraActionModal - Marking data as changed for action:', action.actionId);
         setIsDataChanged(true);
+        console.log('📝 ExtraActionModal - isDataChanged is now:', true);
         
         // Don't call onSuccess here anymore - will call it on modal close if needed
         // onSuccess();
@@ -214,7 +215,7 @@ export function ExtraActionModal({
           )}
           currentLanguage={currentLanguage}
           onSubmit={handleFormSubmit}
-          onCancel={onClose}
+          onCancel={() => handleModalClose(false)}
           hideHeader={true}
           moduleSlug={module.slug}
         />
