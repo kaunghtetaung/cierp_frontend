@@ -659,8 +659,8 @@ export function ModuleDataTable({
   };
 
   const handleExtraActionSuccess = () => {
-    // Don't close the modal - let user continue with more operations
-    // Modal now stays open after successful operations for better workflow
+    // This is now called only when modal closes (if data was changed)
+    // The ExtraActionModal tracks changes and only calls this on close if needed
     
     // Trigger data refresh using the onRefresh callback
     if (onRefresh && typeof onRefresh === 'function') {
@@ -668,8 +668,8 @@ export function ModuleDataTable({
       onRefresh();
     }
     
-    // Note: The ExtraActionModal already shows success toasts
-    // and the modal will stay open for more operations
+    // Note: The modal stays open for multiple operations
+    // Data is only refetched once when modal closes (if changes were made)
   };
 
   const handleDelete = (id: string) => {

@@ -40,6 +40,15 @@ export function ExtraActionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Force refresh of form components
   const [footerMessage, setFooterMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [isDataChanged, setIsDataChanged] = useState(false); // Track if any data operations occurred
+
+  // Reset isDataChanged when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsDataChanged(false);
+      setFooterMessage(null);
+    }
+  }, [isOpen]);
 
   const handleFormSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
@@ -101,8 +110,11 @@ export function ExtraActionModal({
           setFooterMessage(null);
         }, 5000);
         
-        // Call onSuccess to refresh the table data, but don't close the modal
-        onSuccess();
+        // Mark that data has been changed (will trigger refetch on modal close)
+        setIsDataChanged(true);
+        
+        // Don't call onSuccess here anymore - will call it on modal close if needed
+        // onSuccess();
         
         // Increment refresh key to force re-render of form components
         // This ensures forms are reset properly for the next operation
@@ -162,9 +174,16 @@ export function ExtraActionModal({
     ? getLocalizedText(actionForm.description, currentLanguage)
     : undefined;
 
-  // Clear footer message when modal is closed
+  // Handle modal close - refetch data if changes were made
   const handleModalClose = (open: boolean) => {
     if (!open) {
+      // If data was changed, trigger refresh before closing
+      if (isDataChanged) {
+        onSuccess(); // This will trigger React Query refetch
+        setIsDataChanged(false); // Reset the flag
+      }
+      
+      // Clear footer message and close modal
       setFooterMessage(null);
       onClose();
     }
@@ -194,19 +213,35 @@ export function ExtraActionModal({
         />
         
         {/* Footer Message Area */}
-        {footerMessage && (
-          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
-            footerMessage.type === 'success' 
-              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-              : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
-          }`}>
-            <IconComponent 
-              name={footerMessage.type === 'success' ? 'CheckCircle' : 'AlertCircle'} 
-              className="w-5 h-5 flex-shrink-0"
-            />
-            <span className="text-sm font-medium">{footerMessage.text}</span>
-          </div>
-        )}
+        <div className="mt-4 space-y-2">
+          {footerMessage && (
+            <div className={`p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+              footerMessage.type === 'success' 
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+            }`}>
+              <IconComponent 
+                name={footerMessage.type === 'success' ? 'CheckCircle' : 'AlertCircle'} 
+                className="w-5 h-5 flex-shrink-0"
+              />
+              <span className="text-sm font-medium">{footerMessage.text}</span>
+            </div>
+          )}
+          
+          {/* Data Changed Indicator */}
+          {isDataChanged && !footerMessage && (
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2 text-xs">
+                <IconComponent name="Info" className="w-4 h-4" />
+                <span>
+                  {currentLanguage === 'mm' 
+                    ? 'အချက်အလက်များ ပြောင်းလဲထားပါသည်။ Modal ပိတ်သောအခါ ပြန်လည်ရယူပါမည်။'
+                    : 'Data has been modified. Changes will be refreshed when you close this modal.'}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
