@@ -134,6 +134,9 @@ export function DynamicExtraActionForm({
       }
 
       await onSubmit(formData);
+      
+      // Reset form after successful submission so user can add another entry
+      reset();
     } catch (error) {
       console.error("Form submission error:", error);
     } finally {

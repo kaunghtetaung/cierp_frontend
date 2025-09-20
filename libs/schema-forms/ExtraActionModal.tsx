@@ -37,6 +37,7 @@ export function ExtraActionModal({
   isRowAction = false
 }: ExtraActionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Force refresh of form components
 
   const handleFormSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
@@ -90,8 +91,16 @@ export function ExtraActionModal({
           currentLanguage
         );
         toastSuccess(successMessage);
+        
+        // Call onSuccess to refresh the table data, but don't close the modal
         onSuccess();
-        onClose();
+        
+        // Increment refresh key to force re-render of form components
+        // This ensures forms are reset properly for the next operation
+        setRefreshKey(prev => prev + 1);
+        
+        // Don't automatically close - let user continue with more operations
+        // onClose();
       } else {
         const errorMessage = result?.error || 
           getLocalizedText(
@@ -141,6 +150,7 @@ export function ExtraActionModal({
         </DialogHeader>
         
         <ExtraActionFormRouter
+          key={refreshKey} // Force re-mount when refreshKey changes
           action={actionForm}
           selectedItems={selectedItems.map(item => 
             typeof item === 'string' ? item : (item._id || item.id)
