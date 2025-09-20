@@ -276,12 +276,37 @@ export function DynamicSelect({
         ? responseData 
         : (responseData?.data || responseData?.items || []);
       
+      // Debug log for accessionGroup API response
+      if (field.fieldName === 'accessionGroup' && data.length > 0) {
+        console.log('📊 DynamicSelect - accessionGroup API response sample:', {
+          firstItem: data[0],
+          availableFields: Object.keys(data[0]),
+          hasNameField: 'name' in data[0],
+          nameValue: data[0].name,
+          idValue: data[0]._id || data[0].id
+        });
+      }
       
       // Transform API response to LocalSelectOption format
       const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => {
         // Use configured valueField and labelField from dropdownConfig or dataSource
         const valueField = dropdownConfig.valueField || field.dataSource?.valueField || 'id';
         const labelField = dropdownConfig.labelField || field.dataSource?.labelField || 'name';
+        
+        // Helper function to extract nested field values
+        const getFieldValue = (obj: any, field: string): any => {
+          // Handle dot notation for nested fields
+          if (field.includes('.')) {
+            const parts = field.split('.');
+            let value = obj;
+            for (const part of parts) {
+              value = value?.[part];
+              if (value === undefined) break;
+            }
+            return value;
+          }
+          return obj[field];
+        };
         
         // Debug log for accessionGroup field
         if (field.fieldName === 'accessionGroup') {
@@ -299,8 +324,23 @@ export function DynamicSelect({
           });
         }
         
-        // Extract value using configured field
-        let itemValue = item[valueField];
+        // Extract value using configured field (with support for nested paths)
+        let itemValue = getFieldValue(item, valueField);
+        
+        // Special handling for multilingual fields
+        if (!itemValue && item[valueField] && typeof item[valueField] === 'object') {
+          // If the field is a multilingual object, use the English or Myanmar value
+          const multilingualField = item[valueField];
+          itemValue = multilingualField.en || multilingualField.mm || multilingualField[currentLanguage];
+          if (field.fieldName === 'accessionGroup') {
+            console.log('🌐 DynamicSelect - accessionGroup multilingual field:', {
+              fieldName: valueField,
+              fieldObject: multilingualField,
+              extractedValue: itemValue
+            });
+          }
+        }
+        
         if (!itemValue) {
           // Fallback to common ID fields
           itemValue = item._id || item.id || item.value || `missing-id-${index}`;
@@ -311,6 +351,7 @@ export function DynamicSelect({
               fieldName: field.fieldName,
               requestedValueField: valueField,
               notFound: `item.${valueField} is null/undefined`,
+              itemObject: item,
               fallingBackTo: itemValue,
               availableFields: Object.keys(item)
             });
