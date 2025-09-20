@@ -75,6 +75,9 @@ export function DynamicExtraActionForm({
   const handleFormSubmit = async (data: FieldValues) => {
     try {
       setIsSubmitting(true);
+      
+      // Debug log the raw form data
+      console.log("🔍 DynamicExtraActionForm - Raw form data before processing:", data);
 
       // Convert form data to FormData for server action
       const formData = new FormData();
@@ -98,6 +101,17 @@ export function DynamicExtraActionForm({
 
       // Add form field data
       Object.entries(data).forEach(([key, value]) => {
+        // Debug specific field
+        if (key === "accessionGroup") {
+          console.log("📌 DynamicExtraActionForm - accessionGroup field:", {
+            key,
+            value,
+            valueType: typeof value,
+            isArray: Array.isArray(value),
+            stringified: String(value)
+          });
+        }
+        
         if (value !== null && value !== undefined) {
           if (typeof value === "object" && value.en !== undefined) {
             // Handle multi-language fields - send as nested JSON object
@@ -112,6 +126,12 @@ export function DynamicExtraActionForm({
           }
         }
       });
+      
+      // Debug log the FormData entries
+      console.log("📤 DynamicExtraActionForm - FormData being submitted:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+      }
 
       await onSubmit(formData);
     } catch (error) {

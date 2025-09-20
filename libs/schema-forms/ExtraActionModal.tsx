@@ -42,6 +42,12 @@ export function ExtraActionModal({
     setIsSubmitting(true);
     
     try {
+      // Debug log the received FormData
+      console.log('📥 ExtraActionModal: Received FormData from form:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+      }
+      
       // Extract item IDs from selected items
       const itemIds = selectedItems.map(item => 
         typeof item === 'string' ? item : (item._id || item.id)

@@ -230,6 +230,14 @@ export async function submitExtraActionForm(
       }
     }
     
+    // Debug log FormData for accessionGroup
+    if (data.accessionGroup) {
+      console.log('🔐 submitExtraActionForm - accessionGroup data:', {
+        value: data.accessionGroup,
+        type: typeof data.accessionGroup
+      });
+    }
+    
     // Handle nested object fields (e.g., displayName.en)
     const processedData: Record<string, any> = {};
     Object.entries(data).forEach(([key, value]) => {
@@ -305,6 +313,16 @@ export async function submitExtraActionForm(
       itemIdentifier,
       actionKey
     });
+    
+    // Debug log cleanedData for accessionGroup
+    if (cleanedData.accessionGroup) {
+      console.log('🎯 submitExtraActionForm - Final accessionGroup being sent:', {
+        value: cleanedData.accessionGroup,
+        type: typeof cleanedData.accessionGroup
+      });
+    }
+    
+    console.log('📤 submitExtraActionForm - Complete cleaned data:', cleanedData);
     
     const response = await httpClient.request<any>(endpoint, {
       method,
