@@ -111,6 +111,7 @@ export function ExtraActionModal({
         }, 5000);
         
         // Mark that data has been changed (will trigger refetch on modal close)
+        console.log('📝 ExtraActionModal - Marking data as changed');
         setIsDataChanged(true);
         
         // Don't call onSuccess here anymore - will call it on modal close if needed
@@ -177,8 +178,14 @@ export function ExtraActionModal({
   // Handle modal close - refetch data if changes were made
   const handleModalClose = (open: boolean) => {
     if (!open) {
+      console.log('🔄 ExtraActionModal - Closing modal:', {
+        isDataChanged,
+        hasOnSuccess: typeof onSuccess === 'function'
+      });
+      
       // If data was changed, trigger refresh before closing
       if (isDataChanged) {
+        console.log('✅ ExtraActionModal - Triggering data refresh');
         onSuccess(); // This will trigger React Query refetch
         setIsDataChanged(false); // Reset the flag
       }

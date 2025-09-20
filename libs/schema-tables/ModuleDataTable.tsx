@@ -662,10 +662,18 @@ export function ModuleDataTable({
     // This is now called only when modal closes (if data was changed)
     // The ExtraActionModal tracks changes and only calls this on close if needed
     
+    console.log('🔄 ModuleDataTable - handleExtraActionSuccess called', {
+      hasOnRefresh: typeof onRefresh === 'function',
+      onRefresh
+    });
+    
     // Trigger data refresh using the onRefresh callback
     if (onRefresh && typeof onRefresh === 'function') {
+      console.log('✅ ModuleDataTable - Calling onRefresh');
       // Call the refresh function to refetch data (usually triggers React Query refetch)
       onRefresh();
+    } else {
+      console.warn('⚠️ ModuleDataTable - No onRefresh callback available');
     }
     
     // Note: The modal stays open for multiple operations
