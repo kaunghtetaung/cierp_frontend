@@ -316,22 +316,48 @@ export async function deleteModuleItemAction(
   id: string
 ): Promise<ActionResponse> {
   try {
-    await deleteModuleItemService(module, id);
+    const result = await deleteModuleItemService(module, id);
+    
+    // Ensure the deletion actually succeeded
+    if (!result) {
+      throw new Error(`Delete operation returned no result for ${module} item ${id}`);
+    }
 
     // Revalidate the module list page
     revalidatePath(`/${module}`);
 
     return {
       success: true,
+      data: result,
     };
   } catch (error) {
     console.error(`Error deleting ${module} item:`, error);
+    
+    // Provide more specific error messages
+    let errorMessage = `Failed to delete ${module} item`;
+    
+    if (error instanceof Error) {
+      // Check for network/connection errors
+      if (error.message.includes('fetch') || 
+          error.message.includes('ECONNREFUSED') || 
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('network') ||
+          error.message.includes('connect')) {
+        errorMessage = `Cannot connect to server. Please ensure the backend service is running.`;
+      } else if (error.message.includes('timeout')) {
+        errorMessage = `Request timed out. The server may be slow or unresponsive.`;
+      } else if (error.message.includes('404')) {
+        errorMessage = `Item not found or already deleted.`;
+      } else if (error.message.includes('403') || error.message.includes('401')) {
+        errorMessage = `Permission denied. You may not have access to delete this item.`;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : `Failed to delete ${module} item`,
+      error: errorMessage,
     };
   }
 }

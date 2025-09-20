@@ -196,13 +196,26 @@ export function useDeleteModuleItem(module: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => deleteModuleItemAction(module, id),
+    mutationFn: async (id: string) => {
+      const result = await deleteModuleItemAction(module, id);
+      
+      // Throw error if the action failed
+      if (!result.success) {
+        throw new Error(result.error || `Failed to delete ${module} item`);
+      }
+      
+      return result;
+    },
     onSuccess: async () => {
       // Invalidate all list queries for this module
       await queryClient.invalidateQueries({ 
         queryKey: [...moduleKeys.lists(), module],
         exact: false 
       });
+    },
+    onError: (error) => {
+      console.error(`Delete mutation error for ${module}:`, error);
+      // The error will be propagated to the component
     },
   });
 }
@@ -273,13 +286,21 @@ export function useBulkModuleOperation(module: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: BulkOperationParams) =>
-      bulkModuleOperationAction(
+    mutationFn: async (params: BulkOperationParams) => {
+      const result = await bulkModuleOperationAction(
         module,
         params.operation,
         params.ids,
         params.data
-      ),
+      );
+      
+      // Throw error if the action failed
+      if (!result.success) {
+        throw new Error(result.error || `Failed to perform bulk ${params.operation}`);
+      }
+      
+      return result;
+    },
     onSuccess: async (data, variables) => {
       // Invalidate all list queries for this module
       await queryClient.invalidateQueries({ 
@@ -294,6 +315,10 @@ export function useBulkModuleOperation(module: string) {
           exact: false 
         });
       }
+    },
+    onError: (error, variables) => {
+      console.error(`Bulk ${variables.operation} mutation error for ${module}:`, error);
+      // The error will be propagated to the component
     },
   });
 }

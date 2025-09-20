@@ -678,9 +678,18 @@ export function ModuleDataTable({
     if (!pendingDeleteId) return;
 
     try {
-      await deleteItemMutation.mutateAsync(pendingDeleteId);
+      const result = await deleteItemMutation.mutateAsync(pendingDeleteId);
+      
+      // Check if the mutation actually succeeded
+      if (!result || deleteItemMutation.isError) {
+        throw new Error(
+          currentLanguage === "mm"
+            ? "ဖျက်ခြင်း မအောင်မြင်ပါ - ဆာဗာနှင့် ဆက်သွယ်၍မရပါ"
+            : "Delete failed - Unable to connect to server"
+        );
+      }
 
-      // Show success toast
+      // Only show success toast if operation truly succeeded
       const successMessage =
         currentLanguage === "mm"
           ? `${getLocalizedText(
@@ -693,20 +702,34 @@ export function ModuleDataTable({
             )} deleted successfully!`;
 
       toastSuccess(successMessage);
+      
+      // Refresh the data after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error("Failed to delete item:", error);
 
-      // Show error toast
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : currentLanguage === "mm"
-          ? "ဖျက်ခြင်း မအောင်မြင်ပါ"
-          : "Failed to delete item";
+      // Show error toast with more specific message
+      let errorMessage = currentLanguage === "mm"
+        ? "ဖျက်ခြင်း မအောင်မြင်ပါ"
+        : "Failed to delete item";
+      
+      if (error instanceof Error) {
+        // Check for network errors
+        if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('connect')) {
+          errorMessage = currentLanguage === "mm"
+            ? "ဆာဗာနှင့် ဆက်သွယ်၍မရပါ - backend service စစ်ဆေးပါ"
+            : "Cannot connect to server - Please check if backend service is running";
+        } else {
+          errorMessage = error.message;
+        }
+      }
 
       toastError(errorMessage);
     } finally {
       setPendingDeleteId(null);
+      setDeleteConfirmOpen(false);
     }
   };
 
@@ -718,11 +741,21 @@ export function ModuleDataTable({
   const executeBulkDelete = async () => {
     try {
       const ids = selectedItems.map((item) => item._id || item.id);
-      await bulkOperationMutation.mutateAsync({
+      const result = await bulkOperationMutation.mutateAsync({
         operation: "delete",
         ids: ids,
       });
+      
+      // Check if the mutation actually succeeded
+      if (!result || bulkOperationMutation.isError) {
+        throw new Error(
+          currentLanguage === "mm"
+            ? "အစုလိုက် ဖျက်ခြင်း မအောင်မြင်ပါ - ဆာဗာနှင့် ဆက်သွယ်၍မရပါ"
+            : "Bulk delete failed - Unable to connect to server"
+        );
+      }
 
+      // Only show success if operation truly succeeded
       // Clear selection and show success toast
       setSelectedItems([]);
 
@@ -734,18 +767,33 @@ export function ModuleDataTable({
             } deleted successfully!`;
 
       toastSuccess(successMessage);
+      
+      // Refresh the data after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error("Failed to delete items:", error);
 
-      // Show error toast
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : currentLanguage === "mm"
-          ? "အစုလိုက် ဖျက်ခြင်း မအောင်မြင်ပါ"
-          : "Failed to delete items";
+      // Show error toast with more specific message
+      let errorMessage = currentLanguage === "mm"
+        ? "အစုလိုက် ဖျက်ခြင်း မအောင်မြင်ပါ"
+        : "Failed to delete items";
+      
+      if (error instanceof Error) {
+        // Check for network errors
+        if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('connect')) {
+          errorMessage = currentLanguage === "mm"
+            ? "ဆာဗာနှင့် ဆက်သွယ်၍မရပါ - backend service စစ်ဆေးပါ"
+            : "Cannot connect to server - Please check if backend service is running";
+        } else {
+          errorMessage = error.message;
+        }
+      }
 
       toastError(errorMessage);
+    } finally {
+      setBulkDeleteConfirmOpen(false);
     }
   };
 
