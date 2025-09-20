@@ -110,7 +110,12 @@ export function DynamicExtraActionFormWithSections({
 
       // Add editing item ID if editing
       if (editingItem) {
-        formData.append("itemId", editingItem.id);
+        // For update, pass the item identifier (could be accessionNo, id, or other field)
+        formData.append("itemId", editingItem.id || editingItem.accessionNo);
+        // Also append accessionNo if it exists (for accession management)
+        if (editingItem.accessionNo) {
+          formData.append("accessionNo", editingItem.accessionNo);
+        }
         formData.append("action", "update");
       } else {
         formData.append("action", "add");
@@ -166,7 +171,12 @@ export function DynamicExtraActionFormWithSections({
       formData.append("actionKey", action.actionKey);
       formData.append("moduleSlug", moduleSlug || "");
       formData.append("id", selectedItems?.[0] || "");
-      formData.append("itemId", item.id);
+      // Pass item identifier (could be accessionNo, id, or other field)
+      formData.append("itemId", item.id || item.accessionNo);
+      // Also append accessionNo if it exists (for accession management)
+      if (item.accessionNo) {
+        formData.append("accessionNo", item.accessionNo);
+      }
       formData.append("action", "delete");
 
       await onSubmit(formData);

@@ -62,7 +62,9 @@ export function ExtraActionModal({
           module.slug,
           action.actionId,
           itemIds[0],
-          formData
+          formData,
+          actionForm?.endpoint,  // Pass endpoint from action schema
+          actionForm?.method     // Pass HTTP method from action schema
         );
       } else if (itemIds.length > 1) {
         // Bulk action

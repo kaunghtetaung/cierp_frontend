@@ -198,13 +198,15 @@ export async function fetchFormTableDataAction(
 
 /**
  * Server action to submit extra action forms
- * This follows the same pattern as executeExtraActionAction but uses httpClient directly
+ * Uses the endpoint configuration from the backend schema
  */
 export async function submitExtraActionForm(
   moduleSlug: string,
   actionKey: string,
   itemId: string,
-  formData: FormData
+  formData: FormData,
+  actionEndpoint?: string,  // Endpoint from action schema (e.g., "/:id/accessions")
+  actionMethod?: string     // HTTP method from action schema
 ): Promise<ActionResponse> {
   try {
     const { httpClient, context } = await createHttpClient();
@@ -251,11 +253,54 @@ export async function submitExtraActionForm(
       }
     });
     
-    // Construct endpoint for extra action
-    const endpoint = `/${context.appName}/${moduleSlug}/${itemId}/actions/${actionKey}`;
+    // Extract operation type and item identifier if present
+    const operation = processedData.action || 'create';  // 'add', 'update', 'delete'
+    const itemIdentifier = processedData.itemId || processedData.accessionNo;  // For update/delete
+    
+    // Construct endpoint based on backend schema or fallback to legacy pattern
+    let endpoint: string;
+    let method: string;
+    
+    if (actionEndpoint) {
+      // Use backend-supplied endpoint pattern
+      endpoint = actionEndpoint.replace(':id', itemId);
+      
+      // Handle CRUD operations for table sections
+      if (operation === 'update' && itemIdentifier) {
+        endpoint = `${endpoint}/${itemIdentifier}`;
+        method = 'PATCH';
+      } else if (operation === 'delete' && itemIdentifier) {
+        endpoint = `${endpoint}/${itemIdentifier}`;
+        method = 'DELETE';
+      } else if (operation === 'add') {
+        // Some backends may use /add suffix for explicit add operations
+        if (!endpoint.endsWith('/add')) {
+          // Check if backend expects /add suffix (could be configured)
+          // For now, use base endpoint for add
+        }
+        method = actionMethod || 'POST';
+      } else {
+        method = actionMethod || 'POST';
+      }
+      
+      // Add app context and module
+      endpoint = `/${context.appName}/${moduleSlug}${endpoint}`;
+    } else {
+      // Fallback to legacy pattern for backward compatibility
+      endpoint = `/${context.appName}/${moduleSlug}/${itemId}/actions/${actionKey}`;
+      method = 'POST';
+    }
+    
+    console.log('📡 Submitting extra action:', {
+      endpoint,
+      method,
+      operation,
+      itemIdentifier,
+      actionKey
+    });
     
     const response = await httpClient.request<any>(endpoint, {
-      method: "POST",
+      method,
       body: processedData,
       tenantId: context.tenantId,
       userSessionId: context.userSessionId,
