@@ -15,6 +15,7 @@ import { Label } from "@repo/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui/components/select";
 import { getLocalizedText } from "@repo/utils";
 import { IconComponent } from "@repo/ui";
+import { cn } from "@repo/utils";
 import type { QuickEntryConfig, QuickEntryField, MultilingualText } from "@repo/types";
 
 interface QuickEntryDialogProps {
@@ -145,10 +146,10 @@ export function QuickEntryDialog({
       case 'text':
       case 'email':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName}>
+          <div key={field.fieldName} className="space-y-2">
+            <Label htmlFor={field.fieldName} className="text-sm font-medium">
               {getLocalizedText(field.label, currentLanguage)}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
             </Label>
             <Input
               id={field.fieldName}
@@ -156,39 +157,49 @@ export function QuickEntryDialog({
               value={value as string}
               onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
               placeholder={field.placeHolder}
-              className={error ? 'border-red-500' : ''}
+              className={cn(
+                "w-full",
+                error && "border-destructive focus:ring-destructive"
+              )}
               disabled={isSubmitting}
             />
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && (
+              <p className="text-xs text-destructive mt-1">{error}</p>
+            )}
           </div>
         );
         
       case 'textArea':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName}>
+          <div key={field.fieldName} className="space-y-2">
+            <Label htmlFor={field.fieldName} className="text-sm font-medium">
               {getLocalizedText(field.label, currentLanguage)}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
             </Label>
             <Textarea
               id={field.fieldName}
               value={value as string}
               onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
               placeholder={field.placeHolder}
-              className={error ? 'border-red-500' : ''}
+              className={cn(
+                "w-full min-h-[80px] resize-none",
+                error && "border-destructive focus:ring-destructive"
+              )}
               disabled={isSubmitting}
               rows={3}
             />
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && (
+              <p className="text-xs text-destructive mt-1">{error}</p>
+            )}
           </div>
         );
         
       case 'number':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName}>
+          <div key={field.fieldName} className="space-y-2">
+            <Label htmlFor={field.fieldName} className="text-sm font-medium">
               {getLocalizedText(field.label, currentLanguage)}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
             </Label>
             <Input
               id={field.fieldName}
@@ -196,27 +207,35 @@ export function QuickEntryDialog({
               value={value as number}
               onChange={(e) => handleFieldChange(field.fieldName, e.target.value ? Number(e.target.value) : '')}
               placeholder={field.placeHolder}
-              className={error ? 'border-red-500' : ''}
+              className={cn(
+                "w-full",
+                error && "border-destructive focus:ring-destructive"
+              )}
               disabled={isSubmitting}
             />
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && (
+              <p className="text-xs text-destructive mt-1">{error}</p>
+            )}
           </div>
         );
         
       case 'select':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName}>
+          <div key={field.fieldName} className="space-y-2">
+            <Label htmlFor={field.fieldName} className="text-sm font-medium">
               {getLocalizedText(field.label, currentLanguage)}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
             </Label>
             <Select
               value={value as string}
               onValueChange={(val) => handleFieldChange(field.fieldName, val)}
               disabled={isSubmitting}
             >
-              <SelectTrigger className={error ? 'border-red-500' : ''}>
-                <SelectValue placeholder={field.placeHolder || 'Select...'} />
+              <SelectTrigger className={cn(
+                "w-full",
+                error && "border-destructive focus:ring-destructive"
+              )}>
+                <SelectValue placeholder={field.placeHolder || 'Select an option...'} />
               </SelectTrigger>
               <SelectContent>
                 {field.options?.map((option) => (
@@ -226,7 +245,9 @@ export function QuickEntryDialog({
                 ))}
               </SelectContent>
             </Select>
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && (
+              <p className="text-xs text-destructive mt-1">{error}</p>
+            )}
           </div>
         );
         
@@ -244,11 +265,11 @@ export function QuickEntryDialog({
   // Determine modal size class based on config
   const getSizeClass = () => {
     switch (config.modalSize) {
-      case 'sm': return 'w-full max-w-sm';
-      case 'md': return 'w-full max-w-md';
-      case 'lg': return 'w-full max-w-lg';
-      case 'xl': return 'w-full max-w-xl';
-      default: return 'w-full max-w-sm';
+      case 'sm': return 'sm:max-w-sm';
+      case 'md': return 'sm:max-w-md';
+      case 'lg': return 'sm:max-w-lg';
+      case 'xl': return 'sm:max-w-xl';
+      default: return 'sm:max-w-sm';
     }
   };
 
@@ -256,31 +277,33 @@ export function QuickEntryDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className={getSizeClass()}>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="grid gap-4 py-4">
           {config.fields.map(renderField)}
           
           {submitMessage && (
             <div
-              className={`p-2 rounded text-sm ${
+              className={cn(
+                "p-3 rounded-md text-sm font-medium",
                 submitMessage.type === 'success'
-                  ? 'bg-green-50 text-green-700 border border-green-200'
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-destructive/10 text-destructive border border-destructive/20'
+              )}
             >
               {submitMessage.text}
             </div>
           )}
         </div>
         
-        <DialogFooter className="flex justify-between">
+        <DialogFooter className="flex flex-row justify-end gap-2">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
+            className="min-w-[100px]"
           >
             {currentLanguage === 'mm' ? 'ပယ်ဖျက်မည်' : 'Cancel'}
           </Button>
@@ -288,14 +311,18 @@ export function QuickEntryDialog({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
+            className="min-w-[100px]"
           >
             {isSubmitting ? (
               <>
                 <IconComponent name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
-                {currentLanguage === 'mm' ? 'သိမ်းဆည်းနေသည်...' : 'Saving...'}
+                {currentLanguage === 'mm' ? 'သိမ်းနေသည်...' : 'Saving...'}
               </>
             ) : (
-              submitText
+              <>
+                <IconComponent name="Check" className="mr-2 h-4 w-4" />
+                {submitText}
+              </>
             )}
           </Button>
         </DialogFooter>

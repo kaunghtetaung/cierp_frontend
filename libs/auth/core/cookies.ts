@@ -1,5 +1,6 @@
 // Authentication cookie utilities with root domain support
 import { NextResponse } from "next/server";
+import { extractBaseDomain } from '@repo/utils/common/url';
 
 /**
  * Get root domain for cookie sharing across subdomains
@@ -8,23 +9,16 @@ import { NextResponse } from "next/server";
 export function getRootDomain(hostname: string): string {
   const cleanHostname = hostname.split(":")[0]; // Remove port
   
-  // Handle crystal-image.net domains specifically
-  if (cleanHostname.includes('.crystal-image.net')) {
-    return '.crystal-image.net';
+  // For localhost and IPs, return as-is (no dot prefix needed)
+  if (cleanHostname.includes('localhost') || cleanHostname.includes('127.0.0.')) {
+    return cleanHostname;
   }
   
-  // For other domains, try to extract root domain
-  const parts = cleanHostname.split('.');
-  if (parts.length >= 2) {
-    return `.${parts.slice(-2).join('.')}`;
-  }
+  // Use extractBaseDomain to properly handle multi-part TLDs (.edu.mm, .co.uk, etc.)
+  const baseDomain = extractBaseDomain(cleanHostname);
   
-  // Fallback for localhost and other development domains
-  if (cleanHostname.includes('localhost') || cleanHostname.includes('127.0.0.1')) {
-    return cleanHostname; // Don't use dot prefix for localhost
-  }
-  
-  return cleanHostname;
+  // Add dot prefix for cookie domain attribute
+  return `.${baseDomain}`;
 }
 
 /**

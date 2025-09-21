@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -135,6 +136,15 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+  
+  // Add New button loading state
+  const [isAddNewLoading, setIsAddNewLoading] = React.useState(false);
+  const router = useRouter();
+  
+  // Reset loading state when component mounts (in case user navigated back)
+  React.useEffect(() => {
+    setIsAddNewLoading(false);
+  }, []);
 
   // Title management state
   const [selectedTitle, setSelectedTitle] = React.useState<string>(printTitle);
@@ -1195,17 +1205,32 @@ export function DataTable<TData, TValue>({
 
             {/* Add New Button */}
             {addNewRoute && (
-              <Link href={addNewRoute}>
-                <Button
-                  variant="default"
-                  size="sm"
-                  title="Add New Record"
-                  className="h-8 bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4 sm:mr-1" />
-                  Add New
-                </Button>
-              </Link>
+              <Button
+                variant="default"
+                size="sm"
+                title="Add New Record"
+                className="h-8 bg-primary hover:bg-primary/90"
+                disabled={isAddNewLoading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!isAddNewLoading) {
+                    setIsAddNewLoading(true);
+                    router.push(addNewRoute);
+                  }
+                }}
+              >
+                {isAddNewLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 sm:mr-1 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 sm:mr-1" />
+                    Add New
+                  </>
+                )}
+              </Button>
             )}
 
             {/* Header Pagination Controls - Right of Add New Button */}

@@ -829,6 +829,15 @@ export function TypeaheadDynamicSelect({
           if (isMultiple) {
             const currentValues = Array.isArray(processedValue) ? processedValue : [];
             onChange([...currentValues, String(newItemId)]);
+            
+            // Cache the label for multi-select badge display
+            if (typeof window !== 'undefined' && field.fieldName) {
+              const displayText = typeof formattedLabel === 'string' 
+                ? formattedLabel 
+                : formattedLabel[currentLanguage] || formattedLabel.en || String(newItemId);
+              const cacheKey = `typeahead_label_${field.fieldName}_${String(newItemId)}`;
+              localStorage.setItem(cacheKey, displayText);
+            }
           } else {
             // Set the value (ID)
             onChange(String(newItemId));
@@ -838,6 +847,12 @@ export function TypeaheadDynamicSelect({
               : formattedLabel[currentLanguage] || formattedLabel.en || String(newItemId);
             setDisplayValue(displayText);
             setSelectedOption(newOption);
+            
+            // Cache the label for single select
+            if (typeof window !== 'undefined' && field.fieldName) {
+              const cacheKey = `typeahead_label_${field.fieldName}_${String(newItemId)}`;
+              localStorage.setItem(cacheKey, displayText);
+            }
           }
         }
         
