@@ -32,15 +32,9 @@ export function DynamicExtraActionFormWithSections({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'form'>('table'); // Default to table view
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
-  console.log(`🏗️ DynamicExtraActionFormWithSections: Rendering form for action "${action.actionKey}"`, {
-    actionKey: action.actionKey,
-    hasSections: !!(action as any).sections,
-    hasFormFields: !!action.formFields?.length,
-    selectedItemsCount: selectedItems?.length,
-    selectedItems: selectedItems,
-    moduleSlug: moduleSlug,
-  });
 
   // Check if this is a sectioned form
   const sections = (action as any).sections;
@@ -48,7 +42,6 @@ export function DynamicExtraActionFormWithSections({
 
   // If no sections, check for form fields (backward compatibility)
   if (!hasSections && (!action.formFields || action.formFields.length === 0)) {
-    console.error(`❌ DynamicExtraActionFormWithSections: No sections or form fields for action "${action.actionKey}"`);
     return (
       <div className="p-4 text-center">
         <p className="text-muted-foreground">
@@ -110,12 +103,20 @@ export function DynamicExtraActionFormWithSections({
 
       // Add editing item ID if editing
       if (editingItem) {
-        // For update, pass the item identifier (could be accessionNo, id, or other field)
-        formData.append("itemId", editingItem.id || editingItem.accessionNo);
+        // For update, pass the item identifier (prefer _id, then id, then accessionNo)
+        const itemIdentifier = editingItem._id || editingItem.id || editingItem.accessionNo;
+        formData.append("itemId", itemIdentifier);
+        
         // Also append accessionNo if it exists (for accession management)
         if (editingItem.accessionNo) {
           formData.append("accessionNo", editingItem.accessionNo);
         }
+        
+        // IMPORTANT: Ensure _id is included in the form data if it exists
+        if (!data._id && editingItem._id) {
+          data._id = editingItem._id;
+        }
+        
         formData.append("action", "update");
       } else {
         formData.append("action", "add");
@@ -132,7 +133,8 @@ export function DynamicExtraActionFormWithSections({
             value.forEach((item) => {
               // Extract ID if item is an object, otherwise use as-is
               if (typeof item === 'object' && (item.id || item._id || item.value)) {
-                formData.append(key, String(item.id || item._id || item.value));
+                const extractedValue = String(item.id || item._id || item.value);
+                formData.append(key, extractedValue);
               } else {
                 formData.append(key, String(item));
               }
@@ -146,12 +148,32 @@ export function DynamicExtraActionFormWithSections({
 
       await onSubmit(formData);
       
+      // Show success message
+      setMessage({ 
+        type: 'success', 
+        text: editingItem 
+          ? (currentLanguage === "mm" ? "အောင်မြင်စွာ မွမ်းမံပြီးပါပြီ" : "Successfully updated")
+          : (currentLanguage === "mm" ? "အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ" : "Successfully added")
+      });
+      
       // Reset form and refresh table
       reset();
       setEditingItem(null);
       setRefreshTrigger(prev => prev + 1);
+      
+      // Switch back to table view after successful save
+      setViewMode('table');
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage(null), 5000);
     } catch (error) {
       console.error("Form submission error:", error);
+      setMessage({ 
+        type: 'error', 
+        text: currentLanguage === "mm" ? "အမှားရှိနေပါသည်" : "An error occurred" 
+      });
+      // Clear error message after 7 seconds
+      setTimeout(() => setMessage(null), 7000);
     } finally {
       setIsSubmitting(false);
     }
@@ -159,10 +181,18 @@ export function DynamicExtraActionFormWithSections({
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
-    // Populate form with item data
+    // Populate form with item data including _id
     Object.keys(item).forEach(key => {
       form.setValue(key, item[key]);
     });
+    
+    // Explicitly ensure _id is set if it exists
+    if (item._id) {
+      form.setValue('_id', item._id);
+    }
+    
+    // Switch to form view for editing
+    setViewMode('form');
   };
 
   const handleDelete = async (item: any) => {
@@ -191,12 +221,12 @@ export function DynamicExtraActionFormWithSections({
     const formSection = sections.find((s: any) => s.type === "form");
     const tableSection = sections.find((s: any) => s.type === "table");
 
-    // If we have both form and table sections, display them vertically (form on top, table below)
+    // If we have both form and table sections, display them with toggle
     if (formSection && tableSection) {
       return (
-        <div className="space-y-6">
-          {/* Form Header */}
-          {!hideHeader && (action.title || action.description) && (
+        <div className="flex flex-col gap-4">
+          {/* Form Header - Only show description if available */}
+          {!hideHeader && action.description && (
             <div className="flex items-start gap-3">
               {action.iconName && (
                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -207,102 +237,144 @@ export function DynamicExtraActionFormWithSections({
                 </div>
               )}
               <div>
-                {action.title && (
-                  <h2 className="text-lg font-semibold">
-                    {getLocalizedText(action.title, currentLanguage)}
-                  </h2>
-                )}
-                {action.description && (
-                  <p className="text-muted-foreground text-sm mt-1">
-                    {getLocalizedText(action.description, currentLanguage)}
-                  </p>
-                )}
+                <p className="text-muted-foreground text-sm">
+                  {getLocalizedText(action.description, currentLanguage)}
+                </p>
               </div>
             </div>
           )}
 
-          {/* Form Section */}
-          <div className="space-y-4">
-            {formSection.title && (
-              <h3 className="text-base font-medium">
-                {getLocalizedText(formSection.title, currentLanguage)}
-              </h3>
-            )}
-            
-            <Form {...form}>
-              <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-                <div className={formSection.layout === "grid" && formSection.columns ? 
-                  `grid grid-cols-${formSection.columns} gap-4` : "space-y-4"}>
-                  {formSection.fields.map((field: any) =>
-                    <FormFieldRenderer
-                      key={field.fieldName}
-                      field={field}
-                      currentLanguage={currentLanguage}
-                      isVerticalLayout={isVerticalLayout}
-                      errors={errors}
-                      watch={watch}
-                    />
-                  )}
-                </div>
+          {/* Message Display */}
+          {message && (
+            <div className={`p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 ${
+              message.type === 'success' 
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+            }`}>
+              <IconComponent 
+                name={message.type === 'success' ? 'CheckCircle' : 'AlertCircle'} 
+                className="w-5 h-5 flex-shrink-0"
+              />
+              <span className="text-sm font-medium">{message.text}</span>
+            </div>
+          )}
 
-                <div className="flex justify-end gap-3">
-                  {editingItem && (
+          {/* View Toggle - Show appropriate view based on state */}
+          {viewMode === 'table' ? (
+            <div className="space-y-4">
+              {/* Add New Button */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    setEditingItem(null);
+                    reset();
+                    setViewMode('form');
+                  }}
+                  size="default"
+                  variant="default"
+                >
+                  <IconComponent name="Plus" className="w-4 h-4 mr-2" />
+                  {currentLanguage === "mm" ? "အသစ်ထည့်မည်" : "Add New"}
+                </Button>
+              </div>
+
+              {/* Table Section */}
+              <FormTableSection
+                section={tableSection}
+                currentLanguage={currentLanguage}
+                selectedItemId={selectedItems?.[0]}
+                moduleSlug={moduleSlug}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                refreshTrigger={refreshTrigger}
+              />
+            </div>
+          ) : (
+            /* Form Section */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold">
+                  {editingItem 
+                    ? (currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Edit Item")
+                    : (formSection.title && getLocalizedText(formSection.title, currentLanguage))
+                  }
+                </h3>
+                <Button
+                  onClick={() => {
+                    setEditingItem(null);
+                    reset();
+                    setViewMode('table');
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <IconComponent name="ArrowLeft" className="w-4 h-4 mr-2" />
+                  {currentLanguage === "mm" ? "နောက်သို့" : "Back"}
+                </Button>
+              </div>
+              
+              <Form {...form}>
+                <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {formSection.fields.map((field: any) =>
+                      <div key={field.fieldName} className="min-w-0">
+                        <FormFieldRenderer
+                          field={field}
+                          currentLanguage={currentLanguage}
+                          isVerticalLayout={false}
+                          errors={errors}
+                          watch={watch}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 flex gap-3 justify-end">
                     <Button
                       type="button"
                       variant="outline"
+                      size="default"
                       onClick={() => {
                         setEditingItem(null);
                         reset();
+                        setViewMode('table');
                       }}
                     >
-                      {currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel Edit"}
+                      <IconComponent name="X" className="w-4 h-4 mr-2" />
+                      {currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
                     </Button>
-                  )}
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    variant={formSection.submitButton?.style || "primary"}
-                  >
-                    {isSubmitting && (
-                      <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
-                    )}
-                    {editingItem
-                      ? (currentLanguage === "mm" ? "ပြင်ဆင်မည်" : "Update")
-                      : getLocalizedText(formSection.submitButton?.label || 
-                        { en: "Add", mm: "ထည့်သွင်းမည်" }, currentLanguage)
-                    }
-                  </Button>
-                </div>
-              </form>
-            </Form>
-            
-            {/* Debug Panel for Form Section */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-3 bg-muted/30 rounded-lg font-mono text-xs">
-                <div className="text-muted-foreground mb-1">Form Section Values:</div>
-                <pre className="whitespace-pre-wrap break-words">
-                  {JSON.stringify(watch(), null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          {/* Separator */}
-          <div className="border-t pt-6" />
-
-          {/* Table Section */}
-          <FormTableSection
-            section={tableSection}
-            currentLanguage={currentLanguage}
-            selectedItemId={selectedItems?.[0]}
-            moduleSlug={moduleSlug}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            refreshTrigger={refreshTrigger}
-          />
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      size="default"
+                      variant="default"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+                          {currentLanguage === "mm" ? "သိမ်းဆည်းနေသည်..." : "Saving..."}
+                        </>
+                      ) : editingItem ? (
+                        <>
+                          <IconComponent name="Save" className="w-4 h-4 mr-2" />
+                          {currentLanguage === "mm" ? "မွမ်းမံမည်" : "Update"}
+                        </>
+                      ) : (
+                        <>
+                          <IconComponent name="Check" className="w-4 h-4 mr-2" />
+                          {getLocalizedText(formSection.submitButton?.label || 
+                            { en: "Save", mm: "သိမ်းမည်" }, currentLanguage)}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          )}
 
           {/* Close Button */}
-          <div className="flex justify-end pt-4 border-t">
+          <div className="flex justify-end pt-4">
             <Button
               type="button"
               variant="outline"
@@ -322,107 +394,72 @@ export function DynamicExtraActionFormWithSections({
   return (
     <div className="space-y-6">
       {/* Form Header */}
-      {!hideHeader && (action.title || action.description) && (
-        <div className="flex items-start gap-3">
+      {!hideHeader && action.description && (
+        <div className="flex items-start gap-3 pb-4">
           {action.iconName && (
-            <div className="p-2 bg-primary/10 rounded-lg">
+            <div className="p-2.5 bg-primary/10 rounded-lg">
               <IconComponent
                 name={action.iconName}
                 className="w-5 h-5 text-primary"
               />
             </div>
           )}
-          <div>
-            {action.title && (
-              <h2 className="text-lg font-semibold">
-                {getLocalizedText(action.title, currentLanguage)}
-              </h2>
-            )}
-            {action.description && (
-              <p className="text-muted-foreground text-sm mt-1">
-                {getLocalizedText(action.description, currentLanguage)}
-              </p>
-            )}
+          <div className="flex-1">
+            <p className="text-muted-foreground text-sm">
+              {getLocalizedText(action.description, currentLanguage)}
+            </p>
           </div>
         </div>
       )}
 
       {/* Form Fields */}
       <Form {...form}>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          <div className={isVerticalLayout ? "space-y-4" : "space-y-4"}>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4 items-start">
             {formFields.map((field: any) =>
-              <FormFieldRenderer
-                key={field.fieldName}
-                field={field}
-                currentLanguage={currentLanguage}
-                isVerticalLayout={isVerticalLayout}
-                errors={errors}
-                watch={watch}
-              />
+              <div key={field.fieldName} className="min-w-0">
+                <FormFieldRenderer
+                  field={field}
+                  currentLanguage={currentLanguage}
+                  isVerticalLayout={false}
+                  errors={errors}
+                  watch={watch}
+                />
+              </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="default"
               onClick={onCancel}
               disabled={isSubmitting}
             >
+              <IconComponent name="X" className="w-4 h-4 mr-2" />
               {currentLanguage === "mm" ? "မလုပ်တော့ပါ" : "Cancel"}
             </Button>
             <Button
               type="submit"
+              size="default"
               disabled={isSubmitting}
             >
-              {isSubmitting && (
-                <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+              {isSubmitting ? (
+                <>
+                  <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+                  {currentLanguage === "mm" ? "သိမ်းဆည်းနေသည်..." : "Saving..."}
+                </>
+              ) : (
+                <>
+                  <IconComponent name="Check" className="w-4 h-4 mr-2" />
+                  {currentLanguage === "mm" ? "သိမ်းမည်" : "Submit"}
+                </>
               )}
-              {currentLanguage === "mm" ? "သိမ်းမည်" : "Submit"}
             </Button>
           </div>
         </form>
       </Form>
-      
-      {/* Debug Panel - Shows current form data */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 border-t pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-              <IconComponent name="Bug" className="w-4 h-4" />
-              Debug: Form Data Preview
-            </h3>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs overflow-x-auto">
-              <div className="text-muted-foreground mb-2">Form values that will be submitted:</div>
-              <pre className="whitespace-pre-wrap break-words">
-                {JSON.stringify(watch(), null, 2)}
-              </pre>
-            </div>
-            
-            {/* Highlight specific fields */}
-            {watch('accessionGroup') && (
-              <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
-                <div className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
-                  ⚠️ AccessionGroup Field Value:
-                </div>
-                <div className="font-mono text-xs">
-                  Type: {typeof watch('accessionGroup')}<br/>
-                  Value: {JSON.stringify(watch('accessionGroup'))}<br/>
-                  Expected: Should be the 'name' value, not ID
-                </div>
-              </div>
-            )}
-            
-            <div className="text-xs text-muted-foreground">
-              <strong>Note:</strong> This panel shows the raw form data that will be sent on submission.
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

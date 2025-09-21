@@ -15,8 +15,10 @@ import {
 import { Badge } from "@repo/ui";
 import { cn } from "@repo/utils";
 import { getModuleReferenceAction } from "@repo/app-modules/server-actions";
-import type { FormField } from "@repo/types";
+import type { FormField, QuickEntryConfig } from "@repo/types";
 import type { MultilingualText } from "@repo/types";
+import { QuickEntryDialog } from "./components/QuickEntryDialog";
+import { submitQuickEntryForm } from "./server-actions/form-actions";
 
 interface DynamicSelectProps {
   field: FormField;
@@ -100,6 +102,7 @@ export function DynamicSelect({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [quickEntryOpen, setQuickEntryOpen] = useState(false);
   const dropdownConfig = field.dropdownConfig!;
   const isMultiple = dropdownConfig.multiple || field.fieldType === "multiSelect";
   
@@ -217,11 +220,9 @@ export function DynamicSelect({
   const fetchOptions = useCallback(async () => {
     // Prevent concurrent requests
     if (isFetching.current || loading) {
-      console.log(`🚫 DynamicSelect[${field.fieldName}#${instanceId}]: Skipping fetch - already in progress`);
       return;
     }
 
-    console.log(`🔍 DynamicSelect[${field.fieldName}#${instanceId}]: Starting fetch`);
     
     // Mark as fetching to prevent concurrent calls
     isFetching.current = true;
@@ -253,13 +254,6 @@ export function DynamicSelect({
       // Extract serviceName from dataSource or dropdownConfig
       const serviceName = field.dataSource?.serviceName || dropdownConfig?.serviceName;
       
-      console.log('🔍 DynamicSelect - API call config:', {
-        fieldName: field.fieldName,
-        module,
-        serviceName,
-        dropdownConfig,
-        dataSource: field.dataSource
-      });
       
       // Use server action instead of direct fetch
       const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName || undefined);
@@ -276,16 +270,6 @@ export function DynamicSelect({
         ? responseData 
         : (responseData?.data || responseData?.items || []);
       
-      // Debug log for accessionGroup API response
-      if (field.fieldName === 'accessionGroup' && data.length > 0) {
-        console.log('📊 DynamicSelect - accessionGroup API response sample:', {
-          firstItem: data[0],
-          availableFields: Object.keys(data[0]),
-          hasNameField: 'name' in data[0],
-          nameValue: data[0].name,
-          idValue: data[0]._id || data[0].id
-        });
-      }
       
       // Transform API response to LocalSelectOption format
       const transformedOptions: LocalSelectOption[] = data.map((item: ApiOption, index: number) => {
@@ -308,21 +292,6 @@ export function DynamicSelect({
           return obj[field];
         };
         
-        // Debug log for accessionGroup field
-        if (field.fieldName === 'accessionGroup') {
-          console.log('🎯 DynamicSelect - accessionGroup configuration:', {
-            fieldName: field.fieldName,
-            valueField,
-            labelField,
-            dropdownConfigValueField: dropdownConfig.valueField,
-            dataSourceValueField: field.dataSource?.valueField,
-            item,
-            itemNameField: item.name,
-            itemIdField: item.id || item._id,
-            extractedValue: item[valueField],
-            willFallback: !item[valueField]
-          });
-        }
         
         // Extract value using configured field (with support for nested paths)
         let itemValue = getFieldValue(item, valueField);
@@ -332,30 +301,12 @@ export function DynamicSelect({
           // If the field is a multilingual object, use the English or Myanmar value
           const multilingualField = item[valueField];
           itemValue = multilingualField.en || multilingualField.mm || multilingualField[currentLanguage];
-          if (field.fieldName === 'accessionGroup') {
-            console.log('🌐 DynamicSelect - accessionGroup multilingual field:', {
-              fieldName: valueField,
-              fieldObject: multilingualField,
-              extractedValue: itemValue
-            });
-          }
         }
         
         if (!itemValue) {
           // Fallback to common ID fields
           itemValue = item._id || item.id || item.value || `missing-id-${index}`;
           
-          // Debug log the fallback for accessionGroup
-          if (field.fieldName === 'accessionGroup') {
-            console.log('⚠️ DynamicSelect - accessionGroup fallback:', {
-              fieldName: field.fieldName,
-              requestedValueField: valueField,
-              notFound: `item.${valueField} is null/undefined`,
-              itemObject: item,
-              fallingBackTo: itemValue,
-              availableFields: Object.keys(item)
-            });
-          }
         }
         
         const transformedOption = {
@@ -431,14 +382,6 @@ export function DynamicSelect({
     );
 
     if (shouldFetch && !isFetching.current && !loading) {
-      console.log(`🔄 DynamicSelect[${field.fieldName}#${instanceId}]: Scheduling fetch`, {
-        shouldFetch,
-        hasInitialized: hasInitialized.current,
-        dependenciesSatisfied,
-        dependencyKey,
-        lastFetchedKey: lastFetchedDependencyKey.current,
-        refPath: dropdownConfig.refPath
-      });
       
       // Clear any existing timeout
       if (fetchTimeoutRef.current) {
@@ -448,7 +391,6 @@ export function DynamicSelect({
       // Add a larger delay to batch rapid changes and avoid multiple requests
       fetchTimeoutRef.current = setTimeout(() => {
         if (isMountedRef.current && !isFetching.current) {
-          console.log(`⚡ DynamicSelect[${field.fieldName}#${instanceId}]: Executing fetch`);
           hasInitialized.current = true;
           fetchOptions();
         }
@@ -512,6 +454,56 @@ export function DynamicSelect({
   // Handle clear selection
   const handleClear = () => {
     onChange(isMultiple ? [] : "");
+  };
+
+  // Handle Quick Entry submission
+  const handleQuickEntrySubmit = async (data: Record<string, unknown>) => {
+    if (!field.quickEntry) return;
+    
+    const endpoint = field.quickEntry.endpoint || '';
+    const result = await submitQuickEntryForm(endpoint, data, field.quickEntry.serviceName);
+    
+    if (result.success && result.data) {
+      // Get the configured label and value fields
+      const labelField = dropdownConfig?.labelField || field.dataSource?.labelField || 'name';
+      const valueField = dropdownConfig?.valueField || field.dataSource?.valueField || 'id';
+      
+      // Extract the ID (for value) and label from the returned data
+      const newItemId = result.data[valueField] || result.data._id || result.data.id;
+      const newItemLabel = result.data[labelField] || result.data.displayName || result.data.name;
+      
+      // Create a new option for the dropdown
+      if (newItemId) {
+        const newOption: LocalSelectOption = {
+          value: String(newItemId),
+          label: typeof newItemLabel === 'object' ? newItemLabel : {
+            en: newItemLabel || newItemId,
+            mm: newItemLabel || newItemId
+          }
+        };
+        
+        // Add the new option to the options list
+        setOptions(prevOptions => [...prevOptions, newOption]);
+        
+        // Auto-select the newly created item if configured
+        if (field.quickEntry.autoSelect !== false) {
+          if (isMultiple) {
+            const currentValues = Array.isArray(normalizedValue) ? normalizedValue : [];
+            onChange([...currentValues, String(newItemId)]);
+          } else {
+            onChange(String(newItemId));
+          }
+        }
+      }
+      
+      // Also refresh the full options list to ensure consistency
+      lastFetchedDependencyKey.current = ""; // Force refetch
+      fetchOptions();
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create');
+    }
   };
 
   // Remove single item in multi-select
@@ -613,27 +605,28 @@ export function DynamicSelect({
         </div>
       )}
 
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className={`w-full justify-between ${
-              validationError 
-                ? "border-destructive focus:ring-destructive bg-destructive/5" 
-                : ""
-            }`}
-            disabled={field.readonly || loading}
-          >
-            <span className="truncate">{getDisplayText()}</span>
-            {loading ? (
-              <IconComponent name="Loader2" className="ml-2 h-4 w-4 shrink-0 opacity-50 animate-spin" />
-            ) : (
-              <IconComponent name="ChevronDown" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
+      <div className={field.quickEntry?.enabled ? "flex gap-2" : ""}>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className={`${field.quickEntry?.enabled ? "flex-1" : "w-full"} justify-between ${
+                validationError 
+                  ? "border-destructive focus:ring-destructive bg-destructive/5" 
+                  : ""
+              }`}
+              disabled={field.readonly || loading}
+            >
+              <span className="truncate">{getDisplayText()}</span>
+              {loading ? (
+                <IconComponent name="Loader2" className="ml-2 h-4 w-4 shrink-0 opacity-50 animate-spin" />
+              ) : (
+                <IconComponent name="ChevronDown" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-h-60"
+          className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto z-[100]"
           sideOffset={4}
         >
           {filteredOptions.length === 0 ? (
@@ -669,6 +662,32 @@ export function DynamicSelect({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      
+        {/* Quick Entry button */}
+        {field.quickEntry?.enabled && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setQuickEntryOpen(true)}
+            disabled={field.readonly}
+            title={currentLanguage === "mm" ? "အသစ်ထည့်ရန်" : "Add new"}
+          >
+            <IconComponent name="Plus" className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Quick Entry Dialog */}
+      {field.quickEntry?.enabled && (
+        <QuickEntryDialog
+          config={field.quickEntry}
+          isOpen={quickEntryOpen}
+          onClose={() => setQuickEntryOpen(false)}
+          onSubmit={handleQuickEntrySubmit}
+          currentLanguage={currentLanguage}
+        />
+      )}
 
       {/* Multi-select selected items display */}
       {isMultiple && Array.isArray(value) && value.length > 0 && (

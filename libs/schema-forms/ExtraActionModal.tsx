@@ -161,6 +161,11 @@ export function ExtraActionModal({
 
   // Determine modal width based on form configuration
   const getModalWidth = () => {
+    // Special handling for manageAccessionNumbers - use large size
+    if (actionForm.actionKey === 'manageAccessionNumbers') {
+      return "max-w-2xl";
+    }
+    
     switch (actionForm.formWidth) {
       case "sm": return "max-w-md";
       case "md": return "max-w-lg";
@@ -199,7 +204,7 @@ export function ExtraActionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleModalClose}>
-      <DialogContent className={`${getModalWidth()} max-h-[90vh] overflow-y-auto`}>
+      <DialogContent className={`w-full ${getModalWidth()} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>{modalTitle}</DialogTitle>
           {modalDescription && (

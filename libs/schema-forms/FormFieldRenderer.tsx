@@ -445,7 +445,7 @@ function FormFieldInput({
           <SelectTrigger className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive' : ''}`}>
             <SelectValue placeholder={field.placeHolder} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[100]">
             {field.options?.map((option) => (
               <SelectItem key={String(option.value)} value={String(option.value)}>
                 {typeof option.label === 'string' 
@@ -566,7 +566,7 @@ function FormFieldInput({
               <SelectTrigger className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive' : ''}`}>
                 <SelectValue placeholder={field.placeHolder} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 <SelectItem value="true">Yes</SelectItem>
                 <SelectItem value="false">No</SelectItem>
               </SelectContent>

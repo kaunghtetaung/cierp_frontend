@@ -157,7 +157,7 @@ export function PrefilterText({
             onChange={(e) => handleSearch(e.target.value)}
             placeholder={placeholder}
             className={cn(
-              "w-full px-3 py-1.5 pr-8 text-sm border rounded-md",
+              "w-full px-3 py-1.5 pr-8 text-sm text-foreground font-medium border rounded-md",
               "bg-background hover:bg-accent/50",
               "transition-colors duration-200",
               searchValue ? "border-primary/50" : "border-input"

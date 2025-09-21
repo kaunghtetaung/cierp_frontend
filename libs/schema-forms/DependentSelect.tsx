@@ -139,7 +139,7 @@ export function DependentSelect({
         <SelectTrigger className="bg-muted">
           <SelectValue placeholder={`Please select ${dependencyNames} first`} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-[100]">
           {/* Empty content */}
         </SelectContent>
       </Select>
@@ -160,7 +160,7 @@ export function DependentSelect({
         } />
         {isLoading && <LoadingSpinner className="w-4 h-4" />}
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="z-[100]">
         {options.map((option) => (
           <SelectItem key={String(option.value)} value={String(option.value)}>
             {typeof option.label === 'string' 

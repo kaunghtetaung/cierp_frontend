@@ -6,12 +6,70 @@ import { getCachedServerHttpClient } from "@repo/api/server-only";
 import { getCurrentUser, getCurrentSession } from "@repo/auth/server";
 import { headers } from "next/headers";
 import { getCacheInstance, CacheKeys } from "@repo/cache";
+import { createModuleItem } from "@repo/app-modules";
 
 export interface ActionResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
   errors?: Record<string, string[]>;
+}
+
+/**
+ * Submit Quick Entry form data directly to an endpoint
+ */
+export async function submitQuickEntryForm(
+  endpoint: string,
+  data: Record<string, any>,
+  serviceName?: string
+): Promise<ActionResponse> {
+  try {
+    // Remove leading slash from endpoint if present
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    
+    // Extract the module name from the endpoint (e.g., "authors" from "/authors")
+    const moduleName = cleanEndpoint.split('/')[0];
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 QuickEntry submission:', {
+        endpoint,
+        moduleName,
+        serviceName,
+        data
+      });
+    }
+    
+    // Use the wrapper function which properly handles authentication
+    const result = await createModuleItem(moduleName, data, serviceName);
+    
+    if (result) {
+      return {
+        success: true,
+        data: result
+      };
+    }
+    
+    return {
+      success: false,
+      error: 'Failed to create entry'
+    };
+  } catch (error: any) {
+    console.error('Quick Entry submission error:', error);
+    
+    // Handle validation errors
+    if (error.response?.data?.extra?.fieldErrors) {
+      return {
+        success: false,
+        error: error.response.data.message || 'Validation failed',
+        errors: error.response.data.extra.fieldErrors
+      };
+    }
+    
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to create entry'
+    };
+  }
 }
 
 /**
@@ -230,13 +288,6 @@ export async function submitExtraActionForm(
       }
     }
     
-    // Debug log FormData for accessionGroup
-    if (data.accessionGroup) {
-      console.log('🔐 submitExtraActionForm - accessionGroup data:', {
-        value: data.accessionGroup,
-        type: typeof data.accessionGroup
-      });
-    }
     
     // Handle nested object fields (e.g., displayName.en)
     const processedData: Record<string, any> = {};
@@ -263,9 +314,12 @@ export async function submitExtraActionForm(
     
     // Extract operation type and item identifier before removing them from data
     const operation = processedData.action || 'add';  // 'add', 'update', 'delete' - default to 'add'
-    const itemIdentifier = processedData.itemId || processedData.accessionNo;  // For update/delete
+    // For updates, prefer using _id, then itemId, then accessionNo
+    const itemIdentifier = processedData.itemId || processedData._id || processedData.accessionNo;  
+    
     
     // Remove internal routing fields that backend doesn't expect
+    // NOTE: Keep _id field as it's needed by backend for updates
     const fieldsToRemove = ['actionKey', 'moduleSlug', 'action', 'itemId', 'id'];
     const cleanedData: Record<string, any> = {};
     
@@ -274,6 +328,7 @@ export async function submitExtraActionForm(
         cleanedData[key] = value;
       }
     });
+    
     
     // Construct endpoint based on backend schema or fallback to legacy pattern
     let endpoint: string;
@@ -306,23 +361,7 @@ export async function submitExtraActionForm(
       method = 'POST';
     }
     
-    console.log('📡 Submitting extra action:', {
-      endpoint,
-      method,
-      operation,
-      itemIdentifier,
-      actionKey
-    });
     
-    // Debug log cleanedData for accessionGroup
-    if (cleanedData.accessionGroup) {
-      console.log('🎯 submitExtraActionForm - Final accessionGroup being sent:', {
-        value: cleanedData.accessionGroup,
-        type: typeof cleanedData.accessionGroup
-      });
-    }
-    
-    console.log('📤 submitExtraActionForm - Complete cleaned data:', cleanedData);
     
     const response = await httpClient.request<any>(endpoint, {
       method,
@@ -332,7 +371,7 @@ export async function submitExtraActionForm(
       userId: context.userId,
       withAuth: true,
     });
-
+    
     if (!response.success) {
       throw new Error(response.error || `Failed to execute ${actionKey}`);
     }

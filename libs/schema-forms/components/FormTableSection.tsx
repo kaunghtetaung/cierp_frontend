@@ -263,7 +263,7 @@ export function FormTableSection({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-md">
           <DialogHeader>
             <DialogTitle>
               {currentLanguage === "mm" ? "သေချာပါသလား?" : "Are you sure?"}

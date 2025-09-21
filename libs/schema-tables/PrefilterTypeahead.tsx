@@ -239,7 +239,7 @@ export function PrefilterTypeahead({
                 ? `Search ${getLocalizedText(field.label, currentLanguage)}`
                 : selectedLabels[0]}
               className={cn(
-                "w-full min-w-[180px] px-3 py-1.5 text-sm border rounded-md",
+                "w-full min-w-[180px] px-3 py-1.5 text-sm text-foreground font-medium border rounded-md",
                 "bg-background hover:bg-accent/50",
                 "transition-colors duration-200",
                 selectedValues.length > 0 ? "border-primary/50" : "border-input"
@@ -266,7 +266,7 @@ export function PrefilterTypeahead({
           >
             <span className={cn(
               "truncate",
-              selectedValues.length > 0 ? "text-foreground" : "text-muted-foreground"
+              selectedValues.length > 0 ? "text-foreground font-medium" : "text-muted-foreground"
             )}>
               {!field.multiple && selectedValues.length > 0 
                 ? selectedLabels[0]
@@ -292,7 +292,7 @@ export function PrefilterTypeahead({
                 setSearchTerm("");
               }}
             />
-            <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-auto rounded-md border bg-popover shadow-lg">
+            <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-[300px] overflow-y-auto rounded-md border bg-popover shadow-lg">
               {isLoading ? (
                 <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
                   <IconComponent name="Loader2" className="h-3 w-3 animate-spin" />

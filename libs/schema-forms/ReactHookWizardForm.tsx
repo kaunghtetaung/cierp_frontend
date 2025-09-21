@@ -1661,7 +1661,7 @@ export function ReactHookWizardForm({
 
 
           {/* Navigation Buttons */}
-          <div className="relative z-10 flex justify-between pt-6 border-t">
+          <div className="relative flex justify-between pt-6 border-t">
           <div>
             {currentStep > 0 && (
               <Button

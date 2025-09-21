@@ -1609,35 +1609,86 @@ export function ModuleDataTable({
                 )}
               </div>
               
-              {/* Search Summary at bottom of filter panel */}
-              {(filterSummary || totalItems > 0) && (
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {currentLanguage === "mm" ? "ရှာဖွေမှု အကျဉ်းချုပ်:" : "Search Summary:"}
-                      </span>
-                      {filterSummary && (
-                        <div className="flex flex-wrap gap-1">
+              {/* Search Summary Footer */}
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  {/* Left side - Search Summary */}
+                  <div className="flex items-center gap-3">
+                    {filterSummary && filterSummary.length > 0 && (
+                      <>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {currentLanguage === "mm" ? "ရှာဖွေမှု:" : "Active Filters:"}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
                           {filterSummary.map((summary, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
+                            <Badge key={idx} variant="secondary" className="text-xs py-0.5 px-2">
                               {summary}
                             </Badge>
                           ))}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {currentLanguage === "mm" ? "စုစုပေါင်း မှတ်တမ်း:" : "Total Records:"}
+                      </>
+                    )}
+                    {(!filterSummary || filterSummary.length === 0) && (
+                      <span className="text-xs text-muted-foreground italic">
+                        {currentLanguage === "mm" ? "စစ်ထုတ်မှု မရှိပါ" : "No filters applied"}
                       </span>
-                      <Badge variant="outline" className="text-xs font-bold">
+                    )}
+                  </div>
+                  
+                  {/* Right side - Total Records and Clear button */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <IconComponent name="Database" className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {currentLanguage === "mm" ? "စုစုပေါင်း:" : "Total:"}
+                      </span>
+                      <Badge variant="outline" className="text-xs font-bold px-2 py-0.5">
                         {totalItems.toLocaleString()}
                       </Badge>
                     </div>
+                    
+                    {/* Clear Filters Button */}
+                    {filterSummary && filterSummary.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPrefilterValues({});
+                          // Clear all prefilter params from URL
+                          const newSearchParams = new URLSearchParams(searchParams.toString());
+                          if (module.dataTableSchema?.prefilters?.fields) {
+                            module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+                              if (field.type === 'text') {
+                                // Clear all operator-based params for text fields
+                                const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+                                operators.forEach((op: any) => {
+                                  newSearchParams.delete(`${field.fieldName}[${op.value}]`);
+                                });
+                              } else if (field.type === 'yearRange') {
+                                // Clear year range params
+                                newSearchParams.delete(field.fieldName);
+                                newSearchParams.delete(`${field.fieldName}[$eq]`);
+                                newSearchParams.delete(`${field.fieldName}[$gte]`);
+                                newSearchParams.delete(`${field.fieldName}[$lte]`);
+                                newSearchParams.delete(`${field.fieldName}[$gt]`);
+                                newSearchParams.delete(`${field.fieldName}[$lt]`);
+                              } else {
+                                newSearchParams.delete(field.fieldName);
+                              }
+                            });
+                          }
+                          newSearchParams.set('page', '1');
+                          router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
+                        }}
+                        className="h-7 px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <IconComponent name="FilterX" className="h-3.5 w-3.5 mr-1" />
+                        {currentLanguage === "mm" ? "စစ်ထုတ်မှု ဖယ်ရှားရန်" : "Clear Filters"}
+                      </Button>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>

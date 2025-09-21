@@ -147,7 +147,7 @@ export function PrefilterSelect({
         >
           <span className={cn(
             "truncate",
-            value ? "text-foreground" : "text-muted-foreground"
+            value ? "text-foreground font-medium" : "text-muted-foreground"
           )}>
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -190,7 +190,7 @@ export function PrefilterSelect({
               className="fixed inset-0 z-40"
               onClick={() => setIsOpen(false)}
             />
-            <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-auto rounded-md border bg-popover shadow-lg">
+            <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-[300px] overflow-y-auto rounded-md border bg-popover shadow-lg">
               {options.length > 0 ? (
                 options.map((option) => (
                   <button

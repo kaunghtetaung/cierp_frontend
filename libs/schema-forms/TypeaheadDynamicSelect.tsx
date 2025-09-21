@@ -8,8 +8,11 @@ import { IconComponent } from "@repo/ui";
 import { Badge } from "@repo/ui";
 import { cn } from "@repo/ui";
 import { getModuleReferenceAction } from "@repo/app-modules/server-actions";
-import type { FormField } from "@repo/types";
+import type { FormField, QuickEntryConfig } from "@repo/types";
 import type { MultilingualText } from "@repo/types";
+import { QuickEntryDialog } from "./components/QuickEntryDialog";
+import { submitQuickEntryForm } from "./server-actions/form-actions";
+import { Button } from "@repo/ui";
 
 interface TypeaheadDynamicSelectProps {
   field: FormField;
@@ -107,6 +110,7 @@ export function TypeaheadDynamicSelect({
   const [isSearching, setIsSearching] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const [quickEntryOpen, setQuickEntryOpen] = useState(false);
   const hasProcessedInitialValue = useRef(false);
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
@@ -130,7 +134,7 @@ export function TypeaheadDynamicSelect({
   const emptyMessage = dropdownConfig.emptyMessage || dataSource.emptyMessage;
   
   // Refs for debouncing and focus
-  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const debounceTimerRef = useRef<NodeJS.Timeout | undefined>();
   const lastSearchRef = useRef<string>("");
   const requestInProgressRef = useRef<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -776,6 +780,79 @@ export function TypeaheadDynamicSelect({
     }
   };
 
+  // Handle Quick Entry submission
+  const handleQuickEntrySubmit = async (data: Record<string, unknown>) => {
+    if (!field.quickEntry) return;
+    
+    const endpoint = field.quickEntry.endpoint || '';
+    const result = await submitQuickEntryForm(endpoint, data, field.quickEntry.serviceName);
+    
+    if (result.success && result.data) {
+      // Get the configured label and value fields
+      const labelField = dropdownConfig.labelField || field.dataSource?.labelField || 'name';
+      const valueField = dropdownConfig.valueField || field.dataSource?.valueField || 'id';
+      
+      // Extract the ID (for value) and label from the returned data
+      const newItemId = result.data[valueField] || result.data._id || result.data.id;
+      const newItemLabel = result.data[labelField] || result.data.displayName || result.data.name;
+      
+      if (newItemId) {
+        // Create properly formatted label
+        const formattedLabel = typeof newItemLabel === 'object' ? newItemLabel : {
+          en: newItemLabel || newItemId,
+          mm: newItemLabel || newItemId
+        };
+        
+        // For typeahead, search for the new item to add it to options
+        const searchTerm = typeof newItemLabel === 'object' 
+          ? newItemLabel[currentLanguage] || newItemLabel.en || String(newItemId)
+          : newItemLabel || String(newItemId);
+        
+        // Create new option
+        const newOption: LocalSelectOption = {
+          value: String(newItemId),
+          label: formattedLabel
+        };
+        
+        // Add to options
+        setOptions(prevOptions => {
+          // Check if option already exists
+          const exists = prevOptions.some(opt => opt.value === String(newItemId));
+          if (!exists) {
+            return [...prevOptions, newOption];
+          }
+          return prevOptions;
+        });
+        
+        // Auto-select the newly created item if configured
+        if (field.quickEntry.autoSelect !== false) {
+          if (isMultiple) {
+            const currentValues = Array.isArray(processedValue) ? processedValue : [];
+            onChange([...currentValues, String(newItemId)]);
+          } else {
+            // Set the value (ID)
+            onChange(String(newItemId));
+            // Set display value (label)
+            const displayText = typeof formattedLabel === 'string' 
+              ? formattedLabel 
+              : formattedLabel[currentLanguage] || formattedLabel.en || String(newItemId);
+            setDisplayValue(displayText);
+            setSelectedOption(newOption);
+          }
+        }
+        
+        // Also fetch options with search term to ensure the new item appears
+        await fetchOptions(searchTerm);
+      }
+      
+      setOpen(false);
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create');
+    }
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
@@ -997,8 +1074,9 @@ export function TypeaheadDynamicSelect({
       )}
       
       {/* Search Input - Always visible */}
-      <div className="relative">
-        <Input
+      <div className={field.quickEntry?.enabled ? "flex gap-2" : ""}>
+        <div className={field.quickEntry?.enabled ? "relative flex-1" : "relative"}>
+          <Input
           ref={searchInputRef}
           type="text"
           placeholder={
@@ -1069,6 +1147,32 @@ export function TypeaheadDynamicSelect({
           />
         </div>
       </div>
+      
+        {/* Quick Entry button */}
+        {field.quickEntry?.enabled && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setQuickEntryOpen(true)}
+            disabled={field.readonly}
+            title={currentLanguage === "mm" ? "အသစ်ထည့်ရန်" : "Add new"}
+          >
+            <IconComponent name="Plus" className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Quick Entry Dialog */}
+      {field.quickEntry?.enabled && (
+        <QuickEntryDialog
+          config={field.quickEntry}
+          isOpen={quickEntryOpen}
+          onClose={() => setQuickEntryOpen(false)}
+          onSubmit={handleQuickEntrySubmit}
+          currentLanguage={currentLanguage}
+        />
+      )}
 
       {/* Options Dropdown - Rendered as Portal */}
       {open && dropdownPosition && typeof window !== 'undefined' && 

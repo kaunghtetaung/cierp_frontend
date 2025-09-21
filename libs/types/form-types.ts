@@ -120,6 +120,31 @@ export interface DropdownConfig {
   filterOptions?: string; // Function name to filter options
 }
 
+// Quick Entry configuration for inline entity creation
+export interface QuickEntryConfig {
+  enabled?: boolean; // Enable quick entry feature (default: false)
+  endpoint?: string; // API endpoint for creating new entity (e.g., '/authors', '/publishers')
+  modalTitle?: MultilingualText; // Custom title for quick entry dialog
+  modalSize?: 'sm' | 'md' | 'lg' | 'xl'; // Modal size (default: 'sm')
+  fields: QuickEntryField[]; // Fields to show in quick entry form
+  defaultValues?: Record<string, any>; // Default values for new entity (from backend)
+  serviceName?: string; // Service name for cross-service creation
+  refreshOnCreate?: boolean; // Refresh dropdown options after creation (default: true)
+  autoSelect?: boolean; // Auto-select newly created item (default: true)
+}
+
+// Quick Entry field configuration
+export interface QuickEntryField {
+  fieldName: string; // Field name in target module
+  fieldType: 'text' | 'email' | 'textArea' | 'number' | 'select'; // Supported field types for quick entry
+  label: MultilingualText;
+  placeHolder?: string;
+  required?: boolean;
+  defaultValue?: unknown;
+  validationRule?: Partial<ValidationRule>; // Simplified validation for quick entry
+  options?: SelectOption[]; // For select fields
+}
+
 // Phone field configuration
 export interface PhoneFieldConfig {
   defaultCountry?: string; // Default country code (e.g., 'US', 'MM')
@@ -170,6 +195,9 @@ export interface FormField {
   
   // Phone field configuration (for fieldType: 'phone')
   phoneConfig?: PhoneFieldConfig; // Configuration for phone input fields
+  
+  // Quick Entry configuration for dynamic fields
+  quickEntry?: QuickEntryConfig; // Configuration for inline entity creation
   
   // Field-specific configurations
   multiple?: boolean; // For select fields that allow multiple selection (deprecated - use dropdownConfig.multiple)

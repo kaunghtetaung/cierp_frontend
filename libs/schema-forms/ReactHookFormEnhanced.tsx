@@ -571,7 +571,7 @@ export function ReactHookFormEnhanced({
                 )}
 
                 {/* Enhanced Form Actions */}
-                <div className="sticky bottom-0 z-20 bg-background border-t border-border/30 p-6">
+                <div className="sticky bottom-0 z-10 bg-background border-t border-border/30 p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       {hasErrors ? (
