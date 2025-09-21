@@ -136,11 +136,11 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
-  
+
   // Add New button loading state
   const [isAddNewLoading, setIsAddNewLoading] = React.useState(false);
   const router = useRouter();
-  
+
   // Reset loading state when component mounts (in case user navigated back)
   React.useEffect(() => {
     setIsAddNewLoading(false);
@@ -348,8 +348,8 @@ export function DataTable<TData, TValue>({
 
   // Pagination state for the header controls
   const [currentPageInput, setCurrentPageInput] = React.useState<string>("");
-  const [isPaginationLoading, setIsPaginationLoading] = React.useState<boolean>(false);
-
+  const [isPaginationLoading, setIsPaginationLoading] =
+    React.useState<boolean>(false);
 
   const saveTitlesToStorage = React.useCallback(
     (titles: string[]) => {
@@ -540,10 +540,11 @@ export function DataTable<TData, TValue>({
     columnResizeMode: "onChange",
     enableColumnResizing: true,
     // Configure manual pagination when we have external pagination props
-    ...(totalPages && onPageChange && {
-      manualPagination: true,
-      pageCount: totalPages,
-    }),
+    ...(totalPages &&
+      onPageChange && {
+        manualPagination: true,
+        pageCount: totalPages,
+      }),
     filterFns: {
       dateRange: filterFunctions.dateRange,
       numberRange: filterFunctions.numberRange,
@@ -558,12 +559,14 @@ export function DataTable<TData, TValue>({
       columnSizing,
       rowSelection,
       // Set pagination state for external pagination
-      ...(totalPages && onPageChange && currentPage && {
-        pagination: {
-          pageIndex: currentPage - 1, // TanStack Table uses 0-based indexing
-          pageSize: pageSize,
-        },
-      }),
+      ...(totalPages &&
+        onPageChange &&
+        currentPage && {
+          pagination: {
+            pageIndex: currentPage - 1, // TanStack Table uses 0-based indexing
+            pageSize: pageSize,
+          },
+        }),
     },
     initialState: {
       ...(enablePagination && {
@@ -658,7 +661,7 @@ export function DataTable<TData, TValue>({
                           header: column,
                           table,
                         } as any);
-                        
+
                         // Better extraction of header text from React components
                         if (typeof headerResult === "string") {
                           headerText = headerResult;
@@ -668,9 +671,13 @@ export function DataTable<TData, TValue>({
                             headerText = children;
                           } else if (Array.isArray(children)) {
                             // Extract text from array of children
-                            headerText = children
-                              .map(child => typeof child === "string" ? child : "")
-                              .join("").trim() || column.id;
+                            headerText =
+                              children
+                                .map((child) =>
+                                  typeof child === "string" ? child : ""
+                                )
+                                .join("")
+                                .trim() || column.id;
                           } else if (children?.props?.children) {
                             headerText = children.props.children || column.id;
                           } else {
@@ -685,10 +692,13 @@ export function DataTable<TData, TValue>({
                     } else if (typeof column.columnDef.header === "string") {
                       headerText = column.columnDef.header;
                     }
-                    
+
                     // Clean up any remaining object references
-                    headerText = String(headerText).replace(/\[object Object\]/g, "").trim() || column.id;
-                    
+                    headerText =
+                      String(headerText)
+                        .replace(/\[object Object\]/g, "")
+                        .trim() || column.id;
+
                     return `<th>${headerText}</th>`;
                   })
                   .join("")}
@@ -738,31 +748,38 @@ export function DataTable<TData, TValue>({
                             textValue = rawValue.en || rawValue.mm || "";
                           } else if (rawValue.displayName) {
                             if (typeof rawValue.displayName === "object") {
-                              textValue = rawValue.displayName.en || rawValue.displayName.mm || "";
+                              textValue =
+                                rawValue.displayName.en ||
+                                rawValue.displayName.mm ||
+                                "";
                             } else {
                               textValue = rawValue.displayName;
                             }
                           } else if (rawValue.name) {
                             if (typeof rawValue.name === "object") {
-                              textValue = rawValue.name.en || rawValue.name.mm || "";
+                              textValue =
+                                rawValue.name.en || rawValue.name.mm || "";
                             } else {
                               textValue = rawValue.name;
                             }
                           } else if (rawValue.title) {
                             if (typeof rawValue.title === "object") {
-                              textValue = rawValue.title.en || rawValue.title.mm || "";
+                              textValue =
+                                rawValue.title.en || rawValue.title.mm || "";
                             } else {
                               textValue = rawValue.title;
                             }
                           } else if (rawValue.label) {
                             if (typeof rawValue.label === "object") {
-                              textValue = rawValue.label.en || rawValue.label.mm || "";
+                              textValue =
+                                rawValue.label.en || rawValue.label.mm || "";
                             } else {
                               textValue = rawValue.label;
                             }
                           } else if (rawValue.value) {
                             if (typeof rawValue.value === "object") {
-                              textValue = rawValue.value.en || rawValue.value.mm || "";
+                              textValue =
+                                rawValue.value.en || rawValue.value.mm || "";
                             } else {
                               textValue = rawValue.value;
                             }
@@ -772,22 +789,31 @@ export function DataTable<TData, TValue>({
                           } else if (Array.isArray(rawValue)) {
                             // Handle arrays by joining their string representations
                             textValue = rawValue
-                              .map(item => {
+                              .map((item) => {
                                 if (typeof item === "string") return item;
                                 // Handle accession number objects
                                 if (item?.accessionNo) {
-                                  return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                                  return `${item.accessionNo}${
+                                    item.status ? ` - ${item.status}` : ""
+                                  }`;
                                 }
                                 // Handle other common fields
-                                return item?.name || item?.title || item?.displayName || "";
+                                return (
+                                  item?.name ||
+                                  item?.title ||
+                                  item?.displayName ||
+                                  ""
+                                );
                               })
                               .filter(Boolean)
                               .join(", ");
                           } else {
                             // Last resort - try to extract any meaningful text
                             const keys = Object.keys(rawValue);
-                            const textFields = keys.filter(key => 
-                              typeof rawValue[key] === "string" && rawValue[key].length > 0
+                            const textFields = keys.filter(
+                              (key) =>
+                                typeof rawValue[key] === "string" &&
+                                rawValue[key].length > 0
                             );
                             if (textFields.length > 0) {
                               textValue = rawValue[textFields[0]];
@@ -800,11 +826,12 @@ export function DataTable<TData, TValue>({
                         }
 
                         // Clean up the text value more thoroughly
-                        textValue = String(textValue || "")
-                          .replace(/\[object Object\]/g, "")
-                          .replace(/^\s*,\s*|\s*,\s*$/g, "") // Remove leading/trailing commas
-                          .replace(/\s*,\s*,\s*/g, ", ") // Clean up multiple commas
-                          .trim() || "-";
+                        textValue =
+                          String(textValue || "")
+                            .replace(/\[object Object\]/g, "")
+                            .replace(/^\s*,\s*|\s*,\s*$/g, "") // Remove leading/trailing commas
+                            .replace(/\s*,\s*,\s*/g, ", ") // Clean up multiple commas
+                            .trim() || "-";
                       }
 
                       return `<td>${textValue}</td>`;
@@ -883,11 +910,13 @@ export function DataTable<TData, TValue>({
         } else if (Array.isArray(rawValue)) {
           // Handle arrays
           return rawValue
-            .map(item => {
+            .map((item) => {
               if (typeof item === "string") return item;
               // Handle accession number objects
               if (item?.accessionNo) {
-                return `${item.accessionNo}${item.status ? ` - ${item.status}` : ''}`;
+                return `${item.accessionNo}${
+                  item.status ? ` - ${item.status}` : ""
+                }`;
               }
               // Handle other common fields
               return item?.name || item?.title || item?.displayName || "";
@@ -1237,12 +1266,16 @@ export function DataTable<TData, TValue>({
             {(() => {
               // Check if we should show pagination controls
               const hasExternalPagination = totalPages && totalPages > 1;
-              const hasInternalPagination = enablePagination && table.getPageCount() > 1;
-              const shouldShowPagination = hasExternalPagination || hasInternalPagination;
+              const hasInternalPagination =
+                enablePagination && table.getPageCount() > 1;
+              const shouldShowPagination =
+                hasExternalPagination || hasInternalPagination;
 
               // Get current values based on pagination type
               const pageCount = totalPages || table.getPageCount() || 1;
-              const currentPageIndex = currentPage ? currentPage - 1 : (table.getState().pagination?.pageIndex || 0);
+              const currentPageIndex = currentPage
+                ? currentPage - 1
+                : table.getState().pagination?.pageIndex || 0;
               const displayCurrentPage = currentPageIndex + 1;
 
               // Pagination handlers with loading state
@@ -1291,12 +1324,16 @@ export function DataTable<TData, TValue>({
                 setCurrentPageInput("");
               };
 
-              const canGoPrevious = currentPage ? currentPage > 1 : table.getCanPreviousPage();
-              const canGoNext = currentPage ? currentPage < pageCount : table.getCanNextPage();
-
+              const canGoPrevious = currentPage
+                ? currentPage > 1
+                : table.getCanPreviousPage();
+              const canGoNext = currentPage
+                ? currentPage < pageCount
+                : table.getCanNextPage();
 
               // Calculate combined loading state for synchronized pagination controls
-              const isAnyPaginationLoading = isLoading || isPaginationControlsLoading || isPaginationLoading;
+              const isAnyPaginationLoading =
+                isLoading || isPaginationControlsLoading || isPaginationLoading;
 
               return shouldShowPagination ? (
                 <>
@@ -1391,23 +1428,23 @@ export function DataTable<TData, TValue>({
       <div className="rounded-md border border-gray-200 mt-4 w-full">
         <div
           className="relative w-full overflow-x-auto"
-          style={{ 
-            maxWidth: '100%',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
+          style={{
+            maxWidth: "100%",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
           }}
           onMouseEnter={(e) => {
             // Show scrollbar on hover - works even with table row hovers
             const target = e.currentTarget;
-            target.style.scrollbarWidth = 'thin';
-            target.style.scrollbarColor = '#3b82f6 #f3f4f6';
-            
+            target.style.scrollbarWidth = "thin";
+            target.style.scrollbarColor = "#3b82f6 #f3f4f6";
+
             // Create unique class to avoid conflicts
-            const uniqueClass = 'table-scrollbar-' + Date.now();
+            const uniqueClass = "table-scrollbar-" + Date.now();
             target.classList.add(uniqueClass);
-            
+
             // Add webkit scrollbar styles
-            const style = document.createElement('style');
+            const style = document.createElement("style");
             style.id = uniqueClass;
             style.textContent = `
               .${uniqueClass}::-webkit-scrollbar {
@@ -1430,12 +1467,12 @@ export function DataTable<TData, TValue>({
           onMouseLeave={(e) => {
             // Hide scrollbar when leaving container
             const target = e.currentTarget;
-            target.style.scrollbarWidth = 'none';
-            
+            target.style.scrollbarWidth = "none";
+
             // Remove webkit styles
             const classes = Array.from(target.classList);
-            classes.forEach(className => {
-              if (className.startsWith('table-scrollbar-')) {
+            classes.forEach((className) => {
+              if (className.startsWith("table-scrollbar-")) {
                 target.classList.remove(className);
                 const style = document.getElementById(className);
                 if (style) {
@@ -1472,355 +1509,362 @@ export function DataTable<TData, TValue>({
                   "cursor-col-resize"
               )}
             >
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header, headerIndex) => {
-                    const columnId = header.column.id;
-                    const isDraggable =
-                      columnId !== "sr" &&
-                      columnId !== "select" &&
-                      columnId !== "actions";
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header, headerIndex) => {
+                      const columnId = header.column.id;
+                      const isDraggable =
+                        columnId !== "sr" &&
+                        columnId !== "select" &&
+                        columnId !== "actions";
 
-                    return (
-                      <TableHead
-                        key={header.id}
-                        className={cn(
-                          "relative group",
-                          isDraggable && "hover:bg-muted/30"
-                        )}
-                        style={{
-                          width: header.getSize(),
-                          minWidth: header.getSize(),
-                          maxWidth: header.getSize(),
-                          position: "relative",
-                          cursor: isDraggable ? "grab" : "auto",
-                        }}
-                        draggable={isDraggable}
-                        onDragStart={(e) => {
-                          if (!isDraggable) {
-                            e.preventDefault();
-                            return;
-                          }
-                          e.dataTransfer.setData("text/plain", columnId);
-                          e.dataTransfer.effectAllowed = "move";
-                          (e.currentTarget as HTMLElement).style.opacity =
-                            "0.5";
-                          (e.currentTarget as HTMLElement).style.cursor =
-                            "grabbing";
-                        }}
-                        onDragEnd={(e) => {
-                          if (!isDraggable) return;
-                          (e.currentTarget as HTMLElement).style.opacity = "1";
-                          (e.currentTarget as HTMLElement).style.cursor =
-                            "grab";
-                        }}
-                        onDragOver={(e) => {
-                          if (!isDraggable) return;
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = "move";
-                          (e.currentTarget as HTMLElement).style.borderLeft =
-                            "2px solid #3b82f6";
-                        }}
-                        onDragLeave={(e) => {
-                          if (!isDraggable) return;
-                          (e.currentTarget as HTMLElement).style.borderLeft =
-                            "";
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          if (!isDraggable) return;
-
-                          (e.currentTarget as HTMLElement).style.borderLeft =
-                            "";
-                          const draggedColumnId =
-                            e.dataTransfer.getData("text/plain");
-                          const targetColumnId = columnId;
-
-                          if (draggedColumnId === targetColumnId) return;
-
-                          // Don't allow dropping on or moving fixed columns
-                          if (
-                            targetColumnId === "sr" ||
-                            targetColumnId === "select" ||
-                            targetColumnId === "actions"
-                          )
-                            return;
-                          if (
-                            draggedColumnId === "sr" ||
-                            draggedColumnId === "select" ||
-                            draggedColumnId === "actions"
-                          )
-                            return;
-
-                          const newColumnOrder = [...columnOrder];
-                          const draggedIndex =
-                            newColumnOrder.indexOf(draggedColumnId);
-                          const targetIndex =
-                            newColumnOrder.indexOf(targetColumnId);
-
-                          if (draggedIndex !== -1 && targetIndex !== -1) {
-                            newColumnOrder.splice(draggedIndex, 1);
-                            newColumnOrder.splice(
-                              targetIndex,
-                              0,
-                              draggedColumnId
-                            );
-
-                            // Ensure Sr. column stays first
-                            const srIndex = newColumnOrder.indexOf("sr");
-                            if (srIndex > 0) {
-                              newColumnOrder.splice(srIndex, 1);
-                              newColumnOrder.unshift("sr");
+                      return (
+                        <TableHead
+                          key={header.id}
+                          className={cn(
+                            "relative group",
+                            isDraggable && "hover:bg-muted/30"
+                          )}
+                          style={{
+                            width: header.getSize(),
+                            minWidth: header.getSize(),
+                            maxWidth: header.getSize(),
+                            position: "relative",
+                            cursor: isDraggable ? "grab" : "auto",
+                          }}
+                          draggable={isDraggable}
+                          onDragStart={(e) => {
+                            if (!isDraggable) {
+                              e.preventDefault();
+                              return;
                             }
+                            e.dataTransfer.setData("text/plain", columnId);
+                            e.dataTransfer.effectAllowed = "move";
+                            (e.currentTarget as HTMLElement).style.opacity =
+                              "0.5";
+                            (e.currentTarget as HTMLElement).style.cursor =
+                              "grabbing";
+                          }}
+                          onDragEnd={(e) => {
+                            if (!isDraggable) return;
+                            (e.currentTarget as HTMLElement).style.opacity =
+                              "1";
+                            (e.currentTarget as HTMLElement).style.cursor =
+                              "grab";
+                          }}
+                          onDragOver={(e) => {
+                            if (!isDraggable) return;
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            (e.currentTarget as HTMLElement).style.borderLeft =
+                              "2px solid #3b82f6";
+                          }}
+                          onDragLeave={(e) => {
+                            if (!isDraggable) return;
+                            (e.currentTarget as HTMLElement).style.borderLeft =
+                              "";
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (!isDraggable) return;
 
-                            setColumnOrder(newColumnOrder);
-                          }
-                        }}
-                      >
-                        {header.isPlaceholder ? null : (
-                          <div className="relative flex items-center justify-center h-full px-2">
-                            {/* Left move button - move column to first position */}
-                            {isDraggable && (
-                              <button
-                                className="absolute left-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const newColumnOrder = [...columnOrder];
-                                  const currentIndex =
-                                    newColumnOrder.indexOf(columnId);
-                                  if (currentIndex > 1) {
-                                    // Don't move before Sr. column
-                                    newColumnOrder.splice(currentIndex, 1);
-                                    newColumnOrder.splice(1, 0, columnId); // Insert after Sr. column
-                                    setColumnOrder(newColumnOrder);
-                                  }
-                                }}
-                                title="Move to first"
-                              >
-                                <ChevronFirst className="h-3 w-3" />
-                              </button>
-                            )}
+                            (e.currentTarget as HTMLElement).style.borderLeft =
+                              "";
+                            const draggedColumnId =
+                              e.dataTransfer.getData("text/plain");
+                            const targetColumnId = columnId;
 
-                            {/* Center content with title and sort indicator */}
-                            <div
-                              className={cn(
-                                "flex items-center justify-center gap-1 text-center",
-                                "whitespace-nowrap overflow-hidden text-ellipsis min-w-0", // Single line with ellipsis for overflow
-                                header.column.getCanSort() &&
-                                  !isDraggable &&
-                                  "cursor-pointer select-none",
-                                isDraggable &&
-                                  "cursor-grab active:cursor-grabbing"
-                              )}
-                              onClick={
-                                header.column.getCanSort() && !isDraggable
-                                  ? header.column.getToggleSortingHandler()
-                                  : undefined
+                            if (draggedColumnId === targetColumnId) return;
+
+                            // Don't allow dropping on or moving fixed columns
+                            if (
+                              targetColumnId === "sr" ||
+                              targetColumnId === "select" ||
+                              targetColumnId === "actions"
+                            )
+                              return;
+                            if (
+                              draggedColumnId === "sr" ||
+                              draggedColumnId === "select" ||
+                              draggedColumnId === "actions"
+                            )
+                              return;
+
+                            const newColumnOrder = [...columnOrder];
+                            const draggedIndex =
+                              newColumnOrder.indexOf(draggedColumnId);
+                            const targetIndex =
+                              newColumnOrder.indexOf(targetColumnId);
+
+                            if (draggedIndex !== -1 && targetIndex !== -1) {
+                              newColumnOrder.splice(draggedIndex, 1);
+                              newColumnOrder.splice(
+                                targetIndex,
+                                0,
+                                draggedColumnId
+                              );
+
+                              // Ensure Sr. column stays first
+                              const srIndex = newColumnOrder.indexOf("sr");
+                              if (srIndex > 0) {
+                                newColumnOrder.splice(srIndex, 1);
+                                newColumnOrder.unshift("sr");
                               }
-                            >
-                              <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                              </span>
-                              {header.column.getCanSort() && (
-                                <span className="ml-0.5 flex-shrink-0">
-                                  {header.column.getIsSorted() === "desc" ? (
-                                    <ChevronDown className="h-3 w-3" />
-                                  ) : header.column.getIsSorted() === "asc" ? (
-                                    <ChevronUp className="h-3 w-3" />
-                                  ) : (
-                                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
-                                  )}
-                                </span>
+
+                              setColumnOrder(newColumnOrder);
+                            }
+                          }}
+                        >
+                          {header.isPlaceholder ? null : (
+                            <div className="relative flex items-center justify-center h-full px-2">
+                              {/* Left move button - move column to first position */}
+                              {isDraggable && (
+                                <button
+                                  className="absolute left-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newColumnOrder = [...columnOrder];
+                                    const currentIndex =
+                                      newColumnOrder.indexOf(columnId);
+                                    if (currentIndex > 1) {
+                                      // Don't move before Sr. column
+                                      newColumnOrder.splice(currentIndex, 1);
+                                      newColumnOrder.splice(1, 0, columnId); // Insert after Sr. column
+                                      setColumnOrder(newColumnOrder);
+                                    }
+                                  }}
+                                  title="Move to first"
+                                >
+                                  <ChevronFirst className="h-3 w-3" />
+                                </button>
                               )}
-                            </div>
 
-                            {/* Right move button - move column to last position */}
-                            {isDraggable && (
-                              <button
-                                className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const newColumnOrder = [...columnOrder];
-                                  const currentIndex =
-                                    newColumnOrder.indexOf(columnId);
-                                  const lastMovableIndex =
-                                    newColumnOrder.indexOf("actions") > -1
-                                      ? newColumnOrder.indexOf("actions") - 1
-                                      : newColumnOrder.length - 1;
-                                  if (currentIndex < lastMovableIndex) {
-                                    newColumnOrder.splice(currentIndex, 1);
-                                    newColumnOrder.splice(
-                                      lastMovableIndex,
-                                      0,
-                                      columnId
-                                    );
-                                    setColumnOrder(newColumnOrder);
-                                  }
-                                }}
-                                title="Move to last"
-                              >
-                                <ChevronLast className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        {/* Column resize handle */}
-                        {header.column.getCanResize() && (
-                          <div
-                            {...{
-                              onMouseDown: header.getResizeHandler(),
-                              onTouchStart: header.getResizeHandler(),
-                            }}
-                            className={cn(
-                              "absolute top-0 h-full",
-                              "cursor-col-resize select-none touch-none",
-                              "group/resize flex items-center justify-center"
-                            )}
-                            style={{
-                              right: 0,
-                              width: "8px",
-                              transform: "translateX(50%)",
-                              zIndex: 50,
-                              userSelect: "none",
-                              touchAction: "none",
-                            }}
-                            // Accessibility
-                            role="separator"
-                            aria-orientation="vertical"
-                            aria-label={`Resize ${flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )} column`}
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              const step = e.shiftKey ? 50 : 10;
-                              const currentSize = header.getSize();
-                              const columnId = header.column.id;
-
-                              const updateSize = (newSize: number) => {
-                                table.setColumnSizing((old) => ({
-                                  ...old,
-                                  [columnId]: newSize,
-                                }));
-                              };
-
-                              switch (e.key) {
-                                case "ArrowLeft":
-                                  e.preventDefault();
-                                  updateSize(Math.max(50, currentSize - step));
-                                  break;
-                                case "ArrowRight":
-                                  e.preventDefault();
-                                  updateSize(Math.min(500, currentSize + step));
-                                  break;
-                                case "Home":
-                                  e.preventDefault();
-                                  updateSize(50);
-                                  break;
-                                case "End":
-                                  e.preventDefault();
-                                  updateSize(500);
-                                  break;
-                              }
-                            }}
-                          >
-                            {/* Vertical line - visible on hover */}
-                            <div
-                              className={cn(
-                                "absolute h-full w-px transition-all duration-200",
-                                "bg-transparent group-hover:bg-border/30",
-                                header.column.getIsResizing() &&
-                                  "bg-blue-600 w-0.5"
-                              )}
-                            />
-
-                            {/* Resize button - only show on hover */}
-                            <div
-                              className={cn(
-                                "absolute flex items-center justify-center transition-all duration-200",
-                                "opacity-0 scale-50 pointer-events-none",
-                                "group-hover:opacity-100 group-hover:scale-100",
-                                header.column.getIsResizing() &&
-                                  "opacity-100 scale-110"
-                              )}
-                            >
+                              {/* Center content with title and sort indicator */}
                               <div
                                 className={cn(
-                                  "p-1.5 rounded-lg shadow-xl transition-all duration-200",
-                                  "group-hover:bg-blue-600 group-hover:border-blue-500",
-                                  "border-2 border-transparent",
-                                  header.column.getIsResizing() && [
-                                    "bg-blue-700 border-blue-400",
-                                    "shadow-2xl shadow-blue-600/50",
-                                    "animate-pulse",
-                                  ]
+                                  "flex items-center justify-center gap-1 text-center",
+                                  "whitespace-nowrap overflow-hidden text-ellipsis min-w-0", // Single line with ellipsis for overflow
+                                  header.column.getCanSort() &&
+                                    !isDraggable &&
+                                    "cursor-pointer select-none",
+                                  isDraggable &&
+                                    "cursor-grab active:cursor-grabbing"
+                                )}
+                                onClick={
+                                  header.column.getCanSort() && !isDraggable
+                                    ? header.column.getToggleSortingHandler()
+                                    : undefined
+                                }
+                              >
+                                <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                  {flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                                </span>
+                                {header.column.getCanSort() && (
+                                  <span className="ml-0.5 flex-shrink-0">
+                                    {header.column.getIsSorted() === "desc" ? (
+                                      <ChevronDown className="h-3 w-3" />
+                                    ) : header.column.getIsSorted() ===
+                                      "asc" ? (
+                                      <ChevronUp className="h-3 w-3" />
+                                    ) : (
+                                      <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Right move button - move column to last position */}
+                              {isDraggable && (
+                                <button
+                                  className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newColumnOrder = [...columnOrder];
+                                    const currentIndex =
+                                      newColumnOrder.indexOf(columnId);
+                                    const lastMovableIndex =
+                                      newColumnOrder.indexOf("actions") > -1
+                                        ? newColumnOrder.indexOf("actions") - 1
+                                        : newColumnOrder.length - 1;
+                                    if (currentIndex < lastMovableIndex) {
+                                      newColumnOrder.splice(currentIndex, 1);
+                                      newColumnOrder.splice(
+                                        lastMovableIndex,
+                                        0,
+                                        columnId
+                                      );
+                                      setColumnOrder(newColumnOrder);
+                                    }
+                                  }}
+                                  title="Move to last"
+                                >
+                                  <ChevronLast className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {/* Column resize handle */}
+                          {header.column.getCanResize() && (
+                            <div
+                              {...{
+                                onMouseDown: header.getResizeHandler(),
+                                onTouchStart: header.getResizeHandler(),
+                              }}
+                              className={cn(
+                                "absolute top-0 h-full",
+                                "cursor-col-resize select-none touch-none",
+                                "group/resize flex items-center justify-center"
+                              )}
+                              style={{
+                                right: 0,
+                                width: "8px",
+                                transform: "translateX(50%)",
+                                zIndex: 50,
+                                userSelect: "none",
+                                touchAction: "none",
+                              }}
+                              // Accessibility
+                              role="separator"
+                              aria-orientation="vertical"
+                              aria-label={`Resize ${flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )} column`}
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                const step = e.shiftKey ? 50 : 10;
+                                const currentSize = header.getSize();
+                                const columnId = header.column.id;
+
+                                const updateSize = (newSize: number) => {
+                                  table.setColumnSizing((old) => ({
+                                    ...old,
+                                    [columnId]: newSize,
+                                  }));
+                                };
+
+                                switch (e.key) {
+                                  case "ArrowLeft":
+                                    e.preventDefault();
+                                    updateSize(
+                                      Math.max(50, currentSize - step)
+                                    );
+                                    break;
+                                  case "ArrowRight":
+                                    e.preventDefault();
+                                    updateSize(
+                                      Math.min(500, currentSize + step)
+                                    );
+                                    break;
+                                  case "Home":
+                                    e.preventDefault();
+                                    updateSize(50);
+                                    break;
+                                  case "End":
+                                    e.preventDefault();
+                                    updateSize(500);
+                                    break;
+                                }
+                              }}
+                            >
+                              {/* Vertical line - visible on hover */}
+                              <div
+                                className={cn(
+                                  "absolute h-full w-px transition-all duration-200",
+                                  "bg-transparent group-hover:bg-border/30",
+                                  header.column.getIsResizing() &&
+                                    "bg-blue-600 w-0.5"
+                                )}
+                              />
+
+                              {/* Resize button - only show on hover */}
+                              <div
+                                className={cn(
+                                  "absolute flex items-center justify-center transition-all duration-200",
+                                  "opacity-0 scale-50 pointer-events-none",
+                                  "group-hover:opacity-100 group-hover:scale-100",
+                                  header.column.getIsResizing() &&
+                                    "opacity-100 scale-110"
                                 )}
                               >
-                                <ChevronsLeftRight
+                                <div
                                   className={cn(
-                                    "transition-all duration-200",
-                                    "text-transparent group-hover:text-white",
-                                    "h-3 w-3 group-hover:h-4 group-hover:w-4",
-                                    header.column.getIsResizing() &&
-                                      "text-white h-5 w-5"
+                                    "p-1.5 rounded-lg shadow-xl transition-all duration-200",
+                                    "group-hover:bg-blue-600 group-hover:border-blue-500",
+                                    "border-2 border-transparent",
+                                    header.column.getIsResizing() && [
+                                      "bg-blue-700 border-blue-400",
+                                      "shadow-2xl shadow-blue-600/50",
+                                      "animate-pulse",
+                                    ]
                                   )}
-                                />
+                                >
+                                  <ChevronsLeftRight
+                                    className={cn(
+                                      "transition-all duration-200",
+                                      "text-transparent group-hover:text-white",
+                                      "h-3 w-3 group-hover:h-4 group-hover:w-4",
+                                      header.column.getIsResizing() &&
+                                        "text-white h-5 w-5"
+                                    )}
+                                  />
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Screen reader instructions */}
-                            <span className="sr-only">
-                              Use arrow keys to resize. Shift + arrow for larger
-                              steps. Home for minimum, End for maximum width.
-                            </span>
-                          </div>
-                        )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        style={{
-                          width: cell.column.getSize(),
-                          minWidth: cell.column.getSize(),
-                          maxWidth: cell.column.getSize(),
-                        }}
-                        className="whitespace-nowrap"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
+                              {/* Screen reader instructions */}
+                              <span className="sr-only">
+                                Use arrow keys to resize. Shift + arrow for
+                                larger steps. Home for minimum, End for maximum
+                                width.
+                              </span>
+                            </div>
+                          )}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          style={{
+                            width: cell.column.getSize(),
+                            minWidth: cell.column.getSize(),
+                            maxWidth: cell.column.getSize(),
+                          }}
+                          className="whitespace-nowrap"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
             </table>
           </div>
         </div>

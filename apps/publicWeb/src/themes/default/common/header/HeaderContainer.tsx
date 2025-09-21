@@ -28,7 +28,7 @@ export async function HeaderContainer({
       getTenantSettingClientSafe(tenantId),
       // getContentSettings(tenantId), // Temporarily commented out
     ]);
-    
+
     // Placeholder content settings
     const contentSettings = {
       header: {
@@ -36,7 +36,7 @@ export async function HeaderContainer({
         showLogo: true,
         showNavigation: true,
         showUserMenu: true,
-      }
+      },
     } as any;
 
     // Get header menu items - placeholder data
