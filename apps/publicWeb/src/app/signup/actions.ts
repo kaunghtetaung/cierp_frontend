@@ -283,11 +283,12 @@ export async function signupAction(
 
     // Call the user registration endpoint
     // The HttpClient will handle adding x-tenant-id header via request config
+    // Note: httpClient automatically stringifies the body, so we pass the object directly
     const response = await httpClient.request(
       "/core/users/signup",
       {
         method: "POST",
-        body: JSON.stringify(signupData),
+        body: signupData, // Pass object directly, httpClient will stringify it
         headers: {
           "Content-Type": "application/json",
         },
