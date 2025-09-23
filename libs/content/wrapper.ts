@@ -66,16 +66,26 @@ export class ContentWrapper {
    * Get effective content settings using ContentService
    */
   async getEffective(tenantId: string): Promise<ContentSettingsData | null> {
+    console.log("\n🎯 === CONTENT WRAPPER GET EFFECTIVE START ===");
+    console.log("🎯 Tenant ID:", tenantId);
+    
     if (!isValidTenantId(tenantId)) {
-      console.error('Invalid tenant ID format:', tenantId);
+      console.error('🎯 ERROR: Invalid tenant ID format:', tenantId);
+      console.log("🎯 === CONTENT WRAPPER GET EFFECTIVE END (INVALID) ===\n");
       return null;
     }
 
     try {
+      console.log("🎯 Getting service instance...");
       const service = await this.ensureService();
-      return await service.getEffective(tenantId);
+      console.log("🎯 Calling service.getEffective...");
+      const result = await service.getEffective(tenantId);
+      console.log("🎯 Service returned successfully");
+      console.log("🎯 === CONTENT WRAPPER GET EFFECTIVE END (SUCCESS) ===\n");
+      return result;
     } catch (error) {
-      console.error('Error getting content settings:', error);
+      console.error('🎯 ERROR getting content settings:', error);
+      console.log("🎯 === CONTENT WRAPPER GET EFFECTIVE END (ERROR) ===\n");
       return null;
     }
   }

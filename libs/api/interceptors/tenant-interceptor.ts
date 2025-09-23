@@ -9,20 +9,42 @@ import type { RequestInterceptor, HttpRequestContext } from '../types/http-types
 
 export class TenantRequestInterceptor implements RequestInterceptor {
   async intercept(context: HttpRequestContext): Promise<HttpRequestContext> {
+    console.log("\n🔐 === TENANT INTERCEPTOR START ===");
+    console.log("🔐 Request URL:", context.url);
+    console.log("🔐 Request Method:", context.method);
+    
     // Check if tenant ID is already in headers
     const existingTenantId = context.headers[MIDDLEWARE_HEADERS.TENANT_ID];
     
     if (existingTenantId) {
       // Tenant ID already present, just validate it
-      console.debug(`Request has tenant ID: ${existingTenantId}`);
+      console.log(`🔐 Tenant ID already in headers: ${existingTenantId}`);
+      console.log("🔐 === TENANT INTERCEPTOR END (EXISTING) ===\n");
       return context;
     }
 
+    // Check if tenantId is passed in the config
+    const configTenantId = (context.config as any)?.tenantId;
+    if (configTenantId) {
+      console.log(`🔐 Tenant ID from config: ${configTenantId}`);
+      console.log("🔐 Adding to headers");
+      console.log("🔐 === TENANT INTERCEPTOR END (CONFIG) ===\n");
+      return {
+        ...context,
+        headers: {
+          ...context.headers,
+          [MIDDLEWARE_HEADERS.TENANT_ID]: configTenantId,
+        },
+      };
+    }
+
     // Resolve tenant ID from available sources
+    console.log("🔐 No tenant ID found, attempting to resolve...");
     const tenantId = await getValidTenantId();
     
     if (tenantId) {
-      console.debug(`Adding tenant ID to request: ${tenantId}`);
+      console.log(`🔐 Resolved tenant ID: ${tenantId}`);
+      console.log("🔐 === TENANT INTERCEPTOR END (RESOLVED) ===\n");
       
       return {
         ...context,
@@ -34,11 +56,12 @@ export class TenantRequestInterceptor implements RequestInterceptor {
     }
 
     // Critical: No tenant ID could be resolved
-    console.error('CRITICAL: Cannot resolve tenant ID for API request', {
+    console.error('🔐 CRITICAL: Cannot resolve tenant ID for API request', {
       url: context.url,
       method: context.method,
       headers: context.headers,
     });
+    console.log("🔐 === TENANT INTERCEPTOR END (ERROR) ===\n");
 
     // You might want to throw an error here to prevent the request
     // or allow it to continue and let the API gateway handle it

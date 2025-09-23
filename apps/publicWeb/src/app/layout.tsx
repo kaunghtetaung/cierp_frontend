@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { TenantProvider } from "@repo/tenant";
 import { getCurrentTenantForClient } from "@repo/tenant/wrapper";
 import { GlobalErrorFallback } from "@/base-components/error/GlobalErrorFallback";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CMS Frontend",
@@ -83,8 +84,12 @@ export default async function RootLayout({
 
   // Normal operation - use TenantProvider (can handle non-critical tenant errors)
   return (
-    <TenantProvider initialTenant={initialTenant} initialError={initialError}>
-      {children}
-    </TenantProvider>
+    <html lang="en">
+      <body>
+        <TenantProvider initialTenant={initialTenant} initialError={initialError}>
+          {children}
+        </TenantProvider>
+      </body>
+    </html>
   );
 }

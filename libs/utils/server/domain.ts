@@ -25,7 +25,11 @@ async function getDomainUrl(subdomain: string): Promise<string> {
  * Cached with React.cache for request-level deduplication
  */
 export const getApiDomain = cache(async function (): Promise<string> {
-  return await getDomainUrl("api");
+  const url = await getDomainUrl("api");
+  console.log("🔗 === GET API DOMAIN ===");
+  console.log("🔗 API Domain URL:", url);
+  console.log("🔗 === END GET API DOMAIN ===\n");
+  return url;
 });
 
 /**

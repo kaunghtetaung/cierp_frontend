@@ -1,6 +1,6 @@
 import React from "react";
 import { getTenantSettingClientSafe } from "@repo/tenant/tenant-service";
-// import { getContentSettings, getHeaderMenu } from "@repo/content"; // Temporarily commented out - will fix later
+import { getContentSettings, getHeaderMenu } from "@repo/content";
 import { getLocalizedText } from "@repo/utils/common/localization";
 import { HeaderContainerProps } from "./types";
 import HeaderBanner from "./HeaderBanner";
@@ -22,25 +22,35 @@ export async function HeaderContainer({
   showLanguageSelector = true,
   showUserMenu = true,
 }: HeaderContainerProps) {
+  console.log("\n🎨 === HEADER CONTAINER START ===");
+  console.log("🎨 TenantId:", tenantId);
+  console.log("🎨 Language:", currentLanguage);
+  
   try {
+    console.log("🎨 Fetching tenant and content settings in parallel...");
     // Fetch real data from your existing services
-    const [tenantSettings] = await Promise.all([
+    const [tenantSettings, contentSettings] = await Promise.all([
       getTenantSettingClientSafe(tenantId),
-      // getContentSettings(tenantId), // Temporarily commented out
+      getContentSettings(tenantId)
     ]);
+    
+    console.log("🎨 Tenant settings fetched:", {
+      hasTenantSettings: !!tenantSettings,
+      displayName: tenantSettings?.displayName,
+      brandInfo: !!tenantSettings?.brandInfo
+    });
+    
+    console.log("🎨 Content settings fetched:", {
+      hasContentSettings: !!contentSettings,
+      hasHeader: !!contentSettings?.header,
+      enableHeaderMenu: contentSettings?.enableHeaderMenu,
+      headerMenuLength: contentSettings?.headerMenu?.length || 0
+    });
 
-    // Placeholder content settings
-    const contentSettings = {
-      header: {
-        enabled: true,
-        showLogo: true,
-        showNavigation: true,
-        showUserMenu: true,
-      },
-    } as any;
-
-    // Get header menu items - placeholder data
-    const headerMenuItems = [] as any; // await getHeaderMenu(tenantId);
+    console.log("🎨 Fetching header menu items...");
+    // Get header menu items
+    const headerMenuItems = await getHeaderMenu(tenantId);
+    console.log("🎨 Header menu items fetched:", headerMenuItems?.length || 0);
 
     // Convert MenuItemSettings to NavigationItem format
     const navigationItems = headerMenuItems.map((menuItem: any) => ({
@@ -89,8 +99,17 @@ export async function HeaderContainer({
       },
     };
 
+    console.log("🎨 Header data prepared:", {
+      hasLogoUrl: !!headerData.logoUrl,
+      hasTitle: !!headerData.title,
+      navigationItemsCount: headerData.navigationItems?.length || 0,
+      headerEnabled: headerData.headerSettings.enabled
+    });
+
     // If header is disabled, return minimal header
     if (!headerData.headerSettings.enabled) {
+      console.log("🎨 Header is disabled, returning minimal header");
+      console.log("🎨 === HEADER CONTAINER END (DISABLED) ===\n");
       return (
         <header
           className={`sticky top-0 z-40 bg-background border-b border-border ${
@@ -107,6 +126,9 @@ export async function HeaderContainer({
     }
 
     const { headerSettings } = headerData;
+
+    console.log("🎨 Rendering full header with navigation");
+    console.log("🎨 === HEADER CONTAINER END (SUCCESS) ===\n");
 
     return (
       <header
@@ -172,7 +194,8 @@ export async function HeaderContainer({
       </header>
     );
   } catch (error) {
-    console.error("Error loading header data:", error);
+    console.error("🎨 ERROR loading header data:", error);
+    console.log("🎨 === HEADER CONTAINER END (ERROR) ===\n");
 
     // Fallback header in case of error
     return (

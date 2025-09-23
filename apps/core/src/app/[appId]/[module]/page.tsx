@@ -47,17 +47,15 @@ export default async function ModulePage({
   }
 
   // Check if module uses server-side pagination
-  const isServerSidePaging = module.dataTableSchema.pagination?.isClientSidePaging === false;
-  
+  const isServerSidePaging =
+    module.dataTableSchema.pagination?.isClientSidePaging === false;
+
   // Skip server-side fetch for server-paginated modules to avoid double API calls
   if (isServerSidePaging) {
     // For server-side pagination, let client handle fetching with proper params
     return (
       <div className="w-full min-w-0 overflow-hidden">
-        <ModuleDataTableWrapper 
-          module={module} 
-          initialData={[]} 
-        />
+        <ModuleDataTableWrapper module={module} initialData={[]} />
       </div>
     );
   }
@@ -70,14 +68,19 @@ export default async function ModulePage({
   try {
     // Create a timeout promise (10 seconds for server-side)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Server timeout')), 10000);
+      setTimeout(() => reject(new Error("Server timeout")), 10000);
     });
-    
-    const dataPromise = getModuleList(resolvedParams.module, resolvedSearchParams);
-    moduleData = await Promise.race([dataPromise, timeoutPromise]) as any[];
-    
+
+    const dataPromise = getModuleList(
+      resolvedParams.module,
+      resolvedSearchParams
+    );
+    moduleData = (await Promise.race([dataPromise, timeoutPromise])) as any[];
   } catch (error) {
-    console.log(`Server-side data fetch failed for ${resolvedParams.module}:`, error);
+    console.log(
+      `Server-side data fetch failed for ${resolvedParams.module}:`,
+      error
+    );
     serverError = true;
     // Don't throw - let client handle it
   }
@@ -85,15 +88,12 @@ export default async function ModulePage({
   return (
     <div className="space-y-6">
       {serverError || !moduleData ? (
-        <ModuleDataTableWithTimeout 
-          module={module} 
+        <ModuleDataTableWithTimeout
+          module={module}
           searchParams={resolvedSearchParams}
         />
       ) : (
-        <ModuleDataTableWrapper 
-          module={module} 
-          initialData={moduleData} 
-        />
+        <ModuleDataTableWrapper module={module} initialData={moduleData} />
       )}
     </div>
   );

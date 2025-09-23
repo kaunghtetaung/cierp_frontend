@@ -24,16 +24,29 @@ export async function ThemeLayout({
   let tenantId: string | null = null;
   let currentLanguage: "en" | "mm" = "en";
 
+  console.log("\n🏠 === THEME LAYOUT START ===");
+  
   try {
     middlewareData = await getMiddlewareDataFromHeaders();
     tenantId = middlewareData.tenantId;
     currentLanguage = middlewareData.language as "en" | "mm";
+    console.log("🏠 Middleware data:", {
+      tenantId,
+      currentLanguage,
+      hasMiddlewareData: !!middlewareData
+    });
   } catch (error) {
     // During build/static generation, headers aren't available
-    console.warn("Headers not available during build, using defaults");
+    console.warn("🏠 Headers not available during build, using defaults");
     tenantId = "default";
     currentLanguage = "en";
+    console.log("🏠 Using default values:", {
+      tenantId,
+      currentLanguage
+    });
   }
+  
+  console.log("🏠 === THEME LAYOUT END ===\n");
 
   // TODO: Get authentication data from your auth system
   const isAuthenticated = false;
