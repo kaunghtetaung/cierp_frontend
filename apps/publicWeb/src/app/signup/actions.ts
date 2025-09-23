@@ -6,8 +6,7 @@ import { createHttpClient } from "@repo/api/client";
 import { headers } from "next/headers";
 import { getRateLimiter } from "./utils/rate-limiter";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
-import { TenantTokenStrategy } from "@repo/auth/tenant-token-strategy";
-import { getCacheInstance } from "@repo/cache";
+import { getTokenForRequest } from "@repo/auth/core";
 
 // Validation schema
 const signupSchema = z.object({
@@ -150,7 +149,7 @@ export async function signupAction(
     
     if (!validationResult.success) {
       const fieldErrors: Record<string, string[]> = {};
-      validationResult.error.errors.forEach((error) => {
+      validationResult.error.issues.forEach((error) => {
         const field = error.path[0] as string;
         if (!fieldErrors[field]) {
           fieldErrors[field] = [];
@@ -162,6 +161,7 @@ export async function signupAction(
         success: false,
         error: "Please correct the errors below",
         fieldErrors,
+        data: null,
       };
     }
 
@@ -181,6 +181,7 @@ export async function signupAction(
           success: false,
           error: `Too many signup attempts. Please try again in ${remainingTime} seconds.`,
           fieldErrors: {},
+          data: null,
         };
       }
 
@@ -191,6 +192,7 @@ export async function signupAction(
           success: false,
           error: "Too many signup attempts. Please try again later.",
           fieldErrors: {},
+          data: null,
         };
       }
     }
@@ -214,6 +216,7 @@ export async function signupAction(
         success: false,
         error: "Verification failed. Please try again.",
         fieldErrors: {},
+        data: null,
       };
     }
 
@@ -226,6 +229,7 @@ export async function signupAction(
         success: false,
         error: "Unable to determine organization. Please try again.",
         fieldErrors: {},
+        data: null,
       };
     }
 
@@ -243,38 +247,26 @@ export async function signupAction(
       password: validationResult.data.password,
     };
 
-    // Get tenant access token
+    // Get appropriate token for the request
+    // The tenant token should already be initialized in the layout
+    // This will use: User token > Tenant token > Initializer token
     const apiUrl = await getApiDomain();
-    const cache = getCacheInstance();
-    const tenantTokenStrategy = new TenantTokenStrategy(cache);
+    const token = await getTokenForRequest(actualTenantId);
     
-    // Try to get existing token or create new one
-    let tenantToken = await tenantTokenStrategy.getToken(actualTenantId);
-    
-    if (!tenantToken) {
-      // Get client credentials from environment
-      const clientId = process.env.TENANT_CLIENT_ID || process.env.NEXT_PUBLIC_CLIENT_ID || '';
-      const clientSecret = process.env.TENANT_CLIENT_SECRET || process.env.CLIENT_SECRET || '';
-      
-      if (clientId && clientSecret) {
-        tenantToken = await tenantTokenStrategy.createTenantToken(actualTenantId, clientId, clientSecret);
-      }
-    }
-    
-    if (!tenantToken) {
-      console.error("Failed to get tenant access token");
+    if (!token) {
+      console.error("Failed to get access token for signup");
       return {
         success: false,
         error: "Service temporarily unavailable. Please try again.",
         fieldErrors: {},
+        data: null,
       };
     }
 
-    // Create HTTP client with tenant token
+    // Create HTTP client - it will handle token injection via headers
     const httpClient = createHttpClient({
       baseURL: apiUrl,
       enableAuth: true,
-      authToken: tenantToken,
       enableCSRF: true,
     });
 
@@ -284,56 +276,57 @@ export async function signupAction(
       email: signupData.email,
     });
 
-    // Call the user registration endpoint with tenant ID in header
-    const response = await httpClient.post(
-      "/core/users/signup", 
-      signupData,
+    // Call the user registration endpoint
+    // The HttpClient will handle adding x-tenant-id header via request config
+    const response = await httpClient.request(
+      "/core/users/signup",
       {
+        method: "POST",
+        body: JSON.stringify(signupData),
         headers: {
-          'x-tenant-id': actualTenantId,
+          "Content-Type": "application/json",
         },
+        tenantId: actualTenantId,
+        withAuth: true,
       }
     );
 
-    // Handle response
-    if (response.status === 409) {
-      // Conflict - user already exists
-      return {
-        success: false,
-        error: "An account with this email already exists. Please sign in instead.",
-        fieldErrors: { email: ["Email already registered"] },
-      };
-    }
-
-    if (response.status === 400) {
-      // Bad request - validation error
-      const errorData = response.data;
-      if (errorData?.fieldErrors) {
+    // Handle response based on ApiResponse structure
+    if (!response.success) {
+      const errorMessage = response.error || "Failed to create account";
+      
+      // Check for specific error cases
+      if (errorMessage.includes("already exists") || errorMessage.includes("409")) {
+        // Conflict - user already exists
         return {
           success: false,
-          error: "Please correct the errors below",
-          fieldErrors: errorData.fieldErrors,
+          error: "An account with this email already exists. Please sign in instead.",
+          fieldErrors: { email: ["Email already registered"] },
+          data: null,
         };
       }
       
+      if (errorMessage.includes("validation") || errorMessage.includes("400")) {
+        // Bad request - validation error
+        return {
+          success: false,
+          error: "Invalid request. Please check your information.",
+          fieldErrors: {},
+          data: null,
+        };
+      }
+      
+      // Generic error
       return {
         success: false,
-        error: errorData?.message || "Invalid request. Please check your information.",
+        error: errorMessage,
         fieldErrors: {},
+        data: null,
       };
     }
 
-    if (response.status !== 201 && response.status !== 200) {
-      // Other errors
-      return {
-        success: false,
-        error: "Failed to create account. Please try again.",
-        fieldErrors: {},
-      };
-    }
-
-    // Parse the response data
-    const userData = response.data;
+    // Parse the successful response data
+    const userData = response.data as any;
     
     // Log successful signup for analytics
     console.log("Successful signup:", {
@@ -366,6 +359,7 @@ export async function signupAction(
       success: false,
       error: "An unexpected error occurred. Please try again later.",
       fieldErrors: {},
+      data: null,
     };
   }
 }

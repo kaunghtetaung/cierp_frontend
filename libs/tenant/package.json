@@ -12,7 +12,8 @@
     "./providers": "./providers.ts",
     "./hooks": "./hooks.ts",
     "./tenant-service": "./tenant-service.ts",
-    "./wrapper": "./wrapper.ts"
+    "./wrapper": "./wrapper.ts",
+    "./token-initializer": "./token-initializer.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

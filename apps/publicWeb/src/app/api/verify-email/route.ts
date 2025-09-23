@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiDomain } from "@repo/utils/server";
 import { createHttpClient } from "@repo/api/client";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
-import { TenantTokenStrategy } from "@repo/auth/tenant-token-strategy";
-import { getCacheInstance } from "@repo/cache";
+import { getTokenForRequest } from "@repo/auth/core";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token } = body;
+    const { token: verificationToken } = body;
 
-    if (!token) {
+    if (!verificationToken) {
       return NextResponse.json(
         { success: false, error: "Verification token is required" },
         { status: 400 }
@@ -29,58 +28,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get tenant access token
+    // Get appropriate token for the request
+    // The tenant token should already be initialized in the layout
+    // This will use: User token > Tenant token > Initializer token
     const apiUrl = await getApiDomain();
-    const cache = getCacheInstance();
-    const tenantTokenStrategy = new TenantTokenStrategy(cache);
+    const token = await getTokenForRequest(tenantId);
     
-    // Try to get existing token or create new one
-    let tenantToken = await tenantTokenStrategy.getToken(tenantId);
-    
-    if (!tenantToken) {
-      // Get client credentials from environment
-      const clientId = process.env.TENANT_CLIENT_ID || process.env.NEXT_PUBLIC_CLIENT_ID || '';
-      const clientSecret = process.env.TENANT_CLIENT_SECRET || process.env.CLIENT_SECRET || '';
-      
-      if (clientId && clientSecret) {
-        tenantToken = await tenantTokenStrategy.createTenantToken(tenantId, clientId, clientSecret);
-      }
-    }
-    
-    if (!tenantToken) {
-      console.error("Failed to get tenant access token");
+    if (!token) {
+      console.error("Failed to get access token for email verification");
       return NextResponse.json(
         { success: false, error: "Service temporarily unavailable" },
         { status: 503 }
       );
     }
 
-    // Create HTTP client with tenant token
+    // Create HTTP client - it will handle token injection via headers
     const httpClient = createHttpClient({
       baseURL: apiUrl,
       enableAuth: true,
-      authToken: tenantToken,
       enableCSRF: true,
     });
 
     console.log("Verifying email with backend:", {
-      endpoint: `/core/users/verify-email/${token}`,
+      endpoint: `/core/users/verify-email/${verificationToken}`,
       tenantId,
     });
 
     // Call the email verification endpoint
-    const response = await httpClient.post(
-      `/core/users/verify-email/${token}`,
-      {},
+    // The HttpClient will handle adding x-tenant-id header via request config
+    const response = await httpClient.request(
+      `/core/users/verify-email/${verificationToken}`,
       {
-        headers: {
-          'x-tenant-id': tenantId,
-        },
+        method: "POST",
+        tenantId: tenantId,
+        withAuth: true,
       }
     );
 
-    // Handle different response statuses
-    if (response.status === 200 || response.status === 201) {
+    // Handle response based on ApiResponse structure
+    if (response.success) {
       return NextResponse.json({
         success: true,
         message: "Email verified successfully! You can now log in to your account.",
@@ -88,7 +74,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (response.status === 400) {
+    // Handle error cases
+    const errorMessage = response.error || "Failed to verify email";
+    
+    if (errorMessage.includes("Invalid") || errorMessage.includes("expired")) {
       return NextResponse.json(
         {
           success: false,
@@ -98,7 +87,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (response.status === 404) {
+    if (errorMessage.includes("not found") || errorMessage.includes("404")) {
       return NextResponse.json(
         {
           success: false,
@@ -112,9 +101,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to verify email. Please try again.",
+        error: errorMessage,
       },
-      { status: response.status || 500 }
+      { status: 500 }
     );
 
   } catch (error) {

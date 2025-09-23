@@ -11,6 +11,14 @@ const initialState = {
   success: false,
   error: null as string | null,
   fieldErrors: {} as Record<string, string[]>,
+  data: null as { 
+    message?: string;
+    userId?: string;
+    displayName?: string;
+    email?: string;
+    isEmailVerified?: boolean;
+    roles?: string[];
+  } | null,
 };
 
 interface SignupFormProps {
@@ -34,7 +42,7 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
     accountCreatedSuccess: 'Account created successfully! Please check your email for verification.',
     passwordRequirement: 'Password must be at least "Good" strength to continue'
   };
-  const [state, formAction] = useActionState(signupAction, initialState);
+  const [state, formAction] = useActionState(signupAction as any, initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [verificationToken, setVerificationToken] = useState("");
