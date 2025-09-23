@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@repo/auth';
+import { useSafeAuth } from '@/hooks/use-safe-auth';
 import { MobileNavigation } from '../../navigation/MobileNavigation';
 
 interface MobileNavigationWithAuthProps {
@@ -14,7 +14,7 @@ interface MobileNavigationWithAuthProps {
 
 /**
  * Mobile Navigation wrapper that provides auth state
- * Connects auth context with MobileNavigation component
+ * Uses safe auth hook that doesn't trigger redirects
  */
 export const MobileNavigationWithAuth: React.FC<MobileNavigationWithAuthProps> = ({ 
   items, 
@@ -22,7 +22,7 @@ export const MobileNavigationWithAuth: React.FC<MobileNavigationWithAuthProps> =
   isOpen, 
   onOpenChange 
 }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useSafeAuth();
   const userRoles = user?.roles || [];
 
   return (

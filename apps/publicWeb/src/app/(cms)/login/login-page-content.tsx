@@ -267,22 +267,6 @@ function ModernLoginContent({
                       {returnUrl}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Loading:</span>{" "}
-                    <span
-                      className={isLoading ? "text-amber-500" : "text-gray-600"}
-                    >
-                      {isLoading ? "Yes" : "No"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Authenticated:</span>{" "}
-                    <span
-                      className={isAuthenticated ? "text-green-500" : "text-gray-600"}
-                    >
-                      {isAuthenticated ? "Yes" : "No"}
-                    </span>
-                  </div>
                 </div>
                 <div className="space-y-2">
                   <div>

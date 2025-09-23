@@ -3,7 +3,8 @@
 import React from "react";
 import { Button } from "@/styled-components/ui/Button";
 import { User, Settings, UserCircle, Lock, LogIn } from "lucide-react";
-import { useAuth, LoginButton, LogoutButton } from "@repo/auth";
+import { LoginButton, LogoutButton } from "@/components/auth-buttons";
+import { useSafeAuth } from "@/hooks/use-safe-auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,12 +16,13 @@ import {
 /**
  * User Menu Component
  * Shows signin button when not authenticated, user menu when authenticated
+ * Uses safe auth hook that doesn't trigger redirects
  */
 export const UserMenu: React.FC<{
   className?: string;
   variant?: "mobile" | "desktop";
 }> = ({ className = "", variant = "desktop" }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useSafeAuth();
 
   if (isLoading) {
     return (

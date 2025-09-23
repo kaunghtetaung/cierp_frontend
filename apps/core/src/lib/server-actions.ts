@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { apiClient } from './api-client'
 
 export interface ActionResponse<T = any> {
   success: boolean
@@ -58,29 +59,23 @@ export async function submitModuleForm(
       }
     }
 
-    // Call API endpoint
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+    // Call API endpoint with authentication
     const endpoint = action === 'create' 
-      ? `${apiUrl}/modules/${moduleSlug}`
-      : `${apiUrl}/modules/${moduleSlug}/${id}`
+      ? `/modules/${moduleSlug}`
+      : `/modules/${moduleSlug}/${id}`
     
-    const response = await fetch(endpoint, {
-      method: action === 'create' ? 'POST' : 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(validationResult.data)
-    })
+    const response = action === 'create'
+      ? await apiClient.post(endpoint, validationResult.data)
+      : await apiClient.put(endpoint, validationResult.data)
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+    if (!response.success) {
       return {
         success: false,
-        error: errorData.message || `Failed to ${action} ${moduleSlug}`
+        error: response.error || `Failed to ${action} ${moduleSlug}`
       }
     }
 
-    const result = await response.json()
+    const result = response.data
 
     // Revalidate the module list page
     revalidatePath(`/${moduleSlug}`)
@@ -112,16 +107,12 @@ export async function deleteModuleItem(
   id: string
 ): Promise<ActionResponse> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
-    const response = await fetch(`${apiUrl}/modules/${moduleSlug}/${id}`, {
-      method: 'DELETE'
-    })
+    const response = await apiClient.delete(`/modules/${moduleSlug}/${id}`)
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+    if (!response.success) {
       return {
         success: false,
-        error: errorData.message || `Failed to delete ${moduleSlug} item`
+        error: response.error || `Failed to delete ${moduleSlug} item`
       }
     }
 
@@ -151,28 +142,20 @@ export async function bulkModuleOperation(
   updateData?: Record<string, any>
 ): Promise<ActionResponse> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
-    const response = await fetch(`${apiUrl}/modules/${moduleSlug}/bulk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        operation,
-        ids,
-        data: updateData
-      })
+    const response = await apiClient.post(`/modules/${moduleSlug}/bulk`, {
+      operation,
+      ids,
+      data: updateData
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+    if (!response.success) {
       return {
         success: false,
-        error: errorData.message || `Failed to perform bulk ${operation}`
+        error: response.error || `Failed to perform bulk ${operation}`
       }
     }
 
-    const result = await response.json()
+    const result = response.data
 
     // Revalidate the module list page
     revalidatePath(`/${moduleSlug}`)
@@ -204,24 +187,19 @@ export async function executeExtraAction(
     // Convert FormData to object if provided
     const data = formData ? Object.fromEntries(formData.entries()) : {}
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
-    const response = await fetch(`${apiUrl}/modules/${moduleSlug}/${id}/actions/${actionKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    })
+    const response = await apiClient.post(
+      `/modules/${moduleSlug}/${id}/actions/${actionKey}`,
+      data
+    )
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+    if (!response.success) {
       return {
         success: false,
-        error: errorData.message || `Failed to execute ${actionKey}`
+        error: response.error || `Failed to execute ${actionKey}`
       }
     }
 
-    const result = await response.json()
+    const result = response.data
 
     // Revalidate both item and list pages
     revalidatePath(`/${moduleSlug}`)
