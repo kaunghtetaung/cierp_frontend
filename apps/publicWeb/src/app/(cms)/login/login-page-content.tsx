@@ -1,11 +1,10 @@
 // Client-side login page content
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { TenantSettings } from "@repo/types";
 import Image from "next/image";
-import { useAuth } from "@repo/auth";
 import { initiateLogin } from "@repo/auth/login-utils";
 
 function ModernLoginContent({
@@ -13,9 +12,7 @@ function ModernLoginContent({
 }: {
   tenantSettings: TenantSettings | null;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, user, isLoading, error: authError } = useAuth();
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,20 +40,6 @@ function ModernLoginContent({
 
   const logoUrl = tenantSettings?.brandInfo?.logoUrl || undefined;
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push(returnUrl);
-    }
-  }, [isAuthenticated, router, returnUrl]);
-
-  // Handle auth errors
-  useEffect(() => {
-    if (authError) {
-      setError(authError);
-    }
-  }, [authError]);
-
   const handleLogin = async () => {
     try {
       setError(null);
@@ -69,17 +52,6 @@ function ModernLoginContent({
       setIsLoggingIn(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-white transition-colors duration-300">
@@ -157,7 +129,7 @@ function ModernLoginContent({
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-semibold text-red-600">
-                        Authentication Failed
+                        Login Error
                       </h3>
                       <p className="mt-1 text-sm text-red-500">{error}</p>
                     </div>
