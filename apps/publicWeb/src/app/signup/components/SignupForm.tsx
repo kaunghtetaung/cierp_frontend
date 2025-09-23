@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle2, Mail, UserCircle, Lock, Eye, EyeOff } from "lucide-react";
 import { signupAction } from "../actions";
 import { HumanVerificationModal } from "./HumanVerificationModal";
@@ -28,6 +29,7 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ tenantId, language = 'en', translations }: SignupFormProps) {
+  const router = useRouter();
   const t = translations || {
     fullName: 'Full Name',
     emailAddress: 'Email Address', 
@@ -59,15 +61,12 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
   useEffect(() => {
     if (state.success || state.error) {
       setIsSubmitting(false);
-      if (state.success) {
-        // Reset form after successful submission
-        setIsVerified(false);
-        setVerificationToken("");
-        setShowVerification(false);
-        setPassword("");
+      if (state.success && state.data?.email) {
+        // Redirect to success page with email parameter
+        router.push(`/signup/success?email=${encodeURIComponent(state.data.email)}`);
       }
     }
-  }, [state]);
+  }, [state, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -237,50 +236,21 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
           </div>
         )}
 
-        {/* Success Message */}
-        {state.success && (
-          <div className={styles.successContainer}>
-            <div className={styles.successCard}>
-              <div className={styles.successIconWrapper}>
-                <Mail className={styles.successIcon} />
-              </div>
-              <h3 className={styles.successTitle}>
-                {t.verificationEmailSent || 'Verification Email Sent!'}
-              </h3>
-              <p className={styles.successMessage}>
-                {t.checkEmailMessage || `We've sent a verification email to`}
-              </p>
-              <p className={styles.emailHighlight}>
-                {state.data?.email}
-              </p>
-              <p className={styles.successInstruction}>
-                {t.checkInboxMessage || 'Please check your inbox and click the verification link to activate your account.'}
-              </p>
-              <div className={styles.successDivider} />
-              <p className={styles.successNote}>
-                {t.didntReceiveEmail || "Didn't receive the email? Check your spam folder or wait a few minutes."}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Submit Button - Hide when success */}
-        {!state.success && (
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={isSubmitting || passwordStrength < 3}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className={styles.spinner} size={16} />
-                {t.creatingAccount}
-              </>
-            ) : (
-              t.createAccount
-            )}
-          </button>
-        )}
+        {/* Submit Button */}
+        <button
+          type="submit"
+          className={styles.submitButton}
+          disabled={isSubmitting || passwordStrength < 3}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className={styles.spinner} size={16} />
+              {t.creatingAccount}
+            </>
+          ) : (
+            t.createAccount
+          )}
+        </button>
 
         {passwordStrength > 0 && passwordStrength < 3 && (
           <p style={{ fontSize: '0.75rem', textAlign: 'center', color: 'var(--signup-text-muted)', marginTop: '0.5rem' }}>

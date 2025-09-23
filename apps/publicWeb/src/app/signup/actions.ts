@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
 import { getApiDomain } from "@repo/utils/server";
 import { createHttpClient } from "@repo/api/client";
 import { headers } from "next/headers";
