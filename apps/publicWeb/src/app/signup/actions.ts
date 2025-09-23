@@ -46,9 +46,14 @@ async function detectBot(
       return { isBot: true, reason: "Verification token expired" };
     }
     
-    // Check 2: Minimum time to complete (too fast = bot)
-    if (tokenAge < 3000) { // Less than 3 seconds
-      return { isBot: true, reason: "Form completed too quickly" };
+    // Check 2: Minimum time to complete form (from page load to submission)
+    const formLoadTime = formData.get("formLoadTime");
+    if (formLoadTime) {
+      const timeOnForm = Date.now() - parseInt(formLoadTime.toString(), 10);
+      // Check if form was filled in less than 5 seconds from page load
+      if (timeOnForm < 5000) {
+        return { isBot: true, reason: "Form completed too quickly" };
+      }
     }
     
     // Check 3: User agent validation

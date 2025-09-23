@@ -50,6 +50,7 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [formLoadTime] = useState(Date.now()); // Track when form was loaded
   
   // Form fields state for validation feedback
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -68,7 +69,9 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
     }
   }, [state]);
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
     // Check if human verification is completed
     if (!isVerified) {
       setShowVerification(true);
@@ -80,8 +83,13 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
       return; // Don't submit if password is too weak
     }
 
-    // Add verification token and tenant ID to form data
+    // Get form data
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    
+    // Add verification token, form load time, and tenant ID to form data
     formData.append("verificationToken", verificationToken);
+    formData.append("formLoadTime", formLoadTime.toString());
     if (tenantId) {
       formData.append("tenantId", tenantId);
     }
@@ -102,7 +110,7 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
 
   return (
     <>
-      <form action={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         {/* Display Name Field */}
         <div className={styles.formField}>
           <label htmlFor="displayName" className={styles.label}>
