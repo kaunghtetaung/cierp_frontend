@@ -7,10 +7,12 @@ import { ModuleDataTable } from "@repo/schema-tables";
 import { IconComponent } from "@repo/ui";
 import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
+import type { ModulePermissions } from "@/types/layout";
 
 interface ClientSidePaginationWrapperProps {
   module: ModuleSchema;
   initialData?: any[];
+  userPermissions?: ModulePermissions;
 }
 
 /**
@@ -31,6 +33,7 @@ interface ClientSidePaginationWrapperProps {
 export function ClientSidePaginationWrapper({
   module,
   initialData = [],
+  userPermissions,
 }: ClientSidePaginationWrapperProps) {
   const { currentLanguage } = useLanguage();
   const searchParams = useSearchParams();
@@ -315,8 +318,8 @@ export function ClientSidePaginationWrapper({
   });
 
   return (
-    <ModuleDataTable 
-      module={module} 
+    <ModuleDataTable
+      module={module}
       data={moduleData}
       totalItems={totalItems}
       totalPages={totalPages}
@@ -333,6 +336,7 @@ export function ClientSidePaginationWrapper({
         setIsDataLoaded(false);
         refetch();
       }}
+      userPermissions={userPermissions}
     />
   );
 }

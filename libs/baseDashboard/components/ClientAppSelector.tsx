@@ -1,0 +1,364 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import type { TenantSettings, TenantApplication, User } from "@repo/types";
+import { getLocalizedText } from "@repo/utils";
+import { extractBaseDomain } from "@repo/utils/common/url";
+import { IconComponent } from "@repo/ui";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@repo/ui";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@repo/ui";
+
+interface ClientAppSelectorProps {
+  tenant: TenantSettings | null;
+  filteredApps: TenantApplication[];
+  currentLanguage: string;
+}
+
+export function ClientAppSelector({
+  tenant,
+  filteredApps,
+  currentLanguage,
+}: ClientAppSelectorProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { state } = useSidebar();
+
+  // Use pre-filtered apps from server component
+  const apps = filteredApps;
+  
+  console.log("[ClientAppSelector] Debug:", {
+    tenant: !!tenant,
+    tenantApps: tenant?.applications?.length,
+    filteredApps: filteredApps?.length,
+    currentLanguage
+  });
+
+  // Get current app from URL path (path-based routing)
+  const getCurrentApp = (): TenantApplication | null => {
+    if (apps.length === 0) return null;
+
+    if (typeof window !== "undefined") {
+      const currentPathname = window.location.pathname;
+
+      // Extract app from path (e.g., "/core/users" -> "core", "/users" -> check if root-level)
+      const pathSegments = currentPathname
+        .replace(/^\/+|\/+$/g, "")
+        .split("/")
+        .filter(Boolean);
+      const appFromPath = pathSegments.length > 0 ? pathSegments[0] : "";
+
+      console.log("Current pathname:", currentPathname);
+      console.log("App from path:", appFromPath);
+      console.log(
+        "Available apps:",
+        apps.map(
+          (app) =>
+            app.slug || getLocalizedText(app.displayShortName, currentLanguage)
+        )
+      );
+
+      // Find app that matches the current path using slug (with fallback)
+      const currentApp = apps.find((app) => {
+        const appIdentifier =
+          app.slug || getLocalizedText(app.displayShortName, currentLanguage);
+        return appIdentifier?.toLowerCase() === appFromPath?.toLowerCase();
+      });
+
+      // If no match found, try to match by app name in displayName
+      if (!currentApp && appFromPath) {
+        const appByName = apps.find((app) => {
+          const displayName = getLocalizedText(
+            app.displayName,
+            currentLanguage
+          );
+          return displayName?.toLowerCase().includes(appFromPath.toLowerCase());
+        });
+
+        if (appByName) return appByName;
+      }
+
+      // If found, return it; otherwise return first app as fallback
+      return currentApp || apps[0];
+    }
+
+    // Server-side fallback - return first app
+    return apps[0];
+  };
+
+  const currentApp = getCurrentApp();
+
+  // Get icon component by name using our custom IconComponent
+  const getIcon = (iconName: string, className?: string) => {
+    return (
+      <IconComponent
+        name={iconName}
+        className={className}
+        fallback="LayoutDashboard"
+      />
+    );
+  };
+
+  const handleAppSelect = (app: TenantApplication) => {
+    // Debug: Log the app object to see what's available
+    console.log("Selected app object:", app);
+
+    // Use slug if available, fallback to displayShortName.en for backwards compatibility
+    const appSlug =
+      app.slug || getLocalizedText(app.displayShortName, currentLanguage);
+
+    if (!appSlug) {
+      console.error("App slug and displayShortName are not available", app);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const currentHostname = window.location.hostname;
+      const protocol = window.location.protocol;
+      const port = window.location.port;
+      const currentPath = window.location.pathname;
+      const search = window.location.search;
+      const hash = window.location.hash;
+
+      // Extract current app from path
+      const pathSegments = currentPath
+        .replace(/^\/+|\/+$/g, "")
+        .split("/")
+        .filter(Boolean);
+      const currentAppFromPath = pathSegments.length > 0 ? pathSegments[0] : "";
+      const currentPage = pathSegments.length > 1 ? pathSegments[1] : "";
+
+      // Check if we're already on this app's dashboard
+      if (currentAppFromPath === appSlug && currentPage === "dashboard") {
+        console.log(`Already on ${appSlug} app dashboard`);
+        return;
+      }
+
+      // Build new path-based URL with app slug - always redirect to dashboard
+      const portSuffix = port ? `:${port}` : "";
+      // Always navigate to the dashboard page when switching apps
+      const newUrl = `${protocol}//${currentHostname}${portSuffix}/${appSlug}/dashboard`;
+
+      console.log(
+        `Switching from ${currentAppFromPath} to ${appSlug} app dashboard: ${newUrl}`
+      );
+
+      // Navigate to new path-based URL (dashboard)
+      window.location.href = newUrl;
+    }
+  };
+
+  // Show loading skeleton only when we have no tenant or no apps at all
+  // If we have apps but can't determine current app, we'll use the first app as fallback
+  if (!tenant || !apps || apps.length === 0) {
+    console.log("[ClientAppSelector] Showing skeleton - tenant:", !!tenant, "apps:", apps?.length || 0);
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" className="animate-pulse">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted">
+              <div className="size-4 bg-muted-foreground/20 rounded"></div>
+            </div>
+            <div className="grid flex-1 gap-1">
+              <div className="h-3 bg-muted rounded w-3/4"></div>
+              <div className="h-2 bg-muted/70 rounded w-1/2"></div>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  // Use the current app or fallback to first available app
+  const displayApp = currentApp || apps[0];
+
+  if (!displayApp) {
+    // This should rarely happen, but handle it gracefully
+    console.error("[AppSelector] No display app available despite having apps");
+    return null;
+  }
+
+  // Show simplified icon-only version when collapsed
+  if (state === "collapsed") {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="default"
+                className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                tooltip={getLocalizedText(
+                  displayApp.displayName,
+                  currentLanguage
+                )}
+              >
+                <div className="flex aspect-square size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  {getIcon(displayApp.iconName, "size-4")}
+                </div>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-card border-border"
+              align="start"
+              side="right"
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {getLocalizedText(tenant.displayName, currentLanguage)} -
+                Applications
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              {apps.map((app, index) => (
+                <DropdownMenuItem
+                  key={
+                    app.slug ||
+                    getLocalizedText(app.displayShortName, currentLanguage) ||
+                    index
+                  }
+                  onClick={() => handleAppSelect(app)}
+                  className="gap-2 p-2 cursor-pointer"
+                >
+                  <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                    {getIcon(app.iconName, "size-3")}
+                  </div>
+                  <div className="flex-1 grid text-left">
+                    <span className="font-medium text-sm">
+                      {getLocalizedText(app.displayName, currentLanguage)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {getLocalizedText(
+                        app.localizedDescription,
+                        currentLanguage
+                      )}
+                    </span>
+                  </div>
+                  {(displayApp.slug ||
+                    getLocalizedText(
+                      displayApp.displayShortName,
+                      currentLanguage
+                    )) ===
+                    (app.slug ||
+                      getLocalizedText(
+                        app.displayShortName,
+                        currentLanguage
+                      )) && (
+                    <IconComponent
+                      name="Check"
+                      className="size-4 text-primary"
+                    />
+                  )}
+                </DropdownMenuItem>
+              ))}
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 p-2 text-muted-foreground">
+                <IconComponent name="Plus" className="size-4" />
+                <span>Request new app</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  // Show full layout when expanded
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                {getIcon(displayApp.iconName, "size-4")}
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">
+                  {getLocalizedText(displayApp.displayName, currentLanguage)}
+                </span>
+              </div>
+              <IconComponent name="ChevronsUpDown" className="ml-auto size-4" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-card border-border"
+            align="start"
+            side="bottom"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              {getLocalizedText(tenant.displayName, currentLanguage)} -
+              Applications
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
+            {apps.map((app, index) => (
+              <DropdownMenuItem
+                key={
+                  app.slug ||
+                  getLocalizedText(app.displayShortName, currentLanguage) ||
+                  index
+                }
+                onClick={() => handleAppSelect(app)}
+                className="gap-2 p-2 cursor-pointer"
+              >
+                <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  {getIcon(app.iconName, "size-3")}
+                </div>
+                <div className="flex-1 grid text-left">
+                  <span className="font-medium text-sm">
+                    {getLocalizedText(app.displayName, currentLanguage)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {getLocalizedText(
+                      app.localizedDescription,
+                      currentLanguage
+                    )}
+                  </span>
+                </div>
+                {(displayApp.slug ||
+                  getLocalizedText(
+                    displayApp.displayShortName,
+                    currentLanguage
+                  )) ===
+                  (app.slug ||
+                    getLocalizedText(
+                      app.displayShortName,
+                      currentLanguage
+                    )) && (
+                  <IconComponent name="Check" className="size-4 text-primary" />
+                )}
+              </DropdownMenuItem>
+            ))}
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2 p-2 text-muted-foreground">
+              <IconComponent name="Plus" className="size-4" />
+              <span>Request new app</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
+export default ClientAppSelector;

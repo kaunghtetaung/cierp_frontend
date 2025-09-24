@@ -7,11 +7,13 @@ import { Button } from '@repo/ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
 import { Loader2, RefreshCw, AlertTriangle, Clock, Wifi, WifiOff } from 'lucide-react'
 import type { ModuleSchema } from '@repo/types'
+import type { ModulePermissions } from '@/types/layout'
 
 interface ModuleDataTableWithTimeoutProps {
   module: ModuleSchema
   initialData?: any[]
   searchParams?: Record<string, string>
+  userPermissions?: ModulePermissions
 }
 
 interface ModuleListResponse {
@@ -79,7 +81,8 @@ async function fetchModuleDataWithTimeout(
 export function ModuleDataTableWithTimeout({
   module,
   initialData,
-  searchParams = {}
+  searchParams = {},
+  userPermissions
 }: ModuleDataTableWithTimeoutProps) {
   const [state, setState] = useState<ModuleListResponse>({
     data: initialData,
@@ -275,6 +278,7 @@ export function ModuleDataTableWithTimeout({
       data={state.data || []}
       onRefresh={() => fetchData(true)}
       isRefreshing={state.isLoading}
+      userPermissions={userPermissions}
     />
   )
 }

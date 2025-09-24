@@ -1,5 +1,5 @@
 // Common dashboard types and interfaces
-import type { TenantSettings } from "@repo/types"
+import type { TenantSettings, User, AuthSession, TenantApplication } from "@repo/types"
 import type { ReactNode } from "react"
 
 // Layout related types
@@ -24,12 +24,22 @@ export interface AppSchemaData {
   appId: string
 }
 
+// Auth data types
+export interface AuthData {
+  user: User | null
+  session: AuthSession | null
+  isAuthenticated: boolean
+  error: string | null
+}
+
 // Provider types
 export interface DashboardProvidersProps {
   children: ReactNode
   initialLanguage: string
   initialTenant: TenantSettings | null
   initialError: string | null
+  initialAuth?: AuthData | null
+  filteredApps?: TenantApplication[]
 }
 
 // Layout component types

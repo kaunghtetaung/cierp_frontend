@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { fetchLayoutData } from '@/lib/layout-data'
+import { requireModuleAccess } from '@/lib/auth-utils'
 import { getModuleItemWithNavigation } from '@repo/app-modules'
 import { DetailViewRenderer } from '@/components/modules/DetailViewRenderer'
 import type { ModuleSchema } from '@repo/types'
@@ -14,17 +15,25 @@ interface ModuleViewPageProps {
 }
 
 export default async function ModuleViewPage({ params, searchParams }: ModuleViewPageProps) {
-  const { appSchemaData } = await fetchLayoutData()
   const resolvedParams = await params
   const resolvedSearchParams = await searchParams
-  
+
+  // 🔒 SECURITY: Server-side authorization check - prevents direct URL access
+  const { user, tenant, module: fullModule } = await requireModuleAccess(
+    resolvedParams.appId,
+    resolvedParams.module
+  )
+
+  // Get filtered layout data (this will only include modules user has access to)
+  const { appSchemaData } = await fetchLayoutData()
+
   if (!appSchemaData?.modules) {
     notFound()
   }
 
-  // Find the module by slug
+  // Find the module by slug (this should always succeed since we passed requireModuleAccess)
   const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
+    (mod: any) => mod.slug === resolvedParams.module
   )
 
   if (!module || !module.detailViewSchema) {
@@ -100,31 +109,24 @@ export default async function ModuleViewPage({ params, searchParams }: ModuleVie
 }
 
 export async function generateMetadata({ params }: ModuleViewPageProps) {
-  const { appSchemaData } = await fetchLayoutData()
   const resolvedParams = await params
-  
-  if (!appSchemaData?.modules) {
+
+  try {
+    // 🔒 SECURITY: Check module access for metadata generation
+    const { module: fullModule } = await requireModuleAccess(
+      resolvedParams.appId,
+      resolvedParams.module
+    )
+
     return {
-      title: 'Item Not Found',
-      description: 'The requested item could not be found.'
+      title: `View ${fullModule.name?.en || fullModule.slug} - Core Dashboard`,
+      description: `View details for ${fullModule.name?.en || fullModule.slug}`,
     }
-  }
-
-  const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
-  )
-
-  if (!module) {
+  } catch (error) {
+    // If access is denied, return generic metadata
     return {
-      title: 'Item Not Found', 
-      description: 'The requested item could not be found.'
+      title: 'Access Denied',
+      description: 'You don\'t have permission to access this module.',
     }
-  }
-
-  // For metadata, we'll use a generic title to avoid duplicate API calls
-  // The actual title will be shown in the page content
-  return {
-    title: `${module.name.en} Details - Core Dashboard`,
-    description: `View details for ${module.name.en.toLowerCase()}`
   }
 }

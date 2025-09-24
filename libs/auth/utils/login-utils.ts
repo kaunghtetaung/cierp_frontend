@@ -214,21 +214,28 @@ export function hasApplicationAccess(
         }
       }
     } else if (userRole && typeof userRole === 'object') {
-      // New format: {organizationId, departmentId, roles}
-      const roleInfo = userRole as UserRoleInfo;
+      // Handle both formats: new {organizationId, departmentId, roles} and JWT {Organization, Department, Role}
+      const roleInfo = userRole as any;
+
+      // Extract department (handle both departmentId and Department fields)
+      const userDepartment = roleInfo.departmentId || roleInfo.Department;
+
+      // Extract roles (handle both roles[] array and Role string)
+      const userRoles = roleInfo.roles || (roleInfo.Role ? [roleInfo.Role] : []);
+
       for (const acceptRole of acceptRolesList) {
         // Check department match (wildcard "*" means any department)
-        const departmentMatch = 
-          acceptRole.departmentId === '*' || 
-          acceptRole.departmentId === roleInfo.departmentId;
+        const departmentMatch =
+          acceptRole.departmentId === '*' ||
+          acceptRole.departmentId === userDepartment;
 
-        if (departmentMatch && roleInfo.roles) {
+        if (departmentMatch && userRoles && userRoles.length > 0) {
           // Check if user has any of the required roles for this department
           const hasRequiredRole = acceptRole.roles.some(requiredRole =>
-            roleInfo.roles.some(userRoleName => {
+            userRoles.some((userRoleName: string) => {
               const normalizedUserRole = userRoleName.toLowerCase();
               const normalizedRequiredRole = requiredRole.toLowerCase();
-              
+
               return normalizedUserRole === normalizedRequiredRole ||
                      normalizedUserRole.includes(normalizedRequiredRole) ||
                      normalizedRequiredRole.includes(normalizedUserRole);

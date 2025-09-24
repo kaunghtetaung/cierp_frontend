@@ -1,10 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@repo/ui";
+import { SidebarInset, SidebarProvider } from "@repo/ui";
 import { DashboardErrorBoundary } from "@repo/base-dashboard";
 import { AppSidebar } from "@/components/common/sidebar";
 import Header from "@/components/common/header";
@@ -27,19 +24,23 @@ interface EnhancedAppLayoutProps extends AppLayoutProps {
  * Handles the sidebar, header, and main content area with error boundaries
  * Now supports dashboard-01 variant for enhanced styling
  */
-export function AppLayout({ 
-  children, 
-  tenant, 
+export function AppLayout({
+  children,
+  tenant,
   appSchemaData,
+  filteredApps,
+  authData,
   variant = "default",
-  headerProps
+  headerProps,
 }: EnhancedAppLayoutProps) {
   const isDashboard = variant === "dashboard";
+
+  console.log("kaunghtet", tenant);
 
   return (
     <SidebarProvider>
       <DashboardErrorBoundary>
-        <AppSidebar tenant={tenant} appSchemaData={appSchemaData} />
+        <AppSidebar tenant={tenant} appSchemaData={appSchemaData} filteredApps={filteredApps} authData={authData} />
       </DashboardErrorBoundary>
 
       <SidebarInset>
@@ -56,16 +57,14 @@ export function AppLayout({
         </DashboardErrorBoundary>
 
         <DashboardErrorBoundary>
-          <main className={cn(
-            "flex flex-1 flex-col min-w-0 h-full max-h-full",
-            isDashboard 
-              ? "overflow-auto bg-muted/20" 
-              : "overflow-hidden p-4"
-          )}>
+          <main
+            className={cn(
+              "flex flex-1 flex-col min-w-0 h-full max-h-full",
+              isDashboard ? "overflow-auto bg-muted/20" : "overflow-hidden p-4"
+            )}
+          >
             {isDashboard ? (
-              <div className="container mx-auto p-6 space-y-6">
-                {children}
-              </div>
+              <div className="container mx-auto p-6 space-y-6">{children}</div>
             ) : (
               children
             )}

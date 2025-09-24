@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { fetchLayoutData } from '@/lib/layout-data'
+import { requireModuleAccess } from '@/lib/auth-utils'
 import { getModuleItemWithNavigation } from '@repo/app-modules'
 import { submitModuleForm } from '@repo/app-modules/server-actions'
 import { FormWithLanguage } from '@repo/schema-forms'
@@ -17,17 +18,25 @@ interface ModuleDetailPageProps {
 }
 
 export default async function ModuleDetail({ params, searchParams }: ModuleDetailPageProps) {
-  const { appSchemaData } = await fetchLayoutData()
   const resolvedParams = await params
   const resolvedSearchParams = await searchParams
-  
+
+  // 🔒 SECURITY: Server-side authorization check - prevents direct URL access
+  const { user, tenant, module: fullModule } = await requireModuleAccess(
+    resolvedParams.appId,
+    resolvedParams.module
+  )
+
+  // Get filtered layout data (this will only include modules user has access to)
+  const { appSchemaData } = await fetchLayoutData()
+
   if (!appSchemaData?.modules) {
     notFound()
   }
 
-  // Find the module by slug
+  // Find the module by slug (this should always succeed since we passed requireModuleAccess)
   const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
+    (mod: any) => mod.slug === resolvedParams.module
   )
 
   if (!module) {
@@ -96,30 +105,28 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
   )
 }
 
-export async function generateMetadata({ params, searchParams }: ModuleDetailPageProps) {
-  const { appSchemaData } = await fetchLayoutData()
+export async function generateMetadata({ params }: ModuleDetailPageProps) {
   const resolvedParams = await params
-  
-  if (!appSchemaData?.modules) {
+
+  try {
+    // 🔒 SECURITY: Check module access for metadata generation
+    const { module: fullModule } = await requireModuleAccess(
+      resolvedParams.appId,
+      resolvedParams.module
+    )
+
+    const isCreateMode = resolvedParams.id === 'new'
+    const actionType = isCreateMode ? 'Create' : 'Edit'
+
     return {
-      title: 'Item Not Found',
-      description: 'The requested item could not be found.'
+      title: `${actionType} ${fullModule.name?.en || fullModule.slug} - Core Dashboard`,
+      description: `${actionType} ${fullModule.name?.en || fullModule.slug} details`,
     }
-  }
-
-  const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
-  )
-
-  if (!module) {
+  } catch (error) {
+    // If access is denied, return generic metadata
     return {
-      title: 'Item Not Found', 
-      description: 'The requested item could not be found.'
+      title: 'Access Denied',
+      description: 'You don\'t have permission to access this module.',
     }
-  }
-
-  return {
-    title: `${module.name.en} Details - Core Dashboard`,
-    description: `View and manage ${module.name.en.toLowerCase()} details`
   }
 }

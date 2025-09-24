@@ -3,12 +3,14 @@
 import React from "react";
 import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
+import type { ModulePermissions } from "@/types/layout";
 import { ServerSidePaginationWrapper } from "./ServerSidePaginationWrapper";
 import { ClientSidePaginationWrapper } from "./ClientSidePaginationWrapper";
 
 interface ModuleDataTableWrapperProps {
   module: ModuleSchema;
   initialData?: any[];
+  userPermissions?: ModulePermissions;
 }
 
 /**
@@ -30,6 +32,7 @@ interface ModuleDataTableWrapperProps {
 export function ModuleDataTableWrapper({
   module,
   initialData = [],
+  userPermissions,
 }: ModuleDataTableWrapperProps) {
   const { currentLanguage } = useLanguage();
 
@@ -61,11 +64,23 @@ export function ModuleDataTableWrapper({
 
   // Route to appropriate pagination component
   if (paginationType === 'server-side') {
-    return <ServerSidePaginationWrapper module={module} initialData={initialData} />;
+    return (
+      <ServerSidePaginationWrapper
+        module={module}
+        initialData={initialData}
+        userPermissions={userPermissions}
+      />
+    );
   }
 
   if (paginationType === 'client-side') {
-    return <ClientSidePaginationWrapper module={module} initialData={initialData} />;
+    return (
+      <ClientSidePaginationWrapper
+        module={module}
+        initialData={initialData}
+        userPermissions={userPermissions}
+      />
+    );
   }
 
   // Fallback (should not reach here)

@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import type { TenantSettings, ModuleSchema } from "@repo/types";
+import type { TenantSettings, TenantApplication } from "@repo/types";
+import type { ClientAppSchemaData, ClientModule } from "@/types/layout";
 import { IconComponent } from "@repo/ui";
 import { getLocalizedText } from "@repo/utils";
 import { useLanguage } from "@repo/language";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
-import { UserActionMenu, AppSelector } from "@repo/base-dashboard";
+import { UserActionMenu, ClientAppSelector } from "@repo/base-dashboard";
 import { useAuth } from "@repo/auth";
 import {
   Sidebar,
@@ -17,7 +18,10 @@ import {
 } from "@repo/ui";
 
 // Multilingual secondary navigation items
-const getSecondaryNavItems = (language: string, appPrefix: string = '/core') => [
+const getSecondaryNavItems = (
+  language: string,
+  appPrefix: string = "/core"
+) => [
   {
     title: getLocalizedText({ en: "Support", mm: "အကူအညီ" }, language),
     url: `${appPrefix}/support`,
@@ -36,7 +40,10 @@ const getSecondaryNavItems = (language: string, appPrefix: string = '/core') => 
     ),
   },
   {
-    title: getLocalizedText({ en: "Session Monitor", mm: "အကောင့်ဝင်ခွင့် စောင့်ကြည့်မှု" }, language),
+    title: getLocalizedText(
+      { en: "Session Monitor", mm: "အကောင့်ဝင်ခွင့် စောင့်ကြည့်မှု" },
+      language
+    ),
     url: `${appPrefix}/session-monitor`,
     icon: ({ className, ...props }: any) => (
       <IconComponent name="Monitor" className={className} {...props} />
@@ -51,23 +58,36 @@ const getSecondaryNavItems = (language: string, appPrefix: string = '/core') => 
   },
 ];
 
-// Function to convert AppSchema modules to navigation items with language support
-function modulesToNavItems(modules: ModuleSchema[], language: string, currentAppId?: string): any[] {
+// Function to convert clean client modules to navigation items with language support
+function modulesToNavItems(
+  modules: ClientModule[],
+  language: string,
+  currentAppId?: string
+): any[] {
   // Get current app from URL path for proper navigation
   const getAppPrefix = (): string => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
-      const pathSegments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
-      const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
-      
+      const pathSegments = pathname
+        .replace(/^\/+|\/+$/g, "")
+        .split("/")
+        .filter(Boolean);
+      const appFromPath = pathSegments.length > 0 ? pathSegments[0] : "";
+
       // Verify it's a valid app (matches known app configs)
-      if (appFromPath && (appFromPath === 'core' || appFromPath === 'library' || appFromPath === 'school' || appFromPath === 'content')) {
+      if (
+        appFromPath &&
+        (appFromPath === "core" ||
+          appFromPath === "library" ||
+          appFromPath === "school" ||
+          appFromPath === "content")
+      ) {
         return `/${appFromPath}`;
       }
     }
-    
+
     // Fallback to provided currentAppId or default to core
-    return currentAppId ? `/${currentAppId}` : '/core';
+    return currentAppId ? `/${currentAppId}` : "/core";
   };
 
   const appPrefix = getAppPrefix();
@@ -83,39 +103,37 @@ function modulesToNavItems(modules: ModuleSchema[], language: string, currentApp
         {...props}
       />
     ),
-    items:
-      module.subModules?.map((subModule) => ({
-        title: getLocalizedText(subModule.name, language) || subModule.slug,
-        url: `${appPrefix}/${module.slug}/${subModule.slug}`,
-      })) || [],
+    items: [], // Module submodules not currently supported
   }));
-}
-
-interface AppSchemaData {
-  modules: ModuleSchema[];
-  supportedLanguages: any[];
-  serviceName: string;
-  timestamp: string;
-  appId: string;
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   tenant: TenantSettings | null;
-  appSchemaData?: AppSchemaData | null;
+  appSchemaData?: ClientAppSchemaData | null;
+  filteredApps?: TenantApplication[];
+  authData?: any; // Keep for potential future use, but not used in client-side filtering
 }
 
 export function AppSidebar({
   tenant,
   appSchemaData,
+  filteredApps = [],
+  authData,
   ...props
 }: AppSidebarProps) {
   const { currentLanguage } = useLanguage();
   const { user, logout, isLoading } = useAuth();
 
-  // Use AppSchema modules to generate dynamic navigation with language support
+  // Use pre-filtered modules from server (SECURE: no client-side access control)
   const navItems = React.useMemo(() => {
     if (appSchemaData?.modules && appSchemaData.modules.length > 0) {
-      return modulesToNavItems(appSchemaData.modules, currentLanguage, appSchemaData.appId);
+      console.log(`[SIDEBAR] Rendering ${appSchemaData.modules.length} server-filtered modules`);
+
+      return modulesToNavItems(
+        appSchemaData.modules,
+        currentLanguage,
+        appSchemaData.appId
+      );
     }
     return [];
   }, [appSchemaData, currentLanguage]);
@@ -124,26 +142,39 @@ export function AppSidebar({
   const localizedSecondaryNav = React.useMemo(() => {
     // Get current app prefix for secondary navigation
     const getAppPrefix = (): string => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const pathname = window.location.pathname;
-        const pathSegments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
-        const appFromPath = pathSegments.length > 0 ? pathSegments[0] : '';
-        
-        if (appFromPath && (appFromPath === 'core' || appFromPath === 'library' || appFromPath === 'school' || appFromPath === 'content')) {
+        const pathSegments = pathname
+          .replace(/^\/+|\/+$/g, "")
+          .split("/")
+          .filter(Boolean);
+        const appFromPath = pathSegments.length > 0 ? pathSegments[0] : "";
+
+        if (
+          appFromPath &&
+          (appFromPath === "core" ||
+            appFromPath === "library" ||
+            appFromPath === "school" ||
+            appFromPath === "content")
+        ) {
           return `/${appFromPath}`;
         }
       }
-      
-      return appSchemaData?.appId ? `/${appSchemaData.appId}` : '/core';
+
+      return appSchemaData?.appId ? `/${appSchemaData.appId}` : "/core";
     };
 
-    return getSecondaryNavItems(currentLanguage, getAppPrefix());
+    return getSecondaryNavItems(currentLanguage, getAppPrefix()) as any;
   }, [currentLanguage, appSchemaData?.appId]);
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
-        <AppSelector tenant={tenant} currentLanguage={currentLanguage} user={user} />
+        <ClientAppSelector
+          tenant={tenant}
+          filteredApps={filteredApps}
+          currentLanguage={currentLanguage}
+        />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navItems} />
@@ -151,7 +182,7 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <UserActionMenu
-          user={user}
+          user={user as any}
           currentLanguage={currentLanguage}
           isLoading={isLoading}
           onLogout={logout}

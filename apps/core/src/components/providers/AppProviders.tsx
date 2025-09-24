@@ -21,7 +21,9 @@ export function AppProviders({
   children,
   initialLanguage,
   initialTenant,
-  initialError
+  initialError,
+  initialAuth,
+  filteredApps
 }: AppProvidersProps) {
   return (
     <QueryProvider>
@@ -30,6 +32,8 @@ export function AppProviders({
           initialLanguage={initialLanguage}
           initialTenant={initialTenant}
           initialError={initialError}
+          initialAuth={initialAuth}
+          filteredApps={filteredApps}
         >
           {children}
         </CoreDashboardProviders>

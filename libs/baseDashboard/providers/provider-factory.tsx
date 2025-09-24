@@ -11,9 +11,8 @@ export interface ProviderConfig {
   props?: Record<string, any>
 }
 
-export interface DashboardProviderFactoryProps extends Omit<DashboardProvidersProps, 'initialLanguage'> {
+export interface DashboardProviderFactoryProps extends DashboardProvidersProps {
   additionalProviders?: ProviderConfig[]
-  initialLanguage?: string
 }
 
 /**
@@ -28,15 +27,21 @@ export function createDashboardProviders(
     initialTenant,
     initialError,
     initialLanguage,
+    initialAuth,
+    filteredApps,
     additionalProviders: runtimeProviders = []
   }: DashboardProviderFactoryProps) {
-    
+
     // Combine compile-time and runtime providers
     const allProviders = [...additionalProviders, ...runtimeProviders]
-    
+
     // Start with base dashboard providers
     let wrappedChildren = (
-      <DashboardProviders initialTenant={initialTenant} initialError={initialError}>
+      <DashboardProviders
+        initialTenant={initialTenant}
+        initialError={initialError}
+        initialAuth={initialAuth}
+      >
         {children}
       </DashboardProviders>
     )

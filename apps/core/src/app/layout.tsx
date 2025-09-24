@@ -26,8 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
  * Orchestrates data fetching, provider setup, and layout composition
  */
 export default async function RootLayout({ children }: RootLayoutProps) {
-  // Fetch all layout data in one place
-  const { middlewareData, tenant, tenantError, appSchemaData } =
+  // Fetch all layout data in one place including auth data and filtered apps
+  const { middlewareData, tenant, tenantError, appSchemaData, authData, filteredApps } =
     await fetchLayoutData();
 
   return (
@@ -52,10 +52,14 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           initialLanguage={middlewareData.language}
           initialTenant={tenant}
           initialError={tenantError}
+          initialAuth={authData}
+          filteredApps={filteredApps}
         >
           <AppLayout
             tenant={tenant}
             appSchemaData={appSchemaData}
+            filteredApps={filteredApps}
+            authData={authData}
             variant="dashboard"
           >
             {children}

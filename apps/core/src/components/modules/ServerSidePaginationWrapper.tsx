@@ -7,10 +7,12 @@ import { ModuleDataTable } from "@repo/schema-tables";
 import { IconComponent } from "@repo/ui";
 import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
+import type { ModulePermissions } from "@/types/layout";
 
 interface ServerSidePaginationWrapperProps {
   module: ModuleSchema;
   initialData?: any[];
+  userPermissions?: ModulePermissions;
 }
 
 /**
@@ -28,6 +30,7 @@ interface ServerSidePaginationWrapperProps {
 export function ServerSidePaginationWrapper({
   module,
   initialData = [],
+  userPermissions,
 }: ServerSidePaginationWrapperProps) {
   const { currentLanguage } = useLanguage();
   const searchParams = useSearchParams();
@@ -324,6 +327,7 @@ export function ServerSidePaginationWrapper({
       sortOrder={currentSortOrder}
       isLoading={isFetching}
       onRefresh={refetch}
+      userPermissions={userPermissions}
     />
   );
 }

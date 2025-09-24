@@ -1,26 +1,38 @@
 import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
+import { requireModuleOperationAccess } from "@/lib/auth-utils";
 import { FormWithLanguage } from "@repo/schema-forms";
 import { enableCommonMultilangFields } from "@/lib/enable-multilang";
 import type { ModuleSchema } from "@repo/types";
 
 interface ModuleNewPageProps {
   params: Promise<{
+    appId: string;
     module: string;
   }>;
 }
 
 export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
-  const { appSchemaData, middlewareData } = await fetchLayoutData();
   const resolvedParams = await params;
+
+  // 🔒 SECURITY: Server-side authorization check - prevents direct URL access
+  // Also checks CREATE permission specifically for this operation
+  const { user, tenant, module: fullModule } = await requireModuleOperationAccess(
+    resolvedParams.appId,
+    resolvedParams.module,
+    'create'
+  );
+
+  // Get filtered layout data (this will only include modules user has access to)
+  const { appSchemaData } = await fetchLayoutData();
 
   if (!appSchemaData?.modules) {
     notFound();
   }
 
-  // Find the module by slug
+  // Find the module by slug (this should always succeed since we passed requireModuleAccess)
   const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
+    (mod: any) => mod.slug === resolvedParams.module
   );
 
   if (!module) {
@@ -40,6 +52,7 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
         action="create"
         moduleSlug={module.slug}
         isWizard={isWizardForm}
+        appId={resolvedParams.appId}
         // No navigation needed for new records
       />
     </div>
@@ -47,29 +60,25 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
 }
 
 export async function generateMetadata({ params }: ModuleNewPageProps) {
-  const { appSchemaData } = await fetchLayoutData();
   const resolvedParams = await params;
 
-  if (!appSchemaData?.modules) {
+  try {
+    // 🔒 SECURITY: Check module create access for metadata generation
+    const { module: fullModule } = await requireModuleOperationAccess(
+      resolvedParams.appId,
+      resolvedParams.module,
+      'create'
+    );
+
     return {
-      title: "Create New Item",
-      description: "Create a new item",
+      title: `Create New ${fullModule.name?.en || fullModule.slug} - Core Dashboard`,
+      description: `Create a new ${fullModule.name?.en || fullModule.slug}`,
+    };
+  } catch (error) {
+    // If access is denied, return generic metadata
+    return {
+      title: 'Access Denied',
+      description: 'You don\'t have permission to access this module.',
     };
   }
-
-  const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
-  );
-
-  if (!module) {
-    return {
-      title: "Module Not Found",
-      description: "The requested module could not be found.",
-    };
-  }
-
-  return {
-    title: `Create New ${module.name.en}`,
-    description: `Create a new ${module.name.en.toLowerCase()}`,
-  };
 }

@@ -6,6 +6,8 @@ export { DashboardLayout } from './components/DashboardLayout'
 export { DashboardErrorBoundary } from './components/ErrorBoundary'
 export { DashboardLoadingPage } from './components/LoadingPage'
 export { AppSelector } from './components/AppSelector'
+export { ClientAppSelector } from './components/ClientAppSelector'
+// Note: ServerAppSelector should be imported directly when needed, not through barrel export
 export { LanguageSelector } from './components/LanguageSelector'
 export { UserActionMenu } from './components/UserActionMenu'
 

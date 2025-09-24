@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { fetchLayoutData } from "@/lib/layout-data";
+import { requireModuleAccess } from "@/lib/auth-utils";
+import { getModulePermissions } from "@/lib/module-access-utils";
 import { getModuleList } from "@repo/app-modules";
 import { ModuleDataTableWrapper } from "@/components/modules/ModuleDataTableWrapper";
 import { ModuleDataTableWithTimeout } from "@/components/modules/ModuleDataTableWithTimeout";
-import type { ModuleSchema } from "@repo/types";
+import type { ClientModule, ModulePermissions } from "@/types/layout";
 
 interface ModulePageProps {
   params: Promise<{
@@ -30,32 +32,48 @@ export default async function ModulePage({
   params,
   searchParams,
 }: ModulePageProps) {
-  const { appSchemaData } = await fetchLayoutData();
   const resolvedParams = await params;
+
+  // 🔒 SECURITY: Server-side authorization check - prevents direct URL access
+  const { user, tenant, module: fullModule } = await requireModuleAccess(
+    resolvedParams.appId,
+    resolvedParams.module
+  );
+
+  // Get filtered layout data (this will only include modules user has access to)
+  const { appSchemaData } = await fetchLayoutData();
 
   if (!appSchemaData?.modules) {
     notFound();
   }
 
-  // Find the module by slug
+  // Find the module by slug (this should always succeed since we passed requireModuleAccess)
   const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
+    (mod: ClientModule) => mod.slug === resolvedParams.module
   );
 
   if (!module) {
     notFound();
   }
 
+  // Calculate user permissions for this module
+  const userPermissions = getModulePermissions(fullModule, user);
+  console.log(`[MODULE_PAGE] User permissions for ${module.slug}:`, userPermissions);
+
   // Check if module uses server-side pagination
   const isServerSidePaging =
-    module.dataTableSchema.pagination?.isClientSidePaging === false;
+    module.dataTableSchema?.pagination?.isClientSidePaging === false;
 
   // Skip server-side fetch for server-paginated modules to avoid double API calls
   if (isServerSidePaging) {
     // For server-side pagination, let client handle fetching with proper params
     return (
       <div className="w-full min-w-0 overflow-hidden">
-        <ModuleDataTableWrapper module={module} initialData={[]} />
+        <ModuleDataTableWrapper
+          module={module}
+          initialData={[]}
+          userPermissions={userPermissions}
+        />
       </div>
     );
   }
@@ -91,38 +109,38 @@ export default async function ModulePage({
         <ModuleDataTableWithTimeout
           module={module}
           searchParams={resolvedSearchParams}
+          userPermissions={userPermissions}
         />
       ) : (
-        <ModuleDataTableWrapper module={module} initialData={moduleData} />
+        <ModuleDataTableWrapper
+          module={module}
+          initialData={moduleData}
+          userPermissions={userPermissions}
+        />
       )}
     </div>
   );
 }
 
 export async function generateMetadata({ params }: ModulePageProps) {
-  const { appSchemaData } = await fetchLayoutData();
   const resolvedParams = await params;
 
-  if (!appSchemaData?.modules) {
+  try {
+    // 🔒 SECURITY: Check module access for metadata generation
+    const { module: fullModule } = await requireModuleAccess(
+      resolvedParams.appId,
+      resolvedParams.module
+    );
+
     return {
-      title: "Module Not Found",
-      description: "The requested module could not be found.",
+      title: `${fullModule.name?.en || fullModule.slug} - Core Dashboard`,
+      description: fullModule.description?.en || `${fullModule.slug} module`,
+    };
+  } catch (error) {
+    // If access is denied, return generic metadata
+    return {
+      title: "Access Denied",
+      description: "You don't have permission to access this module.",
     };
   }
-
-  const module = appSchemaData.modules.find(
-    (mod: ModuleSchema) => mod.slug === resolvedParams.module
-  );
-
-  if (!module) {
-    return {
-      title: "Module Not Found",
-      description: "The requested module could not be found.",
-    };
-  }
-
-  return {
-    title: `${module.name.en} - Core Dashboard`,
-    description: module.description.en,
-  };
 }

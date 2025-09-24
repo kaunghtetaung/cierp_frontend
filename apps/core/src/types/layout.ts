@@ -1,7 +1,7 @@
 // Layout-specific TypeScript interfaces
 // Defines types for layout components and data structures
 
-import type { TenantSettings, ModuleSchema } from "@repo/types"
+import type { TenantSettings, ModuleSchema, User, AuthSession, TenantApplication } from "@repo/types"
 
 /**
  * Middleware data from Next.js headers
@@ -17,6 +17,40 @@ export interface MiddlewareData {
 }
 
 /**
+ * Clean module data for client-side (without sensitive access policies)
+ */
+export interface ClientModule {
+  id: number
+  name: any // MultilingualText
+  slug: string
+  serviceName: string
+  description: any // MultilingualText
+  iconName: string
+
+  // Include necessary schema properties for page functionality (non-sensitive)
+  formLayout?: string
+  formFields?: any[]
+  dataTableSchema?: {
+    layout?: string
+    columns?: any[]
+    pagination?: {
+      enabled?: boolean
+      defaultLimit?: number
+      allowedLimits?: number[]
+      isClientSidePaging?: boolean
+    }
+    sorting?: any
+    filtering?: any
+    actions?: any
+  }
+  detailViewSchema?: any
+  extraActionForms?: any[]
+  wizardConfig?: any
+
+  // Sensitive moduleAccessPolicy is excluded for security
+}
+
+/**
  * App schema data from backend API
  */
 export interface AppSchemaData {
@@ -28,13 +62,36 @@ export interface AppSchemaData {
 }
 
 /**
+ * Clean app schema data for client-side (without sensitive access policies)
+ */
+export interface ClientAppSchemaData {
+  modules: ClientModule[]
+  supportedLanguages: any[]
+  serviceName: string
+  timestamp: string
+  appId: string
+}
+
+/**
+ * Authentication data from session validation
+ */
+export interface AuthData {
+  user: User | null
+  session: AuthSession | null
+  isAuthenticated: boolean
+  error: string | null
+}
+
+/**
  * Complete layout data structure
  */
 export interface LayoutData {
   middlewareData: MiddlewareData
   tenant: TenantSettings | null
   tenantError: string | null
-  appSchemaData: AppSchemaData | null
+  appSchemaData: ClientAppSchemaData | null
+  authData: AuthData | null
+  filteredApps: TenantApplication[]
 }
 
 /**
@@ -45,6 +102,8 @@ export interface AppProvidersProps {
   initialLanguage: string
   initialTenant: TenantSettings | null
   initialError: string | null
+  initialAuth: AuthData | null
+  filteredApps: TenantApplication[]
 }
 
 /**
@@ -53,7 +112,9 @@ export interface AppProvidersProps {
 export interface AppLayoutProps {
   children: React.ReactNode
   tenant: TenantSettings | null
-  appSchemaData: AppSchemaData | null
+  appSchemaData: ClientAppSchemaData | null
+  filteredApps: TenantApplication[]
+  authData?: AuthData | null
 }
 
 /**
@@ -69,6 +130,17 @@ export interface RootLayoutProps {
 export interface PageMetadata {
   title: string
   description: string
+}
+
+/**
+ * User permissions for module operations
+ */
+export interface ModulePermissions {
+  read: boolean
+  create: boolean
+  update: boolean
+  softDelete: boolean
+  hardDelete: boolean
 }
 
 /**

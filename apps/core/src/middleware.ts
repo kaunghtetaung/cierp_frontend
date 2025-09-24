@@ -3,7 +3,9 @@ import {
   type MiddlewareConfig,
   type MiddlewareOptions,
 } from "@repo/tenant/middleware-core";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_NAMES } from "@repo/utils/common/constants";
+import { getPublicUrl } from "@repo/utils/server/domain";
 
 /**
  * Middleware configuration
@@ -119,6 +121,44 @@ async function getValidLanguage(request: NextRequest) {
   };
 }
 
+/**
+ * Check if route requires authentication
+ */
+function requiresAuthentication(pathname: string): boolean {
+  // Skip auth check for API routes (they handle their own auth)
+  if (pathname.startsWith("/api/")) return false;
+
+  // Skip auth for static files and public routes
+  const publicRoutes = ["/error", "/login", "/callback"];
+  return !publicRoutes.some(route => pathname.startsWith(route));
+}
+
+/**
+ * Handle authentication redirect
+ */
+async function handleAuthRedirect(request: NextRequest): Promise<NextResponse> {
+  try {
+    // Get the actual hostname and protocol from request headers
+    const hostname = request.headers.get("host") || "localhost";
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const pathname = request.nextUrl.pathname;
+    const searchParams = request.nextUrl.search;
+
+    // Construct the proper return URL using actual request details
+    const actualUrl = `${protocol}://${hostname}${pathname}${searchParams}`;
+    const returnUrl = encodeURIComponent(actualUrl);
+
+    const publicUrl = await getPublicUrl();
+    const loginUrl = `${publicUrl}/login?returnUrl=${returnUrl}`;
+
+    console.log(`[AUTH_REDIRECT] Redirecting from ${actualUrl} to: ${loginUrl}`);
+    return NextResponse.redirect(loginUrl);
+  } catch (error) {
+    console.error("Failed to create auth redirect:", error);
+    // Fallback redirect if getPublicUrl fails
+    return NextResponse.redirect("http://www.crystal-image.net/login");
+  }
+}
 
 /**
  * Main middleware implementation
@@ -131,6 +171,16 @@ export async function middleware(request: NextRequest) {
 
   // Get language information
   const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(request);
+
+  // NEW: Check session cookie for authenticated routes
+  if (requiresAuthentication(pathname)) {
+    const sessionCookie = request.cookies.get(COOKIE_NAMES.SESSION)?.value;
+
+    if (!sessionCookie) {
+      // No session cookie found - redirect to login
+      return await handleAuthRedirect(request);
+    }
+  }
 
   // Determine which config to use based on route
   const isAuthRoute = pathname.startsWith("/api/auth");
@@ -156,6 +206,12 @@ export async function middleware(request: NextRequest) {
   if (response) {
     response.headers.set("x-app-id", appId);
     response.headers.set("x-lang", validLanguage);
+
+    // NEW: Forward session ID to layout for auth validation
+    const sessionCookie = request.cookies.get(COOKIE_NAMES.SESSION)?.value;
+    if (sessionCookie) {
+      response.headers.set("x-session-id", sessionCookie);
+    }
   }
 
   return response;
