@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <title>
           {tenant?.displayName[middlewareData.language] ||
             tenant?.brandInfo?.title ||
-            "CMS Frontend"}
+            "Application Management System"}
         </title>
         <meta
           name="description"
@@ -53,8 +53,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           initialTenant={tenant}
           initialError={tenantError}
         >
-          <AppLayout 
-            tenant={tenant} 
+          <AppLayout
+            tenant={tenant}
             appSchemaData={appSchemaData}
             variant="dashboard"
           >
