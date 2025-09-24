@@ -31,6 +31,11 @@ export interface TenantApplication {
   readonly status: boolean;
   readonly licenseType: string;
   readonly customerSupportTerms: string;
+  readonly acceptRolesList?: Array<{
+    departmentId: string;
+    roles: string[];
+    _id?: string;
+  }>;
 }
 
 export interface TenantSettings {

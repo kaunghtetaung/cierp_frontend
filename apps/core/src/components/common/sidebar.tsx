@@ -143,7 +143,7 @@ export function AppSidebar({
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
-        <AppSelector tenant={tenant} currentLanguage={currentLanguage} />
+        <AppSelector tenant={tenant} currentLanguage={currentLanguage} user={user} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navItems} />

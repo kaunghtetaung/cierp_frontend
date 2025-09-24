@@ -169,6 +169,138 @@ export function hasAllPermissions(user: User | null, permissions: string[]): boo
 }
 
 /**
+ * User role structure from the access token
+ */
+interface UserRoleInfo {
+  organizationId: string;
+  departmentId: string;
+  roles: string[];
+}
+
+/**
+ * Check if a user has access to a specific application based on acceptRolesList
+ * @param user - User object with roles
+ * @param acceptRolesList - Application's acceptRolesList
+ * @returns boolean indicating if user has access
+ */
+export function hasApplicationAccess(
+  user: User | null,
+  acceptRolesList?: Array<{ departmentId: string; roles: string[] }>
+): boolean {
+  if (!user) return false;
+  
+  // If no acceptRolesList defined, allow access (backward compatibility)
+  if (!acceptRolesList || acceptRolesList.length === 0) {
+    return true;
+  }
+
+  // Handle both old string[] format and new object format for user roles
+  const userRoles = user.roles as any[];
+  if (!userRoles || userRoles.length === 0) {
+    return false;
+  }
+
+  // Check each user role
+  for (const userRole of userRoles) {
+    if (typeof userRole === 'string') {
+      // Old format: simple string role - check against wildcard departments
+      for (const acceptRole of acceptRolesList) {
+        if (acceptRole.departmentId === '*' && 
+            acceptRole.roles.some(r => 
+              r.toLowerCase() === userRole.toLowerCase() ||
+              userRole.toLowerCase().includes(r.toLowerCase())
+            )) {
+          return true;
+        }
+      }
+    } else if (userRole && typeof userRole === 'object') {
+      // New format: {organizationId, departmentId, roles}
+      const roleInfo = userRole as UserRoleInfo;
+      for (const acceptRole of acceptRolesList) {
+        // Check department match (wildcard "*" means any department)
+        const departmentMatch = 
+          acceptRole.departmentId === '*' || 
+          acceptRole.departmentId === roleInfo.departmentId;
+
+        if (departmentMatch && roleInfo.roles) {
+          // Check if user has any of the required roles for this department
+          const hasRequiredRole = acceptRole.roles.some(requiredRole =>
+            roleInfo.roles.some(userRoleName => {
+              const normalizedUserRole = userRoleName.toLowerCase();
+              const normalizedRequiredRole = requiredRole.toLowerCase();
+              
+              return normalizedUserRole === normalizedRequiredRole ||
+                     normalizedUserRole.includes(normalizedRequiredRole) ||
+                     normalizedRequiredRole.includes(normalizedUserRole);
+            })
+          );
+
+          if (hasRequiredRole) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check if user is a system admin
+ */
+export function isSystemAdmin(user: User | null): boolean {
+  if (!user) return false;
+  
+  const userRoles = user.roles as any[];
+  if (!userRoles) return false;
+
+  for (const role of userRoles) {
+    if (typeof role === 'string') {
+      if (role.toLowerCase() === 'systemadmin' || role.toLowerCase() === 'system_admin') {
+        return true;
+      }
+    } else if (role && typeof role === 'object' && role.roles) {
+      const roleInfo = role as UserRoleInfo;
+      if (roleInfo.roles.some((r: string) => 
+        r.toLowerCase() === 'systemadmin' || r.toLowerCase() === 'system_admin'
+      )) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Check if user is an organization admin
+ */
+export function isOrganizationAdmin(user: User | null): boolean {
+  if (!user) return false;
+  
+  const userRoles = user.roles as any[];
+  if (!userRoles) return false;
+
+  for (const role of userRoles) {
+    if (typeof role === 'string') {
+      if (role.toLowerCase() === 'organizationadmin' || role.toLowerCase() === 'organization_admin') {
+        return true;
+      }
+    } else if (role && typeof role === 'object' && role.roles) {
+      const roleInfo = role as UserRoleInfo;
+      if (roleInfo.roles.some((r: string) => 
+        r.toLowerCase() === 'organizationadmin' || r.toLowerCase() === 'organization_admin'
+      )) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Check if session is about to expire (within 5 minutes)
  */
 export function isSessionExpiringSoon(session: AuthSession | null): boolean {

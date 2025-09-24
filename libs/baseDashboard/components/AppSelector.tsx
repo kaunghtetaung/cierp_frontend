@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import type { TenantSettings, TenantApplication } from "@repo/types";
+import type { TenantSettings, TenantApplication, User } from "@repo/types";
 import { getLocalizedText } from "@repo/utils";
 import { extractBaseDomain } from "@repo/utils/common/url";
 import { IconComponent } from "@repo/ui";
+import { hasApplicationAccess } from "@repo/auth/utils/login-utils";
 
 import {
   DropdownMenu,
@@ -25,9 +26,10 @@ import {
 interface AppSelectorProps {
   tenant: TenantSettings | null;
   currentLanguage: string;
+  user?: User | null;
 }
 
-export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
+export function AppSelector({ tenant, currentLanguage, user }: AppSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { state } = useSidebar();
@@ -44,7 +46,16 @@ export function AppSelector({ tenant, currentLanguage }: AppSelectorProps) {
     }
 
     // Filter only active applications
-    return tenant.applications.filter((app) => app.status);
+    let activeApps = tenant.applications.filter((app) => app.status);
+
+    // Further filter by user permissions if user is provided
+    if (user) {
+      activeApps = activeApps.filter(app => 
+        hasApplicationAccess(user, app.acceptRolesList)
+      );
+    }
+
+    return activeApps;
   };
 
   const apps = getApps();
