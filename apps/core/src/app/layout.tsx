@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { fetchLayoutData, generatePageMetadata } from "@/lib/layout-data";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -27,14 +28,39 @@ export async function generateMetadata(): Promise<Metadata> {
  * Orchestrates data fetching, provider setup, and layout composition
  */
 export default async function RootLayout({ children }: RootLayoutProps) {
+  // Get pathname directly from Next.js headers to check for unauthorized route
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+
+  // Debug: Log pathname to understand the issue
+  console.log(`[LAYOUT_DEBUG] pathname: '${pathname}', startsWith /unauthorized: ${pathname.startsWith('/unauthorized')}`);
+
+  // Skip access control for unauthorized page to prevent redirect loops
+  if (pathname.startsWith('/unauthorized')) {
+    console.log(`[LAYOUT_SKIP] Skipping access control for unauthorized page`);
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <title>Access Denied</title>
+          <meta name="description" content="Access denied - insufficient permissions" />
+          <ThemeScript />
+        </head>
+        <body suppressHydrationWarning>
+          {children}
+          <Toaster />
+        </body>
+      </html>
+    );
+  }
+
   // Fetch all layout data in one place including auth data and filtered apps
-  const { middlewareData, tenant, tenantError, appSchemaData, authData, filteredApps, currentAppAccess } =
+  const { middlewareData: fullMiddlewareData, tenant, tenantError, appSchemaData, authData, filteredApps, currentAppAccess } =
     await fetchLayoutData();
 
   // Application-level access control
   // Check if user has access to the current application based on tenant settings
   if (currentAppAccess && !currentAppAccess.hasAccess) {
-    const appId = middlewareData.appId
+    const appId = fullMiddlewareData.appId
     const reason = encodeURIComponent(currentAppAccess.reason || "Access denied")
 
     console.log(`[LAYOUT_ACCESS_DENIED] Redirecting to unauthorized page - App: ${appId}, Reason: ${currentAppAccess.reason}`)
@@ -44,17 +70,17 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   }
 
   return (
-    <html lang={middlewareData.language} suppressHydrationWarning>
+    <html lang={fullMiddlewareData.language} suppressHydrationWarning>
       <head>
         <title>
-          {tenant?.displayName[middlewareData.language] ||
+          {tenant?.displayName[fullMiddlewareData.language] ||
             tenant?.brandInfo?.title ||
             "Application Management System"}
         </title>
         <meta
           name="description"
           content={
-            tenant?.localizedDescription[middlewareData.language] ||
+            tenant?.localizedDescription[fullMiddlewareData.language] ||
             "Core System"
           }
         />
@@ -62,7 +88,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body suppressHydrationWarning>
         <AppProviders
-          initialLanguage={middlewareData.language}
+          initialLanguage={fullMiddlewareData.language}
           initialTenant={tenant}
           initialError={tenantError}
           initialAuth={authData}

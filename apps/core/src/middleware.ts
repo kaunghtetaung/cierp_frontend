@@ -206,6 +206,7 @@ export async function middleware(request: NextRequest) {
   if (response) {
     response.headers.set("x-app-id", appId);
     response.headers.set("x-lang", validLanguage);
+    response.headers.set("x-pathname", pathname);
 
     // NEW: Forward session ID to layout for auth validation
     const sessionCookie = request.cookies.get(COOKIE_NAMES.SESSION)?.value;

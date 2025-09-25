@@ -1,6 +1,7 @@
 import React from "react";
 import { headers } from "next/headers";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
+import { getAuthenticationStatus, getCurrentUser } from "@repo/auth/server-api";
 import { HeaderContainer } from "../common/header";
 import { FooterContainer } from "../common/footer";
 
@@ -48,9 +49,29 @@ export async function ThemeLayout({
   
   console.log("🏠 === THEME LAYOUT END ===\n");
 
-  // TODO: Get authentication data from your auth system
-  const isAuthenticated = false;
-  const userRoles: string[] = [];
+  // Get real authentication data from server-side auth system
+  let isAuthenticated = false;
+  let userRoles: string[] = [];
+
+  try {
+    console.log("🔐 Getting authentication status...");
+    const authStatus = await getAuthenticationStatus();
+    isAuthenticated = authStatus.isAuthenticated;
+
+    if (isAuthenticated) {
+      console.log("🔐 User is authenticated, getting user data...");
+      const user = await getCurrentUser();
+      userRoles = user?.roles || [];
+      console.log("🔐 User roles:", userRoles);
+    } else {
+      console.log("🔐 User is not authenticated");
+    }
+  } catch (error) {
+    console.error("🔐 Failed to get authentication status:", error);
+    // Safe fallback - treat as unauthenticated
+    isAuthenticated = false;
+    userRoles = [];
+  }
 
   if (!tenantId) {
     return (

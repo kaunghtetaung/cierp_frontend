@@ -38,7 +38,7 @@ export const DesktopHeaderActions: React.FC<HeaderActionsProps> = ({
   currentLanguage = "en",
 }) => {
   return (
-    <div className={`flex items-center gap-2 ${className || ""}`}>
+    <div className={`flex items-center gap-1 ${className || ""}`}>
       {showSearch && <SearchComponent variant="desktop" />}
 
       {showLanguageSelector && (
@@ -48,11 +48,11 @@ export const DesktopHeaderActions: React.FC<HeaderActionsProps> = ({
         >
           <LangSelectorUI
             variant="dropdown"
-            showFlag={true}
+            showFlag={false}
             showNativeName={true}
             showName={false}
             className="relative"
-            triggerClassName="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors border-0 bg-transparent"
+            triggerClassName="flex items-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors border-0 bg-transparent rounded-none"
             contentClassName="w-48"
           />
         </LangSelectorWrapper>

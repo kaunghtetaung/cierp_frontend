@@ -14,6 +14,7 @@ export interface MiddlewareData {
   protocol: string
   appId: string
   appConfig?: any
+  pathname?: string
 }
 
 /**

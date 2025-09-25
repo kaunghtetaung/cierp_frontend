@@ -6,6 +6,8 @@ import { HeaderContainerProps } from "./types";
 import HeaderBanner from "./HeaderBanner";
 import HeaderActions from "./components/Action/HeaderActions";
 import HeaderNavigation from "../navigation";
+import { LangSelectorWrapper } from "@/feature-components/lang-selector";
+import { LangSelectorUI } from "../navigation/header/LangSelectorUI";
 
 /**
  * Main Header Container Component
@@ -16,6 +18,8 @@ export async function HeaderContainer({
   className,
   currentLanguage = "en",
   tenantId,
+  isAuthenticated = false,
+  userRoles = [],
   showLogo = true,
   showNavigation = true,
   showSearch = true,
@@ -81,7 +85,7 @@ export async function HeaderContainer({
       title: tenantSettings.displayName || { en: "CMS" },
       shortName: tenantSettings.displayShortName ||
         tenantSettings.displayName || { en: "CMS" },
-      subtitle: tenantSettings.localizedDescription,
+      subtitle: tenantSettings.subTitle,
 
       // Navigation items from header menu
       navigationItems,
@@ -135,45 +139,80 @@ export async function HeaderContainer({
         className={`sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm ${className}`}
       >
         <div className={`relative max-w-7xl mx-auto`}>
-          {/* Desktop Layout: Top Row: Banner | Actions, Bottom Row: Navigation */}
+          {/* Desktop Layout: Three Row Design */}
           <div className="hidden lg:block px-4">
-            {/* Top Row: Banner and Actions */}
-            <div className="flex items-center justify-between min-h-16 py-4">
-              {/* Left: Banner (Logo + Title) */}
-              {headerSettings.showLogo && (
-                <div className="flex items-center justify-start">
-                  <HeaderBanner
-                    logoUrl={headerData.logoUrl}
-                    title={headerData.title as any}
-                    subtitle={headerData.subtitle as any}
-                    currentLanguage={currentLanguage}
-                    showLogo={headerSettings.showLogo}
-                  />
-                </div>
-              )}
 
-              {/* Right: Actions */}
-              <div className="flex items-center justify-start">
+            {/* First Row: Icon Bar (Actions) */}
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <HeaderActions
+                showSearch={headerSettings.showSearch}
+                showLanguageSelector={false}
+                showUserMenu={false}
+                currentLanguage={currentLanguage}
+              />
+              <div className="flex items-center gap-1">
                 <HeaderActions
-                  showSearch={headerSettings.showSearch}
-                  showLanguageSelector={headerSettings.showLanguageSelector}
+                  showSearch={false}
+                  showLanguageSelector={false}
                   showUserMenu={headerSettings.showUserMenu}
                   currentLanguage={currentLanguage}
                 />
+                {headerSettings.showLanguageSelector && (
+                  <LangSelectorWrapper
+                    initialLanguage={currentLanguage}
+                    languages={[
+                      {
+                        code: "en",
+                        name: "English",
+                        nativeName: "English",
+                        flag: "🇺🇸",
+                        direction: "ltr" as const,
+                      },
+                      {
+                        code: "mm",
+                        name: "Myanmar",
+                        nativeName: "မြန်မာ",
+                        flag: "🇲🇲",
+                        direction: "ltr" as const,
+                      },
+                    ]}
+                  >
+                    <LangSelectorUI
+                      variant="dropdown"
+                      showFlag={true}
+                      showNativeName={false}
+                      showName={false}
+                      className="relative"
+                      triggerClassName="flex items-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors border-0 bg-transparent rounded-none"
+                      contentClassName="w-48"
+                    />
+                  </LangSelectorWrapper>
+                )}
               </div>
             </div>
 
-            {/* Bottom Row: Navigation */}
+            {/* Second Row: Brand Info (Logo + Title + Subtitle) */}
+            {headerSettings.showLogo && (
+              <div className="flex items-center justify-center py-6 border-b border-border/50">
+                <HeaderBanner
+                  logoUrl={headerData.logoUrl}
+                  title={headerData.title as any}
+                  subtitle={headerData.subtitle as any}
+                  currentLanguage={currentLanguage}
+                  showLogo={headerSettings.showLogo}
+                />
+              </div>
+            )}
+
+            {/* Third Row: Navigation Menu */}
             {headerSettings.showNavigation && (
-              <div className="py-2 my-2">
-                <div className={`flex items-center justify-between mt-2`}>
-                  <HeaderNavigation
-                    items={headerData.navigationItems}
-                    currentLanguage={currentLanguage}
-                    isAuthenticated={false}
-                    userRoles={[]}
-                  />
-                </div>
+              <div className="flex items-center justify-center py-3">
+                <HeaderNavigation
+                  items={headerData.navigationItems}
+                  currentLanguage={currentLanguage}
+                  isAuthenticated={isAuthenticated}
+                  userRoles={userRoles}
+                />
               </div>
             )}
           </div>

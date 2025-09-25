@@ -105,12 +105,11 @@ const DesktopSearch: React.FC<SearchComponentProps> = ({ className = "" }) => {
     <div className={`relative ${className}`}>
       {!isSearchOpen ? (
         <button
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+          className="px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors bg-transparent"
           onClick={() => setIsSearchOpen(true)}
           type="button"
         >
-          <Search className="h-4 w-4" />
-          <span>Search</span>
+          Search
         </button>
       ) : (
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">

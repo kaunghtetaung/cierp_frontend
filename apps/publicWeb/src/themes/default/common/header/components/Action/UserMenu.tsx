@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Button } from "@/styled-components/ui/Button";
-import { User, Settings, UserCircle, Lock, LogIn } from "lucide-react";
+import { User, Settings, UserCircle, Lock, LogIn, UserPlus } from "lucide-react";
 import { LoginButton, LogoutButton } from "@/components/auth-buttons";
 import { useSafeAuth } from "@/hooks/use-safe-auth";
 import {
@@ -32,25 +33,58 @@ export const UserMenu: React.FC<{
     );
   }
 
-  // Not authenticated - show login button
+  // Not authenticated - show login/signup options
   if (!isAuthenticated) {
     if (variant === "mobile") {
       return (
-        <LoginButton
-          className={`min-h-[44px] min-w-[44px] p-0 touch-manipulation border-0 shadow-none bg-transparent hover:bg-accent focus:bg-accent outline-none flex items-center justify-center ${className}`}
-        >
-          <Lock className="h-4 w-4 text-muted-foreground" />
-        </LoginButton>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`min-h-[44px] min-w-[44px] p-2 touch-manipulation border border-border rounded-lg bg-transparent hover:bg-accent focus:bg-accent outline-none flex items-center justify-center transition-all duration-200 ${className}`}
+              aria-label="Authentication menu"
+            >
+              <LogIn className="h-4 w-4 text-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-48 bg-background border border-border rounded-lg shadow-lg z-50"
+          >
+            <DropdownMenuItem>
+              <LoginButton className="w-full justify-start py-2 border-0 bg-transparent hover:bg-transparent text-foreground">
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </LoginButton>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link href="/signup" className="flex items-center w-full py-2 text-foreground hover:bg-transparent">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Sign Up
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     }
 
+    // Desktop - show compact text links
     return (
-      <LoginButton
-        className={`px-3 py-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors bg-transparent border-0 hover:underline underline-offset-4 min-h-[44px] touch-manipulation ${className}`}
-      >
-        <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
-        Sign In
-      </LoginButton>
+      <div className={`flex items-center gap-2 ${className}`}>
+        <LoginButton
+          className="px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors bg-transparent border-0"
+        >
+          Sign In
+        </LoginButton>
+        <span className="text-muted-foreground text-xs">|</span>
+        <Link
+          href="/signup"
+          className="px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
+        >
+          Sign Up
+        </Link>
+      </div>
     );
   }
 
@@ -107,17 +141,12 @@ export const UserMenu: React.FC<{
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex-shrink-0"
+        <button
+          className="px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors bg-transparent border-0"
           aria-label="User menu"
         >
-          <User className="h-4 w-4" />
-          <span className="text-sm text-muted-foreground font-medium">
-            {user?.name || "User"}
-          </span>
-        </Button>
+          {user?.name || "Account"}
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64 shadow-lg z-50">
         <div className="p-3 border-b border-border">
