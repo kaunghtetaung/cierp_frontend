@@ -5,7 +5,7 @@ import { Button } from '@repo/ui'
 import { getUserAuthorizedApps, type AppInfo } from '@/lib/auth-utils'
 
 interface UnauthorizedPageProps {
-  searchParams: { app?: string; reason?: string }
+  searchParams: Promise<{ app?: string; reason?: string }>
 }
 
 async function getAppDisplayName(appId?: string): Promise<string> {
@@ -25,7 +25,7 @@ async function getAppDisplayName(appId?: string): Promise<string> {
 }
 
 export default async function UnauthorizedPage({ searchParams }: UnauthorizedPageProps) {
-  const { app, reason } = searchParams
+  const { app, reason } = await searchParams
 
   // Get list of apps user has access to for alternative suggestions
   const authorizedApps = await getUserAuthorizedApps()

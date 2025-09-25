@@ -92,6 +92,11 @@ export interface LayoutData {
   appSchemaData: ClientAppSchemaData | null
   authData: AuthData | null
   filteredApps: TenantApplication[]
+  currentAppAccess?: {
+    hasAccess: boolean
+    app: TenantApplication | null
+    reason?: string
+  } | null
 }
 
 /**

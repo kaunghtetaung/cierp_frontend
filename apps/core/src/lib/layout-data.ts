@@ -219,6 +219,67 @@ const fetchAppSchemaData = cache(async (
 })
 
 /**
+ * Check if current user has access to the requested application
+ * Returns access result with app details for error messaging
+ */
+const checkCurrentAppAccess = cache(async (
+  tenant: TenantSettings | null,
+  user: User | null,
+  appId: string
+): Promise<{
+  hasAccess: boolean,
+  app: TenantApplication | null,
+  reason?: string
+}> => {
+  // If no tenant or user, deny access
+  if (!tenant || !user) {
+    return {
+      hasAccess: false,
+      app: null,
+      reason: !tenant ? "Tenant not found" : "User not authenticated"
+    }
+  }
+
+  // If no applications configured, deny access
+  if (!tenant.applications || tenant.applications.length === 0) {
+    return {
+      hasAccess: false,
+      app: null,
+      reason: "No applications configured for this tenant"
+    }
+  }
+
+  // Find the requested application
+  const app = tenant.applications.find(app =>
+    app.status && (app.slug === appId ||
+                   app.displayShortName?.en?.toLowerCase() === appId.toLowerCase())
+  )
+
+  if (!app) {
+    return {
+      hasAccess: false,
+      app: null,
+      reason: `Application '${appId}' not found or inactive`
+    }
+  }
+
+  // Check if user has access based on roles
+  const hasAccess = hasApplicationAccess(user, app.acceptRolesList)
+
+  console.log(`[APP_ACCESS_CHECK] App: ${appId}, User: ${user.email}, HasAccess: ${hasAccess}`)
+  if (!hasAccess) {
+    console.log(`[APP_ACCESS_CHECK] User roles:`, JSON.stringify(user.roles, null, 2))
+    console.log(`[APP_ACCESS_CHECK] App acceptRolesList:`, JSON.stringify(app.acceptRolesList, null, 2))
+  }
+
+  return {
+    hasAccess,
+    app,
+    reason: hasAccess ? undefined : "Insufficient permissions for this application"
+  }
+})
+
+/**
  * Main function to fetch all layout data
  * Centralizes all server-side data fetching for the layout
  * Cached at request level to prevent multiple calls per request
@@ -239,9 +300,20 @@ export const fetchLayoutData = cache(async (): Promise<LayoutData> => {
     filteredApps = await filterUserApplications(tenant, authData.user)
   }
 
+  // Check current app access if we have an appId and authenticated user
+  let currentAppAccess: {
+    hasAccess: boolean,
+    app: TenantApplication | null,
+    reason?: string
+  } | null = null
+
+  if (middlewareData.appId && tenant && authData?.isAuthenticated) {
+    currentAppAccess = await checkCurrentAppAccess(tenant, authData.user, middlewareData.appId)
+  }
+
   // Fetch app schema data if tenant is available (with user-based filtering)
   let appSchemaData: ClientAppSchemaData | null = null
-  if (tenant && middlewareData.appId) {
+  if (tenant && middlewareData.appId && currentAppAccess?.hasAccess !== false) {
     appSchemaData = await fetchAppSchemaData(tenant, middlewareData.appId, authData?.user || null)
   }
 
@@ -251,7 +323,8 @@ export const fetchLayoutData = cache(async (): Promise<LayoutData> => {
     tenantError,
     appSchemaData,
     authData,
-    filteredApps
+    filteredApps,
+    currentAppAccess
   }
 })
 

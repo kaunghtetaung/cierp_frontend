@@ -369,13 +369,15 @@ export async function handleLogout(
       await logoutUser(sessionId);
     }
 
-    // Build logout URL
+    // Build logout URL with skip_confirmation for smoother UX
     const oidcEndpoint = await getOidcEndpoint();
     const publicUrl = await getPublicUrl();
     const postLogoutRedirectUri = `${publicUrl}/login`;
-    const logoutUrl = `${oidcEndpoint}/oidc/logout?post_logout_redirect_uri=${encodeURIComponent(
+
+    // Use skip_confirmation=true for direct logout without confirmation page
+    const logoutUrl = `${oidcEndpoint}/logout?post_logout_redirect_uri=${encodeURIComponent(
       postLogoutRedirectUri
-    )}`;
+    )}&skip_confirmation=true`;
 
     const response = NextResponse.redirect(logoutUrl);
 

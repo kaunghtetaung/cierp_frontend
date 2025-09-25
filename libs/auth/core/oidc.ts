@@ -347,7 +347,7 @@ export async function buildLogoutUrl(
   idTokenHint?: string
 ): Promise<string> {
   const authDomain = await getAuthDomain();
-  const logoutUrl = new URL(`${authDomain}/oidc/logout`);
+  const logoutUrl = new URL(`${authDomain}/logout`);
   
   if (postLogoutRedirectUri) {
     logoutUrl.searchParams.set('post_logout_redirect_uri', postLogoutRedirectUri);

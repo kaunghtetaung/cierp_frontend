@@ -3,8 +3,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { X, User, Settings, LogOut, Bell, Heart } from 'lucide-react';
+import { X, User, Settings, LogOut, Bell, Heart, Loader2 } from 'lucide-react';
 import { Button } from '@/styled-components/ui/Button';
+import { useUserMenu } from '@/feature-components/user-menu/context';
 
 interface UserSidebarProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function UserSidebar({
   onOpenChange,
   isAuthenticated = false
 }: UserSidebarProps) {
+  const { signOut, isLoading } = useUserMenu();
   if (!isOpen || typeof window === 'undefined') {
     return null;
   }
@@ -106,15 +108,25 @@ export function UserSidebar({
                 <div className="border-t border-border my-4" />
 
                 <button
-                  className="flex items-center space-x-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors w-full text-left"
-                  onClick={() => {
-                    // Handle logout logic here
-                    console.log('Logout clicked');
-                    onOpenChange(false);
+                  type="button"
+                  className="flex items-center space-x-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLoading}
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                      onOpenChange(false);
+                    } catch (error) {
+                      console.error('Logout failed:', error);
+                      // Keep sidebar open on error so user can retry
+                    }
                   }}
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sign Out</span>
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LogOut className="h-4 w-4" />
+                  )}
+                  <span>{isLoading ? 'Signing out...' : 'Sign Out'}</span>
                 </button>
               </nav>
             ) : (

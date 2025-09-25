@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { fetchLayoutData, generatePageMetadata } from "@/lib/layout-data";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -27,8 +28,20 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function RootLayout({ children }: RootLayoutProps) {
   // Fetch all layout data in one place including auth data and filtered apps
-  const { middlewareData, tenant, tenantError, appSchemaData, authData, filteredApps } =
+  const { middlewareData, tenant, tenantError, appSchemaData, authData, filteredApps, currentAppAccess } =
     await fetchLayoutData();
+
+  // Application-level access control
+  // Check if user has access to the current application based on tenant settings
+  if (currentAppAccess && !currentAppAccess.hasAccess) {
+    const appId = middlewareData.appId
+    const reason = encodeURIComponent(currentAppAccess.reason || "Access denied")
+
+    console.log(`[LAYOUT_ACCESS_DENIED] Redirecting to unauthorized page - App: ${appId}, Reason: ${currentAppAccess.reason}`)
+
+    // Redirect to unauthorized page with app and reason information
+    redirect(`/unauthorized?app=${appId}&reason=${reason}`)
+  }
 
   return (
     <html lang={middlewareData.language} suppressHydrationWarning>
