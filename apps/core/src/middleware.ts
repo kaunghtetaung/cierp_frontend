@@ -78,14 +78,9 @@ async function getAppFromRequest(request: NextRequest) {
   if (headerAppId) {
     appId = headerAppId;
   } else {
-    // Use path-based detection as primary method
-    try {
-      const { getAppFromHostname } = await import("@repo/app-config");
-      appId = getAppFromHostname(hostname, pathname);
-    } catch (error) {
-      console.error("Failed to detect app from hostname/path:", error);
-      appId = "core"; // Default fallback
-    }
+    // Extract appId directly from URL path
+    const pathSegments = pathname.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+    appId = pathSegments.length > 0 ? pathSegments[0] : "core";
   }
   
   return {
