@@ -280,13 +280,25 @@ const checkCurrentAppAccess = cache(async (
 })
 
 /**
- * Main function to fetch all layout data
- * Centralizes all server-side data fetching for the layout
- * Cached at request level to prevent multiple calls per request
+ * Create app-specific layout data fetcher
+ * Each appId gets its own cached instance for proper cache separation
  */
-export const fetchLayoutData = cache(async (): Promise<LayoutData> => {
+const createAppAwareFetchLayoutData = (appId?: string) => {
+  return cache(async (): Promise<LayoutData> => {
+    return fetchLayoutDataImpl(appId)
+  })
+}
+
+/**
+ * Main implementation for fetching layout data
+ * App-aware data fetching with role-based filtering
+ */
+async function fetchLayoutDataImpl(appId?: string): Promise<LayoutData> {
   // Get middleware data including language from headers
   const middlewareData = await getMiddlewareDataFromHeaders()
+
+  // Use provided appId or fallback to middleware
+  const effectiveAppId = appId || middlewareData.appId
 
   // Fetch tenant data
   const { tenant, error: tenantError } = await fetchTenantData()
@@ -307,18 +319,21 @@ export const fetchLayoutData = cache(async (): Promise<LayoutData> => {
     reason?: string
   } | null = null
 
-  if (middlewareData.appId && tenant && authData?.isAuthenticated) {
-    currentAppAccess = await checkCurrentAppAccess(tenant, authData.user, middlewareData.appId)
+  if (effectiveAppId && tenant && authData?.isAuthenticated) {
+    currentAppAccess = await checkCurrentAppAccess(tenant, authData.user, effectiveAppId)
   }
 
   // Fetch app schema data if tenant is available (with user-based filtering)
   let appSchemaData: ClientAppSchemaData | null = null
-  if (tenant && middlewareData.appId && currentAppAccess?.hasAccess !== false) {
-    appSchemaData = await fetchAppSchemaData(tenant, middlewareData.appId, authData?.user || null)
+  if (tenant && effectiveAppId && currentAppAccess?.hasAccess !== false) {
+    appSchemaData = await fetchAppSchemaData(tenant, effectiveAppId, authData?.user || null)
   }
 
   return {
-    middlewareData,
+    middlewareData: {
+      ...middlewareData,
+      appId: effectiveAppId // Ensure consistent appId in response
+    },
     tenant,
     tenantError,
     appSchemaData,
@@ -326,7 +341,16 @@ export const fetchLayoutData = cache(async (): Promise<LayoutData> => {
     filteredApps,
     currentAppAccess
   }
-})
+}
+
+/**
+ * App-aware layout data fetcher
+ * Creates separate cache instances per appId for proper sidebar redraw
+ */
+export function fetchLayoutData(appId?: string): Promise<LayoutData> {
+  const cachedFetcher = createAppAwareFetchLayoutData(appId)
+  return cachedFetcher()
+}
 
 /**
  * Generate metadata for the core application

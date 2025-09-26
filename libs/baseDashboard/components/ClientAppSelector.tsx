@@ -113,9 +113,6 @@ export function ClientAppSelector({
   };
 
   const handleAppSelect = (app: TenantApplication) => {
-    // Debug: Log the app object to see what's available
-    console.log("Selected app object:", app);
-
     // Use slug if available, fallback to displayShortName.en for backwards compatibility
     const appSlug =
       app.slug || getLocalizedText(app.displayShortName, currentLanguage);
@@ -125,40 +122,27 @@ export function ClientAppSelector({
       return;
     }
 
-    if (typeof window !== "undefined") {
-      const currentHostname = window.location.hostname;
-      const protocol = window.location.protocol;
-      const port = window.location.port;
-      const currentPath = window.location.pathname;
-      const search = window.location.search;
-      const hash = window.location.hash;
+    // Extract current app from pathname
+    const currentPath = pathname;
+    const pathSegments = currentPath
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")
+      .filter(Boolean);
+    const currentAppFromPath = pathSegments.length > 0 ? pathSegments[0] : "";
+    const currentPage = pathSegments.length > 1 ? pathSegments[1] : "";
 
-      // Extract current app from path
-      const pathSegments = currentPath
-        .replace(/^\/+|\/+$/g, "")
-        .split("/")
-        .filter(Boolean);
-      const currentAppFromPath = pathSegments.length > 0 ? pathSegments[0] : "";
-      const currentPage = pathSegments.length > 1 ? pathSegments[1] : "";
-
-      // Check if we're already on this app's dashboard
-      if (currentAppFromPath === appSlug && currentPage === "dashboard") {
-        console.log(`Already on ${appSlug} app dashboard`);
-        return;
-      }
-
-      // Build new path-based URL with app slug - always redirect to dashboard
-      const portSuffix = port ? `:${port}` : "";
-      // Always navigate to the dashboard page when switching apps
-      const newUrl = `${protocol}//${currentHostname}${portSuffix}/${appSlug}/dashboard`;
-
-      console.log(
-        `Switching from ${currentAppFromPath} to ${appSlug} app dashboard: ${newUrl}`
-      );
-
-      // Navigate to new path-based URL (dashboard)
-      window.location.href = newUrl;
+    // Check if we're already on this app's dashboard
+    if (currentAppFromPath === appSlug && currentPage === "dashboard") {
+      console.log(`Already on ${appSlug} app dashboard`);
+      return;
     }
+
+    // Navigate to the app dashboard using Next.js router
+    const dashboardPath = `/${appSlug}/dashboard`;
+    console.log(`Switching from ${currentAppFromPath} to ${appSlug} app dashboard: ${dashboardPath}`);
+
+    // Use Next.js router for smooth client-side navigation
+    router.push(dashboardPath);
   };
 
   // Show loading skeleton only when we have no tenant or no apps at all

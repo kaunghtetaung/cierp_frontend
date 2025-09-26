@@ -12,9 +12,18 @@ import "./globals.css";
 
 /**
  * Generate metadata dynamically based on tenant data
+ * App-aware metadata generation
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const { tenant } = await fetchLayoutData();
+  // Extract appId from headers for app-specific metadata
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+
+  // Extract appId from URL path
+  const pathSegments = pathname.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+  const appId = pathSegments.length > 0 ? pathSegments[0] : undefined;
+
+  const { tenant } = await fetchLayoutData(appId);
   const metadata = generatePageMetadata(tenant);
 
   return {
@@ -32,8 +41,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || '';
 
-  // Debug: Log pathname to understand the issue
-  console.log(`[LAYOUT_DEBUG] pathname: '${pathname}', startsWith /unauthorized: ${pathname.startsWith('/unauthorized')}`);
+  // Extract appId from URL path for app-aware layout data fetching
+  const pathSegments = pathname.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+  const appId = pathSegments.length > 0 ? pathSegments[0] : undefined;
+
+  // Debug: Log pathname and appId to understand routing
+  console.log(`[LAYOUT_DEBUG] pathname: '${pathname}', appId: '${appId}', startsWith /unauthorized: ${pathname.startsWith('/unauthorized')}`);
 
   // Skip access control for unauthorized page to prevent redirect loops
   if (pathname.startsWith('/unauthorized')) {
@@ -53,9 +66,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     );
   }
 
-  // Fetch all layout data in one place including auth data and filtered apps
+  // Fetch all layout data with app-specific caching for proper sidebar redraw
   const { middlewareData: fullMiddlewareData, tenant, tenantError, appSchemaData, authData, filteredApps, currentAppAccess } =
-    await fetchLayoutData();
+    await fetchLayoutData(appId);
 
   // Application-level access control
   // Check if user has access to the current application based on tenant settings
