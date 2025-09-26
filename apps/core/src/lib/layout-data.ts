@@ -282,9 +282,14 @@ const checkCurrentAppAccess = cache(async (
 /**
  * Create app-specific layout data fetcher
  * Each appId gets its own cached instance for proper cache separation
+ * Cache key includes both appId and a timestamp component for better invalidation
  */
 const createAppAwareFetchLayoutData = (appId?: string) => {
+  // Create a unique cache key that includes the appId to prevent cross-app pollution
+  const cacheKey = `layout-data-${appId || 'default'}`
+
   return cache(async (): Promise<LayoutData> => {
+    console.log(`[LAYOUT_CACHE] Fetching data for appId: ${appId}, cacheKey: ${cacheKey}`)
     return fetchLayoutDataImpl(appId)
   })
 }

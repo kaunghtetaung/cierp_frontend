@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import type { TenantSettings, TenantApplication, User } from "@repo/types";
 import { getLocalizedText } from "@repo/utils";
@@ -36,6 +36,7 @@ export function ClientAppSelector({
   const router = useRouter();
   const pathname = usePathname();
   const { state } = useSidebar();
+  const [isPending, startTransition] = useTransition();
 
   // Use pre-filtered apps from server component
   const apps = filteredApps;
@@ -141,14 +142,23 @@ export function ClientAppSelector({
     const dashboardPath = `/${appSlug}/dashboard`;
     console.log(`Switching from ${currentAppFromPath} to ${appSlug} app dashboard: ${dashboardPath}`);
 
-    // Use Next.js router for smooth client-side navigation
-    router.push(dashboardPath);
+    // Use Next.js router for client-side navigation with server component refresh
+    // Wrap navigation in a transition for better UX
+    startTransition(async () => {
+      // Navigate first
+      router.push(dashboardPath);
+
+      // Force server component re-rendering to update sidebar with new app data
+      // This ensures the layout fetches fresh data for the new app
+      router.refresh();
+    });
   };
 
   // Show loading skeleton only when we have no tenant or no apps at all
   // If we have apps but can't determine current app, we'll use the first app as fallback
-  if (!tenant || !apps || apps.length === 0) {
-    console.log("[ClientAppSelector] Showing skeleton - tenant:", !!tenant, "apps:", apps?.length || 0);
+  // Also show loading state during app transition
+  if (!tenant || !apps || apps.length === 0 || isPending) {
+    console.log("[ClientAppSelector] Showing skeleton - tenant:", !!tenant, "apps:", apps?.length || 0, "pending:", isPending);
     return (
       <SidebarMenu>
         <SidebarMenuItem>

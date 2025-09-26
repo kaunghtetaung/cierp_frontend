@@ -64,8 +64,15 @@ function modulesToNavItems(
   language: string,
   currentAppId?: string
 ): any[] {
-  // Get current app from URL path for proper navigation
+  // Use reliable server data (currentAppId) as primary source for app prefix
+  // This prevents stale window.location.pathname during server component re-renders
   const getAppPrefix = (): string => {
+    // Primary: Use currentAppId from server data (most reliable)
+    if (currentAppId) {
+      return `/${currentAppId}`;
+    }
+
+    // Fallback: Client-side detection (only when currentAppId is not available)
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
       const pathSegments = pathname
@@ -86,8 +93,8 @@ function modulesToNavItems(
       }
     }
 
-    // Fallback to provided currentAppId or default to core
-    return currentAppId ? `/${currentAppId}` : "/core";
+    // Final fallback
+    return "/core";
   };
 
   const appPrefix = getAppPrefix();
@@ -127,7 +134,8 @@ export function AppSidebar({
   // Use pre-filtered modules from server (SECURE: no client-side access control)
   const navItems = React.useMemo(() => {
     if (appSchemaData?.modules && appSchemaData.modules.length > 0) {
-      console.log(`[SIDEBAR] Rendering ${appSchemaData.modules.length} server-filtered modules`);
+      console.log(`[SIDEBAR] Rendering ${appSchemaData.modules.length} server-filtered modules for app: ${appSchemaData.appId}`);
+      console.log(`[SIDEBAR] Modules:`, appSchemaData.modules.map(m => ({ slug: m.slug, name: m.name })));
 
       return modulesToNavItems(
         appSchemaData.modules,
@@ -135,13 +143,21 @@ export function AppSidebar({
         appSchemaData.appId
       );
     }
+    console.log(`[SIDEBAR] No modules available - appSchemaData:`, !!appSchemaData, "modules:", appSchemaData?.modules?.length || 0);
     return [];
   }, [appSchemaData, currentLanguage]);
 
   // Generate localized secondary navigation
   const localizedSecondaryNav = React.useMemo(() => {
-    // Get current app prefix for secondary navigation
+    // Use reliable server data (appSchemaData.appId) as primary source for app prefix
+    // This prevents stale window.location.pathname during server component re-renders
     const getAppPrefix = (): string => {
+      // Primary: Use appSchemaData.appId from server data (most reliable)
+      if (appSchemaData?.appId) {
+        return `/${appSchemaData.appId}`;
+      }
+
+      // Fallback: Client-side detection (only when appSchemaData.appId is not available)
       if (typeof window !== "undefined") {
         const pathname = window.location.pathname;
         const pathSegments = pathname
@@ -161,7 +177,8 @@ export function AppSidebar({
         }
       }
 
-      return appSchemaData?.appId ? `/${appSchemaData.appId}` : "/core";
+      // Final fallback
+      return "/core";
     };
 
     return getSecondaryNavItems(currentLanguage, getAppPrefix()) as any;

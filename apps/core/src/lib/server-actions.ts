@@ -209,12 +209,40 @@ export async function executeExtraAction(
       success: true,
       data: result
     }
-    
+
   } catch (error) {
     console.error(`Error executing ${actionKey}:`, error)
     return {
       success: false,
       error: error instanceof Error ? error.message : `Failed to execute ${actionKey}`
+    }
+  }
+}
+
+/**
+ * Revalidate app layout data for server component refresh
+ * This is called when switching between apps to ensure fresh data
+ */
+export async function revalidateAppLayout(appId: string): Promise<ActionResponse> {
+  try {
+    // Revalidate the layout for the specific app
+    revalidatePath(`/${appId}`)
+
+    // Also revalidate the dashboard route for that app
+    revalidatePath(`/${appId}/dashboard`)
+
+    console.log(`[REVALIDATE_ACTION] Successfully revalidated layout for app: ${appId}`)
+
+    return {
+      success: true,
+      data: { revalidated: true, appId }
+    }
+
+  } catch (error) {
+    console.error(`Error revalidating app layout for ${appId}:`, error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : `Failed to revalidate app layout for ${appId}`
     }
   }
 }
