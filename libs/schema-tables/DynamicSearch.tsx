@@ -49,11 +49,20 @@ const getFieldTypeInput = (
   fieldName: string,
   fieldType: string,
   value: string,
-  onChange: (value: string) => void
+  onChange: (value: string) => void,
+  onClear?: () => void
 ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape' && onClear) {
+      e.preventDefault();
+      onClear();
+    }
+  };
+
   const inputProps = {
     value,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value),
+    onKeyDown: handleKeyDown,
     placeholder: `Enter ${fieldName}...`,
     className: "h-9"
   };
@@ -216,7 +225,8 @@ export function DynamicSearch({ queryAllowedFields, onFiltersChange, className, 
                       field.fieldName,
                       field.fieldType,
                       currentValue,
-                      (value) => updateFilter(field.fieldName, currentOperator, value)
+                      (value) => updateFilter(field.fieldName, currentOperator, value),
+                      () => clearFilter(field.fieldName)
                     )}
                   </div>
                   

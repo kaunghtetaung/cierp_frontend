@@ -42,7 +42,6 @@ export function PrefilterText({
     operator || field.searchOptions?.defaultOperator || "$regex"
   );
   const [isOperatorOpen, setIsOperatorOpen] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Get available operators
   const operators = field.searchOptions?.operators || [
@@ -55,17 +54,31 @@ export function PrefilterText({
     ? getLocalizedText(field.searchOptions.placeholder[selectedOperator], currentLanguage)
     : `Search ${getLocalizedText(field.label, currentLanguage)}...`;
 
-  // Handle search with debounce
-  const handleSearch = (newValue: string) => {
+  // Handle input value change (no automatic search)
+  const handleInputChange = (newValue: string) => {
     setSearchValue(newValue);
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+  };
+
+  // Handle manual search execution
+  const handleSearch = () => {
+    onChange(searchValue || undefined, selectedOperator);
+  };
+
+  // Handle Enter key press and ESC key
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleClear();
     }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      onChange(newValue || undefined, selectedOperator);
-    }, 300);
+  };
+
+  // Handle clear search
+  const handleClear = () => {
+    setSearchValue("");
+    onChange(undefined, selectedOperator);
   };
 
   // Handle operator change
@@ -75,15 +88,6 @@ export function PrefilterText({
     // Immediately update with new operator
     onChange(searchValue || undefined, newOperator);
   };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Get current operator label
   const currentOperatorLabel = operators.find(op => op.value === selectedOperator);
@@ -154,26 +158,43 @@ export function PrefilterText({
           <input
             type="text"
             value={searchValue}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={cn(
-              "w-full px-3 py-1.5 pr-8 text-sm text-foreground font-medium border rounded-md",
+              "w-full px-3 py-1.5 pr-16 text-sm text-foreground font-medium border rounded-md",
               "bg-background hover:bg-accent/50",
               "transition-colors duration-200",
               searchValue ? "border-primary/50" : "border-input"
             )}
           />
-          
-          {/* Clear button */}
-          {searchValue && (
-            <button
-              type="button"
-              onClick={() => handleSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <IconComponent name="X" className="h-3 w-3" />
-            </button>
-          )}
+
+          {/* Action buttons */}
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {/* Search/Confirm button */}
+            {searchValue && (
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Search (Enter)"
+              >
+                <IconComponent name="Search" className="h-3 w-3" />
+              </button>
+            )}
+
+            {/* Clear button */}
+            {searchValue && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Clear"
+              >
+                <IconComponent name="X" className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

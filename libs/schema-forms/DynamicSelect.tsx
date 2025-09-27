@@ -600,6 +600,14 @@ export function DynamicSelect({
             placeholder={currentLanguage === "mm" ? "ရှာဖွေပါ..." : "Search..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setSearchTerm("");
+                handleClear();
+                setOpen(false);
+              }
+            }}
             className="h-8"
           />
         </div>

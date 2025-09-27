@@ -900,13 +900,28 @@ export function TypeaheadDynamicSelect({
         e.preventDefault();
         setOpen(false);
         setDropdownPosition(null);
-        // Restore display value to selected option
-        if (selectedOption) {
-          const labelText = typeof selectedOption.label === 'string' ? selectedOption.label : getLocalizedText(selectedOption.label, currentLanguage);
-          setDisplayValue(labelText);
-        } else {
-          setDisplayValue("");
+
+        // Clear the entire selection (both single and multi-select)
+        if (isMultiple && Array.isArray(processedValue) && processedValue.length > 0) {
+          // Clear all cached labels for multi-select
+          if (typeof window !== 'undefined' && field.fieldName) {
+            processedValue.forEach((val: string) => {
+              const cacheKey = `typeahead_label_${field.fieldName}_${val}`;
+              localStorage.removeItem(cacheKey);
+            });
+          }
+          onChange([]);
+        } else if (!isMultiple && processedValue) {
+          // Clear single select
+          if (typeof window !== 'undefined' && field.fieldName && processedValue) {
+            const cacheKey = `typeahead_label_${field.fieldName}_${processedValue}`;
+            localStorage.removeItem(cacheKey);
+          }
+          onChange(null);
         }
+
+        setSelectedOption(null);
+        setDisplayValue("");
         setSearchTerm("");
         break;
     }

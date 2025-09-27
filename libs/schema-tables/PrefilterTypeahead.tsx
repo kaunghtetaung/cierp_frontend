@@ -190,6 +190,21 @@ export function PrefilterTypeahead({
     }
   };
 
+  // Handle clear all values (for ESC key)
+  const handleClear = () => {
+    onChange(undefined);
+    setSearchTerm("");
+    setIsOpen(false);
+  };
+
+  // Handle key down events
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleClear();
+    }
+  };
+
   // Get labels for selected values
   const selectedLabels = selectedValues.map(val => {
     const option = options.find(opt => opt.value === val);
@@ -234,8 +249,9 @@ export function PrefilterTypeahead({
               type="text"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
               onFocus={() => setIsOpen(true)}
-              placeholder={field.multiple || !selectedValues.length 
+              placeholder={field.multiple || !selectedValues.length
                 ? `Search ${getLocalizedText(field.label, currentLanguage)}`
                 : selectedLabels[0]}
               className={cn(
