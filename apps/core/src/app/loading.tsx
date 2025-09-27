@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { DashboardLoadingPage } from '@repo/base-dashboard'
-import { useLanguage } from '@repo/language'
 
 export default function Loading() {
-  const { currentLanguage } = useLanguage()
+  // Use default language since loading happens before providers are available
+  const currentLanguage = "en"
 
   const loadingMessages = {
     title: {

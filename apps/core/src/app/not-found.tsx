@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui'
-import { useLanguage } from '@repo/language'
 import { getLocalizedText } from '@repo/utils'
 
 export default function NotFound() {
   const router = useRouter()
-  const { currentLanguage } = useLanguage()
+  // Use default language since 404 pages may execute before providers are available
+  const currentLanguage = "en"
 
   const notFoundMessages = {
     title: {

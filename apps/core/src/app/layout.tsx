@@ -66,6 +66,39 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     );
   }
 
+  // Check if request is directly to app.tenantid.com root path
+  // Skip AppProviders and AppLayout for direct landing page access
+  if (pathname === '/' || pathname === '') {
+    console.log(`[LAYOUT_LANDING] Direct access to landing page, skipping AppProviders`);
+
+    // Fetch minimal layout data for landing page
+    const { middlewareData: fullMiddlewareData, tenant } = await fetchLayoutData(undefined);
+
+    return (
+      <html lang={fullMiddlewareData.language || "en"} suppressHydrationWarning>
+        <head>
+          <title>
+            {tenant?.displayName[fullMiddlewareData.language || "en"] ||
+              tenant?.brandInfo?.title ||
+              "Application Management System"}
+          </title>
+          <meta
+            name="description"
+            content={
+              tenant?.localizedDescription[fullMiddlewareData.language || "en"] ||
+              "Core System Portal"
+            }
+          />
+          <ThemeScript />
+        </head>
+        <body suppressHydrationWarning>
+          {children}
+          <Toaster />
+        </body>
+      </html>
+    );
+  }
+
   // Fetch all layout data with app-specific caching for proper sidebar redraw
   const { middlewareData: fullMiddlewareData, tenant, tenantError, appSchemaData, authData, filteredApps, currentAppAccess } =
     await fetchLayoutData(appId);

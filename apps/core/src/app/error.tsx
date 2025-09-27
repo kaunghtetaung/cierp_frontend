@@ -5,7 +5,6 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui'
-import { useLanguage } from '@repo/language'
 import { getLocalizedText } from '@repo/utils'
 
 interface ErrorPageProps {
@@ -15,7 +14,8 @@ interface ErrorPageProps {
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   const router = useRouter()
-  const { currentLanguage } = useLanguage()
+  // Use default language since error pages may execute before providers are available
+  const currentLanguage = "en"
 
   // Log error for debugging and monitoring
   useEffect(() => {
