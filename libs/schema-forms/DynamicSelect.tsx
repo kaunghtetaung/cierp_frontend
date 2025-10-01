@@ -658,16 +658,16 @@ export function DynamicSelect({
       )}
 
       {/* Compact single-line dropdown with integrated action buttons */}
-      <div className={`relative flex items-center border rounded-md ${
+      <div className={`relative flex items-center border rounded-md shadow-xs transition-[color,box-shadow] ${
         validationError
-          ? "border-destructive focus-within:ring-2 focus-within:ring-destructive"
-          : "border-input focus-within:ring-2 focus-within:ring-ring"
+          ? "border-destructive focus-within:ring-destructive/20 dark:focus-within:ring-destructive/40 focus-within:border-destructive focus-within:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive"
+          : "border-input focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]"
       }`}>
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex-1 flex items-center justify-between px-3 h-10 text-sm bg-transparent hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-none"
+              className="flex-1 flex items-center justify-between px-3 h-9 text-sm bg-transparent hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-none"
               disabled={field.readonly || loading}
             >
               <span className="truncate text-left">{getDisplayText()}</span>
@@ -749,7 +749,7 @@ export function DynamicSelect({
           {dropdownConfig.clearable && value && !field.readonly && (
             <button
               type="button"
-              className="flex items-center justify-center w-9 h-10 hover:bg-accent/50 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-9 h-9 hover:bg-accent/50 transition-colors disabled:opacity-50"
               onClick={handleClear}
               title={currentLanguage === "mm" ? "ရှင်းလင်းမည်" : "Clear"}
             >
@@ -761,7 +761,7 @@ export function DynamicSelect({
           {dropdownConfig.type === "dynamic" && dropdownConfig.refPath && !field.readonly && dependenciesSatisfied && (
             <button
               type="button"
-              className="flex items-center justify-center w-9 h-10 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center w-9 h-9 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
                 lastFetchedDependencyKey.current = ""; // Force refetch
                 fetchOptions();
@@ -780,7 +780,7 @@ export function DynamicSelect({
           {field.quickEntry?.enabled && (
             <button
               type="button"
-              className="flex items-center justify-center w-9 h-10 hover:bg-accent/50 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-9 h-9 hover:bg-accent/50 transition-colors disabled:opacity-50"
               onClick={() => setQuickEntryOpen(true)}
               disabled={field.readonly}
               title={currentLanguage === "mm" ? "အသစ်ထည့်ရန်" : "Add new"}

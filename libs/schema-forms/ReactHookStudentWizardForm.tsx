@@ -715,7 +715,7 @@ export function ReactHookStudentWizardForm({
           </div>
 
           {/* Mobile View - Compact dots with current step info */}
-          <div className="block md:hidden space-y-3">
+          <div className="mobile-step-indicator">
             {/* Current Step Info */}
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground">

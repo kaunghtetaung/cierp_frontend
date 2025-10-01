@@ -34,8 +34,8 @@ export function PreviousEducationItem({
   const fieldLabel = getLocalizedText(field.label, currentLanguage)
 
   return (
-    <Card className="relative">
-      <CardHeader className="pb-3">
+    <Card className="relative border-0 shadow-none p-0 border-b border-muted pb-4 mb-4 rounded-none">
+      <CardHeader className="pb-3 p-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">
             {fieldLabel.replace(/s$/, '')} #{index + 1}
@@ -56,7 +56,7 @@ export function PreviousEducationItem({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 p-0">
         <div className="space-y-4">
           {/* Large screen: 5 columns (Class Name, Exam Board, Total Marks, Year, Roll Number) */}
           {/* MD screen: Row 1 (Class Name, Exam Board) + Row 2 (Total Marks, Year, Roll Number) */}

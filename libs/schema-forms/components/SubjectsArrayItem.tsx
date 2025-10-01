@@ -34,10 +34,10 @@ export function SubjectsArrayItem({
   return (
     <Card className="relative border-0 shadow-none px-0 py-2 gap-3">
       <CardContent className="py-2 px-0">
-        {/* Single row compact layout: Subject (2 cols) + Mark + Distinction + Delete (2 cols) */}
-        <div className="grid grid-cols-4 gap-3 items-start">
-          {/* Subject field - column 1-2 */}
-          <div className="col-span-2 flex items-end">
+        {/* Responsive layout: Mobile (stacked) vs Desktop (single row) */}
+        <div className="flex flex-col md:grid md:grid-cols-4 gap-3 items-start">
+          {/* Subject field - mobile: full width, desktop: column 1-2 */}
+          <div className="w-full md:col-span-2 flex items-end">
             {field.children?.filter(childField =>
               childField.fieldName === 'subject' ||
               childField.fieldName === 'subjectId' ||
@@ -61,8 +61,8 @@ export function SubjectsArrayItem({
             ))}
           </div>
 
-          {/* Mark field + Distinction switch + Delete button - column 3-4 */}
-          <div className="col-span-2 flex items-end gap-2">
+          {/* Mark field + Distinction switch + Delete button - mobile: full width row, desktop: column 3-4 */}
+          <div className="w-full md:col-span-2 flex items-end gap-2">
             {/* Mark input */}
             <div className="flex-1">
               {field.children?.filter(childField => {
@@ -87,7 +87,7 @@ export function SubjectsArrayItem({
               ))}
             </div>
 
-            {/* Distinction toggle switch */}
+            {/* Distinction toggle switch - hidden label on mobile */}
             <div className="flex items-center space-x-2 pb-2">
               {field.children?.filter(childField => {
                 const fieldNameLower = childField.fieldName.toLowerCase();
@@ -110,7 +110,8 @@ export function SubjectsArrayItem({
                       />
                       <Label
                         htmlFor={`${fieldName}.${index}.${childField.fieldName}`}
-                        className="text-sm font-normal cursor-pointer"
+                        className="text-sm font-normal cursor-pointer hidden md:inline"
+                        title={currentLanguage === 'mm' ? 'ထူးခြားချက်' : 'Distinction'}
                       >
                         {currentLanguage === 'mm' ? 'ထူးခြားချက်' : 'Distinction'}
                       </Label>
@@ -120,7 +121,7 @@ export function SubjectsArrayItem({
               ))}
             </div>
 
-            {/* Delete button */}
+            {/* Delete button - icon only on mobile */}
             <div className="flex-shrink-0 pb-2">
               {!isReadonly && (
                 <Button
@@ -128,9 +129,12 @@ export function SubjectsArrayItem({
                   variant="destructive"
                   size="sm"
                   onClick={() => onRemove(index)}
+                  className="md:px-3"
                 >
-                  <IconComponent name="Trash2" className="w-4 h-4 mr-2" />
-                  {currentLanguage === 'mm' ? 'ဖျက်' : 'Delete'}
+                  <IconComponent name="Trash2" className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">
+                    {currentLanguage === 'mm' ? 'ဖျက်' : 'Delete'}
+                  </span>
                 </Button>
               )}
             </div>

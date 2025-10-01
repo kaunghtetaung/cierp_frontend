@@ -76,22 +76,8 @@ export function SubjectsArrayField({
 
   return (
     <div className="space-y-4">
-      {/* Subjects array header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium text-foreground">
-            {fieldLabel}
-            {field.validationRule?.required && (
-              <span className="text-destructive ml-1">*</span>
-            )}
-          </h3>
-          {field.helperText && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {getLocalizedText(field.helperText, currentLanguage)}
-            </p>
-          )}
-        </div>
-
+      {/* Subjects array header - responsive */}
+      <div className="flex justify-end mt-2">
         {/* Add item button */}
         {!isReadonly && (
           <Button
@@ -99,10 +85,11 @@ export function SubjectsArrayField({
             variant="outline"
             size="sm"
             onClick={handleAddItem}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
           >
             <IconComponent name="Plus" className="w-4 h-4" />
-            Add {fieldLabel.replace(/s$/, '')}
+            <span className="hidden sm:inline">Add {fieldLabel.replace(/s$/, '')}</span>
+            <span className="sm:hidden">Add Subject</span>
           </Button>
         )}
       </div>

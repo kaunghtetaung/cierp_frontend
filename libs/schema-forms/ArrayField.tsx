@@ -97,21 +97,7 @@ export function ArrayField({
   return (
     <div className="space-y-4">
       {/* Array field header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium text-foreground">
-            {fieldLabel}
-            {field.validationRule?.required && (
-              <span className="text-destructive ml-1">*</span>
-            )}
-          </h3>
-          {field.helperText && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {getLocalizedText(field.helperText, currentLanguage)}
-            </p>
-          )}
-        </div>
-
+      <div className="flex items-center justify-end">
         {/* Add item button */}
         {!isReadonly && (
           <Button
