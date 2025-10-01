@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { Textarea } from "@repo/ui";
 import type { MultilingualText, FormField } from "@repo/types";
 
 interface MultiLanguageInputProps {
@@ -95,21 +97,21 @@ export function MultiLanguageInput({
     if (field.fieldType === "number") {
       props.type = "number";
       if (field.validationRule?.min !== undefined)
-        props.min = field.validationRule.min;
+        props.min = field.validationRule?.min;
       if (field.validationRule?.max !== undefined)
-        props.max = field.validationRule.max;
+        props.max = field.validationRule?.max;
     }
 
     if (field.validationRule?.minLength) {
-      props.minLength = field.validationRule.minLength;
+      props.minLength = field.validationRule?.minLength;
     }
 
     if (field.validationRule?.maxLength) {
-      props.maxLength = field.validationRule.maxLength;
+      props.maxLength = field.validationRule?.maxLength;
     }
 
     if (field.validationRule?.pattern) {
-      props.pattern = field.validationRule.pattern;
+      props.pattern = field.validationRule?.pattern;
     }
 
     return props;
@@ -155,14 +157,14 @@ export function MultiLanguageInput({
         {/* Input field */}
         <div>
           {field.fieldType === "textArea" ? (
-            <textarea
+            <Textarea
               {...baseInputProps}
               ref={lang === "en" ? enTextAreaRef : mmTextAreaRef}
               rows={field.rows || 4}
               className={`${baseInputProps.className} resize-vertical`}
             />
           ) : (
-            <input
+            <Input
               type={
                 field.fieldType === "password"
                   ? "password"
@@ -264,8 +266,8 @@ export function MultiLanguageInput({
           {field.validationRule?.errorMessage && (
             <p className="text-xs text-muted-foreground">
               {currentLanguage === "mm"
-                ? field.validationRule.errorMessage.mm
-                : field.validationRule.errorMessage.en}
+                ? field.validationRule?.errorMessage?.mm
+                : field.validationRule?.errorMessage?.en}
             </p>
           )}
         </div>
@@ -344,8 +346,8 @@ export function MultiLanguageInput({
         {field.validationRule?.errorMessage && (
           <p className="text-xs text-muted-foreground">
             {currentLanguage === "mm"
-              ? field.validationRule.errorMessage.mm
-              : field.validationRule.errorMessage.en}
+              ? field.validationRule?.errorMessage?.mm
+              : field.validationRule?.errorMessage?.en}
           </p>
         )}
       </div>

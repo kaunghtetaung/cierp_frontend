@@ -1,5 +1,14 @@
 # Claude Development Guidelines
 
+## 🚨 CRITICAL APPLICATION ACCESS - MUST REMEMBER
+
+### Application URL Access
+- **NEVER use localhost URLs** - Application uses port forwarding with hostname
+- **ALWAYS use**: `http://app.um1ygn.edu.mm/cpms/students/new`
+- **NOT**: `http://127.0.0.1:3001/cpms/students/new`
+- This is the **ONLY** way to access the application properly
+- **Remember this for ALL future testing and development**
+
 ## 🚨 CRITICAL DAILY WORKFLOW - MUST FOLLOW EVERY SESSION
 
 ### Git Branch Management

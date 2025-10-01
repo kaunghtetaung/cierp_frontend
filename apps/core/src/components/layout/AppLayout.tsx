@@ -64,7 +64,7 @@ export function AppLayout({
             )}
           >
             {isDashboard ? (
-              <div className="container mx-auto p-6 space-y-6">{children}</div>
+              <div className="w-full mx-auto p-6 space-y-6">{children}</div>
             ) : (
               children
             )}

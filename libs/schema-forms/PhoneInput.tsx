@@ -420,7 +420,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     }
 
     return (
-      <div className={`flex ${className}`}>
+      <div className={`flex gap-2 ${className}`}>
         {/* Country Selector */}
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
@@ -428,7 +428,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
               type="button"
               variant="outline"
               disabled={disabled}
-              className={`flex items-center gap-2 rounded-r-none border-r-0 px-3 ${
+              className={`flex items-center gap-2 px-3 shrink-0 ${
                 error ? 'border-destructive' : ''
               }`}
             >
@@ -471,8 +471,8 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             ))}
             {filteredCountries.length === 0 && (
               <div className="p-3 text-center text-sm text-muted-foreground">
-                {currentLanguage === 'mm' 
-                  ? 'နိုင်ငံမတွေ့ရှိပါ' 
+                {currentLanguage === 'mm'
+                  ? 'နိုင်ငံမတွေ့ရှိပါ'
                   : 'No countries found'}
               </div>
             )}
@@ -488,7 +488,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           onBlur={handleBlur}
           disabled={disabled}
           placeholder={getPlaceholder()}
-          className={`rounded-l-none ${error || !isValid ? 'border-destructive focus:ring-destructive' : ''}`}
+          className={`flex-1 ${error || !isValid ? 'border-destructive focus:ring-destructive' : ''}`}
           {...props}
         />
       </div>

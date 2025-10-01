@@ -154,10 +154,12 @@ export function DynamicSelect({
   const fetchTimeoutRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
 
-  // Parse module from refPath (e.g., "/departments/ref" -> "departments")
+  // Parse module from refPath (e.g., "/departments/ref" -> "departments", "/regions/ref?expect=district" -> "regions")
   const getModuleFromRefPath = (refPath: string): string => {
+    // Split by '?' to separate path from query parameters
+    const [basePath] = refPath.split('?');
     // Remove leading slash and trailing /ref
-    const cleaned = refPath.replace(/^\//, '').replace(/\/ref$/, '');
+    const cleaned = basePath.replace(/^\//, '').replace(/\/ref$/, '');
     return cleaned;
   };
 
@@ -232,16 +234,31 @@ export function DynamicSelect({
     try {
       // Extract module name from refPath
       const module = getModuleFromRefPath(dropdownConfig.refPath!);
-      
-      // Build query parameters for dependent dropdowns
-      const queryParams: Record<string, string> = {};
-      
+
+      // Extract predefined query parameters from refPath
+      const [, queryString] = dropdownConfig.refPath!.split('?');
+      const predefinedParams: Record<string, string> = {};
+      if (queryString) {
+        const urlParams = new URLSearchParams(queryString);
+        urlParams.forEach((value, key) => {
+          predefinedParams[key] = value;
+        });
+      }
+
+      // Build query parameters for dependent dropdowns, merging with predefined params
+      const queryParams: Record<string, string> = { ...predefinedParams };
+
+      // Add searchType parameter for dynamicDependentSelect fields (avoid conflict with dataSource.searchParam)
+      if (field.fieldType === 'dynamicDependentSelect' || field.fieldType === 'multiDependentSelect') {
+        queryParams.searchType = 'dynamicDependentSelect';
+      }
+
       if (dropdownConfig.dependsOn && dropdownConfig.dependsOn.length > 0) {
         dropdownConfig.dependsOn.forEach((fieldName, index) => {
-          // Use dependentFieldValue as the parameter name for backend compatibility
-          const paramName = "dependentFieldValue";
+          // Use searchParam from dataSource if specified, otherwise use dependentFieldValue for backward compatibility
+          const paramName = field.dataSource?.searchParam || "dependentFieldValue";
           const paramValue = dependencyValues[fieldName];
-          
+
           if (paramValue) {
             // Convert to string to handle any type issues (e.g., objects, numbers)
             queryParams[paramName] = String(paramValue);
@@ -320,7 +337,12 @@ export function DynamicSelect({
         return transformedOption;
       });
       
-      setOptions(transformedOptions);
+      // Deduplicate options based on value to prevent React key conflicts
+      const uniqueOptions = transformedOptions.filter((option, index, array) =>
+        array.findIndex(opt => opt.value === option.value) === index
+      );
+
+      setOptions(uniqueOptions);
       setError(null);
       lastFetchedDependencyKey.current = dependencyKey;
       
@@ -349,6 +371,11 @@ export function DynamicSelect({
       return;
     }
 
+    // Stop refetching if there are validation errors on this field
+    if (validationError) {
+      return;
+    }
+
     // Must have a data source for dynamic options
     if (!dropdownConfig.refPath) {
       if (!hasInitialized.current) {
@@ -363,10 +390,8 @@ export function DynamicSelect({
       if (options.length > 0) {
         setOptions([]);
       }
-      // Clear the selected value when dependencies are not satisfied
-      if (value && (value !== "" && value !== null && value !== undefined)) {
-        onChange(isMultiple ? [] : "");
-      }
+      // Don't automatically clear the selected value - let user decide
+      // This prevents onChange from triggering infinite loops
       lastFetchedDependencyKey.current = "";
       return;
     }
@@ -381,7 +406,10 @@ export function DynamicSelect({
       (hasInitialized.current && lastFetchedDependencyKey.current !== dependencyKey && dependenciesSatisfied)
     );
 
-    if (shouldFetch && !isFetching.current && !loading) {
+    // Don't auto-retry if there's an error and we're trying the same dependency key
+    const hasErrorForCurrentKey = error && lastFetchedDependencyKey.current === dependencyKey;
+
+    if (shouldFetch && !isFetching.current && !loading && !hasErrorForCurrentKey) {
       
       // Clear any existing timeout
       if (fetchTimeoutRef.current) {
@@ -404,7 +432,9 @@ export function DynamicSelect({
     dependenciesSatisfied,
     dependencyKey,
     loading,
-    isMultiple
+    isMultiple,
+    error,
+    validationError
     // Note: Removed fetchOptions, value, and onChange to prevent unnecessary re-fetches
   ]);
 
@@ -570,14 +600,28 @@ export function DynamicSelect({
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs hover:bg-destructive/20"
-              onClick={() => {
+              disabled={loading}
+              onClick={async () => {
                 setError(null);
                 lastFetchedDependencyKey.current = ""; // Force refetch
-                fetchOptions();
+
+                // Clear any pending timeout to bypass the 300ms delay
+                if (fetchTimeoutRef.current) {
+                  clearTimeout(fetchTimeoutRef.current);
+                }
+
+                // Call fetchOptions directly for immediate response
+                await fetchOptions();
               }}
             >
-              <IconComponent name="RotateCcw" className="h-3 w-3 mr-1" />
-              {currentLanguage === "mm" ? "ပြန်လုပ်" : "Retry"}
+              <IconComponent
+                name={loading ? "Loader2" : "RotateCcw"}
+                className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`}
+              />
+              {loading
+                ? (currentLanguage === "mm" ? "လုပ်နေသည်..." : "Loading...")
+                : (currentLanguage === "mm" ? "ပြန်လုပ်" : "Retry")
+              }
             </Button>
           </div>
           {process.env.NODE_ENV === 'development' && (
@@ -613,29 +657,51 @@ export function DynamicSelect({
         </div>
       )}
 
-      <div className={field.quickEntry?.enabled ? "flex gap-2" : ""}>
+      {/* Compact single-line dropdown with integrated action buttons */}
+      <div className={`relative flex items-center border rounded-md ${
+        validationError
+          ? "border-destructive focus-within:ring-2 focus-within:ring-destructive"
+          : "border-input focus-within:ring-2 focus-within:ring-ring"
+      }`}>
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className={`${field.quickEntry?.enabled ? "flex-1" : "w-full"} justify-between ${
-                validationError 
-                  ? "border-destructive focus:ring-destructive bg-destructive/5" 
-                  : ""
-              }`}
+            <button
+              type="button"
+              className="flex-1 flex items-center justify-between px-3 h-10 text-sm bg-transparent hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-none"
               disabled={field.readonly || loading}
             >
-              <span className="truncate">{getDisplayText()}</span>
+              <span className="truncate text-left">{getDisplayText()}</span>
               {loading ? (
                 <IconComponent name="Loader2" className="ml-2 h-4 w-4 shrink-0 opacity-50 animate-spin" />
               ) : (
                 <IconComponent name="ChevronDown" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               )}
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-        <DropdownMenuContent 
+        <DropdownMenuContent
           className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto z-[100]"
-          sideOffset={4}
+          sideOffset={8}
+          collisionPadding={16}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => {
+            const target = e.target as HTMLElement;
+            // Prevent closing if clicking on content, scrollbar, or menu items
+            if (target.closest('[data-radix-dropdown-menu-content]') ||
+                target.closest('[role="menuitem"]') ||
+                target.closest('[data-radix-dropdown-menu-viewport]')) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            // Prevent closing during any interaction with dropdown components
+            if (target.closest('[data-radix-dropdown-menu-content]') ||
+                target.closest('[role="menuitem"]') ||
+                target.closest('[data-radix-dropdown-menu-viewport]')) {
+              e.preventDefault();
+            }
+          }}
         >
           {filteredOptions.length === 0 ? (
             <div className="px-2 py-1.5 text-sm text-muted-foreground">
@@ -648,8 +714,14 @@ export function DynamicSelect({
               return (
                 <DropdownMenuItem
                   key={option.value}
-                  onSelect={() => handleSelect(option.value)}
-                  className="flex items-center"
+                  onSelect={(e) => {
+                    // Prevent default close behavior for multi-select
+                    if (isMultiple) {
+                      e.preventDefault();
+                    }
+                    handleSelect(option.value);
+                  }}
+                  className="flex items-center cursor-pointer"
                 >
                   <IconComponent
                     name="Check"
@@ -670,20 +742,53 @@ export function DynamicSelect({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      
-        {/* Quick Entry button */}
-        {field.quickEntry?.enabled && (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => setQuickEntryOpen(true)}
-            disabled={field.readonly}
-            title={currentLanguage === "mm" ? "အသစ်ထည့်ရန်" : "Add new"}
-          >
-            <IconComponent name="Plus" className="h-4 w-4" />
-          </Button>
-        )}
+
+        {/* Action buttons inside the same box */}
+        <div className="flex items-center border-l">
+          {/* Clear button */}
+          {dropdownConfig.clearable && value && !field.readonly && (
+            <button
+              type="button"
+              className="flex items-center justify-center w-9 h-10 hover:bg-accent/50 transition-colors disabled:opacity-50"
+              onClick={handleClear}
+              title={currentLanguage === "mm" ? "ရှင်းလင်းမည်" : "Clear"}
+            >
+              <IconComponent name="X" className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+
+          {/* Refresh button for dynamic dropdowns */}
+          {dropdownConfig.type === "dynamic" && dropdownConfig.refPath && !field.readonly && dependenciesSatisfied && (
+            <button
+              type="button"
+              className="flex items-center justify-center w-9 h-10 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => {
+                lastFetchedDependencyKey.current = ""; // Force refetch
+                fetchOptions();
+              }}
+              disabled={loading}
+              title={currentLanguage === "mm" ? "ပြန်ရယူ" : "Refresh"}
+            >
+              <IconComponent
+                name={loading ? "Loader2" : "RefreshCw"}
+                className={`h-4 w-4 text-muted-foreground hover:text-foreground ${loading ? "animate-spin" : ""}`}
+              />
+            </button>
+          )}
+
+          {/* Quick Entry button */}
+          {field.quickEntry?.enabled && (
+            <button
+              type="button"
+              className="flex items-center justify-center w-9 h-10 hover:bg-accent/50 transition-colors disabled:opacity-50"
+              onClick={() => setQuickEntryOpen(true)}
+              disabled={field.readonly}
+              title={currentLanguage === "mm" ? "အသစ်ထည့်ရန်" : "Add new"}
+            >
+              <IconComponent name="Plus" className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Quick Entry Dialog */}
@@ -743,48 +848,10 @@ export function DynamicSelect({
       {field.validationRule?.errorMessage && !validationError && (
         <p className="text-xs text-muted-foreground mt-1">
           {currentLanguage === "mm"
-            ? field.validationRule.errorMessage.mm
-            : field.validationRule.errorMessage.en}
+            ? field.validationRule?.errorMessage?.mm
+            : field.validationRule?.errorMessage?.en}
         </p>
       )}
-
-      {/* Action buttons */}
-      <div className="flex gap-1 mt-1">
-        {/* Clear button */}
-        {dropdownConfig.clearable && value && !field.readonly && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={handleClear}
-          >
-            <IconComponent name="X" className="h-3 w-3 mr-1" />
-            {currentLanguage === "mm" ? "ရှင်းလင်းမည်" : "Clear"}
-          </Button>
-        )}
-        
-        {/* Refresh button for dynamic dropdowns */}
-        {dropdownConfig.type === "dynamic" && dropdownConfig.refPath && !field.readonly && dependenciesSatisfied && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={() => {
-              lastFetchedDependencyKey.current = ""; // Force refetch
-              fetchOptions();
-            }}
-            disabled={loading}
-          >
-            <IconComponent 
-              name={loading ? "Loader2" : "RefreshCw"} 
-              className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} 
-            />
-            {currentLanguage === "mm" ? "ပြန်ရယူ" : "Refresh"}
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

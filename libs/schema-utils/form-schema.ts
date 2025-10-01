@@ -35,12 +35,24 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         })
         break
       case 'number':
-        fieldSchema = z.number()
-        if (field.validationRule.min !== undefined) {
-          fieldSchema = (fieldSchema as z.ZodNumber).min(field.validationRule.min)
+        // Accept both strings and numbers, transform to number for validation
+        fieldSchema = z.union([z.string(), z.number()]).transform((val) => {
+          if (typeof val === 'string') {
+            return val === '' ? 0 : Number(val)
+          }
+          return val
+        })
+        if (field.validationRule?.min !== undefined) {
+          fieldSchema = (fieldSchema as z.ZodEffects<any, any>).refine(
+            (val) => val >= (field.validationRule?.min || 0),
+            { message: field.validationRule?.errorMessage?.en || `Must be at least ${field.validationRule?.min}` }
+          )
         }
-        if (field.validationRule.max !== undefined) {
-          fieldSchema = (fieldSchema as z.ZodNumber).max(field.validationRule.max)
+        if (field.validationRule?.max !== undefined) {
+          fieldSchema = (fieldSchema as z.ZodEffects<any, any>).refine(
+            (val) => val <= (field.validationRule?.max || 0),
+            { message: field.validationRule?.errorMessage?.en || `Must be at most ${field.validationRule?.max}` }
+          )
         }
         break
       case 'boolean':
@@ -117,6 +129,173 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         break
       case 'icon':
         fieldSchema = z.string()
+        break
+      case 'arrayField':
+        // For array fields, create a schema for array of objects
+        if (field.children && field.children.length > 0) {
+          // Recursively generate schema for child fields
+          const childSchemaFields: Record<string, z.ZodTypeAny> = {}
+
+          field.children.forEach((childField) => {
+            let childFieldSchema: z.ZodTypeAny
+
+            // Generate schema for child field (reuse existing logic)
+            switch (childField.fieldType) {
+              case 'email':
+                childFieldSchema = z.string().email(childField.validationRule?.errorMessage?.en || 'Invalid email')
+                break
+              case 'number':
+                // Accept both strings and numbers, transform to number for validation
+                childFieldSchema = z.union([z.string(), z.number()]).transform((val) => {
+                  if (typeof val === 'string') {
+                    return val === '' ? 0 : Number(val)
+                  }
+                  return val
+                })
+                if (childField.validationRule?.min !== undefined) {
+                  childFieldSchema = (childFieldSchema as z.ZodEffects<any, any>).refine(
+                    (val) => val >= (childField.validationRule?.min || 0),
+                    { message: childField.validationRule?.errorMessage?.en || `Must be at least ${childField.validationRule?.min}` }
+                  )
+                }
+                if (childField.validationRule?.max !== undefined) {
+                  childFieldSchema = (childFieldSchema as z.ZodEffects<any, any>).refine(
+                    (val) => val <= (childField.validationRule?.max || 0),
+                    { message: childField.validationRule?.errorMessage?.en || `Must be at most ${childField.validationRule?.max}` }
+                  )
+                }
+                break
+              case 'select':
+              case 'dynamicSelect':
+              case 'dependentSelect':
+              case 'typeaheadSelect':
+                childFieldSchema = z.union([
+                  z.string(),
+                  z.object({
+                    id: z.string().optional(),
+                    _id: z.string().optional()
+                  }).passthrough()
+                ]).transform((val) => {
+                  if (typeof val === 'string') return val
+                  if (val && typeof val === 'object') return val._id || val.id || val
+                  return val
+                })
+                break
+              case 'boolean':
+              case 'checkbox':
+                childFieldSchema = z.boolean()
+                break
+              case 'date':
+                childFieldSchema = z.string().refine((val) => !isNaN(Date.parse(val)), {
+                  message: childField.validationRule?.errorMessage?.en || 'Invalid date'
+                })
+                break
+              case 'arrayField':
+                // Handle nested array fields recursively
+                if (childField.children && childField.children.length > 0) {
+                  const nestedChildSchemaFields: Record<string, z.ZodTypeAny> = {}
+
+                  childField.children.forEach((nestedChild) => {
+                    let nestedChildSchema: z.ZodTypeAny
+
+                    // Generate schema for nested child fields
+                    switch (nestedChild.fieldType) {
+                      case 'email':
+                        nestedChildSchema = z.string().email(nestedChild.validationRule?.errorMessage?.en || 'Invalid email')
+                        break
+                      case 'number':
+                        nestedChildSchema = z.union([z.string(), z.number()]).transform((val) => {
+                          if (typeof val === 'string') {
+                            return val === '' ? 0 : Number(val)
+                          }
+                          return val
+                        })
+                        break
+                      case 'select':
+                      case 'dynamicSelect':
+                      case 'dependentSelect':
+                      case 'typeaheadSelect':
+                        nestedChildSchema = z.union([
+                          z.string(),
+                          z.object({
+                            id: z.string().optional(),
+                            _id: z.string().optional()
+                          }).passthrough()
+                        ]).transform((val) => {
+                          if (typeof val === 'string') return val
+                          if (val && typeof val === 'object') return val._id || val.id || val
+                          return val
+                        })
+                        break
+                      case 'boolean':
+                      case 'checkbox':
+                        nestedChildSchema = z.boolean()
+                        break
+                      case 'date':
+                        nestedChildSchema = z.string().refine((val) => !isNaN(Date.parse(val)), {
+                          message: nestedChild.validationRule?.errorMessage?.en || 'Invalid date'
+                        })
+                        break
+                      default:
+                        nestedChildSchema = z.string()
+                    }
+
+                    // Handle required/optional for nested child fields
+                    if (!nestedChild.validationRule?.required) {
+                      nestedChildSchema = nestedChildSchema.optional()
+                    }
+
+                    nestedChildSchemaFields[nestedChild.fieldName] = nestedChildSchema
+                  })
+
+                  // Create array schema of nested objects
+                  childFieldSchema = z.array(z.object(nestedChildSchemaFields))
+                } else {
+                  // Fallback for nested array fields without children
+                  childFieldSchema = z.array(z.any())
+                }
+                break
+              default:
+                childFieldSchema = z.string()
+            }
+
+            // Apply validation rules for text fields
+            if (childField.fieldType === 'text' || childField.fieldType === 'textArea') {
+              if (childField.validationRule?.minLength) {
+                childFieldSchema = (childFieldSchema as z.ZodString).min(
+                  childField.validationRule.minLength,
+                  childField.validationRule.errorMessage?.en || 'Too short'
+                )
+              }
+              if (childField.validationRule?.maxLength) {
+                childFieldSchema = (childFieldSchema as z.ZodString).max(
+                  childField.validationRule.maxLength,
+                  childField.validationRule.errorMessage?.en || 'Too long'
+                )
+              }
+            }
+
+            // Handle required/optional for child fields
+            if (!childField.validationRule?.required) {
+              childFieldSchema = childFieldSchema.optional()
+            }
+
+            childSchemaFields[childField.fieldName] = childFieldSchema
+          })
+
+          // Create array schema of objects
+          fieldSchema = z.array(z.object(childSchemaFields))
+
+          // Add minimum length validation for required array fields
+          if (field.validationRule?.required) {
+            fieldSchema = (fieldSchema as z.ZodArray<any>).min(1,
+              field.validationRule?.errorMessage?.en || `At least one ${field.fieldName} is required`
+            )
+          }
+        } else {
+          // Fallback for array fields without children
+          fieldSchema = z.array(z.any())
+        }
         break
       default:
         fieldSchema = z.string()
@@ -203,6 +382,10 @@ export function generateDefaultValues(formFields: FormField[]): Record<string, a
         } else {
           defaultValue = ''
         }
+        break
+      case 'arrayField':
+        // For array fields, provide an empty array as default
+        defaultValue = []
         break
       default:
         defaultValue = ''

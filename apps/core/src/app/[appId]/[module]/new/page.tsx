@@ -44,6 +44,8 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
 
   // Choose form component based on layout type
   const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
+  const isStudentForm = module.formLayout === "studentForm";
+  const isStudentWizardForm = module.formLayout === "studentWizardForm";
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -52,6 +54,8 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
         action="create"
         moduleSlug={module.slug}
         isWizard={isWizardForm}
+        isStudentForm={isStudentForm}
+        isStudentWizardForm={isStudentWizardForm}
         appId={resolvedParams.appId}
         // No navigation needed for new records
       />

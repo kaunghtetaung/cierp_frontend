@@ -11,10 +11,13 @@ import { RadioGroup, RadioGroupItem } from '@repo/ui'
 import { Label } from '@repo/ui'
 import { DynamicSelect } from './DynamicSelect'
 import { DependentSelect } from './DependentSelect'
+import { ArrayField } from './ArrayField'
 import { PasswordField } from './PasswordField'
 import { MultiLanguageInput } from './MultiLanguageInput'
 import { PhoneInput } from './PhoneInput'
+import { NrcField } from './NrcField'
 import { IconComponent, IconSelector } from '@repo/ui'
+import { DatePicker } from './components/DatePicker'
 import type { FormField as SchemaFormField } from '@repo/types'
 
 // Auto-configure dropdownConfig - NO HARDCODING
@@ -126,6 +129,7 @@ export function FormFieldRenderer({
     field = autoConfigureDropdown(field);
   }
   
+
   // Early validation - ensure field has required properties
   if (!field || !field.fieldName) {
     console.error('FormFieldRenderer: Invalid field configuration', field)
@@ -224,20 +228,38 @@ export function FormFieldRenderer({
     ? "flex items-start gap-2 sm:gap-4"
     : "space-y-2";
 
+  // Check if this field should take full width (specific field names)
+  const isFullWidthField = ['gender', 'dateOfBirth', 'race', 'religion', 'nrcField', 'nrcNumber'].includes(field.fieldName);
+
+  // Handle arrayField separately - it manages its own labeling
+  if (field.fieldType === 'arrayField') {
+    return (
+      <div className={`${containerClasses} ${isFullWidthField ? 'col-span-full' : ''}`}>
+        <ArrayField
+          field={field}
+          fieldName={field.fieldName}
+          currentLanguage={currentLanguage}
+          isReadonly={isReadonly}
+          errors={errors}
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className={containerClasses}>
+    <div className={`${containerClasses} ${isFullWidthField ? 'col-span-full' : ''}`}>
       <FormField
         control={control}
         name={field.fieldName}
         render={({ field: formField, fieldState }) => (
-          <FormItem className={isVerticalLayout ? "flex-1 min-w-0" : ""}>
+          <FormItem className={`${isVerticalLayout ? "flex-1 min-w-0" : ""} ${isFullWidthField ? 'w-full' : ''}`}>
             <FormLabel className={`${isRequired ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''} ${
               isVerticalLayout ? "text-xs sm:text-sm" : "text-sm"
             }`}>
               {label}
             </FormLabel>
             <FormControl>
-              <FormFieldInput 
+              <FormFieldInput
                 field={field}
                 formField={formField}
                 isReadonly={isReadonly}
@@ -307,6 +329,30 @@ function FormFieldInput({
           )}
         />
       )
+
+    case 'nrcField':
+      return (
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: { onChange, value } }) => (
+            <NrcField
+              value={value || ''}
+              onChange={(newValue) => {
+                onChange(newValue);
+                onValueChange?.(newValue);
+              }}
+              disabled={isReadonly}
+              config={{
+                ...field.nrcConfig,
+                currentLanguage
+              }}
+              error={!!errors[field.fieldName]}
+              placeholder={field.placeHolder}
+            />
+          )}
+        />
+      )
     
     case 'text':
     case 'email':
@@ -355,7 +401,9 @@ function FormFieldInput({
           readOnly={isReadonly}
           className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
           onChange={(e) => {
-            const numValue = e.target.valueAsNumber || '';
+            const value = e.target.value;
+            // Convert to number if value exists, otherwise use empty string
+            const numValue = value === '' ? '' : Number(value);
             formField.onChange(numValue);
             onValueChange?.(numValue);
           }}
@@ -375,7 +423,7 @@ function FormFieldInput({
             placeholder={field.placeHolder}
             className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
             readOnly={isReadonly}
-            strengthConfig={field.validationRule.strengthMeterConfig}
+            strengthConfig={field.validationRule?.strengthMeterConfig}
             currentLanguage={currentLanguage}
             showStrengthIndicator={true}
           />
@@ -576,16 +624,31 @@ function FormFieldInput({
       )
     
     case 'date':
+      // Calculate default year for dateOfBirth field (current year - 15)
+      const getDefaultYear = () => {
+        if (field.fieldName === 'dateOfBirth') {
+          return new Date().getFullYear() - 15;
+        }
+        return undefined;
+      };
+
       return (
-        <Input
-          {...formField}
-          type="date"
-          readOnly={isReadonly}
-          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
-          onChange={(e) => {
-            formField.onChange(e);
-            onValueChange?.(e.target.value);
-          }}
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: { onChange, value } }) => (
+            <DatePicker
+              value={value || ''}
+              onChange={(newValue) => {
+                onChange(newValue);
+                onValueChange?.(newValue);
+              }}
+              placeholder={field.placeHolder || "Select date"}
+              disabled={isReadonly}
+              defaultYear={getDefaultYear()}
+              className={`w-full ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+            />
+          )}
         />
       )
     
@@ -632,11 +695,23 @@ function FormFieldInput({
           className="w-full"
         />
       )
-    
+
+    case 'arrayField':
+      return (
+        <ArrayField
+          field={field}
+          fieldName={field.fieldName}
+          currentLanguage={currentLanguage}
+          isReadonly={isReadonly}
+          errors={errors}
+        />
+      )
+
     default:
       return (
         <Input
           {...formField}
+          value={formField.value || ''}
           placeholder={field.placeHolder}
           readOnly={isReadonly}
           className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}

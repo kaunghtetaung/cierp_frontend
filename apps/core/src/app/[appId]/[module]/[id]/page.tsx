@@ -88,6 +88,8 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
   
   // Choose form component based on layout type
   const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
+  const isStudentForm = module.formLayout === "studentForm";
+  const isStudentWizardForm = module.formLayout === "studentWizardForm";
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -98,6 +100,8 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
         moduleSlug={resolvedParams.module}
         itemId={isCreateMode ? undefined : resolvedParams.id}
         isWizard={isWizardForm}
+        isStudentForm={isStudentForm}
+        isStudentWizardForm={isStudentWizardForm}
         navigation={navigation}
         appId={resolvedParams.appId}
       />

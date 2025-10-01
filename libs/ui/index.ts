@@ -12,6 +12,7 @@ export * from "./components/label";
 export * from "./components/select";
 export * from "./components/checkbox";
 export * from "./components/radio-group";
+export * from "./components/switch";
 export * from "./components/textarea";
 export * from "./components/calendar";
 export * from "./components/date-picker";

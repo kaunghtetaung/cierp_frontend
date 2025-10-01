@@ -5,26 +5,28 @@
 import { MultilingualText } from './module-schema';
 
 // Field types supported by the form system
-export type FieldType = 
-  | 'text' 
-  | 'email' 
-  | 'password' 
+export type FieldType =
+  | 'text'
+  | 'email'
+  | 'password'
   | 'number'
   | 'phone'
-  | 'select' 
+  | 'select'
   | 'multiSelect'
   | 'dynamicSelect'
   | 'dependentSelect'
   | 'multiDependentSelect'
   | 'typeaheadSelect'
-  | 'checkbox' 
+  | 'checkbox'
   | 'boolean'
-  | 'date' 
-  | 'radio' 
-  | 'file' 
-  | 'textArea' 
+  | 'date'
+  | 'radio'
+  | 'file'
+  | 'textArea'
   | 'htmlContent'
-  | 'icon';
+  | 'icon'
+  | 'nrcField'
+  | 'arrayField';
 
 // Form layout options
 export type FormLayout = 
@@ -160,6 +162,15 @@ export interface PhoneFieldConfig {
   enableSearch?: boolean; // Enable country search (default: true)
 }
 
+// NRC field configuration
+export interface NrcFieldConfig {
+  defaultState?: number; // Default state/region code (1-14)
+  strictTownshipValidation?: boolean; // Enable strict township code validation (default: false)
+  showFormatHelper?: boolean; // Show format example and help text (default: true)
+  currentLanguage?: string; // Current language for labels ('en' | 'mm')
+  allowFreeForm?: boolean; // Allow custom free-form NRC entry (default: true)
+}
+
 // Form field configuration
 export interface FormField {
   fieldName: string;
@@ -195,6 +206,9 @@ export interface FormField {
   
   // Phone field configuration (for fieldType: 'phone')
   phoneConfig?: PhoneFieldConfig; // Configuration for phone input fields
+
+  // NRC field configuration (for fieldType: 'nrcField')
+  nrcConfig?: NrcFieldConfig; // Configuration for Myanmar NRC input fields
   
   // Quick Entry configuration for dynamic fields
   quickEntry?: QuickEntryConfig; // Configuration for inline entity creation
@@ -230,6 +244,9 @@ export interface FormField {
   // Field ordering and grouping
   order?: number; // Field display order
   group?: string; // Field group for organizing related fields
+
+  // Array field support
+  children?: FormField[]; // Child fields for arrayField type
 }
 
 // Wizard step metadata

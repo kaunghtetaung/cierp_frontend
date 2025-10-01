@@ -142,9 +142,12 @@ export function TypeaheadDynamicSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
 
-  // Parse module from refPath
+  // Parse module from refPath (e.g., "/departments/ref" -> "departments", "/regions/ref?expect=district" -> "regions")
   const getModuleFromRefPath = (refPath: string): string => {
-    const cleaned = refPath.replace(/^\//, '').replace(/\/ref$/, '');
+    // Split by '?' to separate path from query parameters
+    const [basePath] = refPath.split('?');
+    // Remove leading slash and trailing /ref
+    const cleaned = basePath.replace(/^\//, '').replace(/\/ref$/, '');
     return cleaned;
   };
 
@@ -263,20 +266,39 @@ export function TypeaheadDynamicSelect({
     try {
       const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
       
-      // Build query parameters
-      const queryParams: Record<string, string> = {};
-      
+      // Extract predefined query parameters from endpoint
+      const endpoint = dropdownConfig.refPath || dataSource.endpoint || "";
+      const [, queryString] = endpoint.split('?');
+      const predefinedParams: Record<string, string> = {};
+      if (queryString) {
+        const urlParams = new URLSearchParams(queryString);
+        urlParams.forEach((value, key) => {
+          predefinedParams[key] = value;
+        });
+      }
+
+      // Build query parameters, merging with predefined params
+      const queryParams: Record<string, string> = { ...predefinedParams };
+
       // Add search parameter for typeahead
       if (enableTypeahead && search) {
         queryParams[searchParam] = search;
       }
-      
+
+      // Add searchType parameter for dynamicDependentSelect fields (avoid conflict with search param)
+      if ((field.fieldType === 'dynamicDependentSelect' || field.fieldType === 'multiDependentSelect') &&
+          (!enableTypeahead || !search)) {
+        queryParams.searchType = 'dynamicDependentSelect';
+      }
+
       // Add dependency values if any
       if (dropdownConfig.dependsOn && watch) {
+        // Use searchParam from dataSource if specified, otherwise use dependentFieldValue for backward compatibility
+        const paramName = dataSource?.searchParam || "dependentFieldValue";
         dropdownConfig.dependsOn.forEach((fieldName: string) => {
           const value = watch(fieldName);
           if (value) {
-            queryParams.dependentFieldValue = String(value);
+            queryParams[paramName] = String(value);
           }
         });
       }
@@ -332,8 +354,13 @@ export function TypeaheadDynamicSelect({
           },
         };
       });
-      
-      setOptions(transformedOptions);
+
+      // Deduplicate options based on value to prevent React key conflicts
+      const uniqueOptions = transformedOptions.filter((option, index, array) =>
+        array.findIndex(opt => opt.value === option.value) === index
+      );
+
+      setOptions(uniqueOptions);
       
     } catch (error: any) {
       // Don't show error for aborted requests
@@ -571,8 +598,20 @@ export function TypeaheadDynamicSelect({
               if (missingIds.length > 0) {
                 // Fetch options to get the names for display
                 const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
+
+                // Extract predefined query parameters
+                const endpoint = dropdownConfig.refPath || dataSource.endpoint || "";
+                const [, queryString] = endpoint.split('?');
+                const predefinedParams: Record<string, string> = {};
+                if (queryString) {
+                  const urlParams = new URLSearchParams(queryString);
+                  urlParams.forEach((value, key) => {
+                    predefinedParams[key] = value;
+                  });
+                }
+
                 const serviceName = dataSource?.serviceName || undefined;
-          const result = await getModuleReferenceAction<ApiOption>(module, {}, serviceName);
+                const result = await getModuleReferenceAction<ApiOption>(module, predefinedParams, serviceName);
               
               if (result.success) {
                 const responseData = result.data as any;
@@ -658,8 +697,20 @@ export function TypeaheadDynamicSelect({
 
           // If not found in options, fetch all options to find this specific ID
           const module = getModuleFromRefPath(dropdownConfig.refPath || dataSource.endpoint || "");
+
+          // Extract predefined query parameters
+          const endpoint = dropdownConfig.refPath || dataSource.endpoint || "";
+          const [, queryString] = endpoint.split('?');
+          const predefinedParams: Record<string, string> = {};
+          if (queryString) {
+            const urlParams = new URLSearchParams(queryString);
+            urlParams.forEach((value, key) => {
+              predefinedParams[key] = value;
+            });
+          }
+
           const serviceName = dataSource?.serviceName || undefined;
-          const result = await getModuleReferenceAction<ApiOption>(module, {}, serviceName);
+          const result = await getModuleReferenceAction<ApiOption>(module, predefinedParams, serviceName);
           
           if (result.success) {
             const responseData = result.data as any;
@@ -674,12 +725,17 @@ export function TypeaheadDynamicSelect({
                 mm: getApiLabel(item, "mm"),
               },
             }));
-            
+
+            // Deduplicate options based on value to prevent React key conflicts
+            const uniqueOptions = transformedOptions.filter((option, index, array) =>
+              array.findIndex(opt => opt.value === option.value) === index
+            );
+
             // Update options array with fetched data
-            setOptions(transformedOptions);
+            setOptions(uniqueOptions);
             
             // Find the specific option that matches our value
-            const matchingOption = transformedOptions.find(opt => opt.value === value);
+            const matchingOption = uniqueOptions.find(opt => opt.value === value);
             if (matchingOption) {
               setSelectedOption(matchingOption);
               const labelText = typeof matchingOption.label === 'string' ? matchingOption.label : getLocalizedText(matchingOption.label, currentLanguage);

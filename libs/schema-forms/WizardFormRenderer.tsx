@@ -162,6 +162,7 @@ export function WizardFormRenderer({ module, currentLanguage = 'en' }: WizardFor
             return (
               <Button
                 key={step.stepKey}
+                type="button"
                 variant={isActive ? 'default' : isCompleted ? 'secondary' : 'outline'}
                 size="sm"
                 className={`

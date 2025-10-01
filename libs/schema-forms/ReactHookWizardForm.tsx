@@ -84,9 +84,9 @@ function getValidationProps(field: FormField) {
   if (field.fieldType === "number") {
     props.type = "number";
     if (field.validationRule?.min !== undefined)
-      props.min = field.validationRule.min;
+      props.min = field.validationRule?.min;
     if (field.validationRule?.max !== undefined)
-      props.max = field.validationRule.max;
+      props.max = field.validationRule?.max;
   }
 
   if (field.fieldType === "date") {
@@ -94,15 +94,15 @@ function getValidationProps(field: FormField) {
   }
 
   if (field.validationRule?.minLength) {
-    props.minLength = field.validationRule.minLength;
+    props.minLength = field.validationRule?.minLength;
   }
 
   if (field.validationRule?.maxLength) {
-    props.maxLength = field.validationRule.maxLength;
+    props.maxLength = field.validationRule?.maxLength;
   }
 
   if (field.validationRule?.pattern) {
-    props.pattern = field.validationRule.pattern;
+    props.pattern = field.validationRule?.pattern;
   }
 
   return props;
@@ -325,7 +325,7 @@ function renderField(
             {field.validationRule?.errorMessage && !errors[field.fieldName] && (
               <p className="text-xs text-muted-foreground">
                 {getLocalizedText(
-                  field.validationRule.errorMessage,
+                  field.validationRule?.errorMessage,
                   currentLanguage
                 )}
               </p>
@@ -363,7 +363,7 @@ function renderField(
                         placeholder={placeholder}
                         className="w-full"
                         readOnly={field.readonly}
-                        strengthConfig={field.validationRule.strengthMeterConfig}
+                        strengthConfig={field.validationRule?.strengthMeterConfig}
                         currentLanguage={currentLanguage}
                         showStrengthIndicator={true}
                         validationProps={validationProps}
@@ -422,7 +422,7 @@ function renderField(
             {field.validationRule?.errorMessage && !errors[field.fieldName] && (
               <p className="text-xs text-muted-foreground">
                 {getLocalizedText(
-                  field.validationRule.errorMessage,
+                  field.validationRule?.errorMessage,
                   currentLanguage
                 )}
               </p>
@@ -491,7 +491,7 @@ function renderField(
             {field.validationRule?.errorMessage && !errors[field.fieldName] && (
               <p className="text-xs text-muted-foreground">
                 {getLocalizedText(
-                  field.validationRule.errorMessage,
+                  field.validationRule?.errorMessage,
                   currentLanguage
                 )}
               </p>
@@ -624,7 +624,7 @@ function renderField(
             {field.validationRule?.errorMessage && !errors[field.fieldName] && (
               <p className="text-xs text-muted-foreground">
                 {getLocalizedText(
-                  field.validationRule.errorMessage,
+                  field.validationRule?.errorMessage,
                   currentLanguage
                 )}
               </p>
@@ -745,7 +745,7 @@ function renderField(
             {field.validationRule?.errorMessage && !errors[field.fieldName] && (
               <p className="text-xs text-muted-foreground">
                 {getLocalizedText(
-                  field.validationRule.errorMessage,
+                  field.validationRule?.errorMessage,
                   currentLanguage
                 )}
               </p>
