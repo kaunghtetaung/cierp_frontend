@@ -45,14 +45,14 @@ const WIZARD_STEPS = {
   personal: {
     title: { en: "Personal Information", mm: "ကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
     description: { en: "Basic personal details", mm: "အခြေခံကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
-    fields: ["nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth"],
+    fields: ["nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth", "placeOfBirth"],
     icon: "User",
     required: true
   },
   contact: {
     title: { en: "Contact Information", mm: "ဆက်သွယ်ရေးအချက်အလက်များ" },
     description: { en: "Contact details", mm: "ဆက်သွယ်ရေးအချက်အလက်များ" },
-    fields: ["phone", "email", "permanentAddress", "currentAddress"],
+    fields: ["phoneNumber", "email", "permanentAddress", "currentAddress"],
     icon: "Phone",
     required: true
   },
@@ -69,7 +69,7 @@ const WIZARD_STEPS = {
     fields: ["father.nameMyanmar", "father.nameEnglish", "father.nrcNumber", "father.occupation",
              "mother.nameMyanmar", "mother.nameEnglish", "mother.nrcNumber", "mother.occupation",
              "guardian.nameMyanmar", "guardian.nameEnglish", "guardian.nrcNumber", "guardian.occupation",
-             "guardian.relationship", "guardian.phoneNumber", "guardian.address"],
+             "guardian.relationship", "guardian.phoneNumber", "guardian.email", "guardian.address"],
     icon: "Users",
     required: false
   },
@@ -83,7 +83,7 @@ const WIZARD_STEPS = {
   current: {
     title: { en: "Current Academic", mm: "လက်ရှိပညာရေး" },
     description: { en: "Current academic information", mm: "လက်ရှိပညာရေးအချက်အလက်များ" },
-    fields: ["batches"],
+    fields: ["medm", "batches"],
     icon: "GraduationCap",
     required: true
   },
@@ -239,6 +239,28 @@ export function ReactHookStudentWizardForm({
   const motherNameEN = watch('mother.nameEnglish')
   const motherNRC = watch('mother.nrcNumber')
   const motherOccupation = watch('mother.occupation')
+  const guardianRelationship = watch('guardian.relationship')
+
+  // Helper function to check if family tab has errors
+  const getFamilyTabErrors = (tabName: 'father' | 'mother' | 'guardian') => {
+    const prefix = tabName
+    const tabErrors = Object.keys(errors).filter(key => key.startsWith(prefix + '.'))
+    return tabErrors.length > 0
+  }
+
+  // Auto-select guardian type based on relationship field
+  useEffect(() => {
+    if (guardianRelationship) {
+      const relationshipLower = guardianRelationship.toLowerCase()
+      if (relationshipLower === 'father' || relationshipLower === 'အဖေ') {
+        setGuardianType('father')
+      } else if (relationshipLower === 'mother' || relationshipLower === 'အမေ') {
+        setGuardianType('mother')
+      } else {
+        setGuardianType('other')
+      }
+    }
+  }, [guardianRelationship])
 
   // Reset form when initialData changes
   useEffect(() => {
@@ -812,26 +834,48 @@ export function ReactHookStudentWizardForm({
                   {stepKey === 'family' ? (
                     // Custom Family Layout with Tabs
                     <div className="space-y-6">
-                      <Tabs value={activeTab} onValueChange={(value: string) => {
-                        setActiveTab(value as 'father' | 'mother' | 'guardian')
+                      <Tabs value={activeTab} onValueChange={async (value: string) => {
+                        // Validate current tab before switching
+                        let fieldsToValidate: string[] = []
+                        if (activeTab === 'father') {
+                          fieldsToValidate = ['father.nameMyanmar', 'father.nameEnglish', 'father.nrcNumber', 'father.occupation']
+                        } else if (activeTab === 'mother') {
+                          fieldsToValidate = ['mother.nameMyanmar', 'mother.nameEnglish', 'mother.nrcNumber', 'mother.occupation']
+                        } else if (activeTab === 'guardian') {
+                          fieldsToValidate = ['guardian.nameMyanmar', 'guardian.nameEnglish', 'guardian.nrcNumber', 'guardian.occupation', 'guardian.relationship', 'guardian.phoneNumber', 'guardian.email', 'guardian.address']
+                        }
+
+                        const isValid = await trigger(fieldsToValidate)
+                        if (isValid) {
+                          setActiveTab(value as 'father' | 'mother' | 'guardian')
+                        }
                       }} className="w-full">
                         <TabsList className="grid w-full grid-cols-3 mb-6">
                           <TabsTrigger value="father">
                             <div className="flex items-center gap-2">
                               <IconComponent name="User" className="w-4 h-4" />
                               {currentLanguage === "mm" ? "အဖေ" : "Father"}
+                              {getFamilyTabErrors('father') && (
+                                <IconComponent name="AlertCircle" className="w-4 h-4 text-destructive" />
+                              )}
                             </div>
                           </TabsTrigger>
                           <TabsTrigger value="mother">
                             <div className="flex items-center gap-2">
                               <IconComponent name="Heart" className="w-4 h-4" />
                               {currentLanguage === "mm" ? "အမေ" : "Mother"}
+                              {getFamilyTabErrors('mother') && (
+                                <IconComponent name="AlertCircle" className="w-4 h-4 text-destructive" />
+                              )}
                             </div>
                           </TabsTrigger>
                           <TabsTrigger value="guardian">
                             <div className="flex items-center gap-2">
                               <IconComponent name="Shield" className="w-4 h-4" />
                               {currentLanguage === "mm" ? "အုပ်ထိန်းသူ" : "Guardian"}
+                              {getFamilyTabErrors('guardian') && (
+                                <IconComponent name="AlertCircle" className="w-4 h-4 text-destructive" />
+                              )}
                             </div>
                           </TabsTrigger>
                         </TabsList>
@@ -858,7 +902,12 @@ export function ReactHookStudentWizardForm({
                           <div className="flex justify-end pt-4">
                             <Button
                               type="button"
-                              onClick={() => setActiveTab('mother')}
+                              onClick={async () => {
+                                const isValid = await trigger(['father.nameMyanmar', 'father.nameEnglish', 'father.nrcNumber', 'father.occupation'])
+                                if (isValid) {
+                                  setActiveTab('mother')
+                                }
+                              }}
                               className="flex items-center gap-2"
                             >
                               {currentLanguage === "mm" ? "အမေ" : "Next: Mother"}
@@ -898,7 +947,12 @@ export function ReactHookStudentWizardForm({
                             </Button>
                             <Button
                               type="button"
-                              onClick={() => setActiveTab('guardian')}
+                              onClick={async () => {
+                                const isValid = await trigger(['mother.nameMyanmar', 'mother.nameEnglish', 'mother.nrcNumber', 'mother.occupation'])
+                                if (isValid) {
+                                  setActiveTab('guardian')
+                                }
+                              }}
                               className="flex items-center gap-2"
                             >
                               {currentLanguage === "mm" ? "အုပ်ထိန်းသူ" : "Next: Guardian"}
@@ -918,6 +972,14 @@ export function ReactHookStudentWizardForm({
                               value={guardianType}
                               onValueChange={(value: 'father' | 'mother' | 'other') => {
                                 setGuardianType(value)
+                                // Set relationship field based on guardian type
+                                if (value === 'father') {
+                                  setValue('guardian.relationship', currentLanguage === 'mm' ? 'အဖေ' : 'Father')
+                                } else if (value === 'mother') {
+                                  setValue('guardian.relationship', currentLanguage === 'mm' ? 'အမေ' : 'Mother')
+                                } else {
+                                  setValue('guardian.relationship', '')
+                                }
                               }}
                               className="flex flex-col sm:flex-row gap-4"
                             >
@@ -953,10 +1015,11 @@ export function ReactHookStudentWizardForm({
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {['guardian.nameMyanmar', 'guardian.nameEnglish', 'guardian.nrcNumber', 'guardian.occupation', 'guardian.relationship', 'guardian.phoneNumber'].map(fieldName => {
+                            {['guardian.nameMyanmar', 'guardian.nameEnglish', 'guardian.nrcNumber', 'guardian.occupation', 'guardian.relationship', 'guardian.phoneNumber', 'guardian.email'].map(fieldName => {
                               const field = stepFields.find(f => f.fieldName === fieldName)
                               const isMirroredField = guardianType !== 'other' &&
                                 ['guardian.nameMyanmar', 'guardian.nameEnglish', 'guardian.nrcNumber', 'guardian.occupation'].includes(fieldName)
+                              const isRelationshipLocked = guardianType !== 'other' && fieldName === 'guardian.relationship'
 
                               return field ? (
                                 <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
@@ -966,7 +1029,7 @@ export function ReactHookStudentWizardForm({
                                     isVerticalLayout={false}
                                     errors={errors}
                                     watch={watch}
-                                    isDisabled={isMirroredField}
+                                    isDisabled={isMirroredField || isRelationshipLocked}
                                     isGuardianMirrored={isMirroredField}
                                   />
                                 </div>
@@ -1009,7 +1072,7 @@ export function ReactHookStudentWizardForm({
                     <div className="space-y-6">
                       {/* Row 1: Phone and Email */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {['phone', 'email'].map(fieldName => {
+                        {['phoneNumber', 'email'].map(fieldName => {
                           const field = stepFields.find(f => f.fieldName === fieldName)
                           return field ? (
                             <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
@@ -1081,7 +1144,7 @@ export function ReactHookStudentWizardForm({
 
                       {/* Any remaining contact fields */}
                       {stepFields.filter(field =>
-                        !['phone', 'email', 'permanentAddress', 'currentAddress', 'stateRegionName', 'districtName', 'townshipName', 'townName', 'wardVillageName'].includes(field.fieldName)
+                        !['phoneNumber', 'email', 'permanentAddress', 'currentAddress', 'stateRegionName', 'districtName', 'townshipName', 'townName', 'wardVillageName'].includes(field.fieldName)
                       ).map((field) => (
                         <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
                           <StudentFormFieldRenderer
