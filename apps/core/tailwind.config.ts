@@ -8,16 +8,24 @@ export default {
   safelist: [
     'col-span-1',
     'col-span-2',
+    'col-span-3',
     'col-span-4',
+    'col-span-5',
+    'col-span-6',
     'md:col-span-1',
     'md:col-span-2',
+    'md:col-span-3',
     'md:col-span-4',
+    'md:col-span-5',
+    'md:col-span-6',
     'grid-cols-2',
     'grid-cols-3',
     'grid-cols-4',
+    'grid-cols-12',
     'md:grid-cols-2',
     'md:grid-cols-3',
     'md:grid-cols-4',
+    'md:grid-cols-12',
     // Switch component classes (default and small sizes)
     'h-6', 'w-11', 'h-5', 'w-5',       // Default switch sizes
     'h-4', 'w-8', 'h-3', 'w-3',        // Small switch sizes

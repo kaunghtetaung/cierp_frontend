@@ -352,9 +352,9 @@ export function StudentFormFieldRenderer({
 
   // Student form layout configuration
   // Row 1 fields (2 columns layout)
-  const row1Fields = ['nameMyanmar', 'nameEnglish'];
-  // Row 2 fields (4 columns layout - gender, race, religion, bloodType)
-  const row2Fields = ['gender', 'race', 'religion', 'bloodType'];
+  const row1Fields = ['nameMyanmar', 'nameEnglish', 'gender', 'ethnicity', 'religion'];
+  // Row 2 fields (4 columns layout - bloodGroup, dateOfBirth, nrcNumber)
+  const row2Fields = ['bloodGroup', 'dateOfBirth', 'nrcNumber'];
   // Full width fields (span entire row)
   const fullWidthFields = ['dateOfBirth', 'nrcField', 'nrcNumber'];
 
@@ -381,7 +381,7 @@ export function StudentFormFieldRenderer({
             <FormLabel className={`${isRequired ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''} ${
               isVerticalLayout ? "text-xs sm:text-sm" : "text-sm"
             } ${(field.fieldType === 'nrcField' || field.fieldName === 'currentAddress' || field.fieldName === 'guardian.address') ? 'flex items-center justify-between w-full' : ''}`}>
-              <span>{label}</span>
+              <span className={field.fieldType === 'nrcField' ? 'whitespace-nowrap' : ''}>{label}</span>
               {/* Address sync toggle for currentAddress and guardian.address */}
               {(field.fieldName === 'currentAddress' || field.fieldName === 'guardian.address') && (() => {
                 const isCurrentAddress = field.fieldName === 'currentAddress';
@@ -527,8 +527,8 @@ export function StudentFormFieldRenderer({
 
               {/* NRC field toggle */}
               {field.fieldType === 'nrcField' && (
-                <div className="flex items-center space-x-2">
-                  <span className={`text-xs ${isGuardianMirrored ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
+                <div className="flex items-center space-x-2 ml-auto">
+                  <span className={`text-xs whitespace-nowrap ${isGuardianMirrored ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
                     {currentLanguage === "mm" ? "စိတ်ကြိုက်ပုံစံ" : "Custom Format"}
                   </span>
                   <Switch
@@ -697,6 +697,7 @@ function StudentFormFieldInput({
               isFreeForm={field.fieldType === 'nrcField' ? nrcToggleController.field.value : false}
               fieldName={field.fieldName} // Pass fieldName for unique identifiers
               isGuardianMirrored={isGuardianMirrored} // Pass guardian mirrored flag
+              className="w-full" // Ensure full width
               onToggleChange={(isFreeForm) => {
                 console.log('🔄 NrcField onToggleChange called:', {
                   fieldName: field.fieldName,

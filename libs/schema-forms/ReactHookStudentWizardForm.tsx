@@ -45,7 +45,7 @@ const WIZARD_STEPS = {
   personal: {
     title: { en: "Personal Information", mm: "ကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
     description: { en: "Basic personal details", mm: "အခြေခံကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
-    fields: ["nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth", "placeOfBirth"],
+    fields: ["nameMyanmar", "nameEnglish", "gender", "ethnicity", "religion", "bloodGroup", "nrcNumber", "dateOfBirth", "placeOfBirth"],
     icon: "User",
     required: true
   },
@@ -1160,12 +1160,13 @@ export function ReactHookStudentWizardForm({
                   ) : stepKey === 'personal' ? (
                     // Personal Information with specific layout
                     <div className="space-y-6">
-                      {/* Row 1: Names */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {['nameMyanmar', 'nameEnglish'].map(fieldName => {
-                          const field = stepFields.find(f => f.fieldName === fieldName)
+                      {/* Row 1: NameMyanmar (3 col), NameEnglish (3 col), Gender (2 col), Ethnicity (2 col), Religion (2 col) = 12 total */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        {/* NameMyanmar - 3 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'nameMyanmar')
                           return field ? (
-                            <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
+                            <div key={field.fieldName} className="md:col-span-3 animate-in slide-in-from-bottom-2">
                               <StudentFormFieldRenderer
                                 field={field}
                                 currentLanguage={currentLanguage}
@@ -1175,15 +1176,81 @@ export function ReactHookStudentWizardForm({
                               />
                             </div>
                           ) : null
-                        })}
+                        })()}
+
+                        {/* NameEnglish - 3 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'nameEnglish')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-3 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
+
+                        {/* Gender - 2 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'gender')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
+
+                        {/* Ethnicity - 2 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'ethnicity')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
+
+                        {/* Religion - 2 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'religion')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
+
                       </div>
 
-                      {/* Row 2: Gender, Race, Religion, Blood Type */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {['gender', 'race', 'religion', 'bloodType'].map(fieldName => {
-                          const field = stepFields.find(f => f.fieldName === fieldName)
+                      {/* Row 2: BloodGroup (3 col), DateOfBirth (3 col), NRC (6 col) = 12 total */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        {/* BloodGroup - 3 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'bloodGroup')
                           return field ? (
-                            <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
+                            <div key={field.fieldName} className="md:col-span-3 animate-in slide-in-from-bottom-2">
                               <StudentFormFieldRenderer
                                 field={field}
                                 currentLanguage={currentLanguage}
@@ -1193,15 +1260,13 @@ export function ReactHookStudentWizardForm({
                               />
                             </div>
                           ) : null
-                        })}
-                      </div>
+                        })()}
 
-                      {/* Row 3: NRC and Date of Birth */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {['nrcNumber', 'dateOfBirth'].map(fieldName => {
-                          const field = stepFields.find(f => f.fieldName === fieldName)
+                        {/* DateOfBirth - 3 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'dateOfBirth')
                           return field ? (
-                            <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
+                            <div key={field.fieldName} className="md:col-span-3 animate-in slide-in-from-bottom-2">
                               <StudentFormFieldRenderer
                                 field={field}
                                 currentLanguage={currentLanguage}
@@ -1211,12 +1276,29 @@ export function ReactHookStudentWizardForm({
                               />
                             </div>
                           ) : null
-                        })}
+                        })()}
+
+                        {/* NRC - 6 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'nrcNumber')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-6 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
+
                       </div>
 
                       {/* Any remaining personal fields */}
                       {stepFields.filter(field =>
-                        !['nameMyanmar', 'nameEnglish', 'gender', 'race', 'religion', 'bloodType', 'nrcNumber', 'dateOfBirth'].includes(field.fieldName)
+                        !['nameMyanmar', 'nameEnglish', 'gender', 'ethnicity', 'religion', 'bloodGroup', 'nrcNumber', 'dateOfBirth', 'placeOfBirth'].includes(field.fieldName)
                       ).map((field) => (
                         <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
                           <StudentFormFieldRenderer
