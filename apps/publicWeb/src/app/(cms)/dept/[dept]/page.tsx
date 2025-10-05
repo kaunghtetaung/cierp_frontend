@@ -67,14 +67,14 @@ export default function TenantHomePage({
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-6">
             <TenantLogo size="lg" className="mr-4" />
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-4xl font-bold text-gray-900">
                 {getLocalizedText(tenant?.displayName, requestInfo.language) ||
                   "Welcome"}
               </h1>
@@ -82,7 +82,7 @@ export default function TenantHomePage({
                 tenant?.displayShortName,
                 requestInfo.language
               ) && (
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+                <p className="text-lg text-gray-600 mt-2">
                   {getLocalizedText(
                     tenant?.displayShortName,
                     requestInfo.language
@@ -96,7 +96,7 @@ export default function TenantHomePage({
             tenant?.localizedDescription,
             requestInfo.language
           ) && (
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-gray-600 max-w-2xl mx-auto">
               {getLocalizedText(
                 tenant?.localizedDescription,
                 requestInfo.language
@@ -107,8 +107,8 @@ export default function TenantHomePage({
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Tenant Information Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <svg
                 className="h-6 w-6 text-blue-600 mr-2"
                 fill="none"
@@ -128,26 +128,26 @@ export default function TenantHomePage({
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tenant ID
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                     {tenant?.id || "Not available"}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Department
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                     {deptParam}
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Language Support
                 </label>
                 <div className="flex flex-wrap gap-1">
@@ -167,19 +167,19 @@ export default function TenantHomePage({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Root Domain
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {tenant?.rootDomain || requestInfo.hostname}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Display Name ({requestInfo.language?.toUpperCase()})
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {getLocalizedText(
                     tenant?.displayName,
                     requestInfo.language
@@ -188,10 +188,10 @@ export default function TenantHomePage({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Short Name ({requestInfo.language?.toUpperCase()})
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {getLocalizedText(
                     tenant?.displayShortName,
                     requestInfo.language
@@ -202,8 +202,8 @@ export default function TenantHomePage({
           </div>
 
           {/* Request Information Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <svg
                 className="h-6 w-6 text-green-600 mr-2"
                 fill="none"
@@ -222,37 +222,37 @@ export default function TenantHomePage({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Hostname
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {requestInfo.hostname}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Protocol
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {requestInfo.protocol}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Request ID
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {requestInfo.requestId.slice(0, 16)}...
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Language
                 </label>
-                <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md font-mono text-sm">
+                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
                   {requestInfo.language}
                 </div>
               </div>
@@ -262,8 +262,8 @@ export default function TenantHomePage({
 
         {/* Contact Information */}
         {tenant?.contact && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mt-8 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 mt-8 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <svg
                 className="h-6 w-6 text-purple-600 mr-2"
                 fill="none"
@@ -283,10 +283,10 @@ export default function TenantHomePage({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {tenant.contact.email && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
                     {tenant.contact.email}
                   </div>
                 </div>
@@ -294,10 +294,10 @@ export default function TenantHomePage({
 
               {tenant.contact.phoneNo && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Phone
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
                     {tenant.contact.phoneNo}
                   </div>
                 </div>
@@ -305,10 +305,10 @@ export default function TenantHomePage({
 
               {tenant.contact.address && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Address
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
                     {tenant.contact.address}
                   </div>
                 </div>
@@ -316,10 +316,10 @@ export default function TenantHomePage({
 
               {tenant.contact.webSiteUrl && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Website
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
                     <a
                       href={tenant.contact.webSiteUrl}
                       target="_blank"
@@ -334,10 +334,10 @@ export default function TenantHomePage({
 
               {tenant.contact.faceBookUrl && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Facebook
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md text-sm">
+                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
                     <a
                       href={tenant.contact.faceBookUrl}
                       target="_blank"
@@ -354,11 +354,11 @@ export default function TenantHomePage({
         )}
 
         <div className="text-center mt-12">
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-500">
             This page demonstrates the tenant settings loaded from the wrapper
             without secrets.
           </p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-sm text-gray-400 mt-1">
             Middleware resolves tenant → Wrapper caches with secrets → Provider
             gets clean data
           </p>

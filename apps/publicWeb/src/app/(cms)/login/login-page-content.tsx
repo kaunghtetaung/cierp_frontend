@@ -57,7 +57,7 @@ function ModernLoginContent({
     <div className="min-h-screen relative overflow-hidden bg-white transition-colors duration-300">
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-blue-50 to-gray-50">
-        <div className="absolute inset-0 opacity-50 dark:opacity-30 bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100"></div>
+        <div className="absolute inset-0 opacity-50 bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100"></div>
       </div>
 
       {/* Floating shapes for visual interest - using theme colors */}

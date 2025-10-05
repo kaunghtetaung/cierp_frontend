@@ -395,13 +395,25 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     // Handle blur event
     const handleBlur = () => {
       if (onBlur) onBlur()
-      
+
       // Final validation on blur
       if (phoneNumber) {
         const validation = validatePhoneNumber(phoneNumber, {
           defaultCountry: selectedCountry?.code
         })
         setIsValid(validation.isValid)
+      }
+    }
+
+    // Handle keyboard events
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        setPhoneNumber("")
+        if (onChange) {
+          onChange("")
+        }
       }
     }
 
@@ -428,8 +440,8 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
               type="button"
               variant="outline"
               disabled={disabled}
-              className={`flex items-center gap-2 px-3 shrink-0 ${
-                error ? 'border-destructive' : ''
+              className={`flex items-center gap-2 px-3 shrink-0 bg-white border-gray-300 hover:bg-white focus:border-[#4C67E1] focus:ring-[#4C67E1] ${
+                error ? 'border-red-300 focus:border-red-500' : ''
               }`}
             >
               {showCountryFlag && selectedCountry && (
@@ -441,7 +453,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
               <IconComponent name="ChevronDown" className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-72 max-h-64 overflow-y-auto">
+          <DropdownMenuContent className="w-72 max-h-64 overflow-y-auto bg-white border border-gray-300">
             {enableSearch && (
               <div className="p-2 border-b">
                 <Input
@@ -486,9 +498,10 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           value={phoneNumber}
           onChange={(e) => handlePhoneChange(e.target.value)}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           disabled={disabled}
           placeholder={getPlaceholder()}
-          className={`flex-1 ${error || !isValid ? 'border-destructive focus:ring-destructive' : ''}`}
+          className={`flex-1 bg-white border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1] ${error || !isValid ? 'border-red-300 focus:border-red-500' : ''}`}
           {...props}
         />
       </div>

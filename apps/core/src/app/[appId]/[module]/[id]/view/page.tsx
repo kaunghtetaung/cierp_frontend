@@ -3,6 +3,7 @@ import { fetchLayoutData } from '@/lib/layout-data'
 import { requireModuleAccess } from '@/lib/auth-utils'
 import { getModuleItemWithNavigation } from '@repo/app-modules'
 import { DetailViewRenderer } from '@/components/modules/DetailViewRenderer'
+import { StudentDetailView } from '@/components/modules/StudentDetailView'
 import type { ModuleSchema } from '@repo/types'
 
 interface ModuleViewPageProps {
@@ -98,12 +99,21 @@ export default async function ModuleViewPage({ params, searchParams }: ModuleVie
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <DetailViewRenderer
-        module={module}
-        itemData={itemData}
-        navigation={navigation}
-        appId={resolvedParams.appId}
-      />
+      {resolvedParams.module === 'students' ? (
+        <StudentDetailView
+          module={module}
+          itemData={itemData}
+          navigation={navigation}
+          appId={resolvedParams.appId}
+        />
+      ) : (
+        <DetailViewRenderer
+          module={module}
+          itemData={itemData}
+          navigation={navigation}
+          appId={resolvedParams.appId}
+        />
+      )}
     </div>
   )
 }

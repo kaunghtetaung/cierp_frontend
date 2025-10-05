@@ -25,28 +25,28 @@ function HealthPageContent({
           </p>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4">
+        <div className="bg-gray-50 rounded-lg p-6 space-y-4">
           <h2 className="text-2xl font-semibold mb-4">🔍 Request Information</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="font-medium">Hostname:</span>
-                <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded">
+                <span className="font-mono bg-white px-2 py-1 rounded">
                   {hostname}
                 </span>
               </div>
               
               <div className="flex justify-between">
                 <span className="font-medium">Protocol:</span>
-                <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded">
+                <span className="font-mono bg-white px-2 py-1 rounded">
                   {protocol}
                 </span>
               </div>
               
               <div className="flex justify-between">
                 <span className="font-medium">User Agent:</span>
-                <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded text-xs">
+                <span className="font-mono bg-white px-2 py-1 rounded text-xs">
                   {requestInfo.userAgent.slice(0, 30) || 'Unknown'}...
                 </span>
               </div>
@@ -57,8 +57,8 @@ function HealthPageContent({
                 <span className="font-medium">Tenant ID:</span>
                 <span className={`font-mono px-2 py-1 rounded ${
                   tenantId 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                    : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                    ? 'bg-green-100 text-green-800
+                    : 'bg-red-100 text-red-800
                 }`}>
                   {tenantId || 'Not resolved'}
                 </span>
@@ -66,37 +66,37 @@ function HealthPageContent({
               
               <div className="flex justify-between">
                 <span className="font-medium">Request ID:</span>
-                <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded text-xs">
+                <span className="font-mono bg-white px-2 py-1 rounded text-xs">
                   {requestId?.slice(0, 8) || 'N/A'}...
                 </span>
               </div>
               
               <div className="flex justify-between">
                 <span className="font-medium">Timestamp:</span>
-                <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded text-xs">
+                <span className="font-mono bg-white px-2 py-1 rounded text-xs">
                   {new Date().toLocaleTimeString()}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex justify-between items-center mb-3">
               <span className="font-medium">Language:</span>
-              <span className="font-mono bg-white dark:bg-gray-700 px-2 py-1 rounded">
+              <span className="font-mono bg-white px-2 py-1 rounded">
                 {middlewareData.language}
               </span>
             </div>
             
             <details className="mt-3">
-              <summary className="font-medium text-sm cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+              <summary className="font-medium text-sm cursor-pointer text-gray-600 hover:text-gray-800">
                 🔍 Debug Headers (Click to expand)
               </summary>
-              <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono max-h-40 overflow-y-auto">
+              <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono max-h-40 overflow-y-auto">
                 {Object.entries(requestInfo.allHeaders).map(([key, value]) => (
-                  <div key={key} className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
-                    <span className="font-medium text-blue-600 dark:text-blue-400">{key}:</span>
-                    <span className="text-gray-700 dark:text-gray-300 ml-2 truncate">{value}</span>
+                  <div key={key} className="flex justify-between py-1 border-b border-gray-200">
+                    <span className="font-medium text-blue-600">{key}:</span>
+                    <span className="text-gray-700 ml-2 truncate">{value}</span>
                   </div>
                 ))}
               </div>
@@ -105,7 +105,7 @@ function HealthPageContent({
         </div>
 
         {tenantSettings && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
             <div className="flex items-center mb-4">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -113,10 +113,10 @@ function HealthPageContent({
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-lg font-medium text-green-800 dark:text-green-200">
+                <h3 className="text-lg font-medium text-green-800">
                   {(tenantSettings as any)?.fullName || (tenantSettings as any)?.shortName || 'Tenant Configuration'}
                 </h3>
-                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                <p className="text-sm text-green-700 mt-1">
                   Status: {(tenantSettings as any)?.isActive ? 'Active' : 'Inactive'} • ID: <code className="font-mono">{tenantId}</code>
                 </p>
               </div>
@@ -125,26 +125,26 @@ function HealthPageContent({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="font-medium text-green-800 dark:text-green-200">Organization:</span>
-                  <span className="text-green-700 dark:text-green-300">{(tenantSettings as any)?.fullName || 'N/A'}</span>
+                  <span className="font-medium text-green-800">Organization:</span>
+                  <span className="text-green-700">{(tenantSettings as any)?.fullName || 'N/A'}</span>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="font-medium text-green-800 dark:text-green-200">Short Name:</span>
-                  <span className="text-green-700 dark:text-green-300">{(tenantSettings as any)?.shortName || 'N/A'}</span>
+                  <span className="font-medium text-green-800">Short Name:</span>
+                  <span className="text-green-700">{(tenantSettings as any)?.shortName || 'N/A'}</span>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="font-medium text-green-800 dark:text-green-200">Root Domain:</span>
-                  <span className="text-green-700 dark:text-green-300 font-mono text-xs">{(tenantSettings as any)?.rootDomain || 'N/A'}</span>
+                  <span className="font-medium text-green-800">Root Domain:</span>
+                  <span className="text-green-700 font-mono text-xs">{(tenantSettings as any)?.rootDomain || 'N/A'}</span>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="font-medium text-green-800 dark:text-green-200">Status:</span>
+                  <span className="font-medium text-green-800">Status:</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     (tenantSettings as any)?.isActive 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' 
-                      : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                      ? 'bg-green-100 text-green-800 
+                      : 'bg-red-100 text-red-800
                   }`}>
                     {(tenantSettings as any)?.isActive ? 'Active' : 'Inactive'}
                   </span>
@@ -152,8 +152,8 @@ function HealthPageContent({
                 
                 {(tenantSettings as any)?.contact && (
                   <div className="space-y-2">
-                    <span className="font-medium text-green-800 dark:text-green-200">Contact Info:</span>
-                    <div className="text-green-700 dark:text-green-300 text-xs space-y-1">
+                    <span className="font-medium text-green-800">Contact Info:</span>
+                    <div className="text-green-700 text-xs space-y-1">
                       {(tenantSettings as any)?.contact?.email && (
                         <div>Email: {(tenantSettings as any)?.contact?.email}</div>
                       )}
@@ -174,7 +174,7 @@ function HealthPageContent({
               <div className="space-y-3">
                 {(tenantSettings as any)?.applications && (tenantSettings as any)?.applications?.length > 0 && (
                   <div className="space-y-2">
-                    <span className="font-medium text-green-800 dark:text-green-200">Applications:</span>
+                    <span className="font-medium text-green-800">Applications:</span>
                     <div className="space-y-1">
                       {(tenantSettings as any)?.applications?.map((app: TenantApplication | any, index: number) => {
                         // Handle both object and string formats for backward compatibility
@@ -184,22 +184,22 @@ function HealthPageContent({
                         const appIcon = typeof app === 'object' ? app.iconName : undefined;
                         
                         return (
-                          <div key={index} className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 p-2 rounded text-xs">
+                          <div key={index} className="bg-green-100 text-green-800 p-2 rounded text-xs">
                             <div className="flex items-center justify-between">
                               <span className="font-medium">{appName}</span>
                               {appSubDomain && (
-                                <span className="text-green-600 dark:text-green-400 font-mono">
+                                <span className="text-green-600 font-mono">
                                   {appSubDomain}
                                 </span>
                               )}
                             </div>
                             {appDescription && (
-                              <p className="mt-1 text-green-700 dark:text-green-300 text-xs">
+                              <p className="mt-1 text-green-700 text-xs">
                                 {appDescription}
                               </p>
                             )}
                             {appIcon && (
-                              <p className="mt-1 text-green-600 dark:text-green-400 text-xs">
+                              <p className="mt-1 text-green-600 text-xs">
                                 Icon: {appIcon}
                               </p>
                             )}
@@ -212,8 +212,8 @@ function HealthPageContent({
                 
                 {(tenantSettings as any)?.createdAt && (
                   <div className="flex justify-between">
-                    <span className="font-medium text-green-800 dark:text-green-200">Created:</span>
-                    <span className="text-green-700 dark:text-green-300 text-xs">
+                    <span className="font-medium text-green-800">Created:</span>
+                    <span className="text-green-700 text-xs">
                       {new Date((tenantSettings as any)?.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -221,8 +221,8 @@ function HealthPageContent({
                 
                 {(tenantSettings as any)?.updatedAt && (
                   <div className="flex justify-between">
-                    <span className="font-medium text-green-800 dark:text-green-200">Updated:</span>
-                    <span className="text-green-700 dark:text-green-300 text-xs">
+                    <span className="font-medium text-green-800">Updated:</span>
+                    <span className="text-green-700 text-xs">
                       {new Date((tenantSettings as any)?.updatedAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -233,7 +233,7 @@ function HealthPageContent({
         )}
 
         {tenantError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -241,10 +241,10 @@ function HealthPageContent({
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                <h3 className="text-sm font-medium text-red-800">
                   Error Loading Tenant Settings
                 </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                <p className="text-sm text-red-700 mt-1">
                   {tenantError}
                 </p>
               </div>
@@ -253,7 +253,7 @@ function HealthPageContent({
         )}
 
         {!tenantId && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -261,10 +261,10 @@ function HealthPageContent({
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                <h3 className="text-sm font-medium text-yellow-800">
                   No Tenant Configuration
                 </h3>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                <p className="text-sm text-yellow-700 mt-1">
                   No tenant configuration found for hostname: <code className="font-mono">{hostname}</code>
                 </p>
               </div>
@@ -273,7 +273,7 @@ function HealthPageContent({
         )}
 
         {/* Content Settings Module Section */}
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
           <div className="flex items-center mb-4">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-purple-400" viewBox="0 0 20 20" fill="currentColor">
@@ -281,10 +281,10 @@ function HealthPageContent({
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-lg font-medium text-purple-800 dark:text-purple-200">
+              <h3 className="text-lg font-medium text-purple-800">
                 🎨 Content Settings Module
               </h3>
-              <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
+              <p className="text-sm text-purple-700 mt-1">
                 Status: {systemStatus.contentModuleWorking ? 'Working' : 'Error'} • 
                 Theme: {contentSettings.data?.themeName || 'Unknown'} • 
                 Cache: {systemStatus.contentModuleWorking ? 'Active' : 'Inactive'}
@@ -293,8 +293,8 @@ function HealthPageContent({
           </div>
 
           {contentSettings.error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 mb-4">
-              <p className="text-sm text-red-700 dark:text-red-300">
+            <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
+              <p className="text-sm text-red-700">
                 ❌ Content Settings Error: {contentSettings.error}
               </p>
             </div>
@@ -302,33 +302,33 @@ function HealthPageContent({
 
           {systemStatus.contentModuleWorking && contentSettings.data && (
             <div className="space-y-3">
-              <p className="text-sm font-medium text-purple-800 dark:text-purple-200">
+              <p className="text-sm font-medium text-purple-800">
                 Configuration Details:
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                  <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Theme</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                      <span className="text-xs text-purple-600">
                         {contentSettings.data.themeName}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                  <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Layout</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                      <span className="text-xs text-purple-600">
                         {contentSettings.data.layout.type}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                  <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Default Language</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                      <span className="text-xs text-purple-600">
                         {contentSettings.data.defaultLanguage}
                       </span>
                     </div>
@@ -336,28 +336,28 @@ function HealthPageContent({
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                  <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Header Menu</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                      <span className="text-xs text-purple-600">
                         {contentSettings.data.enableHeaderMenu ? `${contentSettings.data.headerMenu.length} items` : 'Disabled'}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                  <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Footer Menu</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                      <span className="text-xs text-purple-600">
                         {contentSettings.data.enableFooterMenu ? `${contentSettings.data.footerMenu.length} items` : 'Disabled'}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                  <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Available Languages</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                      <span className="text-xs text-purple-600">
                         {contentSettings.data.availableLanguages.length}
                       </span>
                     </div>
@@ -366,9 +366,9 @@ function HealthPageContent({
               </div>
               
               {contentSettings.data.metaTitle && (
-                <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 p-3 rounded text-sm">
+                <div className="bg-purple-100 text-purple-800 p-3 rounded text-sm">
                   <div className="font-medium mb-1">Meta Title</div>
-                  <div className="text-xs text-purple-600 dark:text-purple-400">
+                  <div className="text-xs text-purple-600">
                     {contentSettings.data.metaTitle}
                   </div>
                 </div>
@@ -378,24 +378,24 @@ function HealthPageContent({
 
           {systemStatus.contentModuleWorking && !contentSettings.data && (
             <div className="text-center py-4">
-              <p className="text-sm text-purple-600 dark:text-purple-400">
+              <p className="text-sm text-purple-600">
                 📭 No content settings found for this tenant
               </p>
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-purple-200 dark:border-purple-600">
-            <p className="text-xs text-purple-600 dark:text-purple-400">
+          <div className="mt-4 pt-4 border-t border-purple-200">
+            <p className="text-xs text-purple-600">
               🔧 Content Settings: wrapper → react cache → service → http client → Redis cache
             </p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+            <p className="text-xs text-purple-600 mt-1">
               📡 Content API: {systemStatus.apiEndpoint !== 'Not available' ? `${systemStatus.apiEndpoint}/content/settings/tenant/effective` : 'Not available'}
             </p>
           </div>
         </div>
 
         {/* Home Page Module Section */}
-        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
           <div className="flex items-center mb-4">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
@@ -403,10 +403,10 @@ function HealthPageContent({
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-lg font-medium text-orange-800 dark:text-orange-200">
+              <h3 className="text-lg font-medium text-orange-800">
                 🏠 Home Page Module
               </h3>
-              <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+              <p className="text-sm text-orange-700 mt-1">
                 Status: {systemStatus.pageModuleWorking ? 'Working' : 'Error'} • 
                 Page: {homePageData.title?.en || 'Not found'} • 
                 Sections: {homePageData.totalSections}
@@ -415,8 +415,8 @@ function HealthPageContent({
           </div>
 
           {homePageData.error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 mb-4">
-              <p className="text-sm text-red-700 dark:text-red-300">
+            <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
+              <p className="text-sm text-red-700">
                 ❌ Home Page Error: {homePageData.error}
               </p>
             </div>
@@ -424,36 +424,36 @@ function HealthPageContent({
 
           {systemStatus.pageModuleWorking && homePageData.title && (
             <div className="space-y-3">
-              <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+              <p className="text-sm font-medium text-orange-800">
                 Home Page Details:
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-100 p-3 rounded text-sm">
+                  <div className="bg-orange-100 text-orange-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Title (EN)</span>
-                      <span className="text-xs text-orange-600 dark:text-orange-400">
+                      <span className="text-xs text-orange-600">
                         {homePageData.title.en}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-100 p-3 rounded text-sm">
+                  <div className="bg-orange-100 text-orange-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Title (MM)</span>
-                      <span className="text-xs text-orange-600 dark:text-orange-400">
+                      <span className="text-xs text-orange-600">
                         {homePageData.title.mm || 'Not set'}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-100 p-3 rounded text-sm">
+                  <div className="bg-orange-100 text-orange-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Is Home Page</span>
                       <span className={`text-xs px-2 py-1 rounded ${
                         homePageData.isHomePage 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                          ? 'bg-green-100 text-green-800
+                          : 'bg-red-100 text-red-800
                       }`}>
                         {homePageData.isHomePage ? 'Yes' : 'No'}
                       </span>
@@ -462,28 +462,28 @@ function HealthPageContent({
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-100 p-3 rounded text-sm">
+                  <div className="bg-orange-100 text-orange-800 p-3 rounded text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Total Sections</span>
-                      <span className="text-xs text-orange-600 dark:text-orange-400">
+                      <span className="text-xs text-orange-600">
                         {homePageData.totalSections}
                       </span>
                     </div>
                   </div>
                   
                   {homePageData.sections && homePageData.sections.length > 0 && (
-                    <div className="bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-100 p-3 rounded text-sm">
+                    <div className="bg-orange-100 text-orange-800 p-3 rounded text-sm">
                       <div className="font-medium mb-2">Section Types:</div>
                       <div className="space-y-1 max-h-32 overflow-y-auto">
                         {homePageData.sections.map((section, index) => (
                           <div key={section._id} className="flex items-center justify-between text-xs">
-                            <span className="text-orange-700 dark:text-orange-300">
+                            <span className="text-orange-700">
                               {index + 1}. {section.type}
                             </span>
                             <span className={`px-2 py-1 rounded ${
                               section.isEnabled 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
+                                ? 'bg-green-100 text-green-800
+                                : 'bg-gray-100 text-gray-800'
                             }`}>
                               {section.isEnabled ? 'Enabled' : 'Disabled'}
                             </span>
@@ -499,25 +499,25 @@ function HealthPageContent({
 
           {systemStatus.pageModuleWorking && !homePageData.title && (
             <div className="text-center py-4">
-              <p className="text-sm text-orange-600 dark:text-orange-400">
+              <p className="text-sm text-orange-600">
                 📭 No home page found for this tenant (looking for slug: 'home')
               </p>
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-orange-200 dark:border-orange-600">
-            <p className="text-xs text-orange-600 dark:text-orange-400">
+          <div className="mt-4 pt-4 border-t border-orange-200">
+            <p className="text-xs text-orange-600">
               🔧 Page Module: wrapper → react cache → service → http client → Redis cache
             </p>
-            <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+            <p className="text-xs text-orange-600 mt-1">
               📡 Page API: {systemStatus.apiEndpoint !== 'Not available' ? `${systemStatus.apiEndpoint}/content/page/slug/home` : 'Not available'}
             </p>
           </div>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200 mb-2">🔧 System Status</h3>
-          <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+        <div className="bg-blue-50/20 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-medium text-blue-800 mb-2">🔧 System Status</h3>
+          <div className="text-sm text-blue-700 space-y-1">
             <p>✅ Middleware: {systemStatus.middlewareWorking ? 'Working' : 'Not resolving tenant'}</p>
             <p>✅ HTTP Client: {systemStatus.httpClientWorking ? 'Working' : (tenantError ? 'Error' : 'Not tested')}</p>
             <p>✅ Content Module: {systemStatus.contentModuleWorking ? 'Working' : (contentSettings.error ? 'Error' : 'Not tested')}</p>
@@ -526,18 +526,18 @@ function HealthPageContent({
             <p>✅ Token Manager: {systemStatus.httpClientWorking ? 'Working' : 'Not tested'}</p>
             {systemStatus.apiEndpoint !== 'Not available' && (
               <p className="mt-2 text-xs">
-                📡 API Endpoint: <code className="font-mono bg-blue-100 dark:bg-blue-800 px-1 rounded">{systemStatus.apiEndpoint}</code>
+                📡 API Endpoint: <code className="font-mono bg-blue-100 px-1 rounded">{systemStatus.apiEndpoint}</code>
               </p>
             )}
           </div>
-          <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-600">
-            <p className="text-xs text-blue-600 dark:text-blue-400">
+          <div className="mt-4 pt-4 border-t border-blue-200">
+            <p className="text-xs text-blue-600">
               🔍 Debug: Using content wrapper pattern (wrapper → react cache → service → http client)
             </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            <p className="text-xs text-blue-600 mt-1">
               📊 Test middleware at: <a href="/test-middleware" className="underline">/test-middleware</a>
             </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            <p className="text-xs text-blue-600 mt-1">
               ⏱️ Health check timestamp: {new Date(systemStatus.timestamp).toLocaleTimeString()}
             </p>
           </div>

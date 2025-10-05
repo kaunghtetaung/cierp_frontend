@@ -68,23 +68,59 @@ export function BatchEnrollmentItem({
               childField.fieldName === 'batchId' ||
               (childField.fieldName.toLowerCase().includes('batch') &&
                !childField.fieldName.toLowerCase().includes('year'))
-            ).map((childField) => (
-              <div key={childField.fieldName} className="w-full [&>div]:!m-0 [&>div]:!space-y-0">
-                <FormFieldRenderer
-                  field={{
-                    ...childField,
-                    fieldName: `${fieldName}.${index}.${childField.fieldName}`,
-                    label: {
-                      en: index === 0 ? getLocalizedText(childField.label, 'en') : '',
-                      mm: index === 0 ? getLocalizedText(childField.label, 'mm') : ''
-                    }
-                  }}
-                  currentLanguage={currentLanguage}
-                  isVerticalLayout={false}
-                  errors={errors[`${fieldName}.${index}`] || {}}
-                />
-              </div>
-            ))}
+            ).map((childField) => {
+              // Fix dependent field path for array context
+              // If this field depends on another field (e.g., batchId depends on academicYearId),
+              // we need to update the dependsOn path to include the array index
+              const updatedField = { ...childField };
+              if (updatedField.dropdownConfig?.dependsOn) {
+                const originalDependsOn = updatedField.dropdownConfig.dependsOn;
+                updatedField.dropdownConfig = {
+                  ...updatedField.dropdownConfig,
+                  dependsOn: updatedField.dropdownConfig.dependsOn.map((depField: string) =>
+                    `${fieldName}.${index}.${depField}`
+                  )
+                };
+                console.log('🔍 BatchEnrollmentItem - Fixed dependsOn path:', {
+                  fieldName: childField.fieldName,
+                  arrayPath: `${fieldName}.${index}`,
+                  originalDependsOn,
+                  updatedDependsOn: updatedField.dropdownConfig.dependsOn
+                });
+              }
+              // Also update dataSource.dependentField if it exists
+              if (updatedField.dataSource?.dependentField) {
+                const originalDepField = updatedField.dataSource.dependentField;
+                updatedField.dataSource = {
+                  ...updatedField.dataSource,
+                  dependentField: `${fieldName}.${index}.${updatedField.dataSource.dependentField}`
+                };
+                console.log('🔍 BatchEnrollmentItem - Fixed dataSource.dependentField:', {
+                  fieldName: childField.fieldName,
+                  arrayPath: `${fieldName}.${index}`,
+                  originalDepField,
+                  updatedDepField: updatedField.dataSource.dependentField
+                });
+              }
+
+              return (
+                <div key={childField.fieldName} className="w-full [&>div]:!m-0 [&>div]:!space-y-0">
+                  <FormFieldRenderer
+                    field={{
+                      ...updatedField,
+                      fieldName: `${fieldName}.${index}.${childField.fieldName}`,
+                      label: {
+                        en: index === 0 ? getLocalizedText(childField.label, 'en') : '',
+                        mm: index === 0 ? getLocalizedText(childField.label, 'mm') : ''
+                      }
+                    }}
+                    currentLanguage={currentLanguage}
+                    isVerticalLayout={false}
+                    errors={errors[`${fieldName}.${index}`] || {}}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {/* Roll Number + Delete button - 1 column */}

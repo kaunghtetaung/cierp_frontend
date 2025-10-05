@@ -488,10 +488,22 @@ export function DynamicSelect({
 
   // Handle Quick Entry submission
   const handleQuickEntrySubmit = async (data: Record<string, unknown>) => {
+    console.log('📝 QuickEntry Submit Started:', {
+      fieldName: field.fieldName,
+      data,
+      timestamp: new Date().toISOString()
+    })
+
     if (!field.quickEntry) return;
-    
+
     const endpoint = field.quickEntry.endpoint || '';
     const result = await submitQuickEntryForm(endpoint, data, field.quickEntry.serviceName);
+
+    console.log('✅ QuickEntry Submit Completed:', {
+      fieldName: field.fieldName,
+      success: result.success,
+      timestamp: new Date().toISOString()
+    })
     
     if (result.success && result.data) {
       // Get the configured label and value fields
@@ -818,6 +830,8 @@ export function DynamicSelect({
                   className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.stopPropagation();
                       handleRemove(option.value);
                     }
                   }}

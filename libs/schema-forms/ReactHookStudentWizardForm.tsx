@@ -117,6 +117,7 @@ export function ReactHookStudentWizardForm({
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false)
   const [pendingStoredData, setPendingStoredData] = useState<Record<string, any> | null>(null)
+  const [justNavigated, setJustNavigated] = useState(false)
 
   // Family tab state
   const [activeTab, setActiveTab] = useState<'father' | 'mother' | 'guardian'>('father')
@@ -369,6 +370,18 @@ export function ReactHookStudentWizardForm({
     }
   }, [motherNameMM, motherNameEN, motherNRC, motherOccupation, guardianType, setValue])
 
+  // Reset navigation flag after step change
+  useEffect(() => {
+    if (justNavigated) {
+      // Reset after a short delay to allow UI to settle
+      const timeout = setTimeout(() => {
+        console.log('🔄 Resetting justNavigated flag')
+        setJustNavigated(false)
+      }, 300)
+      return () => clearTimeout(timeout)
+    }
+  }, [justNavigated])
+
   // Guardian validation warning
   useEffect(() => {
     let warningMessage = ''
@@ -548,6 +561,7 @@ export function ReactHookStudentWizardForm({
     if (isValid) {
       if (currentStep < wizardSteps.length - 1) {
         setCompletedSteps(prev => [...new Set([...prev, currentStep])])
+        setJustNavigated(true) // Set flag to prevent immediate submission
         setCurrentStep(prev => prev + 1)
       }
     } else {
@@ -575,34 +589,68 @@ export function ReactHookStudentWizardForm({
 
   // Form submission
   const onSubmit = async (data: FieldValues) => {
+    // Capture stack trace to see what triggered this
+    const stackTrace = new Error().stack
+    console.log('🚨🚨🚨 FORM SUBMISSION TRIGGERED 🚨🚨🚨')
+    console.log('📊 Submission Context:', {
+      timestamp: new Date().toISOString(),
+      currentStep,
+      totalSteps: wizardSteps.length,
+      isLastStep: currentStep === wizardSteps.length - 1,
+      justNavigated,
+      formData: data,
+      stackTrace: stackTrace?.split('\n').slice(0, 10).join('\n')
+    })
+
+    // Prevent submission if we just navigated to this step
+    if (justNavigated) {
+      console.log('🛑 BLOCKING SUBMISSION - Just navigated to this step')
+      return
+    }
+
     setIsSubmittingForm(true)
     setSubmitError(null)
 
     try {
       console.log('🧙 Submitting student wizard form:', data)
 
-      // Convert React Hook Form data to FormData
-      const formData = new FormData()
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          // Handle arrays and objects
-          if (Array.isArray(value) || typeof value === 'object') {
-            formData.append(key, JSON.stringify(value))
-          } else {
-            formData.append(key, String(value))
-          }
-        }
-      })
+      // Log complete form data as JSON for backend debugging
+      console.log('📦 COMPLETE FORM DATA JSON FOR BACKEND:')
+      console.log(JSON.stringify(data, null, 2))
 
+      // Send data directly as JSON object (will be sent with Content-Type: application/json)
       const result = await submitModuleForm(
         moduleSlug,
-        formData,
+        data, // Send as plain object, not FormData
         action,
         itemId,
         true // skipRedirect - we want to handle redirect manually for better UX
       )
 
       console.log('🧙 Student wizard form submission result:', result)
+
+      // Check if submission was successful
+      if (!result.success) {
+        console.error('🧙 Backend validation errors:', result.error)
+
+        // Display backend error message
+        const errorMessage = result.error || (currentLanguage === 'mm'
+          ? 'ဖောင်း ပေးပို့မှု မအောင်မြင်ပါ'
+          : 'Form submission failed')
+
+        setSubmitError(errorMessage)
+        toastError(errorMessage)
+
+        // If there are field-specific errors, log them
+        if (result.errors) {
+          console.error('🧙 Field errors:', result.errors)
+        }
+        if (result.fieldErrors) {
+          console.error('🧙 Field errors array:', result.fieldErrors)
+        }
+
+        return // Don't proceed with success flow
+      }
 
       // Invalidate queries
       await queryClient.invalidateQueries({
@@ -783,12 +831,49 @@ export function ReactHookStudentWizardForm({
 
         {/* Step Content */}
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={(e) => {
+            console.log('📋 Form onSubmit triggered:', {
+              currentStep,
+              totalSteps: wizardSteps.length,
+              isLastStep: currentStep === wizardSteps.length - 1,
+              eventType: e.type,
+              submitter: (e.nativeEvent as SubmitEvent).submitter
+            })
+
+            e.preventDefault()
+            e.stopPropagation()
+
+            // Only allow submission on last step with explicit submit button click
+            if (currentStep !== wizardSteps.length - 1) {
+              console.log('🛑 Preventing form submission - not on last step', {
+                currentStep,
+                lastStep: wizardSteps.length - 1
+              })
+              return false
+            }
+
+            // Call React Hook Form's handleSubmit manually
+            console.log('✅ Allowing form submission on last step')
+            handleSubmit(onSubmit)(e)
+          }}
           onKeyDown={(e) => {
             // Prevent Enter key from submitting form
             // Allow Enter only in textareas (for new lines)
             if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) {
+              console.log('⌨️ Enter key pressed, preventing submission:', {
+                target: e.target,
+                tagName: (e.target as HTMLElement).tagName
+              })
               e.preventDefault()
+              e.stopPropagation()
+            }
+          }}
+          onKeyPress={(e) => {
+            // Additional prevention for older browsers
+            if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) {
+              console.log('⌨️ Enter key (keypress) prevented')
+              e.preventDefault()
+              e.stopPropagation()
             }
           }}
           className="space-y-6"

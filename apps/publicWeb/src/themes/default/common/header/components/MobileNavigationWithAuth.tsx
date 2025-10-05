@@ -7,20 +7,21 @@ import { MobileNavigation } from '../../navigation/MobileNavigation';
 interface MobileNavigationWithAuthProps {
   items: any[];
   currentLanguage: string;
-
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  showSearch?: boolean;
 }
 
 /**
  * Mobile Navigation wrapper that provides auth state
  * Uses safe auth hook that doesn't trigger redirects
  */
-export const MobileNavigationWithAuth: React.FC<MobileNavigationWithAuthProps> = ({ 
-  items, 
-  currentLanguage, 
-  isOpen, 
-  onOpenChange 
+export const MobileNavigationWithAuth: React.FC<MobileNavigationWithAuthProps> = ({
+  items,
+  currentLanguage,
+  isOpen,
+  onOpenChange,
+  showSearch = false
 }) => {
   const { isAuthenticated, user } = useSafeAuth();
   const userRoles = user?.roles || [];
@@ -33,6 +34,7 @@ export const MobileNavigationWithAuth: React.FC<MobileNavigationWithAuthProps> =
       userRoles={userRoles}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      showSearch={showSearch}
     />
   );
 };

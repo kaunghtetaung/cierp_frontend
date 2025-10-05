@@ -102,131 +102,88 @@ export async function getModuleItemAction<T = any>(
  */
 export async function submitModuleForm(
   module: string,
-  formData: FormData,
+  formData: FormData | Record<string, any>,
   action: "create" | "update",
   id?: string,
   skipRedirect?: boolean
 ): Promise<ActionResponse> {
   try {
     console.log(`🚀 Starting ${action} operation for module: ${module}`);
-    
-    // Convert FormData to object - manually process to avoid toString() calls on client references
-    const data: Record<string, any> = {};
-    console.log("🔍 Debug: Starting FormData processing...");
-    
-    let entryCount = 0;
-    for (const [key, value] of formData.entries()) {
-      entryCount++;
-      console.log(`🔍 Debug: Processing entry ${entryCount}:`, {
-        key,
-        valueType: typeof value,
-        valueConstructor: value?.constructor?.name,
-        isFile: value instanceof File,
-        isString: typeof value === 'string',
-        hasToString: typeof value?.toString === 'function',
-        valuePreview: value instanceof File ? `File(${value.name})` : String(value).substring(0, 100)
-      });
-      
-      try {
-        // Enhanced client-safe value conversion
-        if (value instanceof File) {
-          // Handle File objects specially
-          data[key] = value.name;
-          console.log(`✅ Debug: Successfully converted File entry ${entryCount} for key "${key}": "${value.name}"`);
-        } else if (typeof value === 'string') {
-          // Strings are safe to use directly
-          data[key] = value;
-          console.log(`✅ Debug: Successfully converted string entry ${entryCount} for key "${key}"`);
-        } else if (value === null || value === undefined) {
-          // Handle null/undefined values
-          data[key] = "";
-          console.log(`✅ Debug: Successfully converted null/undefined entry ${entryCount} for key "${key}"`);
-        } else {
-          // For all other types, try safe conversion methods
-          // First check if it's a potential client reference by checking for React symbols
-          const isClientRef = (value as any)?.$$typeof === Symbol.for('react.client.reference') || 
-                            (value as any)?.$$typeof === Symbol.for('react.element') ||
-                            (typeof value === 'object' && value && (value as any).constructor?.name?.includes('Client'));
-          
-          if (isClientRef) {
-            console.warn(`🚨 Debug: Detected potential client reference in entry ${entryCount} for key "${key}" - using safe fallback`);
-            data[key] = "[CLIENT_REFERENCE]";
-            console.log(`✅ Debug: Safely handled client reference for key "${key}"`);
+
+    let processedData: Record<string, any>;
+
+    // Check if formData is FormData or plain object
+    if (formData instanceof FormData) {
+      // Legacy FormData handling
+      console.log("🔍 Debug: Processing FormData (legacy path)...");
+      const data: Record<string, any> = {};
+
+      let entryCount = 0;
+      for (const [key, value] of formData.entries()) {
+        entryCount++;
+
+        try {
+          if (value instanceof File) {
+            data[key] = value.name;
+          } else if (typeof value === 'string') {
+            data[key] = value;
+          } else if (value === null || value === undefined) {
+            data[key] = "";
           } else {
-            // Try safe primitive conversion without toString()
-            if (typeof value === 'number' || typeof value === 'boolean') {
+            const isClientRef = (value as any)?.$$typeof === Symbol.for('react.client.reference') ||
+                              (value as any)?.$$typeof === Symbol.for('react.element') ||
+                              (typeof value === 'object' && value && (value as any).constructor?.name?.includes('Client'));
+
+            if (isClientRef) {
+              data[key] = "[CLIENT_REFERENCE]";
+            } else if (typeof value === 'number' || typeof value === 'boolean') {
               data[key] = String(value);
-              console.log(`✅ Debug: Successfully converted primitive entry ${entryCount} for key "${key}"`);
             } else if (typeof value === 'object' && value !== null) {
-              // For objects, try JSON.stringify as it's safer than toString()
               try {
                 data[key] = JSON.stringify(value);
-                console.log(`✅ Debug: Successfully converted object entry ${entryCount} for key "${key}" via JSON`);
               } catch (jsonError) {
-                // If JSON fails, use a safe fallback
                 data[key] = "[COMPLEX_OBJECT]";
-                console.log(`✅ Debug: Used object fallback for key "${key}" (JSON serialization failed)`);
               }
             } else {
-              // Last resort - use String() but with error handling
               data[key] = String(value);
-              console.log(`✅ Debug: Successfully converted entry ${entryCount} for key "${key}" via String()`);
             }
           }
-        }
-      } catch (error) {
-        console.error(`❌ Debug: Error converting entry ${entryCount} for key "${key}":`, {
-          error: error instanceof Error ? error.message : String(error),
-          errorName: error instanceof Error ? error.name : 'Unknown',
-          errorStack: error instanceof Error ? error.stack : undefined,
-          valueType: typeof value,
-          valueConstructor: value?.constructor?.name
-        });
-        
-        // Ultimate fallback - categorize the error
-        const isToStringError = error instanceof Error && 
-          error.message.includes('Cannot access toString on the server');
-        const isClientReferenceError = error instanceof Error && 
-          error.message.includes('client reference');
-        
-        if (isToStringError || isClientReferenceError) {
-          data[key] = "[CLIENT_REFERENCE_ERROR]";
-          console.log(`🛡️ Debug: Used client reference error fallback for key "${key}"`);
-        } else {
-          data[key] = "[CONVERSION_FAILED]";
-          console.log(`🛡️ Debug: Used general conversion error fallback for key "${key}"`);
-        }
-      }
-    }
-    
-    console.log(`🔍 Debug: Processed ${entryCount} FormData entries`);
-    console.log("📝 Raw form data:", data);
-    
-    // Debug multi-language fields specifically
-    Object.entries(data).forEach(([key, value]) => {
-      if (typeof value === "string" && (value.includes('"en":') || value.includes('"mm":'))) {
-        console.log(`🌍 Multi-lang field "${key}":`, {
-          value,
-          isAlreadyString: typeof value === "string",
-          needsParsing: typeof value === "string" && value.startsWith('{')
-        });
-      }
-    });
+        } catch (error) {
+          const isToStringError = error instanceof Error &&
+            error.message.includes('Cannot access toString on the server');
+          const isClientReferenceError = error instanceof Error &&
+            error.message.includes('client reference');
 
-    // Handle nested object fields (e.g., displayName.en)
-    const processedData: Record<string, any> = {};
-    Object.entries(data).forEach(([key, value]) => {
-      if (key.includes(".")) {
-        const [parentKey, childKey] = key.split(".");
-        if (!processedData[parentKey]) {
-          processedData[parentKey] = {};
+          if (isToStringError || isClientReferenceError) {
+            data[key] = "[CLIENT_REFERENCE_ERROR]";
+          } else {
+            data[key] = "[CONVERSION_FAILED]";
+          }
         }
-        processedData[parentKey][childKey] = value;
-      } else {
-        processedData[key] = value;
       }
-    });
-    console.log("🔄 Processed form data:", processedData);
+
+      console.log(`🔍 Debug: Processed ${entryCount} FormData entries`);
+
+      // Handle nested object fields (e.g., displayName.en)
+      processedData = {};
+      Object.entries(data).forEach(([key, value]) => {
+        if (key.includes(".")) {
+          const [parentKey, childKey] = key.split(".");
+          if (!processedData[parentKey]) {
+            processedData[parentKey] = {};
+          }
+          processedData[parentKey][childKey] = value;
+        } else {
+          processedData[key] = value;
+        }
+      });
+    } else {
+      // Direct JSON object (new path) - will be sent with Content-Type: application/json
+      console.log("✅ Debug: Received plain object, sending as JSON");
+      processedData = formData;
+    }
+
+    console.log("📝 Final data to send (will use Content-Type: application/json):", processedData);
 
     // Call API using ModuleService (validation will be handled by the backend)
     console.log(`📡 Calling ${action} API...`);

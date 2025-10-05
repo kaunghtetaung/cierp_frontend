@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useLanguage } from "@repo/language";
 import { ReactHookForm } from "./ReactHookForm";
 import { ReactHookFormEnhanced } from "./ReactHookFormEnhanced";
@@ -44,7 +45,20 @@ export function FormWithLanguage({
   appId,
 }: FormWithLanguageProps) {
   const { currentLanguage } = useLanguage();
-  
+
+  // Create a QueryClient instance for this form
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000, // 1 minute
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
+
   // Debug navigation passing
   console.log("🔄 FormWithLanguage - Navigation props:", {
     hasNavigation: !!navigation,
@@ -68,14 +82,16 @@ export function FormWithLanguage({
           : ReactHookForm;
 
   return (
-    <FormComponent
-      module={module}
-      action={action}
-      initialData={initialData}
-      moduleSlug={moduleSlug}
-      itemId={itemId}
-      currentLanguage={currentLanguage}
-      {...(isEnhanced && navigation ? { navigation, appId } : {})}
-    />
+    <QueryClientProvider client={queryClient}>
+      <FormComponent
+        module={module}
+        action={action}
+        initialData={initialData}
+        moduleSlug={moduleSlug}
+        itemId={itemId}
+        currentLanguage={currentLanguage}
+        {...(isEnhanced && navigation ? { navigation, appId } : {})}
+      />
+    </QueryClientProvider>
   );
 }

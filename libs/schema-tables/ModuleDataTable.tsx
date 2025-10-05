@@ -159,9 +159,18 @@ export function ModuleDataTable({
           // For other field types, use direct fieldName
           const paramValue = searchParams.get(field.fieldName);
           if (paramValue) {
-            // Handle multiple values (comma-separated)
-            if (field.multiple && paramValue.includes(',')) {
-              values[field.fieldName] = paramValue.split(',').map(v => v.trim());
+            // Handle multiple values (pipe-separated)
+            // Using pipe instead of comma to support values containing commas
+            if (field.multiple && paramValue.includes('|')) {
+              const splitValues = paramValue.split('|').map(v => v.trim());
+              console.log('🔍 PrefilterTypeahead split debug:', {
+                fieldName: field.fieldName,
+                paramValue,
+                splitValues,
+                separator: '|',
+                containsSpaces: splitValues.some(v => v.includes(' '))
+              });
+              values[field.fieldName] = splitValues;
             } else {
               values[field.fieldName] = paramValue;
             }
@@ -234,8 +243,17 @@ export function ModuleDataTable({
           newSearchParams.set(`${key}`, val);
         }
       } else if (Array.isArray(val)) {
-        // For multiple values, join with comma
-        newSearchParams.set(key, val.join(','));
+        // For multiple values, join with pipe (|) separator
+        // Using pipe instead of comma to support values containing commas
+        const joinedValue = val.join('|');
+        console.log('🔍 PrefilterTypeahead join debug:', {
+          key,
+          originalArray: val,
+          joinedValue,
+          separator: '|',
+          containsSpaces: val.some(v => String(v).includes(' '))
+        });
+        newSearchParams.set(key, joinedValue);
       } else {
         newSearchParams.set(key, val as string);
       }
@@ -1113,10 +1131,10 @@ export function ModuleDataTable({
                 {fieldValue}
               </div>
             );
-          } else if (column.renderAs === "array") {
+          } else if (column.renderAs === "array" || column.isArray) {
             // Handle array rendering - check both rawValue and fieldValue
             const arrayData = Array.isArray(rawValue) ? rawValue : (Array.isArray(fieldValue) ? fieldValue : []);
-            
+
             if (!arrayData || arrayData.length === 0) {
               return (
                 <span className="text-muted-foreground text-xs">
@@ -1124,17 +1142,60 @@ export function ModuleDataTable({
                 </span>
               );
             }
-            
-            // Handle arrayFormat configuration - could be empty object or have fields
+
+            // Helper function to get nested value from object using dot notation
+            const getNestedArrayValue = (obj: any, path: string) => {
+              if (!path) return obj;
+              return path.split('.').reduce((current, key) => {
+                if (current && typeof current === 'object' && key in current) {
+                  return current[key];
+                }
+                return undefined;
+              }, obj);
+            };
+
+            // Handle arrayDisplay configuration (new format)
+            if (column.arrayDisplay) {
+              const { field, separator = ", " } = column.arrayDisplay;
+
+              const formattedItems = arrayData
+                .map((item: any) => {
+                  if (typeof item === 'object' && item !== null) {
+                    const value = getNestedArrayValue(item, field);
+                    // Handle multilingual values
+                    if (value && typeof value === 'object' && (value.en || value.mm)) {
+                      return getLocalizedText(value, currentLanguage);
+                    }
+                    return value;
+                  }
+                  return item;
+                })
+                .filter(val => val !== null && val !== undefined && val !== '');
+
+              return (
+                <span className="text-sm print:inline">
+                  {formattedItems.join(separator)}
+                </span>
+              );
+            }
+
+            // Handle arrayFormat configuration (legacy format) - could be empty object or have fields
             if (column.arrayFormat && Object.keys(column.arrayFormat).length > 0) {
               const { fields, separator = " - ", displayFormat = "concatenated" } = column.arrayFormat;
-              
+
               const formattedItems = arrayData.map((item: any) => {
                 if (typeof item === 'object' && item !== null) {
                   // If fields are specified, use them
                   if (fields && fields.length > 0) {
                     return fields
-                      .map(field => item[field])
+                      .map(field => {
+                        const value = getNestedArrayValue(item, field);
+                        // Handle multilingual values
+                        if (value && typeof value === 'object' && (value.en || value.mm)) {
+                          return getLocalizedText(value, currentLanguage);
+                        }
+                        return value;
+                      })
                       .filter(val => val !== null && val !== undefined)
                       .join(separator);
                   }

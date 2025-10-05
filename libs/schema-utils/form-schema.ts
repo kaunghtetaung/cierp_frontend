@@ -243,6 +243,11 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
                     // Handle required/optional for nested child fields
                     if (!nestedChild.validationRule?.required) {
                       nestedChildSchema = nestedChildSchema.optional()
+                    } else {
+                      // For required text/email/password fields, ensure they are not empty strings
+                      if (nestedChild.fieldType === 'text' || nestedChild.fieldType === 'textArea' || nestedChild.fieldType === 'email' || nestedChild.fieldType === 'password') {
+                        nestedChildSchema = (nestedChildSchema as z.ZodString).min(1, nestedChild.validationRule?.errorMessage?.en || `${nestedChild.fieldName} is required`)
+                      }
                     }
 
                     nestedChildSchemaFields[nestedChild.fieldName] = nestedChildSchema
@@ -278,6 +283,11 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
             // Handle required/optional for child fields
             if (!childField.validationRule?.required) {
               childFieldSchema = childFieldSchema.optional()
+            } else {
+              // For required text/email/password fields, ensure they are not empty strings
+              if (childField.fieldType === 'text' || childField.fieldType === 'textArea' || childField.fieldType === 'email' || childField.fieldType === 'password') {
+                childFieldSchema = (childFieldSchema as z.ZodString).min(1, childField.validationRule?.errorMessage?.en || `${childField.fieldName} is required`)
+              }
             }
 
             childSchemaFields[childField.fieldName] = childFieldSchema
@@ -326,6 +336,11 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
     // Handle required/optional
     if (!field.validationRule.required) {
       fieldSchema = fieldSchema.optional()
+    } else {
+      // For required text/email/password fields, ensure they are not empty strings
+      if (field.fieldType === 'text' || field.fieldType === 'textArea' || field.fieldType === 'email' || field.fieldType === 'password') {
+        fieldSchema = (fieldSchema as z.ZodString).min(1, field.validationRule.errorMessage?.en || `${field.fieldName} is required`)
+      }
     }
 
     // Handle multilanguage fields

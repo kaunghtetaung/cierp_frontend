@@ -177,7 +177,7 @@ const DropdownLangSelector: React.FC<
               showNativeName={showNativeName}
               showName={showName}
             />
-            <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+            <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180 text-current" />
           </button>
         </DropdownMenuTrigger>
 
@@ -276,6 +276,7 @@ export function LangSelectorCompact({
 // Icon-only version
 export function LangSelectorIcon({
   className = "",
+  triggerClassName = "",
   ...props
 }: LangSelectorUIProps) {
   return (
@@ -286,7 +287,7 @@ export function LangSelectorIcon({
       showName={false}
       showFlag={true}
       className={className}
-      triggerClassName="min-h-[44px] min-w-[44px] p-2 justify-center hover:bg-accent rounded-md transition-colors"
+      triggerClassName={triggerClassName || "min-h-[44px] min-w-[44px] p-2 justify-center hover:bg-accent rounded-md transition-colors"}
     />
   );
 }

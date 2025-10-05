@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Input } from "@repo/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { Label } from "@repo/ui";
-import { Checkbox } from "@repo/ui";
+import { Switch } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
 import { cn } from "@repo/utils";
 
@@ -424,9 +424,14 @@ export function NrcField({
 
   // Handle key press for Enter key completion
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && isDataComplete) {
-      setIsManuallyCompleted(true);
-      setIsFocused(false);
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission
+      e.stopPropagation(); // Stop event bubbling
+
+      if (isDataComplete) {
+        setIsManuallyCompleted(true);
+        setIsFocused(false);
+      }
     }
   };
 
@@ -452,27 +457,16 @@ export function NrcField({
       {allowFreeForm && !hideToggle && (
         <div className="flex justify-end items-center mb-2">
           <div className="flex items-center space-x-2">
-            <Label htmlFor="nrc-toggle" className="text-xs text-muted-foreground">
+            <Label htmlFor="nrc-toggle" className="text-xs text-muted-foreground cursor-pointer">
               {currentLanguage === "mm" ? "စိတ်ကြိုက်ပုံစံ" : "Custom Format"}
             </Label>
-            <button
+            <Switch
               id="nrc-toggle"
-              type="button"
-              onClick={() => handleFreeFormToggle(!isFreeForm)}
+              checked={isFreeForm}
+              onCheckedChange={handleFreeFormToggle}
               disabled={disabled}
-              className={cn(
-                "relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                isFreeForm ? "bg-primary" : "bg-muted",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <span
-                className={cn(
-                  "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
-                  isFreeForm ? "translate-x-3.5" : "translate-x-0.5"
-                )}
-              />
-            </button>
+              className="scale-75"
+            />
           </div>
         </div>
       )}

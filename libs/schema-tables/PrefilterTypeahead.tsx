@@ -172,8 +172,19 @@ export function PrefilterTypeahead({
       const newValues = selectedValues.includes(optionValue)
         ? selectedValues.filter(v => v !== optionValue)
         : [...selectedValues, optionValue];
+      console.log('🔍 PrefilterTypeahead handleSelect:', {
+        fieldName: field.fieldName,
+        optionValue,
+        newValues,
+        containsSpaces: optionValue.includes(' ')
+      });
       onChange(newValues.length > 0 ? newValues : undefined);
     } else {
+      console.log('🔍 PrefilterTypeahead handleSelect (single):', {
+        fieldName: field.fieldName,
+        optionValue,
+        containsSpaces: optionValue.includes(' ')
+      });
       onChange(optionValue);
       setIsOpen(false);
       setSearchTerm("");

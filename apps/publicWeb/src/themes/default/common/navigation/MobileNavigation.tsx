@@ -3,7 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 import { Button } from "@/styled-components/ui/Button";
 import { MobileNavigationProps } from "./types";
 import {
@@ -24,10 +24,22 @@ export function MobileNavigation({
   userRoles = [],
   isOpen,
   onOpenChange,
-}: MobileNavigationProps) {
+  showSearch = false,
+}: MobileNavigationProps & { showSearch?: boolean }) {
+  const [searchQuery, setSearchQuery] = React.useState("");
+
   const visibleItems = React.useMemo(() => {
     return filterNavigationItems(items, isAuthenticated, userRoles);
   }, [items, isAuthenticated, userRoles]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      const searchUrl = new URL("/search", window.location.origin);
+      searchUrl.searchParams.set("q", searchQuery.trim());
+      window.location.href = searchUrl.toString();
+    }
+  };
 
   if (!isOpen || typeof window === "undefined") {
     return null;
@@ -45,16 +57,36 @@ export function MobileNavigation({
       <div className="fixed left-0 top-0 h-full w-80 bg-background border-r border-border shadow-lg transform transition-transform duration-200 ease-in-out">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold">Navigation</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <div className="border-b border-border">
+            <div className="flex items-center justify-between p-4">
+              <h2 className="text-lg font-semibold">Menu</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Search Bar */}
+            {showSearch && (
+              <div className="px-4 pb-4">
+                <form onSubmit={handleSearchSubmit}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search..."
+                      className="w-full h-10 pl-10 pr-4 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
 
           {/* Navigation Items */}

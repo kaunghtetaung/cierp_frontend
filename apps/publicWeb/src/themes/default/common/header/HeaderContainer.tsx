@@ -29,26 +29,26 @@ export async function HeaderContainer({
   console.log("\n🎨 === HEADER CONTAINER START ===");
   console.log("🎨 TenantId:", tenantId);
   console.log("🎨 Language:", currentLanguage);
-  
+
   try {
     console.log("🎨 Fetching tenant and content settings in parallel...");
     // Fetch real data from your existing services
     const [tenantSettings, contentSettings] = await Promise.all([
       getTenantSettingClientSafe(tenantId),
-      getContentSettings(tenantId)
+      getContentSettings(tenantId),
     ]);
-    
+
     console.log("🎨 Tenant settings fetched:", {
       hasTenantSettings: !!tenantSettings,
       displayName: tenantSettings?.displayName,
-      brandInfo: !!tenantSettings?.brandInfo
+      brandInfo: !!tenantSettings?.brandInfo,
     });
-    
+
     console.log("🎨 Content settings fetched:", {
       hasContentSettings: !!contentSettings,
       hasHeader: !!contentSettings?.header,
       enableHeaderMenu: contentSettings?.enableHeaderMenu,
-      headerMenuLength: contentSettings?.headerMenu?.length || 0
+      headerMenuLength: contentSettings?.headerMenu?.length || 0,
     });
 
     console.log("🎨 Fetching header menu items...");
@@ -56,8 +56,8 @@ export async function HeaderContainer({
     const headerMenuItems = await getHeaderMenu(tenantId);
     console.log("🎨 Header menu items fetched:", headerMenuItems?.length || 0);
 
-    // Convert MenuItemSettings to NavigationItem format
-    const navigationItems = headerMenuItems.map((menuItem: any) => ({
+    // Recursive function to map menu items with all nested children
+    const mapMenuItem = (menuItem: any): any => ({
       id: menuItem.id,
       title: menuItem.title,
       url: menuItem.url,
@@ -66,17 +66,11 @@ export async function HeaderContainer({
       openInNewTab: menuItem.openInNewTab,
       requiresAuth: menuItem.requiresAuth,
       allowedRoles: menuItem.allowedRoles,
-      children: menuItem.children?.map((child: any) => ({
-        id: child.id,
-        title: child.title,
-        url: child.url,
-        icon: child.icon,
-        cssClass: child.cssClass,
-        openInNewTab: child.openInNewTab,
-        requiresAuth: child.requiresAuth,
-        allowedRoles: child.allowedRoles,
-      })),
-    }));
+      children: menuItem.children?.map(mapMenuItem),
+    });
+
+    // Convert MenuItemSettings to NavigationItem format with all nested levels
+    const navigationItems = headerMenuItems.map(mapMenuItem);
 
     // Extract header data from your settings with multilingual support
     const headerData = {
@@ -107,7 +101,7 @@ export async function HeaderContainer({
       hasLogoUrl: !!headerData.logoUrl,
       hasTitle: !!headerData.title,
       navigationItemsCount: headerData.navigationItems?.length || 0,
-      headerEnabled: headerData.headerSettings.enabled
+      headerEnabled: headerData.headerSettings.enabled,
     });
 
     // If header is disabled, return minimal header
@@ -138,62 +132,69 @@ export async function HeaderContainer({
       <header
         className={`sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm ${className}`}
       >
-        <div className={`relative max-w-7xl mx-auto`}>
-          {/* Desktop Layout: Three Row Design */}
-          <div className="hidden lg:block px-4">
-
-            {/* First Row: Icon Bar (Actions) */}
-            <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <HeaderActions
-                showSearch={headerSettings.showSearch}
-                showLanguageSelector={false}
-                showUserMenu={false}
-                currentLanguage={currentLanguage}
-              />
-              <div className="flex items-center gap-1">
+        {/* Desktop Layout: Three Row Design */}
+        <div className="hidden lg:block">
+          {/* First Row: Icon Bar (Actions) - Full Width Background */}
+          <div
+            className="w-full border-b border-border/50"
+            style={{ backgroundColor: "#1A48A4" }}
+          >
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex items-center justify-between py-1">
                 <HeaderActions
-                  showSearch={false}
+                  showSearch={headerSettings.showSearch}
                   showLanguageSelector={false}
-                  showUserMenu={headerSettings.showUserMenu}
+                  showUserMenu={false}
                   currentLanguage={currentLanguage}
                 />
-                {headerSettings.showLanguageSelector && (
-                  <LangSelectorWrapper
-                    initialLanguage={currentLanguage}
-                    languages={[
-                      {
-                        code: "en",
-                        name: "English",
-                        nativeName: "English",
-                        flag: "🇺🇸",
-                        direction: "ltr" as const,
-                      },
-                      {
-                        code: "mm",
-                        name: "Myanmar",
-                        nativeName: "မြန်မာ",
-                        flag: "🇲🇲",
-                        direction: "ltr" as const,
-                      },
-                    ]}
-                  >
-                    <LangSelectorUI
-                      variant="dropdown"
-                      showFlag={true}
-                      showNativeName={false}
-                      showName={false}
-                      className="relative"
-                      triggerClassName="flex items-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors border-0 bg-transparent rounded-none"
-                      contentClassName="w-48"
-                    />
-                  </LangSelectorWrapper>
-                )}
+                <div className="flex items-center gap-1">
+                  <HeaderActions
+                    showSearch={false}
+                    showLanguageSelector={false}
+                    showUserMenu={headerSettings.showUserMenu}
+                    currentLanguage={currentLanguage}
+                  />
+                  {headerSettings.showLanguageSelector && (
+                    <LangSelectorWrapper
+                      initialLanguage={currentLanguage}
+                      languages={[
+                        {
+                          code: "en",
+                          name: "English",
+                          nativeName: "English",
+                          flag: "🇺🇸",
+                          direction: "ltr" as const,
+                        },
+                        {
+                          code: "mm",
+                          name: "Myanmar",
+                          nativeName: "မြန်မာ",
+                          flag: "🇲🇲",
+                          direction: "ltr" as const,
+                        },
+                      ]}
+                    >
+                      <LangSelectorUI
+                        variant="dropdown"
+                        showFlag={true}
+                        showNativeName={false}
+                        showName={false}
+                        className="relative"
+                        triggerClassName="flex items-center gap-1 px-2 py-1 text-sm font-medium transition-colors border-0 bg-transparent rounded-none text-white hover:text-white/90"
+                        contentClassName="w-48"
+                      />
+                    </LangSelectorWrapper>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
 
+          {/* Remaining rows with max-width container */}
+          <div className="relative max-w-7xl mx-auto px-4">
             {/* Second Row: Brand Info (Logo + Title + Subtitle) */}
             {headerSettings.showLogo && (
-              <div className="flex items-center justify-center py-6 border-b border-border/50">
+              <div className="flex items-center justify-start py-6 border-b border-border/50">
                 <HeaderBanner
                   logoUrl={headerData.logoUrl}
                   title={headerData.title as any}
@@ -206,7 +207,7 @@ export async function HeaderContainer({
 
             {/* Third Row: Navigation Menu */}
             {headerSettings.showNavigation && (
-              <div className="flex items-center justify-center py-3">
+              <div className="flex items-center justify-start py-2">
                 <HeaderNavigation
                   items={headerData.navigationItems}
                   currentLanguage={currentLanguage}
@@ -216,9 +217,14 @@ export async function HeaderContainer({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Mobile and Tablet Layout: Simple header bar */}
-          <div className="lg:hidden flex items-center justify-between w-full px-4 py-3 touch-manipulation">
+        {/* Mobile and Tablet Layout: Simple header bar - Full Width Background */}
+        <div
+          className="lg:hidden w-full"
+          style={{ backgroundColor: "#1A48A4" }}
+        >
+          <div className="flex items-center justify-between px-4 py-3 touch-manipulation">
             <HeaderActions
               isMobileView={true}
               showSearch={headerSettings.showSearch}

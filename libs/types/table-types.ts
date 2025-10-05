@@ -27,6 +27,12 @@ export interface PopulateConfig {
   isMultilingual: boolean; // Whether the display field supports multiple languages
 }
 
+// Array display configuration for array fields
+export interface ArrayDisplayConfig {
+  field: string; // Nested field path to display (e.g., "batchId.name", "name")
+  separator?: string; // Separator between array items (default: ", ")
+}
+
 // Table column configuration
 export interface TableColumn {
   fieldName: string;
@@ -37,6 +43,8 @@ export interface TableColumn {
   type?: TableColumnType;
   format?: string; // For date formatting, etc.
   populate?: PopulateConfig; // Configuration for populated reference fields
+  isArray?: boolean; // Whether this field contains an array
+  arrayDisplay?: ArrayDisplayConfig; // Configuration for displaying array items
 }
 
 // Base table action configuration

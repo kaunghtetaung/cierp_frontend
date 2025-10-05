@@ -89,30 +89,30 @@ const DesktopSearch: React.FC<SearchComponentProps> = ({ className = "" }) => {
     setSearchQuery(e.target.value);
   };
 
-  // Handle clear search input
-  const clearSearch = () => {
-    setSearchQuery("");
-    inputRef.current?.focus();
-  };
-
-  // Handle close search
-  const handleCloseSearch = () => {
-    setIsSearchOpen(false);
-    setSearchQuery("");
+  // Handle clear/close search
+  const handleClearOrClose = () => {
+    if (searchQuery.trim()) {
+      // If there's text, clear it
+      setSearchQuery("");
+      inputRef.current?.focus();
+    } else {
+      // If empty, close the search
+      setIsSearchOpen(false);
+    }
   };
 
   return (
     <div className={`relative ${className}`}>
       {!isSearchOpen ? (
         <button
-          className="px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors bg-transparent"
+          className="px-2 py-1 text-sm font-medium transition-colors bg-transparent text-white hover:text-white/90"
           onClick={() => setIsSearchOpen(true)}
           type="button"
         >
           Search
         </button>
       ) : (
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex items-center">
           <div className="relative">
             <input
               ref={inputRef}
@@ -120,29 +120,20 @@ const DesktopSearch: React.FC<SearchComponentProps> = ({ className = "" }) => {
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder="Search..."
-              className="w-80 h-10 pl-10 pr-10 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-64 h-8 pl-8 pr-8 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-              <Search className="h-4 w-4" />
+            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+              <Search className="h-3.5 w-3.5" />
             </div>
             <button
               type="button"
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!searchQuery.trim()}
-              aria-label="Clear search"
+              onClick={handleClearOrClose}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+              aria-label={searchQuery.trim() ? "Clear search" : "Close search"}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          <button
-            onClick={handleCloseSearch}
-            className="h-10 w-10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-            aria-label="Close search"
-            type="button"
-          >
-            <X className="h-4 w-4 hover:font-bold transition-all" />
-          </button>
         </form>
       )}
     </div>

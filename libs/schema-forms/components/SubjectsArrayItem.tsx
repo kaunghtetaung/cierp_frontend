@@ -34,23 +34,23 @@ export function SubjectsArrayItem({
   return (
     <Card className="relative border-0 shadow-none px-0 py-2 gap-3">
       <CardContent className="py-2 px-0">
-        {/* Responsive layout: Mobile (stacked) vs Desktop (single row) */}
-        <div className="flex flex-col md:grid md:grid-cols-4 gap-3 items-start">
-          {/* Subject field - mobile: full width, desktop: column 1-2 */}
-          <div className="w-full md:col-span-2 flex items-end">
+        {/* Responsive layout: 12 column grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          {/* Subject field - 6 columns */}
+          <div className="md:col-span-6">
             {field.children?.filter(childField =>
               childField.fieldName === 'subject' ||
               childField.fieldName === 'subjectId' ||
               childField.fieldName.toLowerCase().includes('subject')
             ).map((childField) => (
-              <div key={childField.fieldName} className="w-full [&>div]:!m-0 [&>div]:!space-y-0">
+              <div key={childField.fieldName} className="w-full">
                 <FormFieldRenderer
                   field={{
                     ...childField,
                     fieldName: `${fieldName}.${index}.${childField.fieldName}`,
                     label: {
                       en: `Subject #${index + 1}`,
-                      mm: `Subject #${index + 1}`
+                      mm: `ဘာသာရပ် #${index + 1}`
                     }
                   }}
                   currentLanguage={currentLanguage}
@@ -61,19 +61,19 @@ export function SubjectsArrayItem({
             ))}
           </div>
 
-          {/* Mark field + Distinction switch + Delete button - mobile: full width row, desktop: column 3-4 */}
-          <div className="w-full md:col-span-2 flex items-end gap-2">
-            {/* Mark input */}
-            <div className="flex-1">
+          {/* Mark, Distinction, Delete - 6 columns */}
+          <div className="md:col-span-6 grid grid-cols-12 gap-2 items-end">
+            {/* Mark input - 5 columns */}
+            <div className="col-span-5">
               {field.children?.filter(childField => {
-                const fieldName = childField.fieldName.toLowerCase();
+                const fieldNameLower = childField.fieldName.toLowerCase();
                 return (childField.fieldName === 'mark' ||
                         childField.fieldName === 'marks' ||
-                        fieldName.includes('mark')) &&
+                        fieldNameLower.includes('mark')) &&
                        childField.fieldName !== 'totalMarks' &&
-                       !fieldName.includes('total');
+                       !fieldNameLower.includes('total');
               }).map((childField) => (
-                <div key={childField.fieldName} className="w-full [&>div]:!m-0 [&>div]:!space-y-0">
+                <div key={childField.fieldName} className="w-full">
                   <FormFieldRenderer
                     field={{
                       ...childField,
@@ -87,8 +87,8 @@ export function SubjectsArrayItem({
               ))}
             </div>
 
-            {/* Distinction toggle switch - hidden label on mobile */}
-            <div className="flex items-center space-x-2 pb-2">
+            {/* Distinction toggle switch - 4 columns */}
+            <div className="col-span-4 flex items-center justify-center pb-2">
               {field.children?.filter(childField => {
                 const fieldNameLower = childField.fieldName.toLowerCase();
                 return fieldNameLower.includes('distinction') ||
@@ -107,10 +107,11 @@ export function SubjectsArrayItem({
                         checked={!!value}
                         onCheckedChange={onChange}
                         disabled={isReadonly}
+                        className="h-4 w-8 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input [&>*]:h-3 [&>*]:w-3 [&>*]:data-[state=checked]:translate-x-4"
                       />
                       <Label
                         htmlFor={`${fieldName}.${index}.${childField.fieldName}`}
-                        className="text-sm font-normal cursor-pointer hidden md:inline"
+                        className="text-xs font-normal cursor-pointer whitespace-nowrap"
                         title={currentLanguage === 'mm' ? 'ထူးခြားချက်' : 'Distinction'}
                       >
                         {currentLanguage === 'mm' ? 'ထူးခြားချက်' : 'Distinction'}
@@ -121,20 +122,17 @@ export function SubjectsArrayItem({
               ))}
             </div>
 
-            {/* Delete button - icon only on mobile */}
-            <div className="flex-shrink-0 pb-2">
+            {/* Delete button - 3 columns */}
+            <div className="col-span-3 flex justify-end pb-2">
               {!isReadonly && (
                 <Button
                   type="button"
                   variant="destructive"
                   size="sm"
                   onClick={() => onRemove(index)}
-                  className="md:px-3"
                 >
-                  <IconComponent name="Trash2" className="w-4 h-4 md:mr-2" />
-                  <span className="hidden md:inline">
-                    {currentLanguage === 'mm' ? 'ဖျက်' : 'Delete'}
-                  </span>
+                  <IconComponent name="Trash2" className="w-4 h-4 mr-1" />
+                  {currentLanguage === 'mm' ? 'ဖျက်' : 'Delete'}
                 </Button>
               )}
             </div>
