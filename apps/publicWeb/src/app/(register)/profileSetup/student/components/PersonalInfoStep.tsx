@@ -46,7 +46,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
     }
   }, [user, setValue]);
 
-  // Reusable ESC key handler for input fields
+  // Reusable key handler for input fields (ESC to reset, Enter prevention)
   const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -57,6 +57,9 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
       // Trigger React Hook Form's onChange
       const event = new Event('input', { bubbles: true });
       e.target.dispatchEvent(event);
+    } else if (e.key === "Enter") {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
     }
   };
 
@@ -224,6 +227,9 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                           e.preventDefault();
                           e.stopPropagation();
                           field.onChange("");
+                        } else if (e.altKey && e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setOpen(true);
                         }
                       }}
                     >
@@ -336,6 +342,9 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                           e.preventDefault();
                           e.stopPropagation();
                           field.onChange("");
+                        } else if (e.altKey && e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setOpen(true);
                         }
                       }}
                     >

@@ -7,7 +7,22 @@ import { IconComponent } from "@repo/ui";
 import { BatchEnrollmentItem } from "./BatchEnrollmentItem";
 
 export function CurrentAcademicStep() {
-  const { register, control, formState: { errors } } = useFormContext();
+  const { register, control, setValue, formState: { errors } } = useFormContext();
+
+  // Reusable ESC key handler for input fields
+  const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
+      setValue(fieldName, "");
+      const event = new Event('input', { bubbles: true });
+      e.target.dispatchEvent(event);
+    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
+    }
+  };
 
   const {
     fields: batchFields,
@@ -52,6 +67,7 @@ export function CurrentAcademicStep() {
               type="text"
               placeholder="Enter MEDM number"
               className={inputClass}
+              onKeyDown={handleInputEscKey("medm")}
             />
             {errors.medm && (
               <p className={errorClass}>{errors.medm.message as string}</p>

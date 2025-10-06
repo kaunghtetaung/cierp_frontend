@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getModuleSchemas } from "@repo/appSchema/wrapper";
 import { getSafeHeaders } from "@repo/utils/server/headers-compat";
 import { ServerApiClient } from "@repo/api/server";
@@ -641,29 +643,149 @@ export async function getTownsByTownship(townshipName: string): Promise<{
 
 /**
  * Submit student self-registration data
- * This will create a new student record without requiring authentication
+ * POST /cpms/student/self-register
+ * Requires: userAccessToken, x-tenant-id, x-user-id headers
  */
 export async function submitStudentSelfRegistration(data: any): Promise<{
   success: boolean;
   message?: string;
   error?: string;
   studentId?: string;
+  fieldErrors?: string[];
+  traceId?: string;
 }> {
   try {
-    // TODO: Implement student creation via API
-    // For now, just log the data
-    console.log("Student self-registration data:", data);
+    console.log("🚀 [submitStudentSelfRegistration] Starting student self-registration");
+    console.log("📝 [submitStudentSelfRegistration] Form data:", data);
 
-    // This would call the backend API to create the student
-    // const response = await createModuleItem("students", data);
+    // Get current authenticated user (guest user)
+    const { getAuthenticationStatus } = await import("@repo/auth/server");
+    const authResult = await getAuthenticationStatus();
 
+    console.log("🔑 [submitStudentSelfRegistration] Auth status:", {
+      isAuthenticated: authResult.isAuthenticated,
+      userId: authResult.user?.id,
+      tenantId: authResult.tenantId,
+      userRole: authResult.user?.roles?.map((r: any) => r.Role).join(", ")
+    });
+
+    if (!authResult.isAuthenticated || !authResult.user) {
+      console.error("❌ [submitStudentSelfRegistration] User not authenticated");
+      return {
+        success: false,
+        error: "Authentication required. Please log in to continue.",
+      };
+    }
+
+    const tenantId = authResult.tenantId;
+    const userId = authResult.user.id;
+
+    if (!tenantId || !userId) {
+      console.error("❌ [submitStudentSelfRegistration] Missing tenantId or userId");
+      return {
+        success: false,
+        error: "Authentication information missing",
+      };
+    }
+
+    // Get user access token from TokenManager (with automatic refresh)
+    const { TokenManager } = await import("@repo/auth/token-manager");
+    const tokenManager = TokenManager.getInstance();
+    const accessToken = await tokenManager.getUserAccessTokenWithRefresh(
+      tenantId,
+      userId
+    );
+
+    console.log("🎫 [submitStudentSelfRegistration] Access token:", accessToken ? "Found" : "Not found");
+
+    if (!accessToken) {
+      console.error("❌ [submitStudentSelfRegistration] Failed to get access token");
+      return {
+        success: false,
+        error: "Failed to get authentication token. Please try logging in again.",
+      };
+    }
+
+    // Create API client and call the self-registration endpoint
+    const apiClient = new ServerApiClient();
+    const url = `/cpms/students/self-register`;
+
+    console.log("🌐 [submitStudentSelfRegistration] Calling API:", url);
+    console.log("📦 [submitStudentSelfRegistration] With headers:", {
+      Authorization: "Bearer [REDACTED]",
+      "x-tenant-id": tenantId,
+      "x-user-id": userId
+    });
+
+    const result = await apiClient.request<any>(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        "x-tenant-id": tenantId,
+        "x-user-id": userId,
+      },
+      body: data,
+    });
+
+    console.log("📬 [submitStudentSelfRegistration] API Response:", {
+      success: result.success,
+      hasData: !!result.data,
+      error: result.error
+    });
+
+    if (result.success && result.data) {
+      console.log("✅ [submitStudentSelfRegistration] Registration successful");
+
+      // Revalidate relevant paths
+      revalidatePath("/");
+
+      // Return success without redirecting (let client handle redirect)
+      return {
+        success: true,
+        message: "Student registration submitted successfully",
+        studentId: result.data.id || result.data._id,
+      };
+    }
+
+    // Handle backend validation errors
+    if (result.error) {
+      try {
+        // Try to parse structured error response
+        const errorData = JSON.parse(result.error);
+        console.log("🔍 [submitStudentSelfRegistration] Structured error:", errorData);
+
+        if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
+          return {
+            success: false,
+            error: errorData.message || "Validation failed",
+            fieldErrors: errorData.extra?.fieldErrors || [],
+            traceId: errorData.traceId,
+          };
+        }
+
+        return {
+          success: false,
+          error: errorData.message || "Failed to submit registration",
+          traceId: errorData.traceId,
+        };
+      } catch (parseError) {
+        // Plain text error
+        console.log("📝 [submitStudentSelfRegistration] Plain text error:", result.error);
+        return {
+          success: false,
+          error: result.error,
+        };
+      }
+    }
+
+    console.error("❌ [submitStudentSelfRegistration] Unexpected response format");
     return {
-      success: true,
-      message: "Student registration submitted successfully",
-      // studentId: response.id,
+      success: false,
+      error: "Failed to submit student registration",
     };
   } catch (error) {
-    console.error("Error submitting student registration:", error);
+    console.error("💥 [submitStudentSelfRegistration] Error:", error);
     return {
       success: false,
       error:

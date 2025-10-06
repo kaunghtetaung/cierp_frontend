@@ -21,6 +21,7 @@ interface DependentSelectForPublicWebProps {
   dependsOn: string[]; // Array of field names to watch
   className?: string;
   disabled?: boolean;
+  fieldName?: string; // Unique identifier for localStorage
 }
 
 export function DependentSelectForPublicWeb({
@@ -33,7 +34,8 @@ export function DependentSelectForPublicWeb({
   valueField = "_id",
   dependsOn,
   className = "",
-  disabled = false
+  disabled = false,
+  fieldName
 }: DependentSelectForPublicWebProps) {
   const { watch } = useFormContext();
   const [options, setOptions] = useState<Option[]>([]);
@@ -41,6 +43,7 @@ export function DependentSelectForPublicWeb({
   const [error, setError] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [cachedLabel, setCachedLabel] = useState<string>("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,9 +51,20 @@ export function DependentSelectForPublicWeb({
   const dependentFieldValues = dependsOn.map(fieldName => watch(fieldName));
   const dependencyKeyString = dependentFieldValues.join('|');
 
+  // Load cached label from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && fieldName && value) {
+      const storageKey = `studentRegistration_${fieldName}_label`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setCachedLabel(saved);
+      }
+    }
+  }, [fieldName, value]);
+
   // Get the selected option's label
   const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption ? selectedOption.label : "";
+  const displayValue = selectedOption ? selectedOption.label : (cachedLabel || "");
 
   // Fetch options when dependencies change
   useEffect(() => {
@@ -70,13 +84,15 @@ export function DependentSelectForPublicWeb({
         const match = endpoint.match(/\/([^\/]+)\/ref/);
         const module = match ? match[1] : serviceName;
 
-        // Build params - use the first dependent value as the search parameter
+        // Build params - extract field name from full path (e.g., "batches.0.academicYearId" -> "academicYearId")
         const params: Record<string, any> = {};
         if (dependentFieldValues[0]) {
-          params[dependsOn[0]] = dependentFieldValues[0];
+          // Get the last part of the field path (after the last dot)
+          const fieldName = dependsOn[0].split('.').pop() || dependsOn[0];
+          params[fieldName] = dependentFieldValues[0];
         }
 
-        const result = await getModuleReferenceAction(module, params);
+        const result = await getModuleReferenceAction(module, params, serviceName);
 
         if (result.success && result.data) {
           const mappedOptions = result.data.map((item: any) => ({
@@ -141,6 +157,17 @@ export function DependentSelectForPublicWeb({
 
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
+
+    // Save label to localStorage for future restoration
+    if (typeof window !== 'undefined' && fieldName && optionValue) {
+      const selectedOption = options.find(opt => opt.value === optionValue);
+      if (selectedOption) {
+        const storageKey = `studentRegistration_${fieldName}_label`;
+        localStorage.setItem(storageKey, selectedOption.label);
+        setCachedLabel(selectedOption.label);
+      }
+    }
+
     setShowDropdown(false);
     setSearchTerm("");
   };

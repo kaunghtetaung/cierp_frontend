@@ -286,6 +286,7 @@ export async function handleAuthCallback(
       permissions: userInfo.permissions || [],
       tenantId: tenantId,
       sub: userInfo.id, // Backward compatibility
+      profileState: userInfo.profileState, // Profile completion state: 'created' | 'profile_completed' | 'approved'
       isActive: true,
       createdAt: userInfo.createdAt || new Date(),
       updatedAt: new Date(),

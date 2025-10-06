@@ -121,6 +121,7 @@ export async function validateRequest(
       name: userInfo.name || '',
       roles: roles,
       permissions: userInfo.permissions || [],
+      profileState: userInfo.profileState, // Profile completion state from JWT
       isActive: true,
       createdAt: userInfo.createdAt || session.createdAt,
       updatedAt: new Date()

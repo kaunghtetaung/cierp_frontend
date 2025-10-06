@@ -12,8 +12,34 @@ type FamilyTab = "father" | "mother" | "guardian";
 type GuardianType = "father" | "mother" | "other";
 
 export function FamilyInfoStep() {
-  const { register, control, formState: { errors }, trigger, watch, setValue } = useFormContext();
+  const { register, control, formState: { errors }, trigger, watch, setValue, resetField } = useFormContext();
   const [activeTab, setActiveTab] = useState<FamilyTab>("father");
+
+  // Reusable key handler for input fields (ESC to reset, Enter prevention)
+  const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
+      setValue(fieldName, "");
+
+      // Trigger React Hook Form's onChange
+      const event = new Event('input', { bubbles: true });
+      e.target.dispatchEvent(event);
+    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
+    }
+  };
+
+  // ESC key handler for Select fields
+  const handleSelectEscKey = (fieldName: string, currentValue: string) => (e: React.KeyboardEvent) => {
+    if (e.key === "Escape" && currentValue) {
+      e.preventDefault();
+      e.stopPropagation();
+      setValue(fieldName, "");
+    }
+  };
 
   // Guardian selection state with localStorage support
   const [guardianType, setGuardianType] = useState<GuardianType>(() => {
@@ -51,30 +77,28 @@ export function FamilyInfoStep() {
 
   // Handle guardian data auto-population based on selected type
   useEffect(() => {
-    if (guardianType === "father" && fatherData) {
-      console.log("📋 [FamilyInfoStep] Copying father's data to guardian");
-      setValue("guardian.nameMyanmar", fatherData.nameMyanmar || "");
-      setValue("guardian.nameEnglish", fatherData.nameEnglish || "");
-      setValue("guardian.nrcNumber", fatherData.nrcNumber || "");
-      setValue("guardian.occupation", fatherData.occupation || "");
-      setValue("guardian.relationship", "Father");
-    } else if (guardianType === "mother" && motherData) {
-      console.log("📋 [FamilyInfoStep] Copying mother's data to guardian");
-      setValue("guardian.nameMyanmar", motherData.nameMyanmar || "");
-      setValue("guardian.nameEnglish", motherData.nameEnglish || "");
-      setValue("guardian.nrcNumber", motherData.nrcNumber || "");
-      setValue("guardian.occupation", motherData.occupation || "");
-      setValue("guardian.relationship", "Mother");
-    } else if (guardianType === "other") {
-      // Clear fields when switching to "other"
-      console.log("📋 [FamilyInfoStep] Clearing guardian fields for 'other' selection");
-      setValue("guardian.nameMyanmar", "");
-      setValue("guardian.nameEnglish", "");
-      setValue("guardian.nrcNumber", "");
-      setValue("guardian.occupation", "");
-      setValue("guardian.relationship", "");
+    // Only auto-populate when on guardian tab
+    if (activeTab === "guardian") {
+      if (guardianType === "father" && fatherData) {
+        console.log("📋 [FamilyInfoStep] Copying father's data to guardian");
+        setValue("guardian.nameMyanmar", fatherData.nameMyanmar || "");
+        setValue("guardian.nameEnglish", fatherData.nameEnglish || "");
+        setValue("guardian.nrcNumber", fatherData.nrcNumber || "");
+        setValue("guardian.occupation", fatherData.occupation || "");
+        setValue("guardian.relationship", "Father");
+      } else if (guardianType === "mother" && motherData) {
+        console.log("📋 [FamilyInfoStep] Copying mother's data to guardian");
+        setValue("guardian.nameMyanmar", motherData.nameMyanmar || "");
+        setValue("guardian.nameEnglish", motherData.nameEnglish || "");
+        setValue("guardian.nrcNumber", motherData.nrcNumber || "");
+        setValue("guardian.occupation", motherData.occupation || "");
+        setValue("guardian.relationship", "Mother");
+      } else if (guardianType === "other") {
+        // Don't clear fields when switching to "other" to preserve any existing data
+        console.log("📋 [FamilyInfoStep] Guardian type set to 'other'");
+      }
     }
-  }, [guardianType, fatherData, motherData, setValue]);
+  }, [activeTab, guardianType, fatherData, motherData, setValue]);
 
   useEffect(() => {
     if (sameAsStudentAddress && studentPermanentAddress) {
@@ -82,6 +106,52 @@ export function FamilyInfoStep() {
       setValue("guardian.address", studentPermanentAddress);
     }
   }, [sameAsStudentAddress, studentPermanentAddress, setValue]);
+
+  // ESC key handler to reset current tab's fields
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        const target = event.target as HTMLElement;
+        const tagName = target.tagName.toLowerCase();
+
+        // Check if ESC is pressed inside any interactive element or dropdown
+        const isInInput = tagName === "input" || tagName === "textarea" || tagName === "select";
+        const isInButton = tagName === "button";
+        const isInDropdown = target.closest('[role="dialog"]') ||
+                           target.closest('[data-radix-popper-content-wrapper]') ||
+                           target.closest('[data-radix-popover-content]');
+
+        // Only reset current tab's fields if ESC is pressed outside of interactive elements
+        if (!isInInput && !isInButton && !isInDropdown) {
+          event.preventDefault();
+          event.stopPropagation(); // Stop event from reaching the wizard's ESC handler
+          console.log("🔄 [FamilyInfoStep] ESC pressed - resetting current tab:", activeTab);
+
+          // Reset fields based on current active tab
+          const fieldsToReset = getFieldsForTab(activeTab);
+          console.log("🔄 [FamilyInfoStep] Fields to reset:", fieldsToReset);
+
+          fieldsToReset.forEach((field) => {
+            console.log("🔄 [FamilyInfoStep] Resetting field:", field);
+            resetField(field);
+          });
+
+          // Reset additional state for guardian tab
+          if (activeTab === "guardian") {
+            console.log("🔄 [FamilyInfoStep] Resetting guardian additional state");
+            setSameAsStudentAddress(false);
+            setGuardianType("other");
+            localStorage.removeItem('studentRegistration_guardianType');
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeTab, resetField, setSameAsStudentAddress, setGuardianType]);
 
   const inputClass = cn(
     "w-full px-3 py-2 border rounded-md bg-white focus:outline-none focus:ring-2 transition-all",
@@ -215,6 +285,7 @@ export function FamilyInfoStep() {
                     errors.father?.nameMyanmar && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter father's name in Myanmar"
+                  onKeyDown={handleInputEscKey("father.nameMyanmar")}
                 />
                 {errors.father?.nameMyanmar && (
                   <p className="text-sm text-red-600">{errors.father.nameMyanmar.message as string}</p>
@@ -234,6 +305,7 @@ export function FamilyInfoStep() {
                     errors.father?.nameEnglish && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter father's name in English"
+                  onKeyDown={handleInputEscKey("father.nameEnglish")}
                 />
                 {errors.father?.nameEnglish && (
                   <p className="text-sm text-red-600">{errors.father.nameEnglish.message as string}</p>
@@ -267,6 +339,7 @@ export function FamilyInfoStep() {
                     errors.father?.occupation && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter father's occupation"
+                  onKeyDown={handleInputEscKey("father.occupation")}
                 />
                 {errors.father?.occupation && (
                   <p className="text-sm text-red-600">{errors.father.occupation.message as string}</p>
@@ -294,6 +367,7 @@ export function FamilyInfoStep() {
                     errors.mother?.nameMyanmar && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter mother's name in Myanmar"
+                  onKeyDown={handleInputEscKey("mother.nameMyanmar")}
                 />
                 {errors.mother?.nameMyanmar && (
                   <p className="text-sm text-red-600">{errors.mother.nameMyanmar.message as string}</p>
@@ -313,6 +387,7 @@ export function FamilyInfoStep() {
                     errors.mother?.nameEnglish && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter mother's name in English"
+                  onKeyDown={handleInputEscKey("mother.nameEnglish")}
                 />
                 {errors.mother?.nameEnglish && (
                   <p className="text-sm text-red-600">{errors.mother.nameEnglish.message as string}</p>
@@ -346,6 +421,7 @@ export function FamilyInfoStep() {
                     errors.mother?.occupation && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter mother's occupation"
+                  onKeyDown={handleInputEscKey("mother.occupation")}
                 />
                 {errors.mother?.occupation && (
                   <p className="text-sm text-red-600">{errors.mother.occupation.message as string}</p>
@@ -420,6 +496,7 @@ export function FamilyInfoStep() {
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="Enter guardian's name in Myanmar"
+                  onKeyDown={handleInputEscKey("guardian.nameMyanmar")}
                 />
                 {errors.guardian?.nameMyanmar && (
                   <p className="text-sm text-red-600">{errors.guardian.nameMyanmar.message as string}</p>
@@ -441,6 +518,7 @@ export function FamilyInfoStep() {
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="Enter guardian's name in English"
+                  onKeyDown={handleInputEscKey("guardian.nameEnglish")}
                 />
                 {errors.guardian?.nameEnglish && (
                   <p className="text-sm text-red-600">{errors.guardian.nameEnglish.message as string}</p>
@@ -462,6 +540,7 @@ export function FamilyInfoStep() {
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="e.g., Uncle, Aunt"
+                  onKeyDown={handleInputEscKey("guardian.relationship")}
                 />
                 {errors.guardian?.relationship && (
                   <p className="text-sm text-red-600">{errors.guardian.relationship.message as string}</p>
@@ -501,6 +580,7 @@ export function FamilyInfoStep() {
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="Enter guardian's occupation"
+                  onKeyDown={handleInputEscKey("guardian.occupation")}
                 />
                 {errors.guardian?.occupation && (
                   <p className="text-sm text-red-600">{errors.guardian.occupation.message as string}</p>
@@ -551,6 +631,7 @@ export function FamilyInfoStep() {
                     errors.guardian?.email && "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter email address"
+                  onKeyDown={handleInputEscKey("guardian.email")}
                 />
                 {errors.guardian?.email && (
                   <p className="text-sm text-red-600">{errors.guardian.email.message as string}</p>
@@ -572,6 +653,7 @@ export function FamilyInfoStep() {
                   )}
                   placeholder="Enter full address"
                   disabled={sameAsStudentAddress}
+                  onKeyDown={handleInputEscKey("guardian.address")}
                 />
 
                 {/* Checkbox: Same as Student's Permanent Address */}

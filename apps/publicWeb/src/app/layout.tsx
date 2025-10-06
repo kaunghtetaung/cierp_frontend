@@ -3,6 +3,7 @@ import { TenantProvider } from "@repo/tenant";
 import { getCurrentTenantForClient, getTenantWithSecrets } from "@repo/tenant/wrapper";
 import { initializeTenantToken } from "@repo/tenant/token-initializer";
 import { GlobalErrorFallback } from "@/base-components/error/GlobalErrorFallback";
+import { Toaster } from "@repo/ui/components/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -116,6 +117,7 @@ export default async function RootLayout({
       <body>
         <TenantProvider initialTenant={initialTenant} initialError={initialError}>
           {children}
+          <Toaster />
         </TenantProvider>
       </body>
     </html>

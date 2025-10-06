@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Check, User, Phone, MapPin, Users, GraduationCap, BookOpen, FileText } from "lucide-react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import type { ModuleSchema, User as UserType } from "@repo/types";
 import { Button } from "@repo/ui";
 import { generateZodSchema, generateDefaultValues } from "@repo/schema-utils";
@@ -14,18 +15,14 @@ import { FamilyInfoStep } from "./steps/FamilyInfoStep";
 import { AcademicInfoStep } from "./steps/AcademicInfoStep";
 import { CurrentAcademicStep } from "./steps/CurrentAcademicStep";
 import { AdditionalInfoStep } from "./steps/AdditionalInfoStep";
-import { RoleSelectionStep } from "./RoleSelectionStep";
 import { RestoreCacheDialog } from "./RestoreCacheDialog";
 import {
   saveFormDataToCache,
   loadFormDataFromCache,
   clearFormDataCache,
-  saveRoleToCache,
-  loadRoleFromCache,
   hasCachedFormData,
   getCachedDataAge,
   formatCacheAge,
-  type UserRole,
 } from "@/lib/form-cache";
 
 interface StudentRegistrationWizardProps {
@@ -89,8 +86,7 @@ export function StudentRegistrationWizard({
   user
 }: StudentRegistrationWizardProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(-1); // Start at -1 for role selection
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [currentStep, setCurrentStep] = useState(0); // Start at step 0 (personal info)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [cachedData, setCachedData] = useState<{
@@ -98,6 +94,9 @@ export function StudentRegistrationWizard({
     currentStep: number;
     cacheAge: string;
   } | null>(null);
+
+  // Ref to track if we should allow form submission
+  const canSubmitRef = useRef(false);
 
   // Filter and prepare form fields
   const filteredFormFields = React.useMemo(() => {
@@ -124,15 +123,9 @@ export function StudentRegistrationWizard({
 
   const { handleSubmit, reset, watch, trigger, formState: { errors } } = methods;
 
-  // Check for cached data and role on mount
+  // Check for cached data on mount
   useEffect(() => {
     if (!user?.id) return;
-
-    // Load role from cache
-    const cachedRole = loadRoleFromCache();
-    if (cachedRole) {
-      setSelectedRole(cachedRole);
-    }
 
     // Check if there's cached form data
     if (hasCachedFormData(user.id)) {
@@ -151,21 +144,14 @@ export function StudentRegistrationWizard({
 
   // Auto-save form data to cache whenever form values change
   useEffect(() => {
-    if (!user?.id || !selectedRole || currentStep < 0) return;
+    if (!user?.id || currentStep < 0) return;
 
     const subscription = watch((formData) => {
-      saveFormDataToCache(user.id, selectedRole, formData, currentStep);
+      saveFormDataToCache(user.id, "student", formData, currentStep);
     });
 
     return () => subscription.unsubscribe();
-  }, [user?.id, selectedRole, currentStep, watch]);
-
-  // Handle role selection
-  const handleRoleSelect = (role: UserRole) => {
-    setSelectedRole(role);
-    saveRoleToCache(role);
-    setCurrentStep(0); // Move to first form step
-  };
+  }, [user?.id, currentStep, watch]);
 
   // Handle restore cached data
   const handleRestoreCache = () => {
@@ -216,6 +202,10 @@ export function StudentRegistrationWizard({
 
   // Navigation handlers
   const handleNext = async () => {
+    console.log("▶️  [handleNext] Called - Current step:", currentStep);
+    console.log("▶️  [handleNext] Next step will be:", currentStep + 1);
+    console.log("▶️  [handleNext] Total steps:", WIZARD_STEPS.length);
+
     if (currentStep < WIZARD_STEPS.length - 1) {
       // Validate current step fields before proceeding
       const currentStepConfig = WIZARD_STEPS[currentStep];
@@ -228,12 +218,17 @@ export function StudentRegistrationWizard({
       console.log("✅ [Wizard] Validation result:", isValid);
 
       if (isValid) {
+        console.log("📍 [handleNext] Setting current step to:", currentStep + 1);
         setCurrentStep(currentStep + 1);
+        console.log("📍 [handleNext] Step changed, scrolling to top");
         window.scrollTo({ top: 0, behavior: "smooth" });
+        console.log("📍 [handleNext] handleNext completed successfully");
       } else {
         console.log("❌ [Wizard] Validation failed - staying on current step");
         console.log("🔍 [Wizard] Current errors:", errors);
       }
+    } else {
+      console.log("⚠️  [handleNext] Already at last step - doing nothing");
     }
   };
 
@@ -246,56 +241,122 @@ export function StudentRegistrationWizard({
 
   // Form submission
   const onSubmit = async (data: any) => {
+    console.log("🚀 [FORM SUBMIT] Form submission triggered!");
+    console.log("🚀 [FORM SUBMIT] Current step:", currentStep);
+    console.log("🚀 [FORM SUBMIT] Current step config:", WIZARD_STEPS[currentStep]);
+    console.log("🚀 [FORM SUBMIT] Stack trace:");
+    console.trace();
+
     try {
       setIsSubmitting(true);
-      console.log("Form data:", data);
-      // TODO: Submit to backend
-      // const result = await submitModuleForm("students", data, "create");
+      console.log("📝 [FORM SUBMIT] Form data:", data);
 
-      // Clear cache on successful submission
-      if (user?.id) {
-        clearFormDataCache(user.id);
+      // Submit to backend using custom self-registration endpoint
+      const { submitStudentSelfRegistration } = await import("@/actions/student-registration");
+      const result = await submitStudentSelfRegistration(data);
+
+      if (result.success) {
+        console.log("✅ [FORM SUBMIT] Registration successful:", result.studentId);
+
+        // Show success toast
+        toast.success("Registration Successful!", {
+          description: result.message || "Your student registration has been submitted successfully.",
+          duration: 5000,
+        });
+
+        // Clear cache on successful submission
+        if (user?.id) {
+          clearFormDataCache(user.id);
+        }
+
+        // Redirect on success after a short delay
+        setTimeout(() => {
+          router.push("/");
+        }, 1000);
+      } else {
+        console.error("❌ [FORM SUBMIT] Registration failed:", result.error);
+
+        // Display error to user with toast
+        if (result.fieldErrors && result.fieldErrors.length > 0) {
+          toast.error("Validation Failed", {
+            description: (
+              <div className="space-y-1">
+                <p className="font-medium">Please correct the following errors:</p>
+                <ul className="list-disc list-inside text-sm">
+                  {result.fieldErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            ),
+            duration: 10000,
+          });
+        } else {
+          toast.error("Registration Failed", {
+            description: result.error || "Failed to submit registration. Please try again.",
+            duration: 7000,
+          });
+        }
       }
-
-      // Redirect on success
-      router.push("/");
     } catch (error) {
-      console.error("Submit error:", error);
+      console.error("❌ [FORM SUBMIT] Submit error:", error);
+      toast.error("Unexpected Error", {
+        description: "An unexpected error occurred. Please try again or contact support.",
+        duration: 7000,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Show role selection if currentStep is -1
-  if (currentStep === -1) {
-    return (
-      <>
-        <RoleSelectionStep
-          selectedRole={selectedRole}
-          onRoleSelect={handleRoleSelect}
-        />
-        {/* Restore cache dialog */}
-        {showRestoreDialog && cachedData && (
-          <RestoreCacheDialog
-            open={showRestoreDialog}
-            cacheAge={cachedData.cacheAge}
-            currentStep={cachedData.currentStep}
-            totalSteps={WIZARD_STEPS.length}
-            onRestore={handleRestoreCache}
-            onStartFresh={handleStartFresh}
-          />
-        )}
-      </>
-    );
-  }
 
   const currentStepConfig = WIZARD_STEPS[currentStep];
   const progress = ((currentStep + 1) / WIZARD_STEPS.length) * 100;
   const StepIcon = currentStepConfig.icon;
 
   return (
-    <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <>
+      {/* Restore cache dialog */}
+      {showRestoreDialog && cachedData && (
+        <RestoreCacheDialog
+          open={showRestoreDialog}
+          cacheAge={cachedData.cacheAge}
+          currentStep={cachedData.currentStep}
+          totalSteps={WIZARD_STEPS.length}
+          onRestore={handleRestoreCache}
+          onStartFresh={handleStartFresh}
+        />
+      )}
+
+      <FormProvider {...methods}>
+        <form
+          onSubmit={(e) => {
+            console.log("🔔 [FORM] Form onSubmit event fired");
+            console.log("🔔 [FORM] Event type:", e.type);
+            console.log("🔔 [FORM] Event target:", e.target);
+            console.log("🔔 [FORM] Native event:", e.nativeEvent);
+            console.log("🔔 [FORM] Current step at submit:", currentStep);
+            console.log("🔔 [FORM] canSubmitRef.current:", canSubmitRef.current);
+
+            // Only allow submission if explicitly allowed via the submit button
+            if (!canSubmitRef.current) {
+              console.log("🛑 [FORM] Preventing submission - canSubmitRef is false");
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+
+            console.log("✅ [FORM] Submission allowed - proceeding");
+            handleSubmit(onSubmit)(e);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              console.log("⌨️  [FORM] Enter key pressed in form");
+              console.log("⌨️  [FORM] Target element:", e.target);
+              console.log("⌨️  [FORM] Current step:", currentStep);
+            }
+          }}
+          className="space-y-6"
+        >
         {/* Step Indicators - Desktop */}
         <div className="hidden md:block bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <div className="flex justify-center items-center gap-2 mb-3">
@@ -407,7 +468,12 @@ export function StudentRegistrationWizard({
           {currentStep < WIZARD_STEPS.length - 1 ? (
             <Button
               type="button"
-              onClick={handleNext}
+              onClick={(e) => {
+                console.log("🖱️  [NEXT BUTTON] Next button clicked");
+                console.log("🖱️  [NEXT BUTTON] Current step:", currentStep);
+                console.log("🖱️  [NEXT BUTTON] Event:", e);
+                handleNext();
+              }}
               disabled={isSubmitting}
               className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
             >
@@ -418,6 +484,13 @@ export function StudentRegistrationWizard({
             <Button
               type="submit"
               disabled={isSubmitting}
+              onClick={(e) => {
+                console.log("🖱️  [SUBMIT BUTTON] Submit button clicked");
+                console.log("🖱️  [SUBMIT BUTTON] Current step:", currentStep);
+                console.log("🖱️  [SUBMIT BUTTON] Is submitting:", isSubmitting);
+                console.log("🖱️  [SUBMIT BUTTON] Setting canSubmitRef to true");
+                canSubmitRef.current = true;
+              }}
               className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
             >
               {isSubmitting ? "Submitting..." : "Submit Registration"}
@@ -427,5 +500,6 @@ export function StudentRegistrationWizard({
         </div>
       </form>
     </FormProvider>
+    </>
   );
 }

@@ -4,7 +4,22 @@ import React from "react";
 import { useFormContext } from "react-hook-form";
 
 export function AdditionalInfoStep() {
-  const { register, formState: { errors } } = useFormContext();
+  const { register, setValue, formState: { errors } } = useFormContext();
+
+  // Reusable key handler for input fields (ESC to reset, Enter prevention)
+  const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
+      setValue(fieldName, "");
+      const event = new Event('input', { bubbles: true });
+      e.target.dispatchEvent(event);
+    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
+    }
+  };
 
   const inputClass = "block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all";
   const textareaClass = "block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none";
@@ -30,6 +45,7 @@ export function AdditionalInfoStep() {
               type="text"
               placeholder="Enter your hobbies"
               className={inputClass}
+              onKeyDown={handleInputEscKey("hobbies")}
             />
             {errors.hobbies && (
               <p className={errorClass}>{errors.hobbies.message as string}</p>
@@ -50,6 +66,7 @@ export function AdditionalInfoStep() {
               type="text"
               placeholder="Enter your skills"
               className={inputClass}
+              onKeyDown={handleInputEscKey("skills")}
             />
             {errors.skills && (
               <p className={errorClass}>{errors.skills.message as string}</p>
@@ -78,6 +95,7 @@ export function AdditionalInfoStep() {
               type="text"
               placeholder="Enter any disabilities (if applicable)"
               className={inputClass}
+              onKeyDown={handleInputEscKey("disabilities")}
             />
             {errors.disabilities && (
               <p className={errorClass}>{errors.disabilities.message as string}</p>
@@ -98,6 +116,7 @@ export function AdditionalInfoStep() {
               rows={2}
               placeholder="Enter any medical conditions we should be aware of"
               className={textareaClass}
+              onKeyDown={handleInputEscKey("medicalConditions")}
             />
             {errors.medicalConditions && (
               <p className={errorClass}>{errors.medicalConditions.message as string}</p>
@@ -118,6 +137,7 @@ export function AdditionalInfoStep() {
               rows={2}
               placeholder="Enter any special requirements or accommodations needed"
               className={textareaClass}
+              onKeyDown={handleInputEscKey("specialRequirements")}
             />
             {errors.specialRequirements && (
               <p className={errorClass}>{errors.specialRequirements.message as string}</p>

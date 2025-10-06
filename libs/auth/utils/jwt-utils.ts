@@ -32,6 +32,7 @@ export function extractUserInfoFromJWT(token: string): Partial<User> {
       permissions: payload.permissions || [],
       tenantId: payload.tenant_id || payload.aud,
       sub: payload.sub, // Backward compatibility
+      profileState: payload.profileState, // Profile completion state: 'created' | 'profile_completed' | 'approved'
       isActive: true,
       createdAt: new Date(payload.iat * 1000),
       updatedAt: new Date(),

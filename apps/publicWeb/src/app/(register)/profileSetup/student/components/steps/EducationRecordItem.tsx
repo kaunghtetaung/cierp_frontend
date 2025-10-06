@@ -12,9 +12,24 @@ interface EducationRecordItemProps {
 }
 
 export function EducationRecordItem({ index, onRemove }: EducationRecordItemProps) {
-  const { register, formState: { errors } } = useFormContext();
+  const { register, setValue, formState: { errors } } = useFormContext();
 
   const educationErrors = errors.previousEducation?.[index];
+
+  // Reusable key handler for input fields (ESC to reset, Enter prevention)
+  const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
+      setValue(fieldName, "");
+      const event = new Event('input', { bubbles: true });
+      e.target.dispatchEvent(event);
+    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
+    }
+  };
 
   // Consistent styling classes matching PersonalInfoStep
   const inputClass = "block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all";
@@ -53,6 +68,7 @@ export function EducationRecordItem({ index, onRemove }: EducationRecordItemProp
             placeholder="e.g., Grade 10, B.Sc"
             {...register(`previousEducation.${index}.className`)}
             className={inputClass}
+            onKeyDown={handleInputEscKey(`previousEducation.${index}.className`)}
           />
           {educationErrors?.className && (
             <p className={errorClass}>
@@ -72,6 +88,7 @@ export function EducationRecordItem({ index, onRemove }: EducationRecordItemProp
             placeholder="e.g., Myanmar Board, Cambridge"
             {...register(`previousEducation.${index}.examBoard`)}
             className={inputClass}
+            onKeyDown={handleInputEscKey(`previousEducation.${index}.examBoard`)}
           />
           {educationErrors?.examBoard && (
             <p className={errorClass}>
@@ -93,6 +110,7 @@ export function EducationRecordItem({ index, onRemove }: EducationRecordItemProp
               valueAsNumber: true
             })}
             className={inputClass}
+            onKeyDown={handleInputEscKey(`previousEducation.${index}.totalMarks`)}
           />
           {educationErrors?.totalMarks && (
             <p className={errorClass}>
@@ -117,6 +135,7 @@ export function EducationRecordItem({ index, onRemove }: EducationRecordItemProp
               valueAsNumber: true
             })}
             className={inputClass}
+            onKeyDown={handleInputEscKey(`previousEducation.${index}.year`)}
           />
           {educationErrors?.year && (
             <p className={errorClass}>
@@ -136,6 +155,7 @@ export function EducationRecordItem({ index, onRemove }: EducationRecordItemProp
             placeholder="Enter roll number"
             {...register(`previousEducation.${index}.rollNumber`)}
             className={inputClass}
+            onKeyDown={handleInputEscKey(`previousEducation.${index}.rollNumber`)}
           />
           {educationErrors?.rollNumber && (
             <p className={errorClass}>

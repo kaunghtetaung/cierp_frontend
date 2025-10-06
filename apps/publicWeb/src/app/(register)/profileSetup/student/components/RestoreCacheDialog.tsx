@@ -32,7 +32,7 @@ export function RestoreCacheDialog({
   return (
     <Dialog open={open} modal>
       <DialogContent
-        className="sm:max-w-md bg-white !fixed !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2"
+        className="sm:max-w-md bg-white"
         showCloseButton={false}
       >
         <DialogHeader>

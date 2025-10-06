@@ -62,6 +62,7 @@ npm run build
 ### 🏗️ Application Modules
 - **[content.md](docs/content.md)** - Content management system
 - **[appSchema.md](docs/appSchema.md)** - Schema definitions and validation
+- **[forms-patterns.md](docs/forms-patterns.md)** - Form patterns, multi-step wizards, common pitfalls
 
 ## AI Coding Guidelines
 

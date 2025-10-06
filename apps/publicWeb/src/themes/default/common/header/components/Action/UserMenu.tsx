@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/styled-components/ui/Button";
 import {
   User,
@@ -9,7 +10,12 @@ import {
   LogIn,
   UserPlus,
   AlertTriangle,
+  GraduationCap,
+  Briefcase,
+  ChevronDown,
+  Users,
 } from "lucide-react";
+import Cookies from "js-cookie";
 import { LoginButton, LogoutButton } from "@/components/auth-buttons";
 import { useSafeAuth } from "@/hooks/use-safe-auth";
 import {
@@ -19,17 +25,243 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/styled-components/ui/DropdownMenu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@repo/ui";
 
 /**
  * User Menu Component
  * Shows signin button when not authenticated, user menu when authenticated
  * Uses safe auth hook that doesn't trigger redirects
  */
+/**
+ * Profile Selection Dialog - Modern UI/UX Design
+ */
+const ProfileSelectionDialog: React.FC<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  user?: any;
+}> = ({ open, onOpenChange, user }) => {
+  const router = useRouter();
+  const currentLanguage = Cookies.get("x-lang") || "en";
+  const [hoveredCard, setHoveredCard] = React.useState<string | null>(null);
+
+  const handleSelection = (type: "student" | "staff" | "alumni") => {
+    onOpenChange(false);
+    router.push(`/profileSetup/${type}`);
+  };
+
+  const texts = {
+    en: {
+      title: "Complete Your Profile",
+      description: "Please select your role to complete registration",
+      userInfo: {
+        title: "Account Information",
+        currentRole: "Current Role",
+        profileStatus: "Profile Status",
+        helper: "Your account is currently registered as a Guest user. To access full features and services, please complete your profile by selecting your appropriate role below.",
+      },
+      student: {
+        title: "Student",
+        description: "Register as a student for courses and academic resources",
+        cta: "Continue",
+      },
+      staff: {
+        title: "Staff",
+        description: "Register as staff to manage courses and resources",
+        cta: "Continue",
+      },
+      alumni: {
+        title: "Alumni",
+        description: "Register as alumni to stay connected with the university",
+        cta: "Continue",
+      },
+      footer: "You can update your profile settings later",
+    },
+    mm: {
+      title: "သင့်ကိုယ်ရေးအချက်အလက် ဖြည့်သွင်းရန်",
+      description: "မှတ်ပုံတင်ခြင်းပြီးမြောက်ရန် သင့်အခန်းကဏ္ဍကို ရွေးချယ်ပါ",
+      userInfo: {
+        title: "အကောင့်အချက်အလက်",
+        currentRole: "လက်ရှိအခန်းကဏ္ဍ",
+        profileStatus: "ကိုယ်ရေးအခြေအနေ",
+        helper: "သင့်အကောင့်ကို Guest အသုံးပြုသူအဖြစ် မှတ်ပုံတင်ထားပါသည်။ အင်္ဂါရပ်များနှင့် ဝန်ဆောင်မှုများ အပြည့်အဝ အသုံးပြုနိုင်ရန်၊ အောက်ပါတွင် သင့်သင့်လျော်သော အခန်းကဏ္ဍကို ရွေးချယ်ပြီး ကိုယ်ရေးအချက်အလက် ဖြည့်သွင်းပါ။",
+      },
+      student: {
+        title: "ကျောင်းသား/သူ",
+        description: "သင်တန်းများနှင့် ပညာရေးအရင်းအမြစ်များအတွက် မှတ်ပုံတင်ရန်",
+        cta: "ဆက်လက်လုပ်ဆောင်ရန်",
+      },
+      staff: {
+        title: "ဝန်ထမ်း",
+        description: "သင်တန်းများနှင့် အရင်းအမြစ်များ စီမံခန့်ခွဲရန်အတွက် မှတ်ပုံတင်ရန်",
+        cta: "ဆက်လက်လုပ်ဆောင်ရန်",
+      },
+      alumni: {
+        title: "ကျောင်းဟောင်း",
+        description: "တက္ကသိုလ်နှင့် ဆက်သွယ်မှုရှိစေရန်အတွက် မှတ်ပုံတင်ရန်",
+        cta: "ဆက်လက်လုပ်ဆောင်ရန်",
+      },
+      footer: "သင့်ကိုယ်ရေးအချက်အလက်များကို နောက်မှ ပြင်ဆင်နိုင်ပါသည်",
+    },
+  };
+
+  const t = texts[currentLanguage as keyof typeof texts] || texts.en;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl p-0 overflow-hidden bg-white border border-gray-200 shadow-lg" showCloseButton={true}>
+        {/* Header Section */}
+        <div className="relative px-6 py-4 bg-gradient-to-r from-[#4C67E1] to-[#3154A1] text-white">
+          <div className="relative">
+            <DialogTitle className="text-xl font-bold text-center text-white">
+              {t.title}
+            </DialogTitle>
+            <DialogDescription className="text-center text-white/90 text-sm mt-1">
+              {t.description}
+            </DialogDescription>
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="px-6 py-6">
+          {/* User Information Section */}
+          {user && (
+            <div className="mb-6">
+              <p className="text-sm text-gray-700 leading-relaxed text-center">
+                {t.userInfo.helper}
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Student Card */}
+            <button
+              type="button"
+              onClick={() => handleSelection("student")}
+              onMouseEnter={() => setHoveredCard("student")}
+              onMouseLeave={() => setHoveredCard(null)}
+              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#4C67E1] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#4C67E1]/50"
+            >
+              {/* Icon Circle */}
+              <div className="mb-3 flex justify-center">
+                <div className="rounded-full bg-gradient-to-br from-[#4C67E1] to-[#3154A1] p-3 shadow-md">
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="text-center">
+                <h3 className="mb-1 text-base font-bold text-gray-900">
+                  {t.student.title}
+                </h3>
+                <p className="text-xs text-gray-600 mb-3 min-h-[2.5rem]">
+                  {t.student.description}
+                </p>
+
+                {/* CTA */}
+                <div className="text-xs text-[#4C67E1] font-medium">
+                  {t.student.cta} →
+                </div>
+              </div>
+            </button>
+
+            {/* Staff Card */}
+            <button
+              type="button"
+              onClick={() => handleSelection("staff")}
+              onMouseEnter={() => setHoveredCard("staff")}
+              onMouseLeave={() => setHoveredCard(null)}
+              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#1B4CB4] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1B4CB4]/50"
+            >
+              {/* Icon Circle */}
+              <div className="mb-3 flex justify-center">
+                <div className="rounded-full bg-gradient-to-br from-[#1B4CB4] to-[#3154A1] p-3 shadow-md">
+                  <Briefcase className="h-6 w-6 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="text-center">
+                <h3 className="mb-1 text-base font-bold text-gray-900">
+                  {t.staff.title}
+                </h3>
+                <p className="text-xs text-gray-600 mb-3 min-h-[2.5rem]">
+                  {t.staff.description}
+                </p>
+
+                {/* CTA */}
+                <div className="text-xs text-[#1B4CB4] font-medium">
+                  {t.staff.cta} →
+                </div>
+              </div>
+            </button>
+
+            {/* Alumni Card */}
+            <button
+              type="button"
+              onClick={() => handleSelection("alumni")}
+              onMouseEnter={() => setHoveredCard("alumni")}
+              onMouseLeave={() => setHoveredCard(null)}
+              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#059669] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#059669]/50"
+            >
+              {/* Icon Circle */}
+              <div className="mb-3 flex justify-center">
+                <div className="rounded-full bg-gradient-to-br from-[#059669] to-[#047857] p-3 shadow-md">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="text-center">
+                <h3 className="mb-1 text-base font-bold text-gray-900">
+                  {t.alumni.title}
+                </h3>
+                <p className="text-xs text-gray-600 mb-3 min-h-[2.5rem]">
+                  {t.alumni.description}
+                </p>
+
+                {/* CTA */}
+                <div className="text-xs text-[#059669] font-medium">
+                  {t.alumni.cta} →
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Footer Note */}
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-500">
+              {t.footer}
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export const UserMenu: React.FC<{
   className?: string;
   variant?: "mobile" | "desktop";
 }> = ({ className = "", variant = "desktop" }) => {
   const { isAuthenticated, user, isLoading } = useSafeAuth();
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+
+  // Check if profile needs to be completed
+  const needsProfileCompletion =
+    user?.profileState === "created" &&
+    user?.roles?.some((roleObj: any) => roleObj.Role === "guest");
+
+  // Auto-open dialog when user is authenticated as guest with created profile state
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && needsProfileCompletion) {
+      setShowProfileDialog(true);
+    }
+  }, [isLoading, isAuthenticated, needsProfileCompletion]);
 
   if (isLoading) {
     return (
@@ -38,7 +270,7 @@ export const UserMenu: React.FC<{
       </div>
     );
   }
-  console.log("Where");
+
   // Not authenticated - show login/signup options
   if (!isAuthenticated) {
     if (variant === "mobile") {
@@ -56,7 +288,7 @@ export const UserMenu: React.FC<{
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-48 bg-background border border-border rounded-lg shadow-lg z-50"
+            className="w-48 bg-background border border-border rounded-lg shadow-lg"
           >
             <DropdownMenuItem>
               <LoginButton className="w-full justify-start py-0.5 border-0 bg-transparent hover:bg-transparent text-foreground">
@@ -96,11 +328,6 @@ export const UserMenu: React.FC<{
   }
 
   // Authenticated - show user menu
-  // Check if user has 'guest' role in any of their organization/department roles
-  // Role object format: { Organization, Department, Role, _id }
-  const isGuestUser =
-    user?.roles?.some((roleObj: any) => roleObj.Role === "guest") ?? false;
-
   if (variant === "mobile") {
     return (
       <DropdownMenu>
@@ -116,7 +343,7 @@ export const UserMenu: React.FC<{
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-56 bg-background border border-border rounded-lg shadow-lg z-50"
+          className="w-56 bg-background border border-border rounded-lg shadow-lg"
         >
           <div className="p-2">
             <div className="text-sm text-foreground font-medium">
@@ -128,18 +355,21 @@ export const UserMenu: React.FC<{
                 Role: {user.roles.map((r: any) => r.Role).join(", ")}
               </div>
             )}
+            {user?.profileState && (
+              <div className="text-xs text-muted-foreground mt-1">
+                Profile Status: {user.profileState}
+              </div>
+            )}
           </div>
           <DropdownMenuSeparator />
-          {isGuestUser && (
+          {needsProfileCompletion && (
             <>
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/profile/complete"
-                  className="flex items-center w-full py-0.5 text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  <AlertTriangle className="mr-2 h-4 w-4" />
-                  Complete Your Profile
-                </Link>
+              <DropdownMenuItem
+                onClick={() => setShowProfileDialog(true)}
+                className="flex items-center w-full py-0.5 text-amber-600 hover:text-amber-700 font-medium cursor-pointer"
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Complete Your Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -168,63 +398,81 @@ export const UserMenu: React.FC<{
     );
   }
 
-  // Desktop user menu
+  // Desktop user menu - Inspired by language selector pattern
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className="px-2 py-1 text-sm font-medium transition-colors bg-transparent border-0 text-white hover:text-white/90"
-          aria-label="User menu"
-        >
-          {user?.name || "Account"}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 shadow-lg z-50">
-        <div className="p-3 border-b border-border">
-          <div className="text-sm text-foreground font-medium">
-            {user?.name || "User"}
-          </div>
-          <div className="text-xs text-muted-foreground">{user?.email}</div>
-          {user?.roles && user.roles.length > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              Role: {user.roles.map((r: any) => r.Role).join(", ")}
+    <>
+      <ProfileSelectionDialog
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+        user={user}
+      />
+      <div className="relative">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="group flex items-center gap-1 text-sm font-medium transition-colors text-white hover:text-white/90"
+              aria-haspopup="menu"
+              aria-label="User menu"
+              type="button"
+            >
+              <span>{user?.name || "Account"}</span>
+              <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="min-w-[280px] bg-card border border-border shadow-lg rounded-md"
+          >
+            <div className="p-3 border-b border-border">
+              <div className="text-sm text-foreground font-medium">
+                {user?.name || "User"}
+              </div>
+              <div className="text-xs text-muted-foreground">{user?.email}</div>
+              {user?.roles && user.roles.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Role: {user.roles.map((r: any) => r.Role).join(", ")}
+                </div>
+              )}
+              {user?.profileState && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Profile Status: {user.profileState}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        {isGuestUser && (
-          <>
-            <DropdownMenuItem asChild>
-              <Link
-                href="/profile/complete"
-                className="flex items-center w-full py-2 text-amber-600 hover:text-amber-700 font-medium"
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Complete Your Profile
-              </Link>
+            {needsProfileCompletion && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => setShowProfileDialog(true)}
+                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3 text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Complete Your Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+              <UserCircle className="mr-2 h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+              <Lock className="mr-2 h-4 w-4" />
+              Change Password
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-          </>
-        )}
-        <DropdownMenuItem>
-          <UserCircle className="mr-2 h-4 w-4" />
-          Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Lock className="mr-2 h-4 w-4" />
-          Change Password
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="p-0">
-          <LogoutButton className="w-full justify-start px-2 py-1.5 border-0 bg-transparent hover:bg-transparent text-foreground flex items-center cursor-pointer rounded-sm hover:bg-accent">
-            <LogIn className="mr-2 h-4 w-4 rotate-180" />
-            Sign Out
-          </LogoutButton>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+              <LogoutButton className="w-full justify-start p-0 border-0 bg-transparent hover:bg-transparent text-foreground flex items-center">
+                <LogIn className="mr-2 h-4 w-4 rotate-180" />
+                Sign Out
+              </LogoutButton>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </>
   );
 };

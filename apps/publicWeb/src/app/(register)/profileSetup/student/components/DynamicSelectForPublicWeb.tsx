@@ -14,6 +14,7 @@ interface DynamicSelectForPublicWebProps {
   valueField?: string;
   className?: string;
   disabled?: boolean;
+  fieldName?: string; // Unique identifier for localStorage
 }
 
 interface Option {
@@ -33,29 +34,50 @@ export function DynamicSelectForPublicWeb({
   labelField = "name",
   valueField = "_id",
   className = "",
-  disabled = false
+  disabled = false,
+  fieldName
 }: DynamicSelectForPublicWebProps) {
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [cachedLabel, setCachedLabel] = useState<string>("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Load cached label from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && fieldName && value) {
+      const storageKey = `studentRegistration_${fieldName}_label`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setCachedLabel(saved);
+      }
+    }
+  }, [fieldName, value]);
 
   // Get the display text for selected value
   const getDisplayText = useCallback(() => {
     if (!value) return placeholder;
+
+    // First check if we have the option in current options
     const selectedOption = options.find(opt =>
       (opt[valueField] || opt._id || opt.id) === value
     );
-    if (!selectedOption) return placeholder;
+    if (selectedOption) {
+      const label = selectedOption[labelField] || selectedOption.name || selectedOption.label;
+      const displayLabel = typeof label === 'string' ? label : (label?.en || label?.mm || '');
+      return displayLabel || placeholder;
+    }
 
-    const label = selectedOption[labelField] || selectedOption.name || selectedOption.label;
-    if (typeof label === 'string') return label;
-    if (typeof label === 'object') return label.en || label.mm || '';
+    // Fallback to cached label from localStorage
+    if (cachedLabel) {
+      return cachedLabel;
+    }
+
     return placeholder;
-  }, [value, options, placeholder, labelField, valueField]);
+  }, [value, options, placeholder, labelField, valueField, cachedLabel]);
 
   // Fetch options from API
   const fetchOptions = useCallback(async (search?: string) => {
@@ -142,8 +164,8 @@ export function DynamicSelectForPublicWeb({
     }
   }, [showDropdown]);
 
-  // Filter options based on search term (client-side filtering as fallback)
-  const filteredOptions = searchTerm.length > 0 && searchTerm.length < 2
+  // Filter options based on search term (always use client-side filtering)
+  const filteredOptions = searchTerm.length > 0
     ? options.filter(option => {
         const label = option[labelField] || option.name || option.label || '';
         const labelText = typeof label === 'string' ? label : (label.en || label.mm || '');
@@ -153,6 +175,22 @@ export function DynamicSelectForPublicWeb({
 
   const handleSelect = (selectedValue: string) => {
     onChange(selectedValue);
+
+    // Save label to localStorage for future restoration
+    if (typeof window !== 'undefined' && fieldName && selectedValue) {
+      const selectedOption = options.find(opt =>
+        (opt[valueField] || opt._id || opt.id) === selectedValue
+      );
+      if (selectedOption) {
+        const label = selectedOption[labelField] || selectedOption.name || selectedOption.label;
+        const displayLabel = typeof label === 'string' ? label : (label?.en || label?.mm || '');
+
+        const storageKey = `studentRegistration_${fieldName}_label`;
+        localStorage.setItem(storageKey, displayLabel);
+        setCachedLabel(displayLabel);
+      }
+    }
+
     setShowDropdown(false);
     setSearchTerm("");
   };

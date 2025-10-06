@@ -202,6 +202,9 @@ export function AddressInfoStep() {
 
       const event = new Event('input', { bubbles: true });
       e.target.dispatchEvent(event);
+    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
     }
   };
 

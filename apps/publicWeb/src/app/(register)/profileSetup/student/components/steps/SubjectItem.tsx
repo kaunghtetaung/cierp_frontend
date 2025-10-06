@@ -13,9 +13,24 @@ interface SubjectItemProps {
 }
 
 export function SubjectItem({ educationIndex, subjectIndex, onRemove }: SubjectItemProps) {
-  const { register, control, formState: { errors } } = useFormContext();
+  const { register, control, setValue, formState: { errors } } = useFormContext();
 
   const subjectErrors = errors.previousEducation?.[educationIndex]?.subjects?.[subjectIndex];
+
+  // Reusable key handler for input fields (ESC to reset, Enter prevention)
+  const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
+      setValue(fieldName, "");
+      const event = new Event('input', { bubbles: true });
+      e.target.dispatchEvent(event);
+    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+      // Prevent Enter key from submitting the form on input fields
+      e.preventDefault();
+    }
+  };
 
   // Consistent styling classes matching PersonalInfoStep
   const inputClass = "block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all";
@@ -68,6 +83,7 @@ export function SubjectItem({ educationIndex, subjectIndex, onRemove }: SubjectI
                 valueAsNumber: true
               })}
               className={inputClass}
+              onKeyDown={handleInputEscKey(`previousEducation.${educationIndex}.subjects.${subjectIndex}.mark`)}
             />
             {subjectErrors?.mark && (
               <p className={errorClass}>

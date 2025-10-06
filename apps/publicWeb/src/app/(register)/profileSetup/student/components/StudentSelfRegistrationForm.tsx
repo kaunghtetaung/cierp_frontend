@@ -1,21 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { User, ModuleSchema } from "@repo/types";
-import { Button } from "@repo/ui";
-import { getLocalizedText } from "@repo/utils";
 import { getStudentsModuleSchema } from "@/actions/student-registration";
 import { StudentRegistrationWizard } from "./StudentRegistrationWizard";
 
 interface StudentSelfRegistrationFormProps {
   user: User;
-  onBack: () => void;
 }
 
 export function StudentSelfRegistrationForm({
   user,
-  onBack,
 }: StudentSelfRegistrationFormProps) {
   const [moduleSchema, setModuleSchema] = useState<ModuleSchema | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,17 +65,9 @@ export function StudentSelfRegistrationForm({
           <h2 className="text-2xl font-bold text-[#FF6954] mb-4">
             Error
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600">
             {error || "Unable to load registration form"}
           </p>
-          <Button
-            onClick={onBack}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Go Back
-          </Button>
         </div>
       </div>
     );
@@ -88,18 +76,6 @@ export function StudentSelfRegistrationForm({
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header with Back Button */}
-        <div className="mb-6">
-          <Button
-            onClick={onBack}
-            variant="ghost"
-            className="flex items-center gap-2 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Change Role Selection
-          </Button>
-        </div>
-
         {/* Student Registration Wizard */}
         <StudentRegistrationWizard moduleSchema={moduleSchema} user={user} />
       </div>

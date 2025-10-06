@@ -23,6 +23,7 @@ export interface User {
   readonly permissions: UserPermission[];
   readonly tenantId: string;
   readonly sub?: string; // Backward compatibility alias for id
+  readonly profileState?: "created" | "profile_completed" | "approved"; // Profile completion state
   readonly isActive: boolean;
   readonly lastLoginAt?: Date;
   readonly createdAt: Date;

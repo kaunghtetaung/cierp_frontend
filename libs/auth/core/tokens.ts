@@ -118,17 +118,51 @@ export async function clearInitializerToken(): Promise<void> {
 export async function getTenantToken(tenantId: string): Promise<string | null> {
   const cache = getCacheInstance();
   const key = CacheKeys.tenantAccessToken(tenantId);
-  
+
   const stored = await cache.get<StoredToken>(key);
-  if (!stored) return null;
-  
-  // Check if token is expired (with buffer)
-  if (Date.now() >= (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+
+  // If token exists and is valid, return it
+  if (stored && Date.now() < (stored.expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+    console.log("✅ TenantToken: Valid cached token found for", tenantId);
+    return stored.token;
+  }
+
+  // Token doesn't exist or is expired, try to refresh
+  console.log("🔄 TenantToken: No valid cached token for", tenantId, "attempting to refresh");
+
+  // Clear expired token if it exists
+  if (stored) {
     await cache.del(key);
+  }
+
+  try {
+    // Get tenant secrets to refresh token
+    const tenantSecrets = await getTenantSecrets(tenantId);
+
+    if (!tenantSecrets?.apiAccess?.clientId || !tenantSecrets?.apiAccess?.clientSecret) {
+      console.error("❌ TenantToken: Missing API credentials for tenant", tenantId);
+      return null;
+    }
+
+    console.log(`🔄 TenantToken: Using client ID: ${tenantSecrets.apiAccess.clientId.substring(0, 10)}...`);
+
+    // Get new token from OIDC
+    const { getClientCredentialsToken } = await import('./oidc');
+    const tokenData = await getClientCredentialsToken(
+      tenantSecrets.apiAccess.clientId,
+      tenantSecrets.apiAccess.clientSecret,
+      "api.read"
+    );
+
+    // Store the new token
+    await setTenantToken(tenantId, tokenData);
+    console.log(`✅ TenantToken: Successfully refreshed and cached token for ${tenantId} (expires in ${tokenData.expires_in}s)`);
+
+    return tokenData.access_token;
+  } catch (error) {
+    console.error("❌ TenantToken: Failed to refresh token for", tenantId, error instanceof Error ? error.message : error);
     return null;
   }
-  
-  return stored.token;
 }
 
 export async function setTenantToken(tenantId: string, tokenData: TokenData): Promise<void> {
@@ -174,13 +208,91 @@ export async function clearTenantToken(tenantId: string): Promise<void> {
 export async function getUserAccessToken(tenantId: string, userId: string): Promise<string | null> {
   const cache = getCacheInstance();
   const key = CacheKeys.userAccessToken(tenantId, userId);
-  
-  console.log(`[getUserAccessToken] key: ${key}`);
+
+  console.log(`✅ [getUserAccessToken] Checking user access token for tenant=${tenantId}, user=${userId}`);
   const token = await cache.get<string>(key);
-  console.log(`[getUserAccessToken] token found: ${!!token}`);
-  
-  // Simply return JWT token string for backend offline verification
-  return token;
+
+  // If we have a valid token, check if it's expired
+  if (token) {
+    // Parse JWT to check expiration
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        let base64Payload = parts[1];
+        base64Payload = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64Payload.length % 4) {
+          base64Payload += '=';
+        }
+
+        const payload = JSON.parse(atob(base64Payload));
+        const expiresAt = payload.exp; // JWT exp is in seconds since epoch
+
+        // Check if token is still valid (with 5-minute buffer)
+        if (expiresAt && Date.now() < (expiresAt - TOKEN_EXPIRY_BUFFER) * 1000) {
+          console.log(`✅ [getUserAccessToken] Valid token found (expires in ${expiresAt - Math.floor(Date.now() / 1000)}s)`);
+          return token;
+        }
+
+        console.log(`⚠️ [getUserAccessToken] Token expired or expiring soon, attempting refresh`);
+      }
+    } catch (error) {
+      console.error(`❌ [getUserAccessToken] Failed to parse JWT:`, error);
+    }
+  } else {
+    console.log(`❌ [getUserAccessToken] No cached token found`);
+  }
+
+  // Token is expired or missing - try to refresh using refresh token
+  console.log(`🔄 [getUserAccessToken] Attempting to refresh user access token`);
+  return await refreshUserAccessTokenWithRefreshToken(tenantId, userId);
+}
+
+/**
+ * Refresh user access token using refresh token
+ */
+async function refreshUserAccessTokenWithRefreshToken(
+  tenantId: string,
+  userId: string
+): Promise<string | null> {
+  try {
+    // Get refresh token
+    const refreshToken = await getUserRefreshToken(tenantId, userId);
+
+    if (!refreshToken) {
+      console.log(`❌ [refreshUserAccessToken] No refresh token found for user=${userId}`);
+      return null;
+    }
+
+    console.log(`🔄 [refreshUserAccessToken] Found refresh token, calling OIDC to refresh`);
+
+    // Use OIDC client to refresh the token
+    const { refreshAccessToken } = await import('./oidc');
+    const newTokenData = await refreshAccessToken(refreshToken);
+
+    if (!newTokenData || !newTokenData.access_token) {
+      console.error(`❌ [refreshUserAccessToken] Failed to get new token from OIDC`);
+      // Clear invalid refresh token
+      await clearUserTokens(tenantId, userId);
+      return null;
+    }
+
+    console.log(`✅ [refreshUserAccessToken] Successfully refreshed token (expires in ${newTokenData.expires_in}s)`);
+
+    // Store new access token
+    await setUserAccessToken(tenantId, userId, newTokenData.access_token, newTokenData.expires_in);
+
+    // Store new refresh token if provided
+    if (newTokenData.refresh_token) {
+      await setUserRefreshToken(tenantId, userId, newTokenData.refresh_token);
+    }
+
+    return newTokenData.access_token;
+  } catch (error) {
+    console.error(`❌ [refreshUserAccessToken] Error refreshing user token:`, error instanceof Error ? error.message : error);
+    // Clear tokens on refresh failure
+    await clearUserTokens(tenantId, userId);
+    return null;
+  }
 }
 
 export async function setUserAccessToken(
