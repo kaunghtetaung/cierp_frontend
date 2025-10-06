@@ -737,6 +737,20 @@ export async function submitStudentSelfRegistration(data: any): Promise<{
     if (result.success && result.data) {
       console.log("✅ [submitStudentSelfRegistration] Registration successful");
 
+      // Clear user tokens to force refresh with new profileState and roles
+      // After successful registration, user's profileState changes from "created" to "profile_completed"
+      // And role changes from "guest" to "student"
+      // We need to invalidate cached tokens so UI updates accordingly
+      try {
+        const { TokenManager } = await import("@repo/auth/token-manager");
+        const tokenManager = TokenManager.getInstance();
+        await tokenManager.clearUserAccessToken(tenantId, userId);
+        console.log("🔄 [submitStudentSelfRegistration] User tokens cleared - will refresh on next request with new profileState");
+      } catch (tokenClearError) {
+        console.error("⚠️ [submitStudentSelfRegistration] Failed to clear user tokens:", tokenClearError);
+        // Non-critical - continue with success response
+      }
+
       // Revalidate relevant paths
       revalidatePath("/");
 
