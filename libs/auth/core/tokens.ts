@@ -136,21 +136,29 @@ export async function getTenantToken(tenantId: string): Promise<string | null> {
   }
 
   try {
-    // Get tenant secrets to refresh token
-    const tenantSecrets = await getTenantSecrets(tenantId);
+    // Get tenant settings from CACHE (doesn't need token because backend caches it after first fetch)
+    const tenantSettingsKey = CacheKeys.tenantSettings(tenantId);
+    const cachedTenantSettings = await cache.get<any>(tenantSettingsKey);
 
-    if (!tenantSecrets?.apiAccess?.clientId || !tenantSecrets?.apiAccess?.clientSecret) {
-      console.error("❌ TenantToken: Missing API credentials for tenant", tenantId);
+    if (!cachedTenantSettings?.secret?.apiAccess) {
+      console.log("⚠️ TenantToken: No cached tenant settings with secrets found, cannot auto-renew");
       return null;
     }
 
-    console.log(`🔄 TenantToken: Using client ID: ${tenantSecrets.apiAccess.clientId.substring(0, 10)}...`);
+    const { clientId, clientSecret } = cachedTenantSettings.secret.apiAccess;
+
+    if (!clientId || !clientSecret) {
+      console.error("❌ TenantToken: Missing API credentials in cached settings for tenant", tenantId);
+      return null;
+    }
+
+    console.log(`🔄 TenantToken: Using cached credentials, client ID: ${clientId.substring(0, 10)}...`);
 
     // Get new token from OIDC
     const { getClientCredentialsToken } = await import('./oidc');
     const tokenData = await getClientCredentialsToken(
-      tenantSecrets.apiAccess.clientId,
-      tenantSecrets.apiAccess.clientSecret,
+      clientId,
+      clientSecret,
       "api.read"
     );
 
