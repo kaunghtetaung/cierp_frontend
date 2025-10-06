@@ -95,6 +95,10 @@ export function StudentRegistrationWizard({
     cacheAge: string;
   } | null>(null);
 
+  // Success state
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
   // Ref to track if we should allow form submission
   const canSubmitRef = useRef(false);
 
@@ -258,21 +262,14 @@ export function StudentRegistrationWizard({
       if (result.success) {
         console.log("✅ [FORM SUBMIT] Registration successful:", result.studentId);
 
-        // Show success toast
-        toast.success("Registration Successful!", {
-          description: result.message || "Your student registration has been submitted successfully.",
-          duration: 5000,
-        });
-
         // Clear cache on successful submission
         if (user?.id) {
           clearFormDataCache(user.id);
         }
 
-        // Redirect on success after a short delay
-        setTimeout(() => {
-          router.push("/");
-        }, 1000);
+        // Show success component instead of toast + redirect
+        setSuccessMessage(result.message || "Your student registration has been submitted successfully.");
+        setIsSuccess(true);
       } else {
         console.error("❌ [FORM SUBMIT] Registration failed:", result.error);
 
@@ -312,6 +309,49 @@ export function StudentRegistrationWizard({
   const currentStepConfig = WIZARD_STEPS[currentStep];
   const progress = ((currentStep + 1) / WIZARD_STEPS.length) * 100;
   const StepIcon = currentStepConfig.icon;
+
+  // Handle "Go to Home Page" button click
+  const handleGoHome = () => {
+    // Trigger router push which will cause layout to re-run getAuthenticationStatus
+    // This will refresh the user token and update the UI
+    router.push("/");
+    router.refresh(); // Force a full page refresh to ensure token refresh
+  };
+
+  // Show success component if registration is successful
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          {/* Success Icon */}
+          <div className="mb-6 flex justify-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <Check className="w-10 h-10 text-green-600" />
+            </div>
+          </div>
+
+          {/* Success Title */}
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            Registration Successful!
+          </h2>
+
+          {/* Backend Message */}
+          <p className="text-gray-600 mb-8">
+            {successMessage}
+          </p>
+
+          {/* Go to Home Button */}
+          <Button
+            onClick={handleGoHome}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            size="lg"
+          >
+            Go to Home Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
