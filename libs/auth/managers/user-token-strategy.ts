@@ -17,11 +17,12 @@ interface TokenData {
   refresh_token?: string;
 }
 
-// Stored token with full JWT data
+// Stored token with full JWT data (aligned with tokens.ts)
 interface StoredToken {
   token: string;
   tokenData: TokenData;
   expiresAt: number;
+  type: 'initializer' | 'tenant' | 'user';
   createdAt: number;
 }
 
@@ -190,9 +191,10 @@ export class UserTokenStrategy implements TokenStrategy {
       token: tokenData.access_token,
       tokenData,
       expiresAt: now + tokenData.expires_in,
+      type: 'user',
       createdAt: now
     };
-    
+
     await this.cache.set(CacheKeys.userAccessToken(tenantId, userId), storedToken, tokenData.expires_in);
   }
 
@@ -216,14 +218,15 @@ export class UserTokenStrategy implements TokenStrategy {
       expires_in: expiresIn,
       token_type: 'refresh'
     };
-    
+
     const storedToken: StoredToken = {
       token: refreshToken,
       tokenData,
       expiresAt: now + expiresIn,
+      type: 'user',
       createdAt: now
     };
-    
+
     await this.cache.set(CacheKeys.userRefreshToken(tenantId, userId), storedToken, expiresIn);
   }
 

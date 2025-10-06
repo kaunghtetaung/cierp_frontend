@@ -17,11 +17,12 @@ interface TokenData {
   refresh_token?: string;
 }
 
-// Stored token with full JWT data
+// Stored token with full JWT data (aligned with tokens.ts)
 interface StoredToken {
   token: string;
   tokenData: TokenData;
   expiresAt: number;
+  type: 'initializer' | 'tenant' | 'user';
   createdAt: number;
 }
 
@@ -121,9 +122,10 @@ export class InitializerTokenStrategy implements TokenStrategy {
       token,
       tokenData,
       expiresAt: now + expiresIn,
+      type: 'initializer',
       createdAt: now
     };
-    
+
     await this.cache.set(CacheKeys.initializerToken(), storedToken, expiresIn);
   }
 
@@ -134,9 +136,10 @@ export class InitializerTokenStrategy implements TokenStrategy {
       token: tokenData.access_token,
       tokenData,
       expiresAt: now + tokenData.expires_in,
+      type: 'initializer',
       createdAt: now
     };
-    
+
     await this.cache.set(CacheKeys.initializerToken(), storedToken, tokenData.expires_in);
   }
 
