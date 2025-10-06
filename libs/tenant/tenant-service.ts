@@ -65,8 +65,8 @@ export class TenantService {
 
     const tenantData = response.data;
 
-    // Cache the result make by backend
-    //await this.cache.set(cacheKey, tenantData, CacheTTL.TENANT_SETTINGS);
+    // Cache the result for token auto-renewal (includes secrets for server-side use only)
+    await this.cache.set(cacheKey, tenantData, CacheTTL.TENANT_SETTINGS);
 
     return tenantData;
   }
