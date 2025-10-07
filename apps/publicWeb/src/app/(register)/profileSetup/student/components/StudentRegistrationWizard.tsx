@@ -28,6 +28,7 @@ import {
 interface StudentRegistrationWizardProps {
   moduleSchema: ModuleSchema;
   user: UserType;
+  initialSuccess?: boolean;
 }
 
 // Define 6 wizard steps (Contact merged into Personal)
@@ -83,7 +84,8 @@ const WIZARD_STEPS = [
 
 export function StudentRegistrationWizard({
   moduleSchema,
-  user
+  user,
+  initialSuccess = false
 }: StudentRegistrationWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0); // Start at step 0 (personal info)
@@ -95,9 +97,11 @@ export function StudentRegistrationWizard({
     cacheAge: string;
   } | null>(null);
 
-  // Success state
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  // Success state - initialize from prop
+  const [isSuccess, setIsSuccess] = useState(initialSuccess);
+  const [successMessage, setSuccessMessage] = useState(
+    initialSuccess ? "Student registration submitted successfully" : ""
+  );
 
   // Ref to track if we should allow form submission
   const canSubmitRef = useRef(false);
@@ -267,9 +271,9 @@ export function StudentRegistrationWizard({
           clearFormDataCache(user.id);
         }
 
-        // Show success component instead of toast + redirect
-        setSuccessMessage(result.message || "Your student registration has been submitted successfully.");
-        setIsSuccess(true);
+        // Navigate to success page with query parameter
+        // This allows the page to bypass the guest role check and show the success screen
+        router.push("/profileSetup/student?success=true");
       } else {
         console.error("❌ [FORM SUBMIT] Registration failed:", result.error);
 

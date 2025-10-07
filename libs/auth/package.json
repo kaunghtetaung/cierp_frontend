@@ -21,7 +21,9 @@
     "./initializer-token-strategy": "./managers/initializer-token-strategy.ts",
     "./tenant-token-strategy": "./managers/tenant-token-strategy.ts",
     "./user-token-strategy": "./managers/user-token-strategy.ts",
-    "./auth-error-handler": "./auth-error-handler.ts"
+    "./auth-error-handler": "./auth-error-handler.ts",
+    "./utils/jwt-decoder": "./utils/jwt-decoder.ts",
+    "./config": "./config/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

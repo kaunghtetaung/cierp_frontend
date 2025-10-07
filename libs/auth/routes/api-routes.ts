@@ -504,9 +504,20 @@ export async function handleRefreshSession(
       );
     }
 
-    // Actually extend the session (this was missing!)
-    const renewedSession = await renewSession(sessionId);
-    
+    const userId = sessionInfo.user?.id;
+    const tenantId = sessionInfo.session.tenantId;
+
+    if (!userId || !tenantId) {
+      return NextResponse.json(
+        { error: "Missing user ID or tenant ID" },
+        { status: 400 }
+      );
+    }
+
+    // Step 1: Extend session
+    const { extendSessionOnly } = await import('../core/sessions');
+    const renewedSession = await extendSessionOnly(sessionId);
+
     if (!renewedSession) {
       return NextResponse.json(
         { error: "Failed to extend session" },
@@ -514,11 +525,44 @@ export async function handleRefreshSession(
       );
     }
 
-    console.log(`[REFRESH_SESSION] Session extended successfully for user: ${sessionInfo.user?.email}, new expiry: ${renewedSession.expiresAt}`);
+    // Step 2: Refresh user access token (FORCE refresh, don't just get cached token)
+    let tokenRefreshed = false;
+    let tokenError: string | undefined;
+
+    try {
+      const { TokenManager } = await import('../managers/token-manager');
+      const tokenManager = TokenManager.getInstance();
+
+      console.log(`[REFRESH_SESSION] Refreshing user access token for user: ${userId}`);
+
+      const newToken = await tokenManager.refreshUserAccessToken(
+        tenantId,
+        userId
+      );
+
+      if (newToken) {
+        tokenRefreshed = true;
+        console.log(`✅ [REFRESH_SESSION] User access token refreshed successfully`);
+      } else {
+        tokenError = 'Token refresh returned null';
+        console.warn(`⚠️ [REFRESH_SESSION] Failed to refresh user access token, but session was extended`);
+      }
+    } catch (error) {
+      tokenError = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ [REFRESH_SESSION] Error refreshing user access token:`, error);
+    }
+
+    console.log(
+      `[REFRESH_SESSION] Session extended for user: ${sessionInfo.user?.email}, ` +
+      `new expiry: ${renewedSession.expiresAt}, ` +
+      `token refreshed: ${tokenRefreshed}`
+    );
 
     return NextResponse.json({
       success: true,
-      expiresAt: renewedSession.expiresAt, // Return the NEW expiry time
+      expiresAt: renewedSession.expiresAt,
+      tokenRefreshed,
+      tokenError,
     });
   } catch (error) {
     console.error("Refresh session error:", error);

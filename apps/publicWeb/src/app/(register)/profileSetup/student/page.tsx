@@ -8,8 +8,15 @@ export const metadata: Metadata = {
   description: "Complete your profile information to access all features",
 };
 
-export default async function CompleteProfilePage() {
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function CompleteProfilePage({ searchParams }: PageProps) {
   try {
+    const params = await searchParams;
+    const showSuccess = params.success === "true";
+
     // Get current user
     const user = await getCurrentUser();
 
@@ -23,12 +30,13 @@ export default async function CompleteProfilePage() {
       (roleObj: any) => roleObj.Role === "guest"
     ) ?? false;
 
-    // Redirect if not a guest user
-    if (!isGuestUser) {
+    // Allow non-guest users to see success screen if coming from successful registration
+    // Otherwise redirect non-guest users to home
+    if (!isGuestUser && !showSuccess) {
       redirect("/");
     }
 
-    return <CompleteProfileClient user={user} />;
+    return <CompleteProfileClient user={user} showSuccess={showSuccess} />;
   } catch (error) {
     // Handle token expiration or authentication errors
     console.error("Authentication error:", error);

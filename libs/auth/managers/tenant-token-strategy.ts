@@ -1,10 +1,11 @@
 // Tenant Token Strategy - Single Responsibility: Tenant token management
 import { CacheKeys } from '@repo/cache';
 import { getClientCredentialsToken } from '../core/oidc';
-import type { 
-  TokenStrategy, 
-  TokenCache, 
-  TOKEN_CONSTANTS 
+import { getTokenConfig, shouldRefreshToken } from '../config/token-config';
+import type {
+  TokenStrategy,
+  TokenCache,
+  TOKEN_CONSTANTS
 } from '../types/token-types';
 
 // JWT Token data structure
@@ -26,9 +27,18 @@ interface StoredToken {
 }
 
 export class TenantTokenStrategy implements TokenStrategy {
+  private config = getTokenConfig('tenantAccessToken');
+
   constructor(
     private cache: TokenCache
-  ) {}
+  ) {
+    console.log(`📋 TenantTokenStrategy initialized with config:`, {
+      tokenLifetime: `${this.config.tokenLifetime}s`,
+      redisTTL: `${this.config.redisTTL}s`,
+      safetyMargin: `${this.config.safetyMargin}s`,
+      refreshThreshold: `${this.config.refreshThreshold}s`
+    });
+  }
 
   async getToken(tenantId?: string): Promise<string | null> {
     if (!tenantId) {
@@ -38,14 +48,18 @@ export class TenantTokenStrategy implements TokenStrategy {
     const cacheKey = CacheKeys.tenantAccessToken(tenantId);
     const stored = await this.cache.get<StoredToken>(cacheKey);
     if (!stored) return null;
-    
-    // Check if token is expired (with 5 min buffer)
+
+    // Check if token is expired using configured safety margin
     const now = Math.floor(Date.now() / 1000);
-    if (now >= stored.expiresAt - 300) {
+    const timeUntilExpiry = stored.expiresAt - now;
+
+    if (timeUntilExpiry <= this.config.safetyMargin) {
+      console.log(`⚠️ TenantToken (${tenantId}): Token expiring soon (${timeUntilExpiry}s remaining, safety margin: ${this.config.safetyMargin}s)`);
       await this.cache.del(cacheKey);
       return null;
     }
-    
+
+    console.log(`✅ TenantToken (${tenantId}): Valid cached token found (${timeUntilExpiry}s until expiry)`);
     return stored.token;
   }
 
@@ -114,6 +128,10 @@ export class TenantTokenStrategy implements TokenStrategy {
     expiresIn: number
   ): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
+
+    // Use configured Redis TTL instead of token lifetime
+    const redisTTL = Math.min(this.config.redisTTL, expiresIn);
+
     const tokenData: TokenData = {
       access_token: token,
       expires_in: expiresIn,
@@ -129,7 +147,8 @@ export class TenantTokenStrategy implements TokenStrategy {
     };
 
     const cacheKey = CacheKeys.tenantAccessToken(tenantId);
-    await this.cache.set(cacheKey, storedToken, expiresIn);
+    console.log(`💾 TenantToken (${tenantId}): Caching token with Redis TTL: ${redisTTL}s (token lifetime: ${expiresIn}s)`);
+    await this.cache.set(cacheKey, storedToken, redisTTL);
   }
 
   // New method to set token with full JWT data
@@ -138,6 +157,10 @@ export class TenantTokenStrategy implements TokenStrategy {
     tokenData: TokenData
   ): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
+
+    // Use configured Redis TTL instead of token lifetime
+    const redisTTL = Math.min(this.config.redisTTL, tokenData.expires_in);
+
     const storedToken: StoredToken = {
       token: tokenData.access_token,
       tokenData,
@@ -147,7 +170,8 @@ export class TenantTokenStrategy implements TokenStrategy {
     };
 
     const cacheKey = CacheKeys.tenantAccessToken(tenantId);
-    await this.cache.set(cacheKey, storedToken, tokenData.expires_in);
+    console.log(`💾 TenantToken (${tenantId}): Caching token data with Redis TTL: ${redisTTL}s (token lifetime: ${tokenData.expires_in}s)`);
+    await this.cache.set(cacheKey, storedToken, redisTTL);
   }
 
   // Get full token data

@@ -8,10 +8,12 @@ import { StudentRegistrationWizard } from "./StudentRegistrationWizard";
 
 interface StudentSelfRegistrationFormProps {
   user: User;
+  initialSuccess?: boolean;
 }
 
 export function StudentSelfRegistrationForm({
   user,
+  initialSuccess = false,
 }: StudentSelfRegistrationFormProps) {
   const [moduleSchema, setModuleSchema] = useState<ModuleSchema | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +79,11 @@ export function StudentSelfRegistrationForm({
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Student Registration Wizard */}
-        <StudentRegistrationWizard moduleSchema={moduleSchema} user={user} />
+        <StudentRegistrationWizard
+          moduleSchema={moduleSchema}
+          user={user}
+          initialSuccess={initialSuccess}
+        />
       </div>
     </div>
   );

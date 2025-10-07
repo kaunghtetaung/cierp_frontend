@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentUser } from "@repo/auth/server-api";
+import { getCurrentUser, TokenManager } from "@repo/auth/server-api";
 import { getApiDomain } from "@repo/utils/server";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 
@@ -115,6 +115,21 @@ export async function submitStudentSelfRegistration(
     // Get API domain
     const apiDomain = await getApiDomain();
 
+    // Get user access token for authenticated API call
+    const tokenManager = TokenManager.getInstance();
+    const accessToken = await tokenManager.getUserAccessTokenWithRefresh(
+      tenantId,
+      user.id
+    );
+
+    if (!accessToken) {
+      console.error("Failed to get user access token for student registration");
+      return {
+        success: false,
+        error: "Authentication token not available. Please try logging in again.",
+      };
+    }
+
     // Prepare request payload
     const payload = {
       // Personal Information
@@ -155,12 +170,17 @@ export async function submitStudentSelfRegistration(
       previousEducation: data.previousEducation,
     };
 
-    // Make API call to POST /students/self-register
+    console.log(
+      `🎓 [Student Registration] Submitting for user: ${user.id}, tenant: ${tenantId}`
+    );
+
+    // Make API call to POST /students/self-register with authentication
     const response = await fetch(`${apiDomain}/students/self-register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-tenant-id": tenantId,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(payload),
     });
@@ -176,6 +196,34 @@ export async function submitStudentSelfRegistration(
     }
 
     const result = await response.json();
+
+    console.log(
+      `✅ [Student Registration] Successfully registered student: ${result.studentId || result._id}`
+    );
+
+    // Extend session after successful registration to prevent session expiry
+    try {
+      console.log(`🔄 [Student Registration] Extending session after successful registration...`);
+
+      const sessionRefreshResponse = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (sessionRefreshResponse.ok) {
+        const sessionResult = await sessionRefreshResponse.json();
+        console.log(
+          `✅ [Student Registration] Session extended successfully, ` +
+          `new expiry: ${sessionResult.expiresAt}, ` +
+          `token refreshed: ${sessionResult.tokenRefreshed}`
+        );
+      } else {
+        console.warn(`⚠️ [Student Registration] Failed to extend session, but registration was successful`);
+      }
+    } catch (sessionError) {
+      // Don't fail the registration if session extension fails
+      console.error('❌ [Student Registration] Error extending session:', sessionError);
+    }
 
     return {
       success: true,

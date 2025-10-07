@@ -219,14 +219,14 @@ export async function renewSession(
   config: Partial<SessionConfig> = {}
 ): Promise<SessionData | null> {
   const fullConfig = { ...DEFAULT_SESSION_CONFIG, ...config };
-  
+
   const session = await getSession(sessionId);
   if (!session) return null;
-  
+
   // Create renewed session following readonly pattern
   const now = new Date();
   const newExpiresAt = new Date(now.getTime() + fullConfig.maxAge * 1000);
-  
+
   const renewedSession: SessionData = {
     sessionId: session.sessionId,
     userId: session.userId,
@@ -238,15 +238,42 @@ export async function renewSession(
     userAgent: session.userAgent,
     metadata: session.metadata
   };
-  
+
   // Update in cache with new TTL using proper cache key
   const cache = getCacheInstance();
   await cache.set(
-    CacheKeys.userSession(session.tenantId, sessionId), 
-    renewedSession, 
+    CacheKeys.userSession(session.tenantId, sessionId),
+    renewedSession,
     fullConfig.maxAge
   );
-  
+
+  return renewedSession;
+}
+
+/**
+ * Extend session only (token refresh should be handled at route level)
+ * NOTE: This function only extends the session. Token refresh should be handled
+ * separately by the calling code to avoid circular dependencies.
+ *
+ * @param sessionId - Session ID to extend
+ * @param config - Optional session configuration
+ * @returns Extended session data
+ */
+export async function extendSessionOnly(
+  sessionId: string,
+  config: Partial<SessionConfig> = {}
+): Promise<SessionData | null> {
+  console.log(`🔄 [extendSessionOnly] Starting session extension for ${sessionId.substring(0, 16)}...`);
+
+  const renewedSession = await renewSession(sessionId, config);
+
+  if (!renewedSession) {
+    console.error(`❌ [extendSessionOnly] Failed to renew session ${sessionId}`);
+    return null;
+  }
+
+  console.log(`✅ [extendSessionOnly] Session renewed, new expiry: ${renewedSession.expiresAt}`);
+
   return renewedSession;
 }
 

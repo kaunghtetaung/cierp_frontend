@@ -2,10 +2,11 @@
 import { CacheKeys, CacheTTL } from '@repo/cache';
 import { getClientCredentialsToken } from '../core/oidc';
 import { getAuthDomain } from '@repo/utils/server';
-import type { 
-  TokenStrategy, 
-  TokenCache, 
-  TOKEN_CONSTANTS 
+import { getTokenConfig, shouldRefreshToken } from '../config/token-config';
+import type {
+  TokenStrategy,
+  TokenCache,
+  TOKEN_CONSTANTS
 } from '../types/token-types';
 
 // JWT Token data structure
@@ -27,29 +28,40 @@ interface StoredToken {
 }
 
 export class InitializerTokenStrategy implements TokenStrategy {
+  private config = getTokenConfig('initializerToken');
+
   constructor(
     private cache: TokenCache
-  ) {}
+  ) {
+    console.log(`📋 InitializerTokenStrategy initialized with config:`, {
+      tokenLifetime: `${this.config.tokenLifetime}s`,
+      redisTTL: `${this.config.redisTTL}s`,
+      safetyMargin: `${this.config.safetyMargin}s`,
+      refreshThreshold: `${this.config.refreshThreshold}s`
+    });
+  }
 
   async getToken(): Promise<string | null> {
     try {
       console.log("🔍 InitializerToken: Checking cache for existing token");
       const stored = await this.cache.get<StoredToken>(CacheKeys.initializerToken());
-      
+
       if (!stored) {
         console.log("⚠️ InitializerToken: No cached token found, fetching new one");
         return await this.refreshToken();
       }
-      
-      // Check if token is expired (with 5 min buffer)
+
+      // Check if token is expired using configured safety margin
       const now = Math.floor(Date.now() / 1000);
-      if (now >= stored.expiresAt - 300) {
-        console.log("⚠️ InitializerToken: Token expired or expiring soon, refreshing");
+      const timeUntilExpiry = stored.expiresAt - now;
+
+      if (timeUntilExpiry <= this.config.safetyMargin) {
+        console.log(`⚠️ InitializerToken: Token expiring soon (${timeUntilExpiry}s remaining, safety margin: ${this.config.safetyMargin}s), refreshing`);
         await this.cache.del(CacheKeys.initializerToken());
         return await this.refreshToken();
       }
-      
-      console.log("✅ InitializerToken: Valid cached token found");
+
+      console.log(`✅ InitializerToken: Valid cached token found (${timeUntilExpiry}s until expiry)`);
       return stored.token;
     } catch (error) {
       console.error("❌ InitializerToken: Error in getToken:", error);
@@ -112,12 +124,16 @@ export class InitializerTokenStrategy implements TokenStrategy {
 
   async setInitializerToken(token: string, expiresIn: number): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
+
+    // Use configured Redis TTL instead of token lifetime
+    const redisTTL = Math.min(this.config.redisTTL, expiresIn);
+
     const tokenData: TokenData = {
       access_token: token,
       expires_in: expiresIn,
       token_type: 'bearer'
     };
-    
+
     const storedToken: StoredToken = {
       token,
       tokenData,
@@ -126,12 +142,17 @@ export class InitializerTokenStrategy implements TokenStrategy {
       createdAt: now
     };
 
-    await this.cache.set(CacheKeys.initializerToken(), storedToken, expiresIn);
+    console.log(`💾 InitializerToken: Caching token with Redis TTL: ${redisTTL}s (token lifetime: ${expiresIn}s)`);
+    await this.cache.set(CacheKeys.initializerToken(), storedToken, redisTTL);
   }
 
   // New method to set token with full JWT data
   async setInitializerTokenData(tokenData: TokenData): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
+
+    // Use configured Redis TTL instead of token lifetime
+    const redisTTL = Math.min(this.config.redisTTL, tokenData.expires_in);
+
     const storedToken: StoredToken = {
       token: tokenData.access_token,
       tokenData,
@@ -140,7 +161,8 @@ export class InitializerTokenStrategy implements TokenStrategy {
       createdAt: now
     };
 
-    await this.cache.set(CacheKeys.initializerToken(), storedToken, tokenData.expires_in);
+    console.log(`💾 InitializerToken: Caching token data with Redis TTL: ${redisTTL}s (token lifetime: ${tokenData.expires_in}s)`);
+    await this.cache.set(CacheKeys.initializerToken(), storedToken, redisTTL);
   }
 
   // Get full token data

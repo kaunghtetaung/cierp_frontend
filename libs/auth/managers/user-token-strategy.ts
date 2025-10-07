@@ -1,9 +1,10 @@
 // User Token Strategy - Single Responsibility: User token management
 import { CacheKeys, CacheTTL } from '@repo/cache';
 import { refreshAccessToken } from '../core/oidc';
-import type { 
-  TokenStrategy, 
-  TokenCache, 
+import { getTokenConfig, shouldRefreshToken } from '../config/token-config';
+import type {
+  TokenStrategy,
+  TokenCache,
   TokenValidationResult
 } from '../types/token-types';
 import { TOKEN_CONSTANTS } from '../types/token-types';
@@ -27,9 +28,24 @@ interface StoredToken {
 }
 
 export class UserTokenStrategy implements TokenStrategy {
+  private accessTokenConfig = getTokenConfig('userAccessToken');
+  private refreshTokenConfig = getTokenConfig('userRefreshToken');
+
   constructor(
     private cache: TokenCache
-  ) {}
+  ) {
+    console.log(`📋 UserTokenStrategy initialized with configs:`, {
+      accessToken: {
+        tokenLifetime: `${this.accessTokenConfig.tokenLifetime}s`,
+        redisTTL: `${this.accessTokenConfig.redisTTL}s`,
+        safetyMargin: `${this.accessTokenConfig.safetyMargin}s`
+      },
+      refreshToken: {
+        tokenLifetime: `${this.refreshTokenConfig.tokenLifetime}s`,
+        redisTTL: `${this.refreshTokenConfig.redisTTL}s`
+      }
+    });
+  }
 
   async getToken(tenantId?: string, userId?: string): Promise<string | null> {
     if (!tenantId || !userId) {
@@ -57,9 +73,23 @@ export class UserTokenStrategy implements TokenStrategy {
     }
 
     try {
-      
-      const clientId = process.env.USER_CLIENT_ID || 'default-user-client';
-      const clientSecret = process.env.USER_CLIENT_SECRET || 'default-user-secret';
+      // Get tenant settings from cache to retrieve logInFlow credentials
+      const tenantSettingsKey = CacheKeys.tenantSettings(tenantId);
+      const tenantSettings = await this.cache.get<any>(tenantSettingsKey);
+
+      if (!tenantSettings?.secret?.logInFlow) {
+        console.error(`❌ [UserTokenStrategy] No cached tenant settings with logInFlow for tenant ${tenantId}`);
+        return null;
+      }
+
+      const { clientId, clientSecret } = tenantSettings.secret.logInFlow;
+
+      if (!clientId || !clientSecret) {
+        console.error(`❌ [UserTokenStrategy] Missing logInFlow credentials for tenant ${tenantId}`);
+        return null;
+      }
+
+      console.log(`🔄 [UserTokenStrategy] Refreshing user token with logInFlow clientId: ${clientId.substring(0, 10)}...`);
       const tokenData = await refreshAccessToken(refreshToken, clientId, clientSecret);
       
 
@@ -147,20 +177,21 @@ export class UserTokenStrategy implements TokenStrategy {
   async getValidUserAccessToken(tenantId: string, userId: string): Promise<string | null> {
     const tokenKey = CacheKeys.userAccessToken(tenantId, userId);
     const currentToken = await this.cache.get<string>(tokenKey);
-    
+
     if (!currentToken) {
       return null;
     }
 
-    // Check if token will expire within the safety margin (5 minutes)
+    // Check if token will expire within the configured safety margin
     const ttl = await this.cache.ttl(tokenKey);
-    
-    if (ttl <= TOKEN_CONSTANTS.SAFETY_MARGIN_SECONDS) {
-      console.log(`⏰ User token for ${userId} expires in ${ttl}s, clearing expired token`);
+
+    if (ttl <= this.accessTokenConfig.safetyMargin) {
+      console.log(`⏰ UserToken (${userId}): Token expiring soon (${ttl}s remaining, safety margin: ${this.accessTokenConfig.safetyMargin}s), clearing`);
       await this.cache.del(tokenKey);
       return null;
     }
-    
+
+    console.log(`✅ UserToken (${userId}): Valid cached token found (${ttl}s until expiry)`);
     return currentToken;
   }
 
@@ -176,8 +207,12 @@ export class UserTokenStrategy implements TokenStrategy {
     token: string,
     expiresIn: number
   ): Promise<void> {
+    // Use configured Redis TTL instead of token lifetime
+    const redisTTL = Math.min(this.accessTokenConfig.redisTTL, expiresIn);
+
+    console.log(`💾 UserAccessToken (${userId}): Caching token with Redis TTL: ${redisTTL}s (token lifetime: ${expiresIn}s)`);
     // Store only the JWT token string for backend offline verification
-    await this.cache.set(CacheKeys.userAccessToken(tenantId, userId), token, expiresIn);
+    await this.cache.set(CacheKeys.userAccessToken(tenantId, userId), token, redisTTL);
   }
 
   // New method to set token with full JWT data
@@ -200,9 +235,14 @@ export class UserTokenStrategy implements TokenStrategy {
 
   async getUserRefreshToken(tenantId: string, userId: string): Promise<string | null> {
     const stored = await this.cache.get<StoredToken>(CacheKeys.userRefreshToken(tenantId, userId));
-    if (!stored) return null;
-    
-    // Refresh tokens don't need expiry buffer check - they're long-lived  
+    if (!stored) {
+      console.log(`❌ [getUserRefreshToken] No refresh token found for user=${userId}`);
+      return null;
+    }
+
+    console.log(`✅ [getUserRefreshToken] Found refresh token for user=${userId}, type=${typeof stored}`);
+
+    // Refresh tokens don't need expiry buffer check - they're long-lived
     return stored.token;
   }
 
@@ -213,6 +253,10 @@ export class UserTokenStrategy implements TokenStrategy {
     expiresIn: number
   ): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
+
+    // Use configured Redis TTL instead of token lifetime
+    const redisTTL = Math.min(this.refreshTokenConfig.redisTTL, expiresIn);
+
     const tokenData: TokenData = {
       access_token: refreshToken, // For refresh tokens, store as access_token
       expires_in: expiresIn,
@@ -227,7 +271,8 @@ export class UserTokenStrategy implements TokenStrategy {
       createdAt: now
     };
 
-    await this.cache.set(CacheKeys.userRefreshToken(tenantId, userId), storedToken, expiresIn);
+    console.log(`💾 UserRefreshToken (${userId}): Caching token with Redis TTL: ${redisTTL}s (token lifetime: ${expiresIn}s)`);
+    await this.cache.set(CacheKeys.userRefreshToken(tenantId, userId), storedToken, redisTTL);
   }
 
   // New method to get full token data

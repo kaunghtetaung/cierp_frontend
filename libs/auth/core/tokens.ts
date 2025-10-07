@@ -263,6 +263,8 @@ async function refreshUserAccessTokenWithRefreshToken(
   userId: string
 ): Promise<string | null> {
   try {
+    const cache = getCacheInstance();
+
     // Get refresh token
     const refreshToken = await getUserRefreshToken(tenantId, userId);
 
@@ -273,9 +275,27 @@ async function refreshUserAccessTokenWithRefreshToken(
 
     console.log(`🔄 [refreshUserAccessToken] Found refresh token, calling OIDC to refresh`);
 
-    // Use OIDC client to refresh the token
+    // Get tenant settings to retrieve logInFlow credentials
+    const tenantSettingsKey = CacheKeys.tenantSettings(tenantId);
+    const tenantSettings = await cache.get<any>(tenantSettingsKey);
+
+    if (!tenantSettings?.secret?.logInFlow) {
+      console.error(`❌ [refreshUserAccessToken] No cached tenant settings with logInFlow for tenant ${tenantId}`);
+      return null;
+    }
+
+    const { clientId, clientSecret } = tenantSettings.secret.logInFlow;
+
+    if (!clientId || !clientSecret) {
+      console.error(`❌ [refreshUserAccessToken] Missing logInFlow credentials for tenant ${tenantId}`);
+      return null;
+    }
+
+    console.log(`🔄 [refreshUserAccessToken] Using logInFlow clientId: ${clientId.substring(0, 10)}...`);
+
+    // Use OIDC client to refresh the token with proper credentials
     const { refreshAccessToken } = await import('./oidc');
-    const newTokenData = await refreshAccessToken(refreshToken);
+    const newTokenData = await refreshAccessToken(refreshToken, clientId, clientSecret);
 
     if (!newTokenData || !newTokenData.access_token) {
       console.error(`❌ [refreshUserAccessToken] Failed to get new token from OIDC`);

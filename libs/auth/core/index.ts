@@ -33,7 +33,7 @@ import {
   createSessionManager 
 } from './sessions';
 
-import { 
+import {
   refreshAccessToken
 } from './oidc';
 
@@ -41,6 +41,9 @@ import type { User, SessionData, RequestContext } from './types';
 
 // Import centralized JWT utility to eliminate duplication
 import { extractUserInfoFromJWT } from '../utils/jwt-utils';
+
+// Import cache and cache keys for tenant settings
+import { getCacheInstance, CacheKeys } from '@repo/cache';
 
 /**
  * High-level auth function: Login a user and create session
@@ -102,50 +105,75 @@ export async function validateRequest(
   // Try to refresh token if needed and possible
   let finalToken = token;
   if (!token) {
+    console.log(`🔄 [validateRequest] No token found for user ${session.userId}, attempting refresh...`);
+
+    // Get tenant settings from Redis cache to retrieve logInFlow credentials
+    const cache = getCacheInstance();
+    const tenantSettingsKey = CacheKeys.tenantSettings(session.tenantId);
+    const tenantSettings = await cache.get<any>(tenantSettingsKey);
+
+    if (!tenantSettings?.secret?.logInFlow) {
+      console.error(`❌ [validateRequest] No cached tenant settings with logInFlow found for tenant ${session.tenantId}`);
+      console.log(`⚠️ [validateRequest] Cannot refresh user token without logInFlow credentials - logging out user`);
+
+      // Destroy session since we can't refresh the token
+      await destroySession(sessionId);
+      return { isAuthenticated: false };
+    }
+
+    const { clientId, clientSecret } = tenantSettings.secret.logInFlow;
+
+    if (!clientId || !clientSecret) {
+      console.error(`❌ [validateRequest] Missing clientId or clientSecret in logInFlow for tenant ${session.tenantId}`);
+      console.log(`⚠️ [validateRequest] Cannot refresh token without credentials - logging out user`);
+
+      // Destroy session since we can't refresh the token
+      await destroySession(sessionId);
+      return { isAuthenticated: false };
+    }
+
+    console.log(`✅ [validateRequest] Using logInFlow client ID: ${clientId.substring(0, 10)}...`);
+
     finalToken = await refreshUserTokenIfNeeded(
       session.tenantId,
       session.userId,
-      (refreshToken) => refreshAccessToken(refreshToken, 'default-client', 'default-secret')
+      (refreshToken) => refreshAccessToken(refreshToken, clientId, clientSecret)
     );
+
+    if (finalToken) {
+      console.log(`✅ [validateRequest] Token refreshed successfully for user ${session.userId}`);
+    } else {
+      console.error(`❌ [validateRequest] Failed to refresh token for user ${session.userId} - logging out user`);
+
+      // Token refresh failed (no refresh token or invalid refresh token)
+      // Destroy the session and force user to login again
+      await destroySession(sessionId);
+      return { isAuthenticated: false };
+    }
   }
   
-  // Extract user data from JWT token if available
-  let user: User;
-  if (finalToken) {
-    const userInfo = extractUserInfoFromJWT(finalToken);
-    const roles = userInfo.roles || [];
-    user = {
-      id: session.userId,
-      tenantId: session.tenantId,
-      email: userInfo.email || '',
-      name: userInfo.name || '',
-      roles: roles,
-      permissions: userInfo.permissions || [],
-      profileState: userInfo.profileState, // Profile completion state from JWT
-      isActive: true,
-      createdAt: userInfo.createdAt || session.createdAt,
-      updatedAt: new Date()
-    };
-  } else {
-    // Fallback to minimal user object if no token available
-    user = {
-      id: session.userId,
-      tenantId: session.tenantId,
-      email: '',
-      name: '',
-      roles: [],
-      permissions: [],
-      isActive: true,
-      createdAt: session.createdAt,
-      updatedAt: session.lastActivityAt
-    };
-  }
-  
+  // Extract user data from JWT token
+  // At this point, finalToken is guaranteed to exist because we logged out users without tokens above
+  const userInfo = extractUserInfoFromJWT(finalToken);
+  const roles = userInfo.roles || [];
+  const user: User = {
+    id: session.userId,
+    tenantId: session.tenantId,
+    email: userInfo.email || '',
+    name: userInfo.name || '',
+    roles: roles,
+    permissions: userInfo.permissions || [],
+    profileState: userInfo.profileState, // Profile completion state from JWT
+    isActive: true,
+    createdAt: userInfo.createdAt || session.createdAt,
+    updatedAt: new Date()
+  };
+
   return {
     isAuthenticated: true,
     user,
     session,
-    token: finalToken || undefined
+    token: finalToken
   };
 }
 

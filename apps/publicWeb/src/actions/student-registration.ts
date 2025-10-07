@@ -751,13 +751,14 @@ export async function submitStudentSelfRegistration(data: any): Promise<{
         // Non-critical - continue with success response
       }
 
-      // Revalidate relevant paths
-      revalidatePath("/");
+      // Don't revalidate here - let the client handle navigation
+      // This prevents the page from re-rendering and redirecting before success component shows
+      // revalidatePath("/");
 
       // Return success without redirecting (let client handle redirect)
       return {
         success: true,
-        message: "Student registration submitted successfully",
+        message: result.data.message || "Student registration submitted successfully",
         studentId: result.data.id || result.data._id,
       };
     }

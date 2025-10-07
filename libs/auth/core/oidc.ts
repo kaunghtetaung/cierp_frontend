@@ -58,9 +58,14 @@ export async function exchangeCodeForTokens(
     const errorText = await response.text();
     throw new Error(`Token exchange failed: ${response.status} ${errorText}`);
   }
-  
+
   const tokenData = await response.json() as TokenResponse;
-  
+
+  // Log token format for debugging
+  const isJWT = tokenData.access_token.includes('.');
+  const tokenPreview = tokenData.access_token.substring(0, 50);
+  console.log(`🔐 OIDC login response - Token format: ${isJWT ? 'JWT' : 'OPAQUE'}, preview: ${tokenPreview}...`);
+
   return {
     access_token: tokenData.access_token,
     expires_in: tokenData.expires_in,
@@ -100,9 +105,14 @@ export async function refreshAccessToken(
     const errorText = await response.text();
     throw new Error(`Token refresh failed: ${response.status} ${errorText}`);
   }
-  
+
   const tokenData = await response.json() as TokenResponse;
-  
+
+  // Log token format for debugging
+  const isJWT = tokenData.access_token.includes('.');
+  const tokenPreview = tokenData.access_token.substring(0, 50);
+  console.log(`🔐 OIDC refresh response - Token format: ${isJWT ? 'JWT' : 'OPAQUE'}, preview: ${tokenPreview}...`);
+
   return {
     access_token: tokenData.access_token,
     expires_in: tokenData.expires_in,
