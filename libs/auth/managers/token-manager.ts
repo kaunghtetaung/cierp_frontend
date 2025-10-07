@@ -125,13 +125,6 @@ export class TokenManager {
     return await this.userStrategy.getUserAccessToken(tenantId, userId);
   }
 
-  async getUserAccessTokenWithRefresh(
-    tenantId: string,
-    userId: string
-  ): Promise<string | null> {
-    return await this.userStrategy.getToken(tenantId, userId);
-  }
-
   async refreshUserAccessToken(
     tenantId: string,
     userId: string

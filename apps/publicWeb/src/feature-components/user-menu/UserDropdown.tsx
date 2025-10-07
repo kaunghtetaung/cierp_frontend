@@ -65,6 +65,7 @@ export function UserDropdown({
             className="flex items-center gap-2 cursor-pointer px-2 py-2 text-gray-900 hover:bg-gray-100 rounded-sm"
           >
             <User className="h-4 w-4 text-gray-700" />
+            Profile
           </a>
         </DropdownMenuItem>
 

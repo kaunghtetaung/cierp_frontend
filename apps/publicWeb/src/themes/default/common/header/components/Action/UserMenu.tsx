@@ -375,16 +375,22 @@ export const UserMenu: React.FC<{
             </>
           )}
           <DropdownMenuItem>
-            <UserCircle className="mr-2 h-4 w-4" />
-            Profile
+            <Link href="/profile" className="flex items-center w-full">
+              <UserCircle className="mr-2 h-4 w-4" />
+              Profile
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
+            <Link href="/settings" className="flex items-center w-full">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Lock className="mr-2 h-4 w-4" />
-            Change Password
+            <Link href="/profile" className="flex items-center w-full">
+              <Lock className="mr-2 h-4 w-4" />
+              Change Password
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="p-0">
@@ -452,16 +458,22 @@ export const UserMenu: React.FC<{
               </>
             )}
             <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
-              <UserCircle className="mr-2 h-4 w-4" />
-              Profile
+              <Link href="/profile" className="flex items-center w-full">
+                <UserCircle className="mr-2 h-4 w-4" />
+                Profile
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
+              <Link href="/settings" className="flex items-center w-full">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
-              <Lock className="mr-2 h-4 w-4" />
-              Change Password
+              <Link href="/profile" className="flex items-center w-full">
+                <Lock className="mr-2 h-4 w-4" />
+                Change Password
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">

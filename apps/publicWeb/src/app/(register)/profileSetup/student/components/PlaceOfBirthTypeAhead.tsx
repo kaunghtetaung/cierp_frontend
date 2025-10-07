@@ -28,8 +28,16 @@ export function PlaceOfBirthTypeAhead({
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Update input when external value changes
+  // If value contains pipe separator, extract only the town name (last part)
   useEffect(() => {
-    setInputValue(value);
+    if (value && value.includes('|')) {
+      // Extract town name from full path: "Yangon|Yangon (West)|Lanmadaw|Lanmadaw" -> "Lanmadaw"
+      const parts = value.split('|');
+      const townName = parts[parts.length - 1]; // Get last part (town)
+      setInputValue(townName);
+    } else {
+      setInputValue(value);
+    }
   }, [value]);
 
   // Handle click outside to close suggestions
@@ -89,8 +97,8 @@ export function PlaceOfBirthTypeAhead({
 
   // Handle suggestion selection
   const handleSelectSuggestion = (suggestion: Region) => {
-    setInputValue(suggestion.fullName);
-    onChange(suggestion.fullName);
+    setInputValue(suggestion.displayValue); // Use displayValue for selected text (just town name)
+    onChange(suggestion.value); // Use full path value for form data
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
@@ -174,7 +182,7 @@ export function PlaceOfBirthTypeAhead({
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {suggestions.map((suggestion, index) => (
             <button
-              key={suggestion.id}
+              key={suggestion.value}
               type="button"
               onClick={() => handleSelectSuggestion(suggestion)}
               className={cn(
@@ -187,8 +195,8 @@ export function PlaceOfBirthTypeAhead({
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-[#19184A]">{suggestion.name}</span>
-                  <span className="text-xs text-gray-500">{suggestion.fullName}</span>
+                  <span className="text-sm font-medium text-[#19184A]">{suggestion.displayValue}</span>
+                  <span className="text-xs text-gray-500">{suggestion.label}</span>
                 </div>
               </div>
             </button>

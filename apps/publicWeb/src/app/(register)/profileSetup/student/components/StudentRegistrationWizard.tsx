@@ -2,7 +2,18 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Check, User, Phone, MapPin, Users, GraduationCap, BookOpen, FileText } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  User,
+  Phone,
+  MapPin,
+  Users,
+  GraduationCap,
+  BookOpen,
+  FileText,
+} from "lucide-react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -28,7 +39,6 @@ import {
 interface StudentRegistrationWizardProps {
   moduleSchema: ModuleSchema;
   user: UserType;
-  initialSuccess?: boolean;
 }
 
 // Define 6 wizard steps (Contact merged into Personal)
@@ -38,14 +48,34 @@ const WIZARD_STEPS = [
     title: "Personal Information",
     description: "Basic personal details",
     icon: User,
-    fields: ["nameMyanmar", "nameEnglish", "gender", "ethnicity", "religion", "bloodGroup", "nrcNumber", "dateOfBirth", "placeOfBirth", "phoneNumber", "email"]
+    fields: [
+      "nameMyanmar",
+      "nameEnglish",
+      "gender",
+      "ethnicity",
+      "religion",
+      "bloodGroup",
+      "nrcNumber",
+      "dateOfBirth",
+      "placeOfBirth",
+      "phoneNumber",
+      "email",
+    ],
   },
   {
     id: "address",
     title: "Address Information",
     description: "Location and address details",
     icon: MapPin,
-    fields: ["stateRegionName", "districtName", "townshipName", "townName", "wardVillageName", "permanentAddress", "currentAddress"]
+    fields: [
+      "stateRegionName",
+      "districtName",
+      "townshipName",
+      "townName",
+      "wardVillageName",
+      "permanentAddress",
+      "currentAddress",
+    ],
   },
   {
     id: "family",
@@ -53,39 +83,56 @@ const WIZARD_STEPS = [
     description: "Parent and guardian details",
     icon: Users,
     fields: [
-      "father.nameMyanmar", "father.nameEnglish", "father.nrcNumber", "father.occupation",
-      "mother.nameMyanmar", "mother.nameEnglish", "mother.nrcNumber", "mother.occupation",
-      "guardian.nameMyanmar", "guardian.nameEnglish", "guardian.nrcNumber", "guardian.occupation",
-      "guardian.relationship", "guardian.phoneNumber", "guardian.email", "guardian.address"
-    ]
+      "father.nameMyanmar",
+      "father.nameEnglish",
+      "father.nrcNumber",
+      "father.occupation",
+      "mother.nameMyanmar",
+      "mother.nameEnglish",
+      "mother.nrcNumber",
+      "mother.occupation",
+      "guardian.nameMyanmar",
+      "guardian.nameEnglish",
+      "guardian.nrcNumber",
+      "guardian.occupation",
+      "guardian.relationship",
+      "guardian.phoneNumber",
+      "guardian.email",
+      "guardian.address",
+    ],
   },
   {
     id: "academic",
     title: "Academic Background",
     description: "Previous education records",
     icon: BookOpen,
-    fields: ["previousEducation"]
+    fields: ["previousEducation"],
   },
   {
     id: "current",
     title: "Current Academic",
     description: "University and batch enrollment",
     icon: GraduationCap,
-    fields: ["medm", "batches"]
+    fields: ["medm", "batches"],
   },
   {
     id: "additional",
     title: "Additional Information",
     description: "Optional details",
     icon: FileText,
-    fields: ["hobbies", "skills", "disabilities", "medicalConditions", "specialRequirements"]
-  }
+    fields: [
+      "hobbies",
+      "skills",
+      "disabilities",
+      "medicalConditions",
+      "specialRequirements",
+    ],
+  },
 ];
 
 export function StudentRegistrationWizard({
   moduleSchema,
   user,
-  initialSuccess = false
 }: StudentRegistrationWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0); // Start at step 0 (personal info)
@@ -97,23 +144,22 @@ export function StudentRegistrationWizard({
     cacheAge: string;
   } | null>(null);
 
-  // Success state - initialize from prop
-  const [isSuccess, setIsSuccess] = useState(initialSuccess);
-  const [successMessage, setSuccessMessage] = useState(
-    initialSuccess ? "Student registration submitted successfully" : ""
-  );
+  // Success state - simple inline UI replacement
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Ref to track if we should allow form submission
   const canSubmitRef = useRef(false);
 
   // Filter and prepare form fields
   const filteredFormFields = React.useMemo(() => {
-    return moduleSchema.formFields.filter((field) => !field.hidden).map(field => {
-      if (!field.validationRule) {
-        field = { ...field, validationRule: { required: false } };
-      }
-      return field;
-    });
+    return moduleSchema.formFields
+      .filter((field) => !field.hidden)
+      .map((field) => {
+        if (!field.validationRule) {
+          field = { ...field, validationRule: { required: false } };
+        }
+        return field;
+      });
   }, [moduleSchema.formFields]);
 
   // Generate Zod schema
@@ -129,7 +175,13 @@ export function StudentRegistrationWizard({
     defaultValues,
   });
 
-  const { handleSubmit, reset, watch, trigger, formState: { errors } } = methods;
+  const {
+    handleSubmit,
+    reset,
+    watch,
+    trigger,
+    formState: { errors },
+  } = methods;
 
   // Check for cached data on mount
   useEffect(() => {
@@ -188,11 +240,13 @@ export function StudentRegistrationWizard({
         const tagName = target.tagName.toLowerCase();
 
         // Check if ESC is pressed inside any interactive element or dropdown
-        const isInInput = tagName === "input" || tagName === "textarea" || tagName === "select";
+        const isInInput =
+          tagName === "input" || tagName === "textarea" || tagName === "select";
         const isInButton = tagName === "button";
-        const isInDropdown = target.closest('[role="dialog"]') ||
-                           target.closest('[data-radix-popper-content-wrapper]') ||
-                           target.closest('[data-radix-popover-content]');
+        const isInDropdown =
+          target.closest('[role="dialog"]') ||
+          target.closest("[data-radix-popper-content-wrapper]") ||
+          target.closest("[data-radix-popover-content]");
 
         // Only reset form if ESC is pressed outside of interactive elements
         if (!isInInput && !isInButton && !isInDropdown) {
@@ -226,7 +280,10 @@ export function StudentRegistrationWizard({
       console.log("✅ [Wizard] Validation result:", isValid);
 
       if (isValid) {
-        console.log("📍 [handleNext] Setting current step to:", currentStep + 1);
+        console.log(
+          "📍 [handleNext] Setting current step to:",
+          currentStep + 1
+        );
         setCurrentStep(currentStep + 1);
         console.log("📍 [handleNext] Step changed, scrolling to top");
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -249,31 +306,23 @@ export function StudentRegistrationWizard({
 
   // Form submission
   const onSubmit = async (data: any) => {
-    console.log("🚀 [FORM SUBMIT] Form submission triggered!");
-    console.log("🚀 [FORM SUBMIT] Current step:", currentStep);
-    console.log("🚀 [FORM SUBMIT] Current step config:", WIZARD_STEPS[currentStep]);
-    console.log("🚀 [FORM SUBMIT] Stack trace:");
-    console.trace();
-
     try {
       setIsSubmitting(true);
-      console.log("📝 [FORM SUBMIT] Form data:", data);
 
       // Submit to backend using custom self-registration endpoint
-      const { submitStudentSelfRegistration } = await import("@/actions/student-registration");
+      const { submitStudentSelfRegistration } = await import(
+        "@/actions/student-registration"
+      );
       const result = await submitStudentSelfRegistration(data);
 
       if (result.success) {
-        console.log("✅ [FORM SUBMIT] Registration successful:", result.studentId);
-
         // Clear cache on successful submission
         if (user?.id) {
           clearFormDataCache(user.id);
         }
 
-        // Navigate to success page with query parameter
-        // This allows the page to bypass the guest role check and show the success screen
-        router.push("/profileSetup/student?success=true");
+        // Show success UI inline
+        setIsSuccess(true);
       } else {
         console.error("❌ [FORM SUBMIT] Registration failed:", result.error);
 
@@ -282,7 +331,9 @@ export function StudentRegistrationWizard({
           toast.error("Validation Failed", {
             description: (
               <div className="space-y-1">
-                <p className="font-medium">Please correct the following errors:</p>
+                <p className="font-medium">
+                  Please correct the following errors:
+                </p>
                 <ul className="list-disc list-inside text-sm">
                   {result.fieldErrors.map((error, index) => (
                     <li key={index}>{error}</li>
@@ -294,7 +345,9 @@ export function StudentRegistrationWizard({
           });
         } else {
           toast.error("Registration Failed", {
-            description: result.error || "Failed to submit registration. Please try again.",
+            description:
+              result.error ||
+              "Failed to submit registration. Please try again.",
             duration: 7000,
           });
         }
@@ -302,7 +355,8 @@ export function StudentRegistrationWizard({
     } catch (error) {
       console.error("❌ [FORM SUBMIT] Submit error:", error);
       toast.error("Unexpected Error", {
-        description: "An unexpected error occurred. Please try again or contact support.",
+        description:
+          "An unexpected error occurred. Please try again or contact support.",
         duration: 7000,
       });
     } finally {
@@ -322,36 +376,88 @@ export function StudentRegistrationWizard({
     router.refresh(); // Force a full page refresh to ensure token refresh
   };
 
-  // Show success component if registration is successful
+  // Simple success page - inline UI replacement
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm p-8 border border-gray-200">
           {/* Success Icon */}
-          <div className="mb-6 flex justify-center">
+          <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <Check className="w-10 h-10 text-green-600" />
+              <Check className="w-10 h-10 text-green-600" strokeWidth={2.5} />
             </div>
           </div>
 
-          {/* Success Title */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+          {/* Success Message - English */}
+          <h2 className="text-2xl font-bold text-center text-[#19184A] mb-3">
             Registration Successful!
           </h2>
+          <h3 className="text-xl font-bold text-center text-[#19184A] mb-6">
+            စာရင်းသွင်းခြင်း အောင်မြင်ပါသည်!
+          </h3>
 
-          {/* Backend Message */}
-          <p className="text-gray-600 mb-8">
-            {successMessage}
-          </p>
+          {/* Info Box - English */}
+          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-5 mb-4">
+            <p className="text-sm text-blue-900 leading-relaxed mb-3">
+              <strong>Your profile data has been completed successfully.</strong>
+            </p>
+            <p className="text-sm text-blue-800 leading-relaxed mb-3">
+              The Student Affairs Department will review and approve your registration request.
+              You will receive an approval letter via email once the review is complete.
+            </p>
+            <p className="text-sm text-blue-800 leading-relaxed">
+              Your submitted data is available at{" "}
+              <a
+                href="/profile/student"
+                className="font-semibold underline hover:text-blue-600"
+                target="_blank"
+              >
+                /profile/student
+              </a>
+              . Please save or print this document for your records.
+            </p>
+          </div>
 
-          {/* Go to Home Button */}
-          <Button
-            onClick={handleGoHome}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            size="lg"
-          >
-            Go to Home Page
-          </Button>
+          {/* Info Box - Myanmar */}
+          <div className="bg-green-50 border-l-4 border-green-500 rounded-r-lg p-5 mb-6">
+            <p className="text-sm text-green-900 leading-relaxed mb-3">
+              <strong>သင့်ကိုယ်ရေးအချက်အလက်များ အောင်မြင်စွာ ပြည့်စုံပြီးပါပြီ။</strong>
+            </p>
+            <p className="text-sm text-green-800 leading-relaxed mb-3">
+              ကျောင်းသားရေးရာဌာနမှ သင့်စာရင်းသွင်းမှုကို စစ်ဆေးပြီး အတည်ပြုပါမည်။
+              စစ်ဆေးမှု ပြီးစီးသည်နှင့် သင့်အီးမေးလ်သို့ အတည်ပြုစာ ပေးပို့ပါမည်။
+            </p>
+            <p className="text-sm text-green-800 leading-relaxed">
+              သင်တင်သွင်းထားသော အချက်အလက်များကို{" "}
+              <a
+                href="/profile/student"
+                className="font-semibold underline hover:text-green-600"
+                target="_blank"
+              >
+                /profile/student
+              </a>
+              {" "}တွင် ကြည့်ရှုနိုင်ပါသည်။ ကျေးဇူးပြု၍ ဤစာရွက်စာတမ်းကို သိမ်းဆည်းခြင်း သို့မဟုတ် ပရင့်ထုတ်ခြင်း ပြုလုပ်ပါ။
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button
+              onClick={() => window.open('/profile/student', '_blank')}
+              variant="outline"
+              className="border-[#4C67E1] text-[#4C67E1] hover:bg-blue-50"
+              size="lg"
+            >
+              View My Profile / ကျွန်ုပ်၏ ကိုယ်ရေးအချက်အလက်
+            </Button>
+            <Button
+              onClick={handleGoHome}
+              className="bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+              size="lg"
+            >
+              Go to Home Page / ပင်မစာမျက်နှာသို့
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -379,11 +485,16 @@ export function StudentRegistrationWizard({
             console.log("🔔 [FORM] Event target:", e.target);
             console.log("🔔 [FORM] Native event:", e.nativeEvent);
             console.log("🔔 [FORM] Current step at submit:", currentStep);
-            console.log("🔔 [FORM] canSubmitRef.current:", canSubmitRef.current);
+            console.log(
+              "🔔 [FORM] canSubmitRef.current:",
+              canSubmitRef.current
+            );
 
             // Only allow submission if explicitly allowed via the submit button
             if (!canSubmitRef.current) {
-              console.log("🛑 [FORM] Preventing submission - canSubmitRef is false");
+              console.log(
+                "🛑 [FORM] Preventing submission - canSubmitRef is false"
+              );
               e.preventDefault();
               e.stopPropagation();
               return false;
@@ -401,149 +512,168 @@ export function StudentRegistrationWizard({
           }}
           className="space-y-6"
         >
-        {/* Step Indicators - Desktop */}
-        <div className="hidden md:block bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex justify-center items-center gap-2 mb-3">
-            {WIZARD_STEPS.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = index === currentStep;
-              const isCompleted = index < currentStep;
-
-              return (
-                <div key={step.id} className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                      isActive
-                        ? "bg-[#4C67E1] text-white shadow-md"
-                        : isCompleted
-                        ? "bg-[#4C67E1] text-white"
-                        : "bg-gray-200 text-gray-400"
-                    }`}
-                    title={step.title}
-                  >
-                    {isCompleted ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
-                  </div>
-                  {index < WIZARD_STEPS.length - 1 && (
-                    <div className={`w-8 h-0.5 ${isCompleted ? "bg-[#4C67E1]" : "bg-gray-300"}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {/* Progress Bar - Small */}
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div
-              className="bg-[#4C67E1] h-1 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Mobile Step Indicator */}
-        <div className="md:hidden bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#4C67E1] text-white shadow-md">
-                <StepIcon className="h-3.5 w-3.5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-[#19184A]">{currentStepConfig.title}</h3>
-                <p className="text-xs text-gray-600">{currentStepConfig.description}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
+          {/* Step Indicators - Desktop */}
+          <div className="hidden md:block bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex justify-center items-center gap-2 mb-3">
               {WIZARD_STEPS.map((step, index) => {
+                const Icon = step.icon;
                 const isActive = index === currentStep;
                 const isCompleted = index < currentStep;
+
                 return (
-                  <div
-                    key={step.id}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${
-                      isActive
-                        ? "bg-[#4C67E1] w-4"
-                        : isCompleted
-                        ? "bg-[#4C67E1]"
-                        : "bg-gray-300"
-                    }`}
-                  />
+                  <div key={step.id} className="flex items-center gap-2">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                        isActive
+                          ? "bg-[#4C67E1] text-white shadow-md"
+                          : isCompleted
+                          ? "bg-[#4C67E1] text-white"
+                          : "bg-gray-200 text-gray-400"
+                      }`}
+                      title={step.title}
+                    >
+                      {isCompleted ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Icon className="h-3.5 w-3.5" />
+                      )}
+                    </div>
+                    {index < WIZARD_STEPS.length - 1 && (
+                      <div
+                        className={`w-8 h-0.5 ${
+                          isCompleted ? "bg-[#4C67E1]" : "bg-gray-300"
+                        }`}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>
+            {/* Progress Bar - Small */}
+            <div className="w-full bg-gray-200 rounded-full h-1">
+              <div
+                className="bg-[#4C67E1] h-1 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-          {/* Progress Bar - Small */}
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div
-              className="bg-[#4C67E1] h-1 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+
+          {/* Mobile Step Indicator */}
+          <div className="md:hidden bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#4C67E1] text-white shadow-md">
+                  <StepIcon className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-[#19184A]">
+                    {currentStepConfig.title}
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    {currentStepConfig.description}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {WIZARD_STEPS.map((step, index) => {
+                  const isActive = index === currentStep;
+                  const isCompleted = index < currentStep;
+                  return (
+                    <div
+                      key={step.id}
+                      className={`w-1.5 h-1.5 rounded-full transition-all ${
+                        isActive
+                          ? "bg-[#4C67E1] w-4"
+                          : isCompleted
+                          ? "bg-[#4C67E1]"
+                          : "bg-gray-300"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+            {/* Progress Bar - Small */}
+            <div className="w-full bg-gray-200 rounded-full h-1">
+              <div
+                className="bg-[#4C67E1] h-1 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 border border-gray-200">
-          <h2 className="text-2xl font-bold text-[#19184A] mb-6 hidden md:block">
-            {currentStepConfig.title}
-          </h2>
+          {/* Step Content */}
+          <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 border border-gray-200">
+            <h2 className="text-2xl font-bold text-[#19184A] mb-6 hidden md:block">
+              {currentStepConfig.title}
+            </h2>
 
-          {/* Form Fields */}
-          <div className="space-y-6">
-            {currentStep === 0 && <PersonalInfoStep user={user} />}
-            {currentStep === 1 && <AddressInfoStep />}
-            {currentStep === 2 && <FamilyInfoStep />}
-            {currentStep === 3 && <AcademicInfoStep moduleSchema={moduleSchema} />}
-            {currentStep === 4 && <CurrentAcademicStep />}
-            {currentStep === 5 && <AdditionalInfoStep />}
+            {/* Form Fields */}
+            <div className="space-y-6">
+              {currentStep === 0 && <PersonalInfoStep user={user} />}
+              {currentStep === 1 && <AddressInfoStep />}
+              {currentStep === 2 && <FamilyInfoStep />}
+              {currentStep === 3 && (
+                <AcademicInfoStep moduleSchema={moduleSchema} />
+              )}
+              {currentStep === 4 && <CurrentAcademicStep />}
+              {currentStep === 5 && <AdditionalInfoStep />}
+            </div>
           </div>
-        </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 0 || isSubmitting}
-            className="flex items-center gap-2 border-gray-300 text-gray-900 hover:bg-gray-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-
-          {currentStep < WIZARD_STEPS.length - 1 ? (
+          {/* Navigation Buttons */}
+          <div className="flex justify-between bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <Button
               type="button"
-              onClick={(e) => {
-                console.log("🖱️  [NEXT BUTTON] Next button clicked");
-                console.log("🖱️  [NEXT BUTTON] Current step:", currentStep);
-                console.log("🖱️  [NEXT BUTTON] Event:", e);
-                handleNext();
-              }}
-              disabled={isSubmitting}
-              className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentStep === 0 || isSubmitting}
+              className="flex items-center gap-2 border-gray-300 text-gray-900 hover:bg-gray-50"
             >
-              Next
-              <ChevronRight className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" />
+              Previous
             </Button>
-          ) : (
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              onClick={(e) => {
-                console.log("🖱️  [SUBMIT BUTTON] Submit button clicked");
-                console.log("🖱️  [SUBMIT BUTTON] Current step:", currentStep);
-                console.log("🖱️  [SUBMIT BUTTON] Is submitting:", isSubmitting);
-                console.log("🖱️  [SUBMIT BUTTON] Setting canSubmitRef to true");
-                canSubmitRef.current = true;
-              }}
-              className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
-            >
-              {isSubmitting ? "Submitting..." : "Submit Registration"}
-              <Check className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </form>
-    </FormProvider>
+
+            {currentStep < WIZARD_STEPS.length - 1 ? (
+              <Button
+                type="button"
+                onClick={(e) => {
+                  console.log("🖱️  [NEXT BUTTON] Next button clicked");
+                  console.log("🖱️  [NEXT BUTTON] Current step:", currentStep);
+                  console.log("🖱️  [NEXT BUTTON] Event:", e);
+                  handleNext();
+                }}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                onClick={(e) => {
+                  console.log("🖱️  [SUBMIT BUTTON] Submit button clicked");
+                  console.log("🖱️  [SUBMIT BUTTON] Current step:", currentStep);
+                  console.log(
+                    "🖱️  [SUBMIT BUTTON] Is submitting:",
+                    isSubmitting
+                  );
+                  console.log(
+                    "🖱️  [SUBMIT BUTTON] Setting canSubmitRef to true"
+                  );
+                  canSubmitRef.current = true;
+                }}
+                className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+              >
+                {isSubmitting ? "Submitting..." : "Submit Registration"}
+                <Check className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </form>
+      </FormProvider>
     </>
   );
 }

@@ -480,13 +480,20 @@ export async function handleSessionStatus(
 export async function handleRefreshSession(
   request: NextRequest
 ): Promise<NextResponse> {
+  console.log(`🔄 [REFRESH_SESSION] ========== SESSION REFRESH REQUEST STARTED ==========`);
+
   try {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get(COOKIE_NAMES.SESSION)?.value;
 
+    console.log(`🔄 [REFRESH_SESSION] Session cookie present: ${!!sessionId}`);
+
     if (!sessionId) {
+      console.log(`❌ [REFRESH_SESSION] No session cookie found`);
       return NextResponse.json({ error: "No active session" }, { status: 401 });
     }
+
+    console.log(`🔄 [REFRESH_SESSION] Validating existing session: ${sessionId.substring(0, 16)}...`);
 
     // First validate the existing session
     const sessionInfo = await validateRequest(sessionId, {
@@ -498,6 +505,7 @@ export async function handleRefreshSession(
     });
 
     if (!sessionInfo.isAuthenticated || !sessionInfo.session) {
+      console.log(`❌ [REFRESH_SESSION] Session validation failed - not authenticated or session not found`);
       return NextResponse.json(
         { error: "Session not found or invalid" },
         { status: 401 }
@@ -507,7 +515,10 @@ export async function handleRefreshSession(
     const userId = sessionInfo.user?.id;
     const tenantId = sessionInfo.session.tenantId;
 
+    console.log(`✅ [REFRESH_SESSION] Session valid - userId: ${userId}, tenantId: ${tenantId}`);
+
     if (!userId || !tenantId) {
+      console.log(`❌ [REFRESH_SESSION] Missing userId or tenantId`);
       return NextResponse.json(
         { error: "Missing user ID or tenant ID" },
         { status: 400 }
@@ -553,10 +564,13 @@ export async function handleRefreshSession(
     }
 
     console.log(
-      `[REFRESH_SESSION] Session extended for user: ${sessionInfo.user?.email}, ` +
-      `new expiry: ${renewedSession.expiresAt}, ` +
-      `token refreshed: ${tokenRefreshed}`
+      `✅ [REFRESH_SESSION] Session extended for user: ${sessionInfo.user?.email}\n` +
+      `   - New expiry: ${renewedSession.expiresAt}\n` +
+      `   - Token refreshed: ${tokenRefreshed ? 'YES ✅' : 'NO ❌'}\n` +
+      `   - Token error: ${tokenError || 'None'}`
     );
+
+    console.log(`🔄 [REFRESH_SESSION] ========== SESSION REFRESH REQUEST COMPLETED ==========`);
 
     return NextResponse.json({
       success: true,
@@ -565,7 +579,8 @@ export async function handleRefreshSession(
       tokenError,
     });
   } catch (error) {
-    console.error("Refresh session error:", error);
+    console.error("❌ [REFRESH_SESSION] ========== SESSION REFRESH REQUEST FAILED ==========");
+    console.error("❌ [REFRESH_SESSION] Refresh session error:", error);
     return NextResponse.json(
       { error: "Failed to refresh session" },
       { status: 500 }

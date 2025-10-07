@@ -8,38 +8,30 @@ export const metadata: Metadata = {
   description: "Complete your profile information to access all features",
 };
 
-interface PageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function CompleteProfilePage({ searchParams }: PageProps) {
+export default async function CompleteProfilePage() {
   try {
-    const params = await searchParams;
-    const showSuccess = params.success === "true";
+    console.log(`📄 [PAGE LOAD] Profile setup page loading`);
 
     // Get current user
     const user = await getCurrentUser();
 
-    // Redirect if not authenticated
     if (!user) {
       redirect("/login");
     }
 
     // Check if user has guest role
-    const isGuestUser = user.roles?.some(
-      (roleObj: any) => roleObj.Role === "guest"
-    ) ?? false;
+    const isGuestUser =
+      user.roles?.some((roleObj: any) => roleObj.Role === "guest") ?? false;
 
-    // Allow non-guest users to see success screen if coming from successful registration
-    // Otherwise redirect non-guest users to home
-    if (!isGuestUser && !showSuccess) {
+    // Redirect non-guest users to home (they already completed registration)
+    if (!isGuestUser) {
       redirect("/");
     }
 
-    return <CompleteProfileClient user={user} showSuccess={showSuccess} />;
+    return <CompleteProfileClient user={user} />;
   } catch (error) {
     // Handle token expiration or authentication errors
-    console.error("Authentication error:", error);
+    console.error("❌ [PAGE LOAD] Authentication error:", error);
     redirect("/login?error=session_expired");
   }
 }

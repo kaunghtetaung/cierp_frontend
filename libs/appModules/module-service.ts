@@ -99,6 +99,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token with auto-refresh for read operations
       timeout: 25000, // 25 seconds timeout for module lists
     });
 
@@ -147,6 +148,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for read operations
     });
 
     if (!response.success) {
@@ -200,6 +202,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for read operations
     });
 
     console.log('📦 [MODULE SERVICE] Raw response:', {
@@ -248,6 +251,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for create operations
     });
 
     if (!response.success) {
@@ -283,6 +287,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for update operations
     });
 
     if (!response.success) {
@@ -317,6 +322,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for delete operations
     });
 
     if (!response.success) {
@@ -364,6 +370,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for bulk operations
     });
 
     if (!response.success) {
@@ -391,6 +398,7 @@ export class ModuleService {
         userSessionId: this.userSessionId,
         userId: this.userId,
         withAuth: true,
+        tokenStrategy: 'auto', // Use cached token for extra actions
       }
     );
 
@@ -441,6 +449,7 @@ export class ModuleService {
       userSessionId: this.userSessionId,
       userId: this.userId,
       withAuth: true,
+      tokenStrategy: 'auto', // Use cached token for reference data
     });
 
     if (!response.success) {

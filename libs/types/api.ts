@@ -72,7 +72,7 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 export interface RequestOptions {
   readonly method: HttpMethod;
   readonly headers?: Record<string, string>;
-  readonly body?: string | FormData;
+  readonly body?: any; // Allow any JSON-serializable object, string, or FormData
   readonly params?: Record<string, string | number | boolean>;
   readonly timeout?: number;
 }
@@ -84,6 +84,13 @@ export interface ApiRequestConfig extends RequestOptions {
   readonly userId?: string;
   readonly withAuth?: boolean;
   readonly language?: string;
+  /**
+   * Token strategy for user token retrieval
+   * - 'auto': Automatically refresh if expired (default - uses cached token with auto-refresh)
+   * - 'force-refresh': Always force refresh using refresh token
+   * @default 'auto'
+   */
+  readonly tokenStrategy?: 'auto' | 'force-refresh';
 }
 
 export interface TokenRefreshResponse {

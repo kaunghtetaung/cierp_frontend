@@ -4,12 +4,29 @@ import { getCurrentTenantForClient, getTenantWithSecrets } from "@repo/tenant/wr
 import { initializeTenantToken } from "@repo/tenant/token-initializer";
 import { GlobalErrorFallback } from "@/base-components/error/GlobalErrorFallback";
 import { Toaster } from "@repo/ui/components/sonner";
+import { getLocalizedText } from "@repo/utils";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "CMS Frontend",
-  description: "Content Management System Frontend",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const tenant = await getCurrentTenantForClient();
+    if (tenant) {
+      const tenantName = getLocalizedText(tenant.displayName);
+      return {
+        title: tenantName,
+        description: getLocalizedText(tenant.localizedDescription) || `${tenantName} - Student Portal`,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to generate metadata:", error);
+  }
+
+  // Fallback metadata
+  return {
+    title: "University Portal",
+    description: "Student Management System",
+  };
+}
 
 // Critical error fallback when tenant system completely fails
 function CriticalErrorFallback({ error }: { error: string }) {

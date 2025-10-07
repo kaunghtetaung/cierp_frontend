@@ -6,9 +6,8 @@ import { StudentSelfRegistrationForm } from "./components/StudentSelfRegistratio
 
 interface CompleteProfileClientProps {
   user: User;
-  showSuccess?: boolean;
 }
 
-export function CompleteProfileClient({ user, showSuccess = false }: CompleteProfileClientProps) {
-  return <StudentSelfRegistrationForm user={user} initialSuccess={showSuccess} />;
+export function CompleteProfileClient({ user }: CompleteProfileClientProps) {
+  return <StudentSelfRegistrationForm user={user} />;
 }

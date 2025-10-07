@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { LoginPageContent } from "./login-page-content";
 import { ErrorPage } from "../../../feature-components/error";
-import { FullPageLoadingDisplay } from "../../../styled-components/ui/LoadingSpinners";
 
 // Force this page to be dynamic since it accesses runtime headers
 export const dynamic = 'force-dynamic';
@@ -52,5 +51,12 @@ export default async function LoginPage() {
 }
 
 function LoginPageFallback() {
-  return <FullPageLoadingDisplay text="Loading login page..." />;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-gray-50">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-lg text-gray-700 font-medium">Processing...</p>
+      </div>
+    </div>
+  );
 }

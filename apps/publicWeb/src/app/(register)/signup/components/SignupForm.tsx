@@ -62,30 +62,35 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    if (!isVerified) {
-      setShowVerification(true);
-      return;
-    }
 
     if (passwordStrength < 3) {
       return;
     }
 
+    // Validate form fields before showing verification
+    if (!formValues.displayName || !formValues.email || !formValues.password) {
+      return;
+    }
+
+    if (!isVerified) {
+      setShowVerification(true);
+      return;
+    }
+
     const form = e.currentTarget;
     const formData = new FormData(form);
-    
+
     formData.append("verificationToken", verificationToken);
     formData.append("formLoadTime", formLoadTime.toString());
     if (tenantId) {
       formData.append("tenantId", tenantId);
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const result = await signupAction(initialState, formData);
-      
+
       if (result.success && result.data?.email) {
         // Redirect on success
         router.push(`/success?email=${encodeURIComponent(result.data.email)}`);
@@ -107,10 +112,43 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
     setTouched({ ...touched, [fieldName]: true });
   };
 
-  const handleVerificationComplete = (token: string) => {
+  const handleVerificationComplete = async (token: string) => {
     setVerificationToken(token);
     setIsVerified(true);
     setShowVerification(false);
+
+    // Auto-submit form after verification
+    setIsSubmitting(true);
+
+    // Create FormData from current form values
+    const formData = new FormData();
+    formData.append("displayName", formValues.displayName);
+    formData.append("email", formValues.email);
+    formData.append("password", formValues.password);
+    formData.append("verificationToken", token);
+    formData.append("formLoadTime", formLoadTime.toString());
+    if (tenantId) {
+      formData.append("tenantId", tenantId);
+    }
+
+    try {
+      const result = await signupAction(initialState, formData);
+
+      if (result.success && result.data?.email) {
+        // Redirect on success
+        router.push(`/success?email=${encodeURIComponent(result.data.email)}`);
+      } else {
+        // Update form state with errors
+        setFormState(result);
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      setFormState({
+        ...initialState,
+        error: 'An unexpected error occurred. Please try again.'
+      });
+      setIsSubmitting(false);
+    }
   };
 
   const getFieldError = (fieldName: string) => {
@@ -205,6 +243,8 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
               autoFocus
               required
               placeholder={t.fullNamePlaceholder}
+              value={formValues.displayName}
+              onChange={(e) => setFormValues({ ...formValues, displayName: e.target.value })}
               className={getInputClasses('displayName')}
               onBlur={() => handleFieldBlur('displayName')}
             />
@@ -230,6 +270,8 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
               autoComplete="email"
               required
               placeholder={t.emailPlaceholder}
+              value={formValues.email}
+              onChange={(e) => setFormValues({ ...formValues, email: e.target.value })}
               className={getInputClasses('email')}
               onBlur={() => handleFieldBlur('email')}
             />
@@ -256,7 +298,10 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
               required
               placeholder={t.passwordPlaceholder}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFormValues({ ...formValues, password: e.target.value });
+              }}
               className={`${getInputClasses('password')} pr-12`}
               onBlur={() => handleFieldBlur('password')}
             />

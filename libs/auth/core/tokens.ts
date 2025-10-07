@@ -218,7 +218,11 @@ export async function getUserAccessToken(tenantId: string, userId: string): Prom
   const key = CacheKeys.userAccessToken(tenantId, userId);
 
   console.log(`✅ [getUserAccessToken] Checking user access token for tenant=${tenantId}, user=${userId}`);
+  console.log(`🔍 [DEBUG getUserAccessToken] tenantId type:`, typeof tenantId, "value:", tenantId);
+  console.log(`🔍 [DEBUG getUserAccessToken] userId type:`, typeof userId, "value:", userId);
+  console.log(`🔍 [DEBUG getUserAccessToken] Generated cache key:`, key);
   const token = await cache.get<string>(key);
+  console.log(`🔍 [DEBUG getUserAccessToken] Cache lookup result:`, token ? "FOUND ✅" : "NOT FOUND ❌");
 
   // If we have a valid token, check if it's expired
   if (token) {
@@ -463,19 +467,43 @@ export async function clearUserTokens(tenantId: string, userId: string): Promise
  * Get the best available token for a request
  * Priority: User token > Tenant token > Initializer token
  */
-export async function getTokenForRequest(tenantId?: string, userId?: string): Promise<string | null> {
-  console.log(`[TokenManager] Getting token for request: tenantId=${tenantId}, userId=${userId}`);
-  
+/**
+ * Token strategy for user token retrieval
+ * - 'auto': Automatically refresh if expired (default behavior - uses getUserAccessToken)
+ * - 'force-refresh': Always force refresh using refresh token
+ */
+export type TokenStrategy = 'auto' | 'force-refresh';
+
+export async function getTokenForRequest(
+  tenantId?: string,
+  userId?: string,
+  tokenStrategy: TokenStrategy = 'auto'
+): Promise<string | null> {
+  console.log(`[TokenManager] Getting token for request: tenantId=${tenantId}, userId=${userId}, strategy=${tokenStrategy}`);
+  console.log(`🔍 [DEBUG getTokenForRequest] tenantId type:`, typeof tenantId, "value:", tenantId);
+  console.log(`🔍 [DEBUG getTokenForRequest] userId type:`, typeof userId, "value:", userId);
+
   // Try user token if we have both tenantId and userId
   if (tenantId && userId) {
-    const userToken = await getUserAccessToken(tenantId, userId);
+    let userToken: string | null = null;
+
+    if (tokenStrategy === 'force-refresh') {
+      console.log(`[TokenManager] 🔄 Force refreshing user token for user=${userId}`);
+      userToken = await refreshUserAccessTokenWithRefreshToken(tenantId, userId);
+    } else {
+      // 'auto' strategy - getUserAccessToken already handles auto-refresh if expired
+      console.log(`[TokenManager] 🔍 Attempting to get user access token with 'auto' strategy`);
+      userToken = await getUserAccessToken(tenantId, userId);
+    }
+
     if (userToken) {
       console.log(`[TokenManager] ✅ Using userAccessToken for tenant=${tenantId}, user=${userId}`);
       return userToken;
     }
     console.log(`[TokenManager] ❌ No userAccessToken found for tenant=${tenantId}, user=${userId}`);
+    console.log(`[TokenManager] 🔍 Falling back to tenant token...`);
   }
-  
+
   // Try tenant token if we have tenantId
   if (tenantId) {
     const tenantToken = await getTenantToken(tenantId);
@@ -485,7 +513,7 @@ export async function getTokenForRequest(tenantId?: string, userId?: string): Pr
     }
     console.log(`[TokenManager] ❌ No tenantAccessToken found for tenant=${tenantId}`);
   }
-  
+
   // Fallback to initializer token
   const initToken = await getInitializerToken();
   if (initToken) {

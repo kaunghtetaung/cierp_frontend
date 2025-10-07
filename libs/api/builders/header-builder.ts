@@ -9,14 +9,18 @@ import { HTTP_CONSTANTS } from '../types/http-types';
 import type { HttpMethod, ApiRequestConfig } from "@repo/types";
 
 // Direct token retrieval to avoid circular dependency
-async function getTokenForRequest(tenantId?: string, userId?: string): Promise<string | null> {
+async function getTokenForRequest(
+  tenantId?: string,
+  userId?: string,
+  tokenStrategy: 'auto' | 'force-refresh' = 'auto'
+): Promise<string | null> {
   try {
     // Try to get token from the simplified auth core functions
     const { getTokenForRequest: coreGetToken } = require("../../auth/core/tokens");
-    return await coreGetToken(tenantId, userId);
+    return await coreGetToken(tenantId, userId, tokenStrategy);
   } catch (error) {
     console.warn('Failed to get token from core/tokens, falling back to TokenManager:', error);
-    
+
     try {
       // Fallback to TokenManager if core functions fail
       const { TokenManager } = require("../../auth/managers/token-manager");
@@ -88,7 +92,9 @@ export class StandardHeaderBuilder implements HeaderBuilder {
 
     // Add auth token using TokenManager (server-side only)
     if (withAuth) {
-      const token = await this.getAuthToken(tenantId, config.userId);
+      const tokenStrategy = config.tokenStrategy || 'auto';
+      // Use resolvedTenantId (not tenantId) to ensure token lookup works even when tenantId is not explicitly passed
+      const token = await this.getAuthToken(resolvedTenantId, config.userId, tokenStrategy);
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
@@ -100,7 +106,11 @@ export class StandardHeaderBuilder implements HeaderBuilder {
   /**
    * Get authentication token using simplified auth functions (server-side only)
    */
-  private async getAuthToken(tenantId?: string, userId?: string): Promise<string | null> {
+  private async getAuthToken(
+    tenantId?: string,
+    userId?: string,
+    tokenStrategy: 'auto' | 'force-refresh' = 'auto'
+  ): Promise<string | null> {
     if (!this.config.enableAuth) {
       return null;
     }
@@ -110,7 +120,8 @@ export class StandardHeaderBuilder implements HeaderBuilder {
       // All tokens are managed server-side with Redis caching
       const token = await getTokenForRequest(
         tenantId,
-        userId
+        userId,
+        tokenStrategy
       );
       return token;
     } catch (error) {

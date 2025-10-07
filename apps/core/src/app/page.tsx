@@ -4,21 +4,19 @@ import { IconComponent } from "@repo/ui";
 import { Card, CardContent } from "@repo/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui";
 import { Badge } from "@repo/ui";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 export default async function Page() {
   // Fetch layout data to get tenant, user info, and available apps
   const { middlewareData, tenant, authData, filteredApps } = await fetchLayoutData();
 
-  // If no tenant or user, show basic welcome (shouldn't happen due to middleware)
+  // If no tenant or user, redirect to login with return URL
   if (!tenant || !authData?.isAuthenticated || !authData.user) {
-    return (
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold">Welcome</h1>
-          <p className="text-muted-foreground">Please log in to access the system.</p>
-        </div>
-      </div>
-    );
+    const headersList = await headers();
+    const currentUrl = headersList.get('x-url') || '/';
+    const returnUrl = encodeURIComponent(currentUrl);
+    redirect(`/login?returnUrl=${returnUrl}`);
   }
 
   const user = authData.user;
