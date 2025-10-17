@@ -401,6 +401,57 @@ export interface ApiConfig {
 }
 
 /**
+ * Get API subdomain based on environment
+ * Production: api
+ * Development: api-dev (or custom from API_SUBDOMAIN env var)
+ */
+function getApiSubdomain(): string {
+  // Check for environment variable
+  const envSubdomain = process.env.API_SUBDOMAIN || process.env.NEXT_PUBLIC_API_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'api' for production, 'api-dev' for development
+  const isDev = isDevelopmentEnvironment();
+  return isDev ? "api-dev" : "api";
+}
+
+/**
+ * Get Auth subdomain based on environment
+ * Production: auth
+ * Development: auth-dev (or custom from AUTH_SUBDOMAIN env var)
+ */
+function getAuthSubdomain(): string {
+  // Check for environment variable
+  const envSubdomain = process.env.AUTH_SUBDOMAIN || process.env.NEXT_PUBLIC_AUTH_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'auth' for production, 'auth-dev' for development
+  const isDev = isDevelopmentEnvironment();
+  return isDev ? "auth-dev" : "auth";
+}
+
+/**
+ * Get WWW subdomain based on environment
+ * Production: www
+ * Development: www-dev (or custom from WWW_SUBDOMAIN env var)
+ */
+function getWwwSubdomain(): string {
+  // Check for environment variable
+  const envSubdomain = process.env.WWW_SUBDOMAIN || process.env.NEXT_PUBLIC_WWW_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'www' for production, 'www-dev' for development
+  const isDev = isDevelopmentEnvironment();
+  return isDev ? "www-dev" : "www";
+}
+
+/**
  * Get API endpoint - simplified for IP-based setup
  * Used by middleware and other parts of the application
  */
@@ -423,15 +474,17 @@ export function getApiEndpoint(
     if (config.baseUrl) {
       return { fullUrl: config.baseUrl, rootDomain };
     }
-    
+
     if (process.env.API_BASE_URL) {
       return { fullUrl: process.env.API_BASE_URL, rootDomain };
     }
   }
 
-  // For multi-tenant domains, build API URL matching client protocol and port
+  // For multi-tenant domains, build API URL matching client protocol
+  // Use environment-based subdomain (api-dev for dev, api for prod)
   const cleanProtocol = protocol.endsWith(':') ? protocol.slice(0, -1) : protocol;
-  const fullUrl = `${cleanProtocol}://api.${rootDomain}`;
+  const apiSubdomain = getApiSubdomain();
+  const fullUrl = `${cleanProtocol}://${apiSubdomain}.${rootDomain}`;
 
   return { fullUrl, rootDomain };
 }
@@ -453,6 +506,7 @@ export function buildTenantApiUrl(
 
 /**
  * Build auth API URL - simplified for IP-based setup
+ * Uses environment-based subdomain (auth-dev for dev, auth for prod)
  */
 export function buildAuthApiUrl(
   hostname: string,
@@ -464,8 +518,11 @@ export function buildAuthApiUrl(
   const parsed = parse(cleanHostname);
   const rootDomain = parsed.domain || cleanHostname;
 
+  // Get environment-based auth subdomain
+  const authSubdomain = getAuthSubdomain();
+
   // With IP-based setup, auth runs on standard port 80
-  return `${protocol}://auth.${rootDomain}${
+  return `${protocol}://${authSubdomain}.${rootDomain}${
     endpoint.startsWith("/") ? endpoint : "/" + endpoint
   }`;
 }
@@ -505,6 +562,7 @@ export function getPortSuffix(
 
 /**
  * Consolidated public URL construction - simplified for IP-based setup
+ * Uses environment-based WWW subdomain (www for prod, www-dev for dev)
  * Works for both client and server contexts
  */
 export function buildPublicUrl(
@@ -517,9 +575,13 @@ export function buildPublicUrl(
     ? protocol.slice(0, -1)
     : protocol;
   const baseDomain = extractBaseDomain(cleanHost);
-  const publicHost = baseDomain.startsWith("www.")
-    ? baseDomain
-    : `www.${baseDomain}`;
+
+  // Get environment-based WWW subdomain
+  const wwwSubdomain = getWwwSubdomain();
+
+  // Check if already has www or www-dev prefix
+  const hasWwwPrefix = baseDomain.startsWith("www.") || baseDomain.startsWith("www-dev.");
+  const publicHost = hasWwwPrefix ? baseDomain : `${wwwSubdomain}.${baseDomain}`;
 
   // With IP-based setup, no port handling needed
   return `${cleanProtocol}://${publicHost}`;

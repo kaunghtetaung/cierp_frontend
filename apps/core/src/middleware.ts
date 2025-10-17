@@ -129,6 +129,21 @@ function requiresAuthentication(pathname: string): boolean {
 }
 
 /**
+ * Get WWW subdomain based on environment
+ * Production: www
+ * Development: www-dev
+ */
+function getWwwSubdomain(): string {
+  const envSubdomain = process.env.WWW_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+  // Default: use 'www' for production, 'www-dev' for development
+  const isDev = process.env.NODE_ENV === 'development';
+  return isDev ? 'www-dev' : 'www';
+}
+
+/**
  * Handle authentication redirect
  */
 async function handleAuthRedirect(request: NextRequest): Promise<NextResponse> {
@@ -150,8 +165,14 @@ async function handleAuthRedirect(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(loginUrl);
   } catch (error) {
     console.error("Failed to create auth redirect:", error);
-    // Fallback redirect if getPublicUrl fails
-    return NextResponse.redirect("http://www.crystal-image.net/login");
+    // Fallback: construct URL from request hostname with environment-based subdomain
+    const hostname = request.headers.get("host") || "localhost";
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const baseDomain = hostname.split(':')[0].replace(/^(core|api|auth|www|www-dev)\./, '');
+    const wwwSubdomain = getWwwSubdomain();
+    const fallbackLoginUrl = `${protocol}://${wwwSubdomain}.${baseDomain}/login`;
+    console.log(`[AUTH_REDIRECT] Using fallback URL with ${wwwSubdomain} subdomain: ${fallbackLoginUrl}`);
+    return NextResponse.redirect(fallbackLoginUrl);
   }
 }
 

@@ -13,12 +13,12 @@ export interface StudentSelfRegistrationData {
   gender: string;
   nrcNumber?: string;
   placeOfBirth?: string;
-  bloodGroup?: string;
-  ethnicity?: string;
+  bloodType?: string;
+  race?: string;
   religion?: string;
 
   // Contact & Address
-  phoneNumber: string;
+  phone: string;
   email?: string;
   stateRegionName?: string;
   districtName?: string;
@@ -122,12 +122,12 @@ export async function submitStudentSelfRegistration(
       gender: data.gender,
       nrcNumber: data.nrcNumber,
       placeOfBirth: data.placeOfBirth,
-      bloodGroup: data.bloodGroup,
-      ethnicity: data.ethnicity,
+      bloodType: data.bloodType,
+      race: data.race,
       religion: data.religion,
 
       // Contact & Address
-      phoneNumber: data.phoneNumber,
+      phone: data.phone,
       email: data.email,
       stateRegionName: data.stateRegionName,
       districtName: data.districtName,

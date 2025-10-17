@@ -17,7 +17,7 @@ import { generateZodSchema } from '@repo/schema-utils'
 import { useWizardStorage } from '@repo/schema-hooks/use-wizard-storage'
 import { moduleKeys } from '@repo/schema-hooks'
 import { submitModuleForm } from '@repo/app-modules/server-actions'
-import { FieldRenderer } from './FieldRenderer'
+import { FormFieldRenderer } from './FormFieldRenderer'
 import type { ModuleSchema } from '@repo/types'
 
 interface ReactHookStaffWizardFormProps {
@@ -385,7 +385,7 @@ export function ReactHookStaffWizardForm({
                   {currentStepFields
                     .filter(field => field.fieldName.startsWith('father.'))
                     .map((field) => (
-                      <FieldRenderer
+                      <FormFieldRenderer
                         key={field.fieldName}
                         field={field}
                         currentLanguage={currentLanguage}
@@ -401,7 +401,7 @@ export function ReactHookStaffWizardForm({
                   {currentStepFields
                     .filter(field => field.fieldName.startsWith('mother.'))
                     .map((field) => (
-                      <FieldRenderer
+                      <FormFieldRenderer
                         key={field.fieldName}
                         field={field}
                         currentLanguage={currentLanguage}
@@ -417,7 +417,7 @@ export function ReactHookStaffWizardForm({
               /* Regular Field Rendering */
               <div className="space-y-4">
                 {currentStepFields.map((field) => (
-                  <FieldRenderer
+                  <FormFieldRenderer
                     key={field.fieldName}
                     field={field}
                     currentLanguage={currentLanguage}

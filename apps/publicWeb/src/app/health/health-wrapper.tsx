@@ -8,6 +8,19 @@ import { getPageBySlug, getPageSections, type PageData } from "@repo/page";
 import type { SectionData } from "@repo/types";
 import type { TenantSettingsDto } from "@repo/types";
 
+/**
+ * Get API subdomain based on environment
+ */
+function getApiSubdomain(): string {
+  const envSubdomain = process.env.API_SUBDOMAIN || process.env.NEXT_PUBLIC_API_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+  // Default: use 'api' for production, 'api-dev' for development
+  const isDev = process.env.NODE_ENV === 'development';
+  return isDev ? 'api-dev' : 'api';
+}
+
 // Health data interface
 interface HealthData {
   tenantSettings: TenantSettingsDto | null;
@@ -196,9 +209,10 @@ const getHealthData = cache(async (): Promise<HealthData> => {
     homePageData.error = "No tenant ID available";
   }
 
-  // Build API endpoint URL using domain helper
+  // Build API endpoint URL using domain helper with environment-based subdomain
+  const apiSubdomain = getApiSubdomain();
   const apiEndpoint = tenantSettings
-    ? `${protocol}://api.${hostname.split(":")[0].replace(/^www\./, "")}:3331`
+    ? `${protocol}://${apiSubdomain}.${hostname.split(":")[0].replace(/^www\./, "")}:3331`
     : "Not available";
 
   // Get request info

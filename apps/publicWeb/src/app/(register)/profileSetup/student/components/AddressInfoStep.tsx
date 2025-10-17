@@ -240,9 +240,9 @@ export function AddressInfoStep() {
                   <SelectValue placeholder={loadingStates ? "Loading..." : "Select state/region"} />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-300 max-h-[300px]">
-                  {stateRegions.map((state) => (
-                    <SelectItem key={state.pcode} value={state.displayValue}>
-                      {state.displayValue}
+                  {stateRegions.map((state: any, index: number) => (
+                    <SelectItem key={`${state.pcode}-${index}`} value={state.name}>
+                      {state.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -287,9 +287,9 @@ export function AddressInfoStep() {
                   <SelectValue placeholder={loadingDistricts ? "Loading..." : "Select district"} />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-300 max-h-[300px]">
-                  {districts.map((district) => (
-                    <SelectItem key={district.pcode} value={district.displayValue}>
-                      {district.displayValue}
+                  {districts.map((district: any, index: number) => (
+                    <SelectItem key={`${district.pcode}-${index}`} value={district.name}>
+                      {district.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -333,9 +333,9 @@ export function AddressInfoStep() {
                   <SelectValue placeholder={loadingTownships ? "Loading..." : "Select township"} />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-300 max-h-[300px]">
-                  {townships.map((township) => (
-                    <SelectItem key={township.pcode} value={township.displayValue}>
-                      {township.displayValue}
+                  {townships.map((township: any, index: number) => (
+                    <SelectItem key={`${township.pcode}-${index}`} value={township.name}>
+                      {township.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -379,9 +379,9 @@ export function AddressInfoStep() {
                   <SelectValue placeholder={loadingTowns ? "Loading..." : "Select town"} />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-300 max-h-[300px]">
-                  {towns.map((town) => (
-                    <SelectItem key={town.pcode} value={town.displayValue}>
-                      {town.displayValue}
+                  {towns.map((town: any, index: number) => (
+                    <SelectItem key={`${town.pcode}-${index}`} value={town.name}>
+                      {town.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

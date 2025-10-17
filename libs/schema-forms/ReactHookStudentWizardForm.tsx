@@ -45,21 +45,21 @@ const WIZARD_STEPS = {
   personal: {
     title: { en: "Personal Information", mm: "ကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
     description: { en: "Basic personal details", mm: "အခြေခံကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
-    fields: ["nameMyanmar", "nameEnglish", "gender", "ethnicity", "religion", "bloodGroup", "nrcNumber", "dateOfBirth", "placeOfBirth"],
+    fields: ["nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth"],
     icon: "User",
     required: true
   },
   contact: {
     title: { en: "Contact Information", mm: "ဆက်သွယ်ရေးအချက်အလက်များ" },
     description: { en: "Contact details", mm: "ဆက်သွယ်ရေးအချက်အလက်များ" },
-    fields: ["phoneNumber", "email", "permanentAddress", "currentAddress"],
+    fields: ["phone", "email", "permanentAddress", "currentAddress"],
     icon: "Phone",
     required: true
   },
   address: {
     title: { en: "Address Information", mm: "လိပ်စာအချက်အလက်များ" },
     description: { en: "Location and address details", mm: "တည်နေရာနှင့်လိပ်စာအချက်အလက်များ" },
-    fields: ["stateRegionName", "districtName", "townshipName", "townName", "townVillageName", "wardVillageName"],
+    fields: ["stateRegionName", "districtName", "townshipName", "townName", "wardVillageName"],
     icon: "MapPin",
     required: true
   },
@@ -69,16 +69,16 @@ const WIZARD_STEPS = {
     fields: ["father.nameMyanmar", "father.nameEnglish", "father.nrcNumber", "father.occupation",
              "mother.nameMyanmar", "mother.nameEnglish", "mother.nrcNumber", "mother.occupation",
              "guardian.nameMyanmar", "guardian.nameEnglish", "guardian.nrcNumber", "guardian.occupation",
-             "guardian.relationship", "guardian.phoneNumber", "guardian.email", "guardian.address"],
+             "guardian.relationship", "guardian.phoneNumber", "guardian.address"],
     icon: "Users",
     required: false
   },
   academic: {
     title: { en: "Academic Background", mm: "ပညာရေးနောက်ခံ" },
     description: { en: "Previous education details", mm: "ယခင်ပညာရေးအချက်အလက်များ" },
-    fields: ["previousEducation", "previousSchool", "matriculationRollNo", "matriculationYear", "totalMark", "distinction"],
+    fields: ["previousEducation"],
     icon: "BookOpen",
-    required: true
+    required: false
   },
   current: {
     title: { en: "Current Academic", mm: "လက်ရှိပညာရေး" },
@@ -1155,9 +1155,9 @@ export function ReactHookStudentWizardForm({
                   ) : stepKey === 'contact' ? (
                     // Custom Contact Layout
                     <div className="space-y-6">
-                      {/* Row 1: Phone and Email */}
+                      {/* Row 1: Email and Phone */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {['phoneNumber', 'email'].map(fieldName => {
+                        {['email', 'phone'].map(fieldName => {
                           const field = stepFields.find(f => f.fieldName === fieldName)
                           return field ? (
                             <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
@@ -1229,7 +1229,7 @@ export function ReactHookStudentWizardForm({
 
                       {/* Any remaining contact fields */}
                       {stepFields.filter(field =>
-                        !['phoneNumber', 'email', 'permanentAddress', 'currentAddress', 'stateRegionName', 'districtName', 'townshipName', 'townName', 'wardVillageName'].includes(field.fieldName)
+                        !['phone', 'email', 'permanentAddress', 'currentAddress', 'stateRegionName', 'districtName', 'townshipName', 'townName', 'wardVillageName'].includes(field.fieldName)
                       ).map((field) => (
                         <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
                           <StudentFormFieldRenderer
@@ -1295,22 +1295,6 @@ export function ReactHookStudentWizardForm({
                           ) : null
                         })()}
 
-                        {/* Ethnicity - 2 columns */}
-                        {(() => {
-                          const field = stepFields.find(f => f.fieldName === 'ethnicity')
-                          return field ? (
-                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
-                              <StudentFormFieldRenderer
-                                field={field}
-                                currentLanguage={currentLanguage}
-                                isVerticalLayout={false}
-                                errors={errors}
-                                watch={watch}
-                              />
-                            </div>
-                          ) : null
-                        })()}
-
                         {/* Religion - 2 columns */}
                         {(() => {
                           const field = stepFields.find(f => f.fieldName === 'religion')
@@ -1327,13 +1311,29 @@ export function ReactHookStudentWizardForm({
                           ) : null
                         })()}
 
+                        {/* Race - 2 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'race')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
+
                       </div>
 
-                      {/* Row 2: BloodGroup (3 col), DateOfBirth (3 col), NRC (6 col) = 12 total */}
+                      {/* Row 2: BloodType (3 col), DateOfBirth (3 col), NRC (6 col) = 12 total */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        {/* BloodGroup - 3 columns */}
+                        {/* BloodType - 3 columns */}
                         {(() => {
-                          const field = stepFields.find(f => f.fieldName === 'bloodGroup')
+                          const field = stepFields.find(f => f.fieldName === 'bloodType')
                           return field ? (
                             <div key={field.fieldName} className="md:col-span-3 animate-in slide-in-from-bottom-2">
                               <StudentFormFieldRenderer
@@ -1383,7 +1383,7 @@ export function ReactHookStudentWizardForm({
 
                       {/* Any remaining personal fields */}
                       {stepFields.filter(field =>
-                        !['nameMyanmar', 'nameEnglish', 'gender', 'ethnicity', 'religion', 'bloodGroup', 'nrcNumber', 'dateOfBirth', 'placeOfBirth'].includes(field.fieldName)
+                        !['nameMyanmar', 'nameEnglish', 'gender', 'race', 'religion', 'bloodType', 'nrcNumber', 'dateOfBirth'].includes(field.fieldName)
                       ).map((field) => (
                         <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
                           <StudentFormFieldRenderer

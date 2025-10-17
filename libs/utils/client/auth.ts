@@ -2,6 +2,40 @@
 "use client";
 
 /**
+ * Get auth subdomain based on environment
+ * Production: auth
+ * Development: auth-dev (or custom from NEXT_PUBLIC_AUTH_SUBDOMAIN)
+ */
+function getAuthSubdomain(): string {
+  // Check for environment variable (injected at build time)
+  const envSubdomain = process.env.NEXT_PUBLIC_AUTH_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'auth' for production, 'auth-dev' for development
+  const isDev = process.env.NODE_ENV === "development";
+  return isDev ? "auth-dev" : "auth";
+}
+
+/**
+ * Get API subdomain based on environment
+ * Production: api
+ * Development: api-dev (or custom from NEXT_PUBLIC_API_SUBDOMAIN)
+ */
+function getApiSubdomain(): string {
+  // Check for environment variable (injected at build time)
+  const envSubdomain = process.env.NEXT_PUBLIC_API_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'api' for production, 'api-dev' for development
+  const isDev = process.env.NODE_ENV === "development";
+  return isDev ? "api-dev" : "api";
+}
+
+/**
  * Get auth domain URL for client-side operations
  */
 export function getAuthDomainClient(): string {
@@ -26,7 +60,8 @@ export function getAuthDomainClient(): string {
     baseDomain = currentHostname;
   }
 
-  return `${protocol}//auth.${baseDomain}`;
+  const authSubdomain = getAuthSubdomain();
+  return `${protocol}//${authSubdomain}.${baseDomain}`;
 }
 
 /**
@@ -53,7 +88,8 @@ export function getApiDomainClient(): string {
     baseDomain = currentHostname;
   }
 
-  return `${protocol}//api.${baseDomain}`;
+  const apiSubdomain = getApiSubdomain();
+  return `${protocol}//${apiSubdomain}.${baseDomain}`;
 }
 
 /**

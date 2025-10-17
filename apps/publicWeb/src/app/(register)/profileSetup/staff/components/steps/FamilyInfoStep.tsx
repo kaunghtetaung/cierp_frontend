@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useFormContext, Controller } from "react-hook-form";
-import { PublicNrcField } from "../PublicNrcField";
+import { PublicNrcField } from "../../../student/components/PublicNrcField";
 import { PhoneInput } from "@repo/schema-forms/PhoneInput";
 import { Label } from "@repo/ui";
 import { cn } from "@repo/utils";

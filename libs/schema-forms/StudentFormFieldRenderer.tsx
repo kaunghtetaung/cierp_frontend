@@ -874,13 +874,16 @@ function StudentFormFieldInput({
             <SelectValue placeholder={field.placeHolder} />
           </SelectTrigger>
           <SelectContent className="z-[100]">
-            {field.options?.map((option) => (
-              <SelectItem key={String(option.value)} value={String(option.value)}>
-                {typeof option.label === 'string'
-                  ? option.label
-                  : option.label[currentLanguage as keyof typeof option.label] || option.label.en}
-              </SelectItem>
-            ))}
+            {field.options?.map((option) => {
+              const label = typeof option.label === 'string'
+                ? option.label
+                : (option.label[currentLanguage as keyof typeof option.label] || option.label.en || String(option.label))
+              return (
+                <SelectItem key={String(option.value)} value={String(option.value)}>
+                  {label}
+                </SelectItem>
+              )
+            })}
           </SelectContent>
         </Select>
       )

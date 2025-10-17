@@ -171,7 +171,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             Race/Ethnicity
           </Label>
           <Controller
-            name="ethnicity"
+            name="race"
             control={control}
             render={({ field }) => {
               const [open, setOpen] = React.useState(false);
@@ -401,13 +401,13 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             Blood Type
           </Label>
           <Controller
-            name="bloodGroup"
+            name="bloodType"
             control={control}
             render={({ field }) => (
               <Select value={field.value || ""} onValueChange={field.onChange}>
                 <SelectTrigger
                   className="w-full bg-white border border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]"
-                  onKeyDown={handleSelectEscKey("bloodGroup", field.value)}
+                  onKeyDown={handleSelectEscKey("bloodType", field.value)}
                 >
                   <SelectValue placeholder="Select blood type" />
                 </SelectTrigger>
@@ -490,7 +490,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <Controller
-            name="phoneNumber"
+            name="phone"
             control={control}
             render={({ field }) => (
               <div className="relative">
@@ -501,7 +501,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                   value={field.value || ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  error={!!errors.phoneNumber}
+                  error={!!errors.phone}
                   config={{
                     defaultCountry: 'MM',
                     preferredCountries: ['MM', 'US', 'GB'],
@@ -517,8 +517,8 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
               </div>
             )}
           />
-          {errors.phoneNumber && (
-            <p className="text-sm text-red-600">{errors.phoneNumber.message as string}</p>
+          {errors.phone && (
+            <p className="text-sm text-red-600">{errors.phone.message as string}</p>
           )}
         </div>
 

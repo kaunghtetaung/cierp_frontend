@@ -1,0 +1,190 @@
+# Automated CI/CD Pipeline for Frontend Apps
+# Builds, tests, and deploys Next.js applications to production K8s cluster
+# Infrastructure: GitLab (192.168.200.42) → Harbor (192.168.200.41) → K8s (192.168.200.11)
+
+variables:
+  # Harbor Registry Configuration
+  HARBOR_REGISTRY: "192.168.200.41"
+  HARBOR_PROJECT: "shared"
+  HARBOR_USER: "admin"
+  HARBOR_PASSWORD: "Cryst@l123!"
+
+  # Version Strategy: Use commit SHA for traceability
+  IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+
+  # K8s Configuration
+  KUBECONFIG_PATH: "/home/ciadmin/.kube/config"
+  K8S_NAMESPACE: "default"
+
+  # Frontend apps to build and deploy
+  FRONTEND_APPS: "core publicWeb"
+
+stages:
+  - build
+  - push
+  - deploy
+  - verify
+
+# ============================================
+# BUILD STAGE: Build all Docker images
+# ============================================
+build_frontend_apps:
+  stage: build
+  tags:
+    - shell
+  script:
+    - echo "🔨 Building frontend applications..."
+    - echo "📦 Pipeline ID: ${CI_PIPELINE_ID}"
+    - echo "📌 Commit: ${CI_COMMIT_SHORT_SHA}"
+    - echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
+
+    # Setup build directory
+    - export BUILD_DIR="/tmp/frontend-build-${CI_PIPELINE_ID}"
+    - mkdir -p ${BUILD_DIR}
+
+    # Find the git repository (handle GitLab's hashed storage)
+    - export REPO_PATH=$(find /opt/gitlab/data/git-data/repositories/@hashed -name "frontend.git" -type d | head -1)
+    - echo "📂 Repository path: ${REPO_PATH}"
+
+    # Checkout code to build directory
+    - cd ${REPO_PATH}
+    - GIT_WORK_TREE=${BUILD_DIR} git checkout -f ${CI_COMMIT_SHA}
+    - cd ${BUILD_DIR}
+
+    # Build each frontend app
+    - |
+      for app in ${FRONTEND_APPS}; do
+        echo ""
+        echo "🔨 Building frontend-${app}..."
+        docker build \
+          -f Dockerfile.${app} \
+          -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend-${app}:${IMAGE_TAG} \
+          -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend-${app}:latest \
+          . || exit 1
+        echo "✅ frontend-${app} built successfully"
+      done
+
+    - echo "✅ All frontend images built successfully!"
+
+  after_script:
+    # Cleanup build directory
+    - rm -rf /tmp/frontend-build-${CI_PIPELINE_ID}
+
+  only:
+    - main
+    - dailyDev
+    - tags
+
+  except:
+    - schedules
+
+# ============================================
+# PUSH STAGE: Transfer and push to Harbor
+# ============================================
+push_to_harbor:
+  stage: push
+  tags:
+    - shell
+  script:
+    - echo "📤 Pushing images to Harbor registry..."
+
+    # Login to Harbor from GitLab server
+    - docker login ${HARBOR_REGISTRY} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
+
+    # Push each frontend app to Harbor
+    - |
+      for app in ${FRONTEND_APPS}; do
+        echo ""
+        echo "📤 Pushing frontend-${app} to Harbor..."
+
+        docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend-${app}:${IMAGE_TAG} || exit 1
+        docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend-${app}:latest || exit 1
+
+        echo "✅ frontend-${app} pushed to Harbor"
+      done
+
+    - echo "✅ All images pushed to Harbor successfully!"
+
+  dependencies:
+    - build_frontend_apps
+
+  only:
+    - main
+    - dailyDev
+    - tags
+
+# ============================================
+# DEPLOY STAGE: Deploy to K8s cluster
+# ============================================
+deploy_to_k8s:
+  stage: deploy
+  tags:
+    - shell
+  script:
+    - echo "🚀 Deploying frontend applications to K8s..."
+    - export KUBECONFIG=${KUBECONFIG_PATH}
+
+    # Update K8s deployments with new image
+    - |
+      for app in ${FRONTEND_APPS}; do
+        echo ""
+        echo "🚀 Deploying frontend-${app}..."
+
+        # Update deployment image
+        kubectl set image deployment/frontend-${app} \
+          frontend-${app}=${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend-${app}:${IMAGE_TAG} \
+          -n ${K8S_NAMESPACE} || exit 1
+
+        # Wait for rollout to complete
+        kubectl rollout status deployment/frontend-${app} \
+          -n ${K8S_NAMESPACE} \
+          --timeout=5m || exit 1
+
+        echo "✅ frontend-${app} deployed successfully"
+      done
+
+    - echo "✅ All frontend applications deployed to K8s!"
+
+  dependencies:
+    - push_to_harbor
+
+  only:
+    - main
+    - dailyDev
+
+# ============================================
+# VERIFY STAGE: Health checks
+# ============================================
+verify_deployment:
+  stage: verify
+  tags:
+    - shell
+  script:
+    - echo "🔍 Verifying deployment..."
+    - export KUBECONFIG=${KUBECONFIG_PATH}
+
+    # Check pod status
+    - |
+      for app in ${FRONTEND_APPS}; do
+        echo ""
+        echo "🔍 Checking frontend-${app} pods..."
+        kubectl get pods -l app=frontend-${app} -n ${K8S_NAMESPACE}
+
+        # Verify pods are running
+        READY_PODS=$(kubectl get pods -l app=frontend-${app} -n ${K8S_NAMESPACE} --no-headers | grep Running | wc -l)
+        if [ "$READY_PODS" -eq 0 ]; then
+          echo "❌ No running pods found for frontend-${app}"
+          exit 1
+        fi
+        echo "✅ frontend-${app}: ${READY_PODS} pods running"
+      done
+
+    - echo "✅ All frontend applications verified successfully!"
+    - echo "🎉 Deployment complete! Image tag: ${IMAGE_TAG}"
+
+  dependencies:
+    - deploy_to_k8s
+
+  only:
+    - main
+    - dailyDev

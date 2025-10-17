@@ -1,13 +1,45 @@
 // Server-side domain helper utilities
 import { cache } from "react";
-import { 
-  buildSubdomainUrl, 
-  buildPublicUrl, 
-  extractBaseDomain, 
+import {
+  buildSubdomainUrl,
+  buildPublicUrl,
+  extractBaseDomain,
   getAppropriateProtocol,
-  isDevelopmentEnvironment 
+  isDevelopmentEnvironment
 } from '../common/url';
 import { getSafeHeaders } from './headers-compat';
+
+/**
+ * Get API subdomain based on environment
+ * Production: api
+ * Development: api-dev (or custom from API_SUBDOMAIN env var)
+ */
+function getApiSubdomain(): string {
+  const envSubdomain = process.env.API_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'api' for production, 'api-dev' for development
+  const isDev = isDevelopmentEnvironment();
+  return isDev ? "api-dev" : "api";
+}
+
+/**
+ * Get Auth subdomain based on environment
+ * Production: auth
+ * Development: auth-dev (or custom from AUTH_SUBDOMAIN env var)
+ */
+function getAuthSubdomain(): string {
+  const envSubdomain = process.env.AUTH_SUBDOMAIN;
+  if (envSubdomain) {
+    return envSubdomain;
+  }
+
+  // Default: use 'auth' for production, 'auth-dev' for development
+  const isDev = isDevelopmentEnvironment();
+  return isDev ? "auth-dev" : "auth";
+}
 
 /**
  * Get domain URL with subdomain - simplified for standard port 80
@@ -21,23 +53,28 @@ async function getDomainUrl(subdomain: string): Promise<string> {
 }
 
 /**
- * Get API domain URL (api.tenant.com) - standard port 80
+ * Get API domain URL (api-dev.tenant.com or api.tenant.com) - standard port 80
+ * Uses environment-based subdomain
  * Cached with React.cache for request-level deduplication
  */
 export const getApiDomain = cache(async function (): Promise<string> {
-  const url = await getDomainUrl("api");
+  const apiSubdomain = getApiSubdomain();
+  const url = await getDomainUrl(apiSubdomain);
   console.log("🔗 === GET API DOMAIN ===");
+  console.log("🔗 API Subdomain:", apiSubdomain);
   console.log("🔗 API Domain URL:", url);
   console.log("🔗 === END GET API DOMAIN ===\n");
   return url;
 });
 
 /**
- * Get Auth domain URL (auth.tenant.com) - standard port 80
+ * Get Auth domain URL (auth-dev.tenant.com or auth.tenant.com) - standard port 80
+ * Uses environment-based subdomain
  * Cached with React.cache for request-level deduplication
  */
 export const getAuthDomain = cache(async function (): Promise<string> {
-  return await getDomainUrl("auth");
+  const authSubdomain = getAuthSubdomain();
+  return await getDomainUrl(authSubdomain);
 });
 
 /**
