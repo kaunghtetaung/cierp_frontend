@@ -7,7 +7,7 @@ import { getTokenForRequest } from "@repo/auth/core";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token: verificationToken } = body;
+    const verificationToken = body.token;
 
     if (!verificationToken) {
       return NextResponse.json(
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
       hasError: !!response.error,
       errorMessage: response.error || "None",
       dataPreview: response.data ? {
-        userId: response.data.userId || "N/A",
-        email: response.data.email || "N/A",
-        isVerified: response.data.isEmailVerified || false
+        userId: (response.data as any).userId || "N/A",
+        email: (response.data as any).email || "N/A",
+        isVerified: (response.data as any).isEmailVerified || false
       } : "No data",
       responseStatus: response.success ? "SUCCESS" : "FAILURE"
     });
@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
     // Handle response based on ApiResponse structure
     if (response.success) {
       console.log("✅ [VERIFY-EMAIL] Step 5: Verification successful", {
-        userId: response.data?.userId,
-        email: response.data?.email,
+        userId: (response.data as any)?.userId,
+        email: (response.data as any)?.email,
         message: "Email verified successfully! User can now log in."
       });
       
@@ -161,8 +161,6 @@ export async function POST(request: NextRequest) {
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack?.split('\n').slice(0, 3).join('\n') : "No stack trace",
-      tenantId,
-      verificationToken: verificationToken ? verificationToken.substring(0, 20) + "..." : "None",
       timestamp: new Date().toISOString()
     });
     

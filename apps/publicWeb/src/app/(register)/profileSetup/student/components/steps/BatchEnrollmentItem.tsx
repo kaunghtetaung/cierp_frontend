@@ -19,7 +19,7 @@ export function BatchEnrollmentItem({ index, onRemove }: BatchEnrollmentItemProp
   const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
   const errorClass = "text-xs text-red-600 mt-1";
 
-  const batchErrors = errors?.batches?.[index] as any;
+  const batchErrors = (errors?.batches as any)?.[index];
 
   // Reusable key handler for input fields (ESC to reset, Enter prevention)
   const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {

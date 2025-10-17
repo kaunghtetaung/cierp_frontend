@@ -8,6 +8,7 @@ import { ReactHookFormEnhanced } from "./ReactHookFormEnhanced";
 import { ReactHookWizardForm } from "./ReactHookWizardForm";
 import { ReactHookStudentForm } from "./ReactHookStudentForm";
 import { ReactHookStudentWizardForm } from "./ReactHookStudentWizardForm";
+import { ReactHookStaffWizardForm } from "./ReactHookStaffWizardForm";
 import type { ModuleSchema } from "@repo/types";
 
 interface FormWithLanguageProps {
@@ -20,6 +21,7 @@ interface FormWithLanguageProps {
   isEnhanced?: boolean;
   isStudentForm?: boolean;
   isStudentWizardForm?: boolean;
+  isStaffWizardForm?: boolean;
   navigation?: {
     hasNext: boolean;
     hasPrevious: boolean;
@@ -41,6 +43,7 @@ export function FormWithLanguage({
   isEnhanced = true, // Default to enhanced for better UX
   isStudentForm = false,
   isStudentWizardForm = false,
+  isStaffWizardForm = false,
   navigation,
   appId,
 }: FormWithLanguageProps) {
@@ -67,19 +70,22 @@ export function FormWithLanguage({
     isEnhanced,
     isStudentForm,
     isStudentWizardForm,
+    isStaffWizardForm,
     willPassNavigation: isEnhanced && navigation
   });
 
   // Select the appropriate form component
-  const FormComponent = isStudentWizardForm
-    ? ReactHookStudentWizardForm
-    : isStudentForm
-      ? ReactHookStudentForm
-      : isWizard
-        ? ReactHookWizardForm
-        : isEnhanced
-          ? ReactHookFormEnhanced
-          : ReactHookForm;
+  const FormComponent = isStaffWizardForm
+    ? ReactHookStaffWizardForm
+    : isStudentWizardForm
+      ? ReactHookStudentWizardForm
+      : isStudentForm
+        ? ReactHookStudentForm
+        : isWizard
+          ? ReactHookWizardForm
+          : isEnhanced
+            ? ReactHookFormEnhanced
+            : ReactHookForm;
 
   return (
     <QueryClientProvider client={queryClient}>

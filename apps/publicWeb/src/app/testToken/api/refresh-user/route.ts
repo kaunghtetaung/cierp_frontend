@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get session
-    const session = await getSession(sessionCookie.value, tenantId);
+    const session = await getSession(sessionCookie.value);
     if (!session) {
       return NextResponse.json(
         { success: false, error: "Session not found" },

@@ -14,6 +14,7 @@
     "clean": "turbo clean"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-collapsible": "^1.1.11",
@@ -36,6 +37,7 @@
     "qrcode": "^1.5.4",
     "react-day-picker": "^9.11.0",
     "redis": "^5.8.2",
+    "sonner": "^2.0.7",
     "tailwindcss": "^4.1.11",
     "tldts": "^6.1.59",
     "uuid": "^9.0.0"

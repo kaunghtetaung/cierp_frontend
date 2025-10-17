@@ -220,11 +220,16 @@ export function DependentSelectForPublicWeb({
           </span>
           <span className="flex items-center gap-1 flex-shrink-0 ml-2">
             {value && !loading && !disabled && (
-              <IconComponent
-                name="X"
-                className="w-4 h-4 text-gray-400 hover:text-gray-600"
+              <button
+                type="button"
                 onClick={handleClear}
-              />
+                className="cursor-pointer"
+              >
+                <IconComponent
+                  name="X"
+                  className="w-4 h-4 text-gray-400 hover:text-gray-600"
+                />
+              </button>
             )}
             {loading ? (
               <IconComponent name="Loader2" className="w-4 h-4 text-gray-400 animate-spin" />

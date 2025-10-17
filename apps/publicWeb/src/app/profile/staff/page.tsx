@@ -1,84 +1,49 @@
-import { Metadata } from "next";
-import { Briefcase, Clock } from "lucide-react";
+import { redirect } from "next/navigation";
+import { getAuthenticationStatus } from "@repo/auth/server";
+import { Check } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Staff Profile Registration - Coming Soon",
-  description: "Staff profile registration will be available soon",
-};
+export default async function StaffProfilePage() {
+  const authStatus = await getAuthenticationStatus();
 
-export default function StaffProfilePage() {
+  if (!authStatus.isAuthenticated || !authStatus.user) {
+    redirect("/login?callbackUrl=/profile/staff");
+  }
+
+  const user = authStatus.user;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4">
-      <div className="max-w-2xl w-full text-center">
-        <div className="bg-white rounded-2xl shadow-xl p-12">
-          {/* Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-green-200 rounded-full blur-xl opacity-50"></div>
-              <div className="relative bg-green-600 text-white p-6 rounded-full">
-                <Briefcase className="h-16 w-16" />
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Check className="w-10 h-10 text-green-600" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 text-center mb-4">
+          Staff Profile Complete!
+        </h1>
+        <p className="text-gray-600 text-center mb-8">
+          Your staff profile has been successfully registered.
+        </p>
+        <div className="bg-gray-50 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Information</h2>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Name:</span>
+              <span className="font-medium text-gray-900">{user.name || "Not provided"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Email:</span>
+              <span className="font-medium text-gray-900">{user.email || "Not provided"}</span>
             </div>
           </div>
-
-          {/* Title */}
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Staff Profile Registration
-          </h1>
-
-          {/* Coming Soon Badge */}
-          <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full mb-6">
-            <Clock className="h-5 w-5" />
-            <span className="font-semibold">Coming Soon</span>
-          </div>
-
-          {/* Description */}
-          <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-            We're currently developing the staff profile registration system.
-            This feature will be available soon and will allow staff members to
-            complete their profiles with professional information and credentials.
-          </p>
-
-          {/* Additional Info */}
-          <div className="bg-gray-50 rounded-lg p-6 text-left">
-            <h2 className="font-semibold text-gray-900 mb-3">
-              What to expect:
-            </h2>
-            <ul className="space-y-2 text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">•</span>
-                <span>Professional profile information</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">•</span>
-                <span>Credentials and qualifications</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">•</span>
-                <span>Department and role assignment</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">•</span>
-                <span>Employment details</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Back Button */}
-          <div className="mt-8">
-            <a
-              href="/"
-              className="inline-block px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Return to Home
-            </a>
-          </div>
         </div>
-
-        {/* Footer Note */}
-        <p className="mt-6 text-sm text-gray-500">
-          Thank you for your patience. We'll notify you when this feature becomes available.
-        </p>
+        <div className="flex gap-4">
+          <a href="/" className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-medium">
+            Go to Home
+          </a>
+          <a href="/profile" className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors text-center font-medium">
+            View Profile
+          </a>
+        </div>
       </div>
     </div>
   );

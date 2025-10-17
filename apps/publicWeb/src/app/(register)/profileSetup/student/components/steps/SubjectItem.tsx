@@ -15,7 +15,7 @@ interface SubjectItemProps {
 export function SubjectItem({ educationIndex, subjectIndex, onRemove }: SubjectItemProps) {
   const { register, control, setValue, formState: { errors } } = useFormContext();
 
-  const subjectErrors = errors.previousEducation?.[educationIndex]?.subjects?.[subjectIndex];
+  const subjectErrors = ((errors.previousEducation as any)?.[educationIndex]?.subjects as any)?.[subjectIndex];
 
   // Reusable key handler for input fields (ESC to reset, Enter prevention)
   const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {

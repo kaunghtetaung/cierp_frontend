@@ -56,9 +56,9 @@ function HealthPageContent({
               <div className="flex justify-between">
                 <span className="font-medium">Tenant ID:</span>
                 <span className={`font-mono px-2 py-1 rounded ${
-                  tenantId 
-                    ? 'bg-green-100 text-green-800
-                    : 'bg-red-100 text-red-800
+                  tenantId
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
                 }`}>
                   {tenantId || 'Not resolved'}
                 </span>
@@ -142,9 +142,9 @@ function HealthPageContent({
                 <div className="flex justify-between">
                   <span className="font-medium text-green-800">Status:</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    (tenantSettings as any)?.isActive 
-                      ? 'bg-green-100 text-green-800 
-                      : 'bg-red-100 text-red-800
+                    (tenantSettings as any)?.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                   }`}>
                     {(tenantSettings as any)?.isActive ? 'Active' : 'Inactive'}
                   </span>
@@ -451,9 +451,9 @@ function HealthPageContent({
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Is Home Page</span>
                       <span className={`text-xs px-2 py-1 rounded ${
-                        homePageData.isHomePage 
-                          ? 'bg-green-100 text-green-800
-                          : 'bg-red-100 text-red-800
+                        homePageData.isHomePage
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
                       }`}>
                         {homePageData.isHomePage ? 'Yes' : 'No'}
                       </span>
@@ -481,8 +481,8 @@ function HealthPageContent({
                               {index + 1}. {section.type}
                             </span>
                             <span className={`px-2 py-1 rounded ${
-                              section.isEnabled 
-                                ? 'bg-green-100 text-green-800
+                              section.isEnabled
+                                ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                               {section.isEnabled ? 'Enabled' : 'Disabled'}

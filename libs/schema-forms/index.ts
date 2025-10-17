@@ -2,6 +2,7 @@
 export { FormFieldRenderer } from './FormFieldRenderer';
 export { ReactHookForm } from './ReactHookForm';
 export { ReactHookWizardForm } from './ReactHookWizardForm';
+export { ReactHookStaffWizardForm } from './ReactHookStaffWizardForm';
 export { DynamicSelect } from './DynamicSelect';
 export { DependentSelect } from './DependentSelect';
 export { MultiLanguageInput } from './MultiLanguageInput';

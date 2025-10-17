@@ -90,6 +90,7 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
   const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
   const isStudentForm = module.formLayout === "studentForm";
   const isStudentWizardForm = module.formLayout === "studentWizardForm";
+  const isStaffWizardForm = module.formLayout === "staffWizardForm";
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -102,6 +103,7 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
         isWizard={isWizardForm}
         isStudentForm={isStudentForm}
         isStudentWizardForm={isStudentWizardForm}
+        isStaffWizardForm={isStaffWizardForm}
         navigation={navigation}
         appId={resolvedParams.appId}
       />

@@ -156,7 +156,7 @@ export function StudentRegistrationWizard({
       .filter((field) => !field.hidden)
       .map((field) => {
         if (!field.validationRule) {
-          field = { ...field, validationRule: { required: false } };
+          field = { ...field, validationRule: { required: false, errorMessage: { en: '', mm: '' } } };
         }
         return field;
       });
@@ -170,7 +170,7 @@ export function StudentRegistrationWizard({
 
   // Initialize React Hook Form
   const methods = useForm({
-    resolver: zodResolver(validationSchema),
+    resolver: zodResolver(validationSchema as any),
     mode: "onChange",
     defaultValues,
   });

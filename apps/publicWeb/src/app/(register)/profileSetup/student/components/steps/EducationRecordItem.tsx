@@ -14,7 +14,7 @@ interface EducationRecordItemProps {
 export function EducationRecordItem({ index, onRemove }: EducationRecordItemProps) {
   const { register, setValue, formState: { errors } } = useFormContext();
 
-  const educationErrors = errors.previousEducation?.[index];
+  const educationErrors = (errors.previousEducation as any)?.[index];
 
   // Reusable key handler for input fields (ESC to reset, Enter prevention)
   const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
