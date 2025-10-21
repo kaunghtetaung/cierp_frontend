@@ -54,9 +54,12 @@ export async function authenticatedFetch<T = any>(
     }
 
     // Build full URL
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_GATEWAY_URL || 'http://localhost:3331';
-    const url = endpoint.startsWith('http') 
-      ? endpoint 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_GATEWAY_URL;
+    if (!apiUrl && !endpoint.startsWith('http')) {
+      throw new Error('NEXT_PUBLIC_API_URL or API_GATEWAY_URL environment variable is required');
+    }
+    const url = endpoint.startsWith('http')
+      ? endpoint
       : `${apiUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
     // Make the request with authentication

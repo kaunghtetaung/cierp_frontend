@@ -469,15 +469,13 @@ export function getApiEndpoint(
   const parsed = parse(cleanHostname);
   const rootDomain = parsed.domain || cleanHostname;
 
-  // For localhost development, use environment API URL if available
+  // For localhost development, use config baseUrl if provided
   if (cleanHostname === 'localhost' || cleanHostname.includes('127.0.0.')) {
     if (config.baseUrl) {
       return { fullUrl: config.baseUrl, rootDomain };
     }
-
-    if (process.env.API_BASE_URL) {
-      return { fullUrl: process.env.API_BASE_URL, rootDomain };
-    }
+    // No fallback - throw error if baseUrl not provided for localhost
+    throw new Error('API base URL required for localhost development');
   }
 
   // For multi-tenant domains, build API URL matching client protocol

@@ -80,7 +80,7 @@ export interface SectionManagerConfig {
 }
 
 const DEFAULT_CONFIG: SectionManagerConfig = {
-  apiBaseUrl: process.env.API_BASE_URL || "http://localhost:3331",
+  apiBaseUrl: process.env.API_GATEWAY_URL || (() => { throw new Error('API_GATEWAY_URL environment variable is required'); })(),
   cacheEnabled: true,
   cacheTtl: CacheTTL.CONTENT,
   enablePermissionCheck: true,

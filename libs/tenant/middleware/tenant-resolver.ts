@@ -5,11 +5,12 @@ import { MiddlewareConfig } from "./types";
 
 /**
  * Resolve tenant by domain following managementpanel pattern
+ * @throws {Error} "Invalid organization" if tenant cannot be resolved
  */
 export async function resolveTenantByDomain(
   request: NextRequest,
   config: MiddlewareConfig
-): Promise<string | null> {
+): Promise<string> {
   const hostname = request.headers.get("host") || "localhost";
   const cleanHostname = hostname.split(":")[0];
 
@@ -20,17 +21,26 @@ export async function resolveTenantByDomain(
   try {
     const protocol = request.nextUrl.protocol.replace(":", "");
     console.log("📍 Step 3: Protocol:", protocol);
-    
-    // For localhost development, use API_BASE_URL; for multi-tenant domains, use domain-based URLs
+
+    // Check if localhost development
     const isLocalhost = cleanHostname === 'localhost' || cleanHostname.includes('127.0.0.');
     console.log("📍 Step 4: Is localhost?", isLocalhost);
-    console.log("📍 Step 5: API_BASE_URL from env:", process.env.API_BASE_URL || "NOT SET");
-    
-    const apiConfig = (isLocalhost && process.env.API_BASE_URL) ? { baseUrl: process.env.API_BASE_URL } : {};
-    console.log("📍 Step 6: API config:", JSON.stringify(apiConfig));
-    
-    const apiUrl = buildTenantApiUrl(hostname, protocol, apiConfig);
-    console.log("📍 Step 7: Built API URL:", apiUrl);
+
+    let apiUrl: string;
+    if (isLocalhost) {
+      // For localhost, API_GATEWAY_URL must be set in environment
+      if (!process.env.API_GATEWAY_URL) {
+        console.error("❌ API_GATEWAY_URL not set for localhost development");
+        throw new Error("Invalid organization");
+      }
+      console.log("📍 Step 5: API_GATEWAY_URL from env:", process.env.API_GATEWAY_URL);
+      apiUrl = buildTenantApiUrl(hostname, protocol, { baseUrl: process.env.API_GATEWAY_URL });
+    } else {
+      // For multi-tenant domains, use dynamic URL construction
+      apiUrl = buildTenantApiUrl(hostname, protocol);
+    }
+
+    console.log("📍 Step 6: Built API URL:", apiUrl);
 
     if (config.enableLogging) {
       console.log(
@@ -41,7 +51,7 @@ export async function resolveTenantByDomain(
       );
     }
 
-    console.log("📍 Step 8: Starting fetch with timeout:", config.tenantApi.timeout || 5000, "ms");
+    console.log("📍 Step 7: Starting fetch with timeout:", config.tenantApi.timeout || 5000, "ms");
     const startTime = Date.now();
     
     const response = await fetch(apiUrl, {
@@ -53,14 +63,12 @@ export async function resolveTenantByDomain(
     });
     
     const fetchTime = Date.now() - startTime;
-    console.log("📍 Step 9: Fetch completed in", fetchTime, "ms with status:", response.status);
+    console.log("📍 Step 8: Fetch completed in", fetchTime, "ms with status:", response.status);
 
     if (!response.ok) {
       if (response.status === 404) {
-        if (config.enableLogging) {
-          console.log("❌ Tenant not found (404) for hostname:", cleanHostname);
-        }
-        return null;
+        console.error("❌ Tenant not found (404) for hostname:", cleanHostname);
+        throw new Error("Invalid organization");
       }
       throw new Error(
         `Tenant resolve failed: ${response.status} ${response.statusText}`
@@ -68,15 +76,15 @@ export async function resolveTenantByDomain(
     }
 
     const responseData = await response.json();
-    console.log("📍 Step 10: Response data:", JSON.stringify(responseData));
-    
+    console.log("📍 Step 9: Response data:", JSON.stringify(responseData));
+
     const tenantId = responseData.id || responseData.tenantId;
-    console.log("📍 Step 11: Extracted tenant ID:", tenantId);
+    console.log("📍 Step 10: Extracted tenant ID:", tenantId);
 
     if (!tenantId) {
       console.error("❌ No tenant ID in response for hostname:", cleanHostname);
       console.log("🔍 === TENANT RESOLUTION DEBUG END (FAILED) ===\n");
-      return null;
+      throw new Error("Invalid organization");
     }
 
     if (config.enableLogging) {
@@ -94,6 +102,13 @@ export async function resolveTenantByDomain(
     console.error("❌ Error resolving tenant for hostname:", hostname);
     console.error("📍 Error details:", error);
     console.log("🔍 === TENANT RESOLUTION DEBUG END (ERROR) ===\n");
-    return null;
+
+    // If it's already our "Invalid organization" error, rethrow it
+    if (error instanceof Error && error.message === "Invalid organization") {
+      throw error;
+    }
+
+    // For other errors (network, timeout, etc.), also throw Invalid organization
+    throw new Error("Invalid organization");
   }
 }

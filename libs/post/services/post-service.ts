@@ -5,6 +5,8 @@
 
 import { getCacheInstance } from "@repo/cache";
 import { createHttpClient } from "@repo/api/client";
+import { getApiEndpoint } from "@repo/utils/common/url";
+import { getSafeHeaders } from "@repo/utils/server/headers-compat";
 import type {
   PostDataStrategy,
   CategoryStrategy,
@@ -251,11 +253,34 @@ export class PostService {
 // This allows us to export cached, standalone functions for easy server-side use.
 let postServiceInstance: PostService | null = null;
 
-const getPostService = () => {
+const getPostService = async () => {
   if (!postServiceInstance) {
-    // This is a simplified instantiation. In a real app, you might get the baseURL
-    // from a more robust configuration management system.
-    const baseURL = process.env.API_BASE_URL || "http://localhost:3331";
+    // Get dynamic API URL based on current request context
+    let baseURL: string;
+
+    try {
+      const headerStore = await getSafeHeaders();
+      const host = headerStore.get('host');
+      const protocol = headerStore.get('x-forwarded-proto') || 'http';
+
+      if (host) {
+        const apiEndpoint = getApiEndpoint(host, protocol);
+        baseURL = apiEndpoint.fullUrl;
+      } else {
+        // Fallback to environment variable for localhost
+        baseURL = process.env.API_GATEWAY_URL;
+        if (!baseURL) {
+          throw new Error('API_GATEWAY_URL environment variable is required for localhost');
+        }
+      }
+    } catch (error) {
+      // If headers not available, require API_GATEWAY_URL environment variable
+      baseURL = process.env.API_GATEWAY_URL;
+      if (!baseURL) {
+        throw new Error('API_GATEWAY_URL environment variable is required when headers are not available');
+      }
+    }
+
     postServiceInstance = new PostService(baseURL);
   }
   return postServiceInstance;

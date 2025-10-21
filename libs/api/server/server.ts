@@ -74,17 +74,23 @@ export class ServerApiClient {
             const headerStore = await getSafeHeaders();
             const host = headerStore.get('host');
             const protocol = headerStore.get('x-forwarded-proto') || 'http';
-            
+
             if (host) {
               const apiEndpoint = getApiEndpoint(host, protocol);
               baseUrl = apiEndpoint.fullUrl;
             } else {
-              // Fallback to environment variable or localhost
-              baseUrl = process.env.API_GATEWAY_URL || process.env.API_BASE_URL || 'http://localhost:3331';
+              // For localhost, require API_GATEWAY_URL
+              baseUrl = process.env.API_GATEWAY_URL;
+              if (!baseUrl) {
+                throw new Error('API_GATEWAY_URL environment variable is required for localhost');
+              }
             }
-          } catch {
-            // Headers not available, use fallback
-            baseUrl = process.env.API_GATEWAY_URL || process.env.API_BASE_URL || 'http://localhost:3331';
+          } catch (error) {
+            // If headers not available, require API_GATEWAY_URL environment variable
+            baseUrl = process.env.API_GATEWAY_URL;
+            if (!baseUrl) {
+              throw new Error('API_GATEWAY_URL environment variable is required when headers are not available');
+            }
           }
         }
         

@@ -21,7 +21,6 @@ function isValidDomain(domain: string): boolean {
 }
 
 export interface TenantResolverConfig {
-  readonly fallbackTenantId?: string;
   readonly allowedDomains?: string[];
   readonly enableDomainValidation?: boolean;
 }
@@ -35,13 +34,14 @@ const DEFAULT_CONFIG: TenantResolverConfig = {
 /**
  * Resolve tenant by domain - calls tenant/initialize API endpoint
  * This follows managementpanel pattern: hostname → API call → tenant ID
+ * @throws {Error} "Invalid organization" if tenant cannot be resolved
  */
 export const resolveTenantByDomain = cache(
   async (
     domain: string,
     apiBaseUrl?: string,
     config: Partial<TenantResolverConfig> = {}
-  ): Promise<string | null> => {
+  ): Promise<string> => {
     const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
     console.log("🔎 resolveTenantByDomain called:", {
@@ -53,7 +53,7 @@ export const resolveTenantByDomain = cache(
     // Validate domain format
     if (finalConfig.enableDomainValidation && !isValidDomain(domain)) {
       console.error("Invalid domain format:", domain);
-      return null;
+      throw new Error("Invalid organization");
     }
 
     try {
@@ -62,15 +62,9 @@ export const resolveTenantByDomain = cache(
       if (apiBaseUrl) {
         apiUrl = `${apiBaseUrl}/tenant/initialize?host=${encodeURIComponent(domain)}`;
       } else {
-        try {
-          // Use dynamic URL generation - detect protocol from environment
-          const protocol = process.env.NODE_ENV === 'development' && !process.env.FORCE_HTTPS ? 'http' : 'https';
-          apiUrl = buildTenantApiUrl(domain, protocol);
-        } catch {
-          // Fallback to environment variable or localhost
-          const baseUrl = process.env.API_BASE_URL || "http://localhost:3331";
-          apiUrl = `${baseUrl}/tenant/initialize?host=${encodeURIComponent(domain)}`;
-        }
+        // Use dynamic URL generation - detect protocol from environment
+        const protocol = process.env.NODE_ENV === 'development' && !process.env.FORCE_HTTPS ? 'http' : 'https';
+        apiUrl = buildTenantApiUrl(domain, protocol);
       }
 
       console.log("Making API call to:", apiUrl);
@@ -89,8 +83,8 @@ export const resolveTenantByDomain = cache(
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log("Tenant not found (404) for domain:", domain);
-          return null;
+          console.error("Tenant not found (404) for domain:", domain);
+          throw new Error("Invalid organization");
         }
 
         const errorText = await response.text().catch(() => "Unknown error");
@@ -113,13 +107,13 @@ export const resolveTenantByDomain = cache(
 
       if (!tenantId) {
         console.error("No tenant ID in response");
-        return null;
+        throw new Error("Invalid organization");
       }
 
       // Validate tenant ID
       if (!isValidTenantId(tenantId)) {
         console.error("Invalid tenant ID format:", tenantId);
-        return null;
+        throw new Error("Invalid organization");
       }
 
       console.log(
@@ -132,7 +126,13 @@ export const resolveTenantByDomain = cache(
     } catch (error) {
       console.error("❌ Error resolving tenant:", error);
 
-      return null;
+      // If it's already our "Invalid organization" error, rethrow it
+      if (error instanceof Error && error.message === "Invalid organization") {
+        throw error;
+      }
+
+      // For other errors (network, timeout, etc.), also throw Invalid organization
+      throw new Error("Invalid organization");
     }
   }
 );
@@ -275,9 +275,10 @@ export async function refreshTenantCache(tenantId: string): Promise<void> {
 
 /**
  * Helper for middleware to resolve tenant by hostname and get API URL
+ * @throws {Error} "Invalid organization" if tenant cannot be resolved
  */
 export async function resolveTenantForMiddleware(hostname: string): Promise<{
-  tenantId: string | null;
+  tenantId: string;
   apiEndpoint: {
     fullUrl: string;
     rootDomain: string;
