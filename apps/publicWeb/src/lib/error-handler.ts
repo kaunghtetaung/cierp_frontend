@@ -341,7 +341,7 @@ class GlobalErrorHandler {
         return `frontend-${subdomain}`;
       }
     }
-    return process.env.NEXT_PUBLIC_SERVICE_NAME || 'frontend-core';
+    return process.env.NEXT_PUBLIC_SERVICE_NAME || 'frontend-publicweb';
   }
 
   /**
