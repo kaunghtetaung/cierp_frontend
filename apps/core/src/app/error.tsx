@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui'
 import { getLocalizedText } from '@repo/utils'
+import { reportError } from '@repo/utils/common/error-reporter'
+import { ApplicationError } from '@repo/utils/common/error-types'
 
 interface ErrorPageProps {
   error: Error & { digest?: string }
@@ -19,10 +21,27 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
   // Log error for debugging and monitoring
   useEffect(() => {
+    // Report error to monitoring service
+    const appError = new ApplicationError({
+      type: 'UNKNOWN_ERROR',
+      message: error.message,
+      severity: 'high',
+      category: 'application',
+      operation: 'page-render',
+      component: 'error-boundary',
+      cause: error,
+      metadata: {
+        digest: error.digest,
+        errorName: error.name
+      }
+    });
+
+    reportError(appError).catch(err => {
+      console.error('Failed to report error:', err);
+    });
+
+    // Fallback console logging
     console.error('Application Error:', error)
-    
-    // TODO: Report error to monitoring service (Sentry, LogRocket, etc.)
-    // reportError(error)
   }, [error])
 
   const errorMessages = {

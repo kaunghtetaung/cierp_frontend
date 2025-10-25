@@ -1,10 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useEffect } from "react";
+import React from 'react';
 import { reportError } from '@repo/utils/common/error-reporter';
 import { ApplicationError } from '@repo/utils/common/error-types';
-import "./globals.css";
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -12,7 +10,7 @@ interface GlobalErrorProps {
 }
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
-  useEffect(() => {
+  React.useEffect(() => {
     // Report critical error with high priority
     const appError = new ApplicationError({
       type: 'UNKNOWN_ERROR',
@@ -34,7 +32,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     });
 
     // Fallback console logging
-    console.error("Global Error (Critical):", error);
+    console.error('Global Error (Critical):', error);
   }, [error]);
 
   return (
@@ -43,7 +41,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
         <div className="min-h-screen flex items-center justify-center bg-red-50">
           <div className="max-w-md w-full mx-auto p-6">
             <div className="text-center">
-              {/* Critical Error Icon */}
               <div className="mx-auto mb-6 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
                 <svg
                   className="w-8 h-8 text-red-600"
@@ -60,20 +57,17 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 </svg>
               </div>
 
-              {/* Critical Error Title */}
               <h1 className="text-2xl font-bold text-gray-900 mb-4">
                 Critical System Error
               </h1>
 
-              {/* Error Description */}
               <p className="text-gray-600 mb-8 leading-relaxed">
                 A critical error has occurred that prevented the application
                 from loading properly. Please reload the page or contact
                 technical support.
               </p>
 
-              {/* Error Details (Development only) */}
-              {process.env.NODE_ENV === "development" && (
+              {process.env.NODE_ENV === 'development' && (
                 <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
                   <h3 className="font-semibold text-sm mb-2">Error Details:</h3>
                   <p className="text-xs text-gray-600 font-mono break-words">
@@ -97,7 +91,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="space-y-3">
                 <button
                   onClick={reset}
@@ -107,21 +100,20 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 </button>
 
                 <button
-                  onClick={() => (window.location.href = "/")}
+                  onClick={() => (window.location.href = '/')}
                   className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                 >
                   🏠 Reload Application
                 </button>
 
                 <button
-                  onClick={() => (window.location.href = "/support")}
+                  onClick={() => (window.location.href = '/support')}
                   className="w-full px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium"
                 >
                   🆘 Contact Support
                 </button>
               </div>
 
-              {/* Additional Information */}
               <div className="mt-8 p-4 bg-gray-50 rounded-lg">
                 <p className="text-xs text-gray-500">
                   If this problem persists, please contact technical support

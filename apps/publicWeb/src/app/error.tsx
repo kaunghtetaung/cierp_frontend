@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { reportError } from '@repo/utils/common/error-reporter';
+import { ApplicationError } from '@repo/utils/common/error-types';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -9,7 +11,26 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   React.useEffect(() => {
-    // Log the error to an error reporting service
+    // Log the error to error reporting service
+    const appError = new ApplicationError({
+      type: 'UNKNOWN_ERROR',
+      message: error.message,
+      severity: 'high',
+      category: 'application',
+      operation: 'page-render',
+      component: 'error-boundary',
+      cause: error,
+      metadata: {
+        digest: error.digest,
+        errorName: error.name
+      }
+    });
+
+    reportError(appError).catch(err => {
+      console.error('Failed to report error:', err);
+    });
+
+    // Fallback console logging
     console.error('Application error:', error);
   }, [error]);
 
