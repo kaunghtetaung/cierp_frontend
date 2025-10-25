@@ -10,6 +10,10 @@ import type { RootLayoutProps } from "@/types/layout";
 
 import "./globals.css";
 
+// Force dynamic rendering - required for headers() and tenant resolution
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 /**
  * Generate metadata dynamically based on tenant data
  * App-aware metadata generation

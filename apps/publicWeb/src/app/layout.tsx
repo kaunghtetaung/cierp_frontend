@@ -7,6 +7,10 @@ import { Toaster } from "@repo/ui/components/sonner";
 import { getLocalizedText } from "@repo/utils";
 import "./globals.css";
 
+// Force dynamic rendering - required for tenant resolution with cookies/headers
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const tenant = await getCurrentTenantForClient();
