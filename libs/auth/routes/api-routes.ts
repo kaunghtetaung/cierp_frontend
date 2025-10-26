@@ -18,6 +18,7 @@ import { COOKIE_NAMES } from "@repo/utils/common/constants";
 import { generateSecureRandomString } from "@repo/utils/common/security";
 import { setSessionCookie, deleteSessionCookie } from "../core/cookies";
 import type { User } from "@repo/types";
+import { handleApiError } from "@repo/utils/server";
 
 // PKCE utilities - using cryptographically secure random generation
 function generateCodeVerifier(): string {
@@ -172,11 +173,11 @@ export async function handleLoginRequest(
       tenantId,
     });
   } catch (error) {
-    console.error("Error generating login URL:", error);
-    return NextResponse.json(
-      { error: "Failed to generate login URL" },
-      { status: 500 }
-    );
+    return handleApiError(error, request, {
+      operation: 'generate-login-url',
+      component: 'auth-login',
+      metadata: { endpoint: '/api/auth/login' }
+    });
   }
 }
 
@@ -343,14 +344,11 @@ export async function handleAuthCallback(
 
     return response;
   } catch (error) {
-    console.error("Auth callback error:", error);
-    return NextResponse.json(
-      {
-        error: "Authentication failed",
-        details: (error as Error).message,
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, request, {
+      operation: 'auth-callback',
+      component: 'auth-callback',
+      metadata: { endpoint: '/api/auth/callback' }
+    });
   }
 }
 
@@ -388,8 +386,11 @@ export async function handleLogout(
 
     return response;
   } catch (error) {
-    console.error("Logout error:", error);
-    return NextResponse.json({ error: "Logout failed" }, { status: 500 });
+    return handleApiError(error, request, {
+      operation: 'logout',
+      component: 'auth-logout',
+      metadata: { endpoint: '/api/auth/logout' }
+    });
   }
 }
 
@@ -465,11 +466,11 @@ export async function handleSessionStatus(
       error: undefined,
     });
   } catch (error) {
-    console.error("Session status error:", error);
-    return NextResponse.json(
-      { error: "Failed to get session status" },
-      { status: 500 }
-    );
+    return handleApiError(error, request, {
+      operation: 'get-session-status',
+      component: 'auth-session',
+      metadata: { endpoint: '/api/auth/session' }
+    });
   }
 }
 
@@ -579,11 +580,10 @@ export async function handleRefreshSession(
       tokenError,
     });
   } catch (error) {
-    console.error("❌ [REFRESH_SESSION] ========== SESSION REFRESH REQUEST FAILED ==========");
-    console.error("❌ [REFRESH_SESSION] Refresh session error:", error);
-    return NextResponse.json(
-      { error: "Failed to refresh session" },
-      { status: 500 }
-    );
+    return handleApiError(error, request, {
+      operation: 'refresh-session',
+      component: 'auth-refresh',
+      metadata: { endpoint: '/api/auth/refresh' }
+    });
   }
 }
