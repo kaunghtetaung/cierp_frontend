@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { languageService, LanguageChangeRequest } from "@repo/language";
 import { getRootDomainForCookie } from "@repo/utils/server/domain";
+import { withApiErrorHandler } from "@repo/utils/server";
 
 /**
  * Language API Routes using the Language Service
@@ -11,8 +12,8 @@ import { getRootDomainForCookie } from "@repo/utils/server/domain";
  * Change Language - POST /api/lang
  */
 export async function POST(request: NextRequest) {
-  try {
-    const body: LanguageChangeRequest = await request.json();
+  return withApiErrorHandler(request, async (req) => {
+    const body: LanguageChangeRequest = await req.json();
     const { language } = body;
 
     // Get service configuration for validation
@@ -56,24 +57,18 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
-    console.error("Language change API error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        language: "",
-        error: error instanceof Error ? error.message : "Internal server error",
-      },
-      { status: 500 }
-    );
-  }
+  }, {
+    operation: 'change-language',
+    component: 'lang-api',
+    metadata: { endpoint: '/api/lang' }
+  });
 }
 
 /**
  * Get Current Language - GET /api/language
  */
-export async function GET() {
-  try {
+export async function GET(request: NextRequest) {
+  return withApiErrorHandler(request, async () => {
     const cookieStore = await cookies();
     const config = languageService.getConfig();
     const currentLanguage =
@@ -100,20 +95,9 @@ export async function GET() {
         .getSupportedLanguages()
         .map((l) => l.code),
     });
-  } catch (error) {
-    console.error("Get language API error:", error);
-
-    const config = languageService.getConfig();
-    return NextResponse.json(
-      {
-        success: false,
-        language: config.defaultLanguage!,
-        supportedLanguages: languageService
-          .getSupportedLanguages()
-          .map((l) => l.code),
-        error: error instanceof Error ? error.message : "Internal server error",
-      },
-      { status: 500 }
-    );
-  }
+  }, {
+    operation: 'get-language',
+    component: 'lang-api',
+    metadata: { endpoint: '/api/lang' }
+  });
 }
