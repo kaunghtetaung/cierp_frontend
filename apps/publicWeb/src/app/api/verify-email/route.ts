@@ -3,9 +3,10 @@ import { getApiDomain } from "@repo/utils/server";
 import { createHttpClient } from "@repo/api/client";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getTokenForRequest } from "@repo/auth/core";
+import { withApiErrorHandler } from "@repo/utils/server";
 
 export async function POST(request: NextRequest) {
-  try {
+  return withApiErrorHandler(request, async (req) => {
     const body = await request.json();
     const verificationToken = body.token;
 
@@ -155,21 +156,9 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-
-  } catch (error) {
-    console.error("🔥 [VERIFY-EMAIL] Step 6: Unexpected error caught", {
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack?.split('\n').slice(0, 3).join('\n') : "No stack trace",
-      timestamp: new Date().toISOString()
-    });
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: "An error occurred while verifying your email. Please try again later.",
-      },
-      { status: 500 }
-    );
-  }
+  }, {
+    operation: 'verify-email',
+    component: 'verify-email-api',
+    metadata: { endpoint: '/api/verify-email' }
+  });
 }
