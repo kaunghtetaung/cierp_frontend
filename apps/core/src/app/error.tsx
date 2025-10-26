@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@repo/ui'
 import { IconComponent } from '@repo/ui'
 import { getLocalizedText } from '@repo/utils'
-import { reportError } from '@repo/utils/common/error-reporter'
-import { ApplicationError } from '@repo/utils/common/error-types'
+import { reportError, ApplicationError } from '@repo/utils/common'
 import { getClientRequestContext } from '@repo/utils/client/error-context'
 
 interface ErrorPageProps {

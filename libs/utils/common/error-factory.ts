@@ -360,3 +360,6 @@ export class ErrorFactory {
     return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }
+
+// Export class as ApplicationError for easier instantiation
+export { ApplicationErrorImpl as ApplicationError };

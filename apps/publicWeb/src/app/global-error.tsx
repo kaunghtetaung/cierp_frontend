@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { reportError } from '@repo/utils/common/error-reporter';
-import { ApplicationError } from '@repo/utils/common/error-types';
+import { reportError, ApplicationError } from '@repo/utils/common';
 import { getClientRequestContext } from '@repo/utils/client/error-context';
 
 interface GlobalErrorProps {

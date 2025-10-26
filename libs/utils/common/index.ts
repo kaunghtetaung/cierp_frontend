@@ -32,7 +32,6 @@ export {
 
 // Error handling utilities (excluding ERROR_CODES to avoid conflict with constants.ts)
 export type {
-  ApplicationError,
   ErrorSeverity,
   ErrorCategory,
   ErrorReporter,
@@ -40,7 +39,8 @@ export type {
 
 export { ERROR_CONSTANTS } from "./error-types";
 
-export * from "./error-factory";
+// Export ApplicationError class (not type) from error-factory
+export { ApplicationError, ErrorFactory } from "./error-factory";
 export * from "./error-reporter";
 
 // Re-export commonly used items with aliases for backward compatibility
