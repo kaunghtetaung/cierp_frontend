@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@repo/auth/server-api";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 export interface CompleteProfileData {
   phone: string;
@@ -18,8 +19,8 @@ export interface CompleteProfileResult {
 
 export async function completeProfile(
   formData: CompleteProfileData
-): Promise<CompleteProfileResult> {
-  try {
+) {
+  return withServerActionErrorHandler(async () => {
     // Get current user
     const user = await getCurrentUser();
 
@@ -80,11 +81,9 @@ export async function completeProfile(
     revalidatePath("/");
 
     return { success: true };
-  } catch (error) {
-    console.error("Profile completion error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Failed to complete profile",
-    };
-  }
+  }, {
+    operation: 'complete-profile',
+    component: 'profile-setup-student-actions',
+    metadata: { userId: formData.phone }
+  });
 }

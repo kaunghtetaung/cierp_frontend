@@ -3,6 +3,7 @@
 import { createHttpClient } from "@repo/api";
 import { getApiDomain } from "@repo/utils/server";
 import { getAuthenticationStatus } from "@repo/auth/server-api";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 export interface PreviousEducationSubject {
   subjectId: string | { _id: string; name: string; code: string };
@@ -97,12 +98,8 @@ export interface StudentProfileData {
   updatedAt: string;
 }
 
-export async function getMyProfile(): Promise<{
-  success: boolean;
-  data?: StudentProfileData;
-  error?: string;
-}> {
-  try {
+export async function getMyProfile() {
+  return withServerActionErrorHandler(async () => {
     console.log("🔍 [getMyProfile] Starting profile fetch");
 
     // Get authentication status
@@ -139,11 +136,8 @@ export async function getMyProfile(): Promise<{
       success: true,
       data: result.data,
     };
-  } catch (error: any) {
-    console.error("❌ [getMyProfile] Error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to fetch student profile",
-    };
-  }
+  }, {
+    operation: 'get-my-profile',
+    component: 'profile-student-actions'
+  });
 }

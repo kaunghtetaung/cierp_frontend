@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import { getRateLimiter } from "./utils/rate-limiter";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getTokenForRequest } from "@repo/auth/core";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 // Validation schema
 const signupSchema = z.object({
@@ -139,7 +140,7 @@ export async function signupAction(
   prevState: any,
   formData: FormData
 ) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Extract form data
     const rawData = {
       displayName: formData.get("displayName") as string,
@@ -147,7 +148,7 @@ export async function signupAction(
       password: formData.get("password") as string,
       verificationToken: formData.get("verificationToken") as string,
     };
-    
+
     const tenantId = formData.get("tenantId") as string;
 
     // Validate input
@@ -357,16 +358,9 @@ export async function signupAction(
         roles: userData?.roles || [],
       },
     };
-
-  } catch (error) {
-    console.error("Signup action error:", error);
-    
-    // Don't leak internal errors to client
-    return {
-      success: false,
-      error: "An unexpected error occurred. Please try again later.",
-      fieldErrors: {},
-      data: null,
-    };
-  }
+  }, {
+    operation: 'user-signup',
+    component: 'signup-actions',
+    metadata: { email: formData.get("email") as string }
+  });
 }

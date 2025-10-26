@@ -134,7 +134,6 @@ export function SectionRenderer({
 
       return (
         <div
-          key={section._id}
           className={getSectionClasses(section)}
           data-section-id={section._id}
           data-section-type={section.type}
@@ -156,7 +155,6 @@ export function SectionRenderer({
       console.error(`Error rendering section ${section._id}:`, error);
       return (
         <SectionErrorFallback
-          key={section._id}
           section={section}
           error={error as Error}
         />
@@ -166,7 +164,11 @@ export function SectionRenderer({
 
   return (
     <div className={`space-y-16 ${className}`}>
-      {processedSections.map(renderSection)}
+      {processedSections.map((section, index) => (
+        <React.Fragment key={section._id || `section-${index}`}>
+          {renderSection(section)}
+        </React.Fragment>
+      ))}
     </div>
   );
 }

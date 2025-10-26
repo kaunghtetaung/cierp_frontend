@@ -8,6 +8,7 @@ import { getAuthenticationStatus } from "@repo/auth/server";
 import { TokenManager } from "@repo/auth/token-manager";
 import { getApiDomain } from "@repo/utils/server";
 import type { ModuleSchema } from "@repo/types";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 /**
  * Region data interface - raw API response
@@ -46,12 +47,8 @@ export type Region = RegionData;
  * Fetch students module schema for self-registration
  * This is a public action that doesn't require authentication
  */
-export async function getStudentsModuleSchema(): Promise<{
-  success: boolean;
-  module?: ModuleSchema;
-  error?: string;
-}> {
-  try {
+export async function getStudentsModuleSchema() {
+  return withServerActionErrorHandler(async () => {
     // Get authentication status
     const authResult = await getAuthenticationStatus();
 
@@ -97,13 +94,10 @@ export async function getStudentsModuleSchema(): Promise<{
       success: true,
       module: studentsModule,
     };
-  } catch (error) {
-    console.error("Error fetching students module schema:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
-  }
+  }, {
+    operation: 'get-students-schema',
+    component: 'student-registration-actions'
+  });
 }
 
 /**
@@ -116,12 +110,8 @@ export async function searchRegions(
   query: string,
   limit?: number,
   page?: number
-): Promise<{
-  success: boolean;
-  data?: RegionData[];
-  error?: string;
-}> {
-  try {
+) {
+  return withServerActionErrorHandler(async () => {
     if (!query || query.trim().length === 0) {
       return {
         success: true,
@@ -195,25 +185,18 @@ export async function searchRegions(
       data: formattedData,
       error: result.error,
     };
-  } catch (error) {
-    console.error("[searchRegions] Error:", error);
-    return {
-      success: false,
-      data: [],
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
+  }, {
+    operation: 'search-regions',
+    component: 'student-registration-actions',
+    metadata: { query }
+  });
 }
 
 /**
  * Get all state/regions
  */
-export async function getStateRegions(): Promise<{
-  success: boolean;
-  data?: RegionData[];
-  error?: string;
-}> {
-  try {
+export async function getStateRegions() {
+  return withServerActionErrorHandler(async () => {
     // Get authentication status
     const authResult = await getAuthenticationStatus();
 
@@ -246,26 +229,18 @@ export async function getStateRegions(): Promise<{
       data: result.data || [],
       error: result.error,
     };
-  } catch (error) {
-    console.error("[getStateRegions] Error:", error);
-    return {
-      success: false,
-      data: [],
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
+  }, {
+    operation: 'get-state-regions',
+    component: 'student-registration-actions'
+  });
 }
 
 /**
  * Get districts by state/region name
  * Schema: endpoint: "/regions/ref?expect=district&searchIn=state", searchParam: "search"
  */
-export async function getDistrictsByState(stateName: string): Promise<{
-  success: boolean;
-  data?: RegionData[];
-  error?: string;
-}> {
-  try {
+export async function getDistrictsByState(stateName: string) {
+  return withServerActionErrorHandler(async () => {
     console.log("🟡 [getDistrictsByState] Fetching districts for state:", stateName);
 
     // Get authentication status
@@ -298,26 +273,19 @@ export async function getDistrictsByState(stateName: string): Promise<{
       data: result.data || [],
       error: result.error,
     };
-  } catch (error) {
-    console.error("❌ [getDistrictsByState] Error:", error);
-    return {
-      success: false,
-      data: [],
-      error: error instanceof Error ? error.message : "Failed to fetch districts",
-    };
-  }
+  }, {
+    operation: 'get-districts-by-state',
+    component: 'student-registration-actions',
+    metadata: { stateName }
+  });
 }
 
 /**
  * Get townships by district name
  * Schema: endpoint: "/regions/ref?expect=township&searchIn=district", searchParam: "search"
  */
-export async function getTownshipsByDistrict(districtName: string): Promise<{
-  success: boolean;
-  data?: RegionData[];
-  error?: string;
-}> {
-  try {
+export async function getTownshipsByDistrict(districtName: string) {
+  return withServerActionErrorHandler(async () => {
     console.log("🟢 [getTownshipsByDistrict] Fetching townships for district:", districtName);
 
     // Get authentication status
@@ -350,26 +318,19 @@ export async function getTownshipsByDistrict(districtName: string): Promise<{
       data: result.data || [],
       error: result.error,
     };
-  } catch (error) {
-    console.error("❌ [getTownshipsByDistrict] Error:", error);
-    return {
-      success: false,
-      data: [],
-      error: error instanceof Error ? error.message : "Failed to fetch townships",
-    };
-  }
+  }, {
+    operation: 'get-townships-by-district',
+    component: 'student-registration-actions',
+    metadata: { districtName }
+  });
 }
 
 /**
  * Get towns by township name
  * Schema: endpoint: "/regions/ref?expect=town&searchIn=township", searchParam: "search"
  */
-export async function getTownsByTownship(townshipName: string): Promise<{
-  success: boolean;
-  data?: RegionData[];
-  error?: string;
-}> {
-  try {
+export async function getTownsByTownship(townshipName: string) {
+  return withServerActionErrorHandler(async () => {
     console.log("🟣 [getTownsByTownship] Fetching towns for township:", townshipName);
 
     // Get authentication status
@@ -402,29 +363,19 @@ export async function getTownsByTownship(townshipName: string): Promise<{
       data: result.data || [],
       error: result.error,
     };
-  } catch (error) {
-    console.error("❌ [getTownsByTownship] Error:", error);
-    return {
-      success: false,
-      data: [],
-      error: error instanceof Error ? error.message : "Failed to fetch towns",
-    };
-  }
+  }, {
+    operation: 'get-towns-by-township',
+    component: 'student-registration-actions',
+    metadata: { townshipName }
+  });
 }
 
 /**
  * Submit student self-registration
  * This is the main form submission endpoint that requires authentication
  */
-export async function submitStudentSelfRegistration(data: any): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-  studentId?: string;
-  fieldErrors?: string[];
-  traceId?: string;
-}> {
-  try {
+export async function submitStudentSelfRegistration(data: any) {
+  return withServerActionErrorHandler(async () => {
     console.log("🚀 [submitStudentSelfRegistration] Starting student self-registration");
     console.log("📝 [submitStudentSelfRegistration] Form data:", data);
 
@@ -554,11 +505,9 @@ export async function submitStudentSelfRegistration(data: any): Promise<{
       success: false,
       error: "Unknown error occurred during registration"
     };
-  } catch (error) {
-    console.error("❌ [submitStudentSelfRegistration] Unexpected error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "An unexpected error occurred during registration",
-    };
-  }
+  }, {
+    operation: 'submit-student-self-registration',
+    component: 'student-registration-actions',
+    metadata: { userId: data?.userId }
+  });
 }

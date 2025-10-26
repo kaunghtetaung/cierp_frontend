@@ -1,6 +1,7 @@
 'use server';
 
 import { getLibraryModuleList } from "@/lib/library-module-wrapper";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 // Types for library data
 export interface Author {
@@ -56,7 +57,7 @@ export async function searchBooks(
   searchType: SearchType = 'contains',
   catalogTypeName?: string
 ) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const params: Record<string, any> = {
       page,
       limit,
@@ -93,22 +94,18 @@ export async function searchBooks(
       data: response.data,
       pagination: response.pagination
     };
-  } catch (error) {
-    console.error('[searchBooks] Error:', error);
-    return {
-      success: false,
-      data: [],
-      pagination: undefined,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  }, {
+    operation: 'search-books',
+    component: 'library-books-actions',
+    metadata: { query, catalogTypeName, page }
+  });
 }
 
 /**
  * Get new arrivals (recently added books)
  */
 export async function getNewArrivals(limit = 10) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const response = await getLibraryModuleList<Bibliography>('bibliographies', {
       page: 1,
       limit,
@@ -121,22 +118,18 @@ export async function getNewArrivals(limit = 10) {
       data: response.data,
       pagination: response.pagination
     };
-  } catch (error) {
-    console.error('[getNewArrivals] Error:', error);
-    return {
-      success: false,
-      data: [],
-      pagination: undefined,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  }, {
+    operation: 'get-new-arrivals',
+    component: 'library-books-actions',
+    metadata: { limit }
+  });
 }
 
 /**
  * Get top reading books (most popular)
  */
 export async function getTopReading(limit = 10) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const response = await getLibraryModuleList<Bibliography>('bibliographies', {
       page: 1,
       limit,
@@ -149,22 +142,18 @@ export async function getTopReading(limit = 10) {
       data: response.data,
       pagination: response.pagination
     };
-  } catch (error) {
-    console.error('[getTopReading] Error:', error);
-    return {
-      success: false,
-      data: [],
-      pagination: undefined,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  }, {
+    operation: 'get-top-reading',
+    component: 'library-books-actions',
+    metadata: { limit }
+  });
 }
 
 /**
  * Get single book by ID
  */
 export async function getBookById(id: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Use the ModuleService getItem method through wrapper
     // For now, we'll fetch all and filter - TODO: implement getLibraryModuleItem
     const response = await getLibraryModuleList<Bibliography>('bibliographies', {
@@ -176,14 +165,11 @@ export async function getBookById(id: string) {
       success: true,
       data: response.data[0] || null
     };
-  } catch (error) {
-    console.error('[getBookById] Error:', error);
-    return {
-      success: false,
-      data: null,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  }, {
+    operation: 'get-book-by-id',
+    component: 'library-books-actions',
+    metadata: { bookId: id }
+  });
 }
 
 // Note: submitSearchForm removed - now using client-side navigation with React Query

@@ -1,6 +1,7 @@
 'use server';
 
 import type { ApiResponse } from "@repo/types";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 // Types for library news
 export interface LibraryNews {
@@ -23,8 +24,8 @@ export interface LibraryNewsListResponse {
  * Note: Using mock data for Phase 1
  * TODO: Implement with real backend endpoint when available
  */
-export async function getLibraryNews(limit = 5): Promise<ApiResponse<LibraryNewsListResponse>> {
-  try {
+export async function getLibraryNews(limit = 5) {
+  return withServerActionErrorHandler(async () => {
     // Mock data for Phase 1
     const mockNews: LibraryNews[] = [
       {
@@ -58,15 +59,10 @@ export async function getLibraryNews(limit = 5): Promise<ApiResponse<LibraryNews
       },
       message: 'Library news fetched successfully',
       timestamp: new Date()
-    };
-  } catch (error) {
-    console.error('[getLibraryNews] Error:', error);
-    return {
-      success: false,
-      data: { data: [], total: 0 },
-      message: 'Failed to get library news',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date()
     } as ApiResponse<LibraryNewsListResponse>;
-  }
+  }, {
+    operation: 'get-library-news',
+    component: 'library-news-actions',
+    metadata: { limit }
+  });
 }

@@ -4,6 +4,7 @@ import { getCurrentUser } from "@repo/auth/server-api";
 import { createHttpClient } from "@repo/api";
 import { TokenManager } from "@repo/auth/token-manager";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 export interface StudentSelfRegistrationData {
   // Personal Information
@@ -86,8 +87,8 @@ export interface StudentSelfRegistrationResult {
 
 export async function submitStudentSelfRegistration(
   data: StudentSelfRegistrationData
-): Promise<StudentSelfRegistrationResult> {
-  try {
+) {
+  return withServerActionErrorHandler(async () => {
     // Get current user and validate guest role
     const user = await getCurrentUser();
 
@@ -200,14 +201,8 @@ export async function submitStudentSelfRegistration(
       success: true,
       studentId: result.data?.studentId || result.data?._id,
     };
-  } catch (error) {
-    console.error("Student self-registration error:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred during registration",
-    };
-  }
+  }, {
+    operation: 'submit-student-self-registration',
+    component: 'student-actions'
+  });
 }

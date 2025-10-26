@@ -417,13 +417,29 @@ export function ModuleDataTable({
   const [bulkDeleteType, setBulkDeleteType] = useState<"soft" | "hard">("soft");
   const [pendingExtraAction, setPendingExtraAction] =
     useState<ExtraAction | null>(null);
-  const [queryParams, setQueryParams] = useState({
-    page: 1,
-    limit: module.dataTableSchema.pagination?.defaultLimit || 10,
-    sortBy: module.dataTableSchema.sorting?.defaultSort?.field || "",
-    sortOrder: (module.dataTableSchema.sorting?.defaultSort?.direction ||
-      "asc") as "asc" | "desc",
-    filters: {} as Record<string, Record<string, any>>,
+  const [queryParams, setQueryParams] = useState(() => {
+    // Validate that the default sort field exists in the columns
+    const defaultSortField = module.dataTableSchema.sorting?.defaultSort?.field || "";
+    const columnExists = defaultSortField === "" || module.dataTableSchema.columns?.some(
+      (col: any) => col.fieldName === defaultSortField || col.id === defaultSortField
+    );
+
+    // Log warning if default sort field doesn't exist
+    if (defaultSortField && !columnExists) {
+      console.warn(
+        `[ModuleDataTable] Default sort field '${defaultSortField}' does not exist in columns for module '${module.name?.en || module.id}'. Available columns:`,
+        module.dataTableSchema.columns?.map((col: any) => col.fieldName || col.id)
+      );
+    }
+
+    return {
+      page: 1,
+      limit: module.dataTableSchema.pagination?.defaultLimit || 10,
+      sortBy: columnExists ? defaultSortField : "",
+      sortOrder: (module.dataTableSchema.sorting?.defaultSort?.direction ||
+        "asc") as "asc" | "desc",
+      filters: {} as Record<string, Record<string, any>>,
+    };
   });
 
   // Helper function to get raw nested field values (without language filtering)

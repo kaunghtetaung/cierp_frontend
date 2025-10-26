@@ -1,6 +1,7 @@
 'use server';
 
 import { getLibraryModuleReference } from "@/lib/library-module-wrapper";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 export interface CatalogType {
   _id: string;
@@ -15,16 +16,16 @@ export interface CatalogType {
  */
 export async function getCatalogTypesReference(
   queryParams?: Record<string, string>
-): Promise<CatalogType[]> {
-  try {
+) {
+  return withServerActionErrorHandler(async () => {
     const response = await getLibraryModuleReference<CatalogType>(
       'catalog-types',
       queryParams
     );
 
     return response || [];
-  } catch (error) {
-    console.error('[getCatalogTypesReference] Error:', error);
-    return [];
-  }
+  }, {
+    operation: 'get-catalog-types-reference',
+    component: 'library-catalog-types-actions'
+  });
 }

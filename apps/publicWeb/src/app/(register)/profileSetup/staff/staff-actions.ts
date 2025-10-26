@@ -4,6 +4,7 @@ import { getCurrentUser } from "@repo/auth/server-api";
 import { createHttpClient } from "@repo/api";
 import { TokenManager } from "@repo/auth/token-manager";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
+import { withServerActionErrorHandler } from "@repo/utils/server";
 
 export interface StaffSelfRegistrationData {
   // Personal Information
@@ -73,8 +74,8 @@ export interface StaffSelfRegistrationResult {
 
 export async function submitStaffSelfRegistration(
   data: StaffSelfRegistrationData
-): Promise<StaffSelfRegistrationResult> {
-  try {
+) {
+  return withServerActionErrorHandler(async () => {
     console.log("👔 [Staff Registration] Starting registration process");
 
     // Get current user and validate guest role
@@ -210,14 +211,9 @@ export async function submitStaffSelfRegistration(
       success: true,
       staffId,
     };
-  } catch (error) {
-    console.error("❌ [Staff Registration] Unexpected error:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred during registration",
-    };
-  }
+  }, {
+    operation: 'submit-staff-self-registration',
+    component: 'staff-actions',
+    metadata: { primaryAppointmentId: data.primaryAppointmentId }
+  });
 }
