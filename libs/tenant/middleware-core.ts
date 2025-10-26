@@ -41,19 +41,6 @@ export async function createTenantMiddleware(
   const pathname = request.nextUrl.pathname;
   const requestId = generateRequestId();
 
-  if (config.enableLogging) {
-    console.log(
-      `🔄 [${requestId}] ${appName || "App"} Middleware processing:`,
-      {
-        hostname,
-        pathname,
-        protocol: request.nextUrl.protocol.replace(":", ""),
-        method: request.method,
-        userAgent: request.headers.get("user-agent")?.slice(0, 50),
-      }
-    );
-  }
-
   // Skip middleware for excluded paths
   if (shouldExcludePath(pathname, config.excludePaths)) {
     return NextResponse.next();
@@ -66,23 +53,9 @@ export async function createTenantMiddleware(
 
     // If no tenant ID in cookie, resolve from hostname
     if (!tenantId) {
-      if (config.enableLogging) {
-        console.log(
-          `🔍 [${requestId}] No tenant cookie found, resolving from hostname:`,
-          hostname
-        );
-      }
-
       tenantId = await resolveTenantByDomain(request, config);
 
       if (!tenantId) {
-        const duration = Date.now() - start;
-        if (config.enableLogging) {
-          console.log(
-            `❌ [${requestId}] Could not resolve tenant for hostname: ${hostname} (${duration}ms)`
-          );
-        }
-
         return createErrorResponse(
           request,
           {
@@ -96,8 +69,6 @@ export async function createTenantMiddleware(
       }
 
       shouldUpdateTenantCookie = true;
-    } else if (config.enableLogging) {
-      console.log(`✅ [${requestId}] Found tenant ID in cookie:`, tenantId);
     }
 
     // Get language (use custom language from options if provided)
@@ -120,25 +91,16 @@ export async function createTenantMiddleware(
 
     // Set/update tenant cookie if needed
     if (shouldUpdateTenantCookie) {
-      if (config.enableLogging) {
-        console.log(`🍪 [${requestId}] Setting tenant cookie for:`, tenantId);
-      }
       cookiesToSet.push(createTenantCookie(tenantId, hostname, config));
     }
 
     // Set language cookie if requested
     if (options.shouldSetLanguageCookie) {
-      if (config.enableLogging) {
-        console.log(`🍪 [${requestId}] Setting language cookie for:`, language);
-      }
       cookiesToSet.push(createLanguageCookie(language, hostname, config));
     }
 
     // Set app ID cookie if requested
     if (options.shouldSetAppCookie && options.appId) {
-      if (config.enableLogging) {
-        console.log(`🍪 [${requestId}] Setting app cookie for:`, options.appId);
-      }
       cookiesToSet.push(createAppCookie(options.appId, hostname, config));
     }
 
@@ -146,20 +108,6 @@ export async function createTenantMiddleware(
     cookiesToSet.forEach(cookie => {
       response.headers.append("Set-Cookie", cookie);
     });
-
-    const duration = Date.now() - start;
-    if (config.enableLogging) {
-      console.log(
-        `✅ [${requestId}] ${
-          appName || "App"
-        } Middleware completed in ${duration}ms:`,
-        {
-          tenantId,
-          hostname,
-          pathname,
-        }
-      );
-    }
 
     return response;
   } catch (error) {

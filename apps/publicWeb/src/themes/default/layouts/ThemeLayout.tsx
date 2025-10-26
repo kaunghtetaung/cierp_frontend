@@ -30,20 +30,10 @@ export async function ThemeLayout({
     middlewareData = await getMiddlewareDataFromHeaders();
     tenantId = middlewareData.tenantId;
     currentLanguage = middlewareData.language as "en" | "mm";
-    console.log("🏠 Middleware data:", {
-      tenantId,
-      currentLanguage,
-      hasMiddlewareData: !!middlewareData
-    });
   } catch (error) {
     // During build/static generation, headers aren't available
-    console.warn("🏠 Headers not available during build, using defaults");
     tenantId = "default";
     currentLanguage = "en";
-    console.log("🏠 Using default values:", {
-      tenantId,
-      currentLanguage
-    });
   }
   
 
@@ -52,20 +42,15 @@ export async function ThemeLayout({
   let userRoles: string[] = [];
 
   try {
-    console.log("🔐 Getting authentication status...");
     const authStatus = await getAuthenticationStatus();
     isAuthenticated = authStatus.isAuthenticated;
 
     if (isAuthenticated) {
-      console.log("🔐 User is authenticated, getting user data...");
       const user = await getCurrentUser();
       userRoles = user?.roles || [];
-      console.log("🔐 User roles:", userRoles);
-    } else {
-      console.log("🔐 User is not authenticated");
     }
   } catch (error) {
-    console.error("🔐 Failed to get authentication status:", error);
+    console.error("Failed to get authentication status:", error);
     // Safe fallback - treat as unauthenticated
     isAuthenticated = false;
     userRoles = [];

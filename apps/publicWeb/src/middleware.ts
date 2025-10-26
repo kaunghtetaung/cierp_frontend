@@ -93,7 +93,6 @@ async function getAppInfo(request: NextRequest) {
       const { getAppFromHostname } = await import("@repo/app-config");
       const detectedApp = getAppFromHostname(hostname, pathname);
       if (detectedApp !== "PublicWeb") {
-        console.log(`Note: getAppFromHostname returned "${detectedApp}" but using "PublicWeb" for PublicWeb app`);
       }
     } catch (error) {
       // Log error but continue with "PublicWeb"

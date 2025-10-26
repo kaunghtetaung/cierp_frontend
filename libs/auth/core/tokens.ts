@@ -491,11 +491,8 @@ export async function getTokenForRequest(
     }
 
     if (userToken) {
-      console.log(`[TokenManager] ✅ Using userAccessToken for tenant=${tenantId}, user=${userId}`);
       return userToken;
     }
-    console.log(`[TokenManager] ❌ No userAccessToken found for tenant=${tenantId}, user=${userId}`);
-    console.log(`[TokenManager] 🔍 Falling back to tenant token...`);
   }
 
   // Try tenant token if we have tenantId
