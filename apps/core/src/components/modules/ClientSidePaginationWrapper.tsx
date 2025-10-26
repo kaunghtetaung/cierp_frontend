@@ -8,6 +8,7 @@ import { IconComponent } from "@repo/ui";
 import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
 import type { ModulePermissions } from "@/types/layout";
+import { ModuleErrorDisplay } from "./ModuleErrorDisplay";
 
 interface ClientSidePaginationWrapperProps {
   module: ModuleSchema;
@@ -233,28 +234,19 @@ export function ClientSidePaginationWrapper({
       : []);
 
   // Check for error state
+  // Check for error state - use enhanced error display
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <IconComponent name="AlertCircle" className="w-12 h-12 text-destructive mb-4" />
-        <h3 className="text-lg font-semibold mb-2">
-          {currentLanguage === "mm" ? "အချက်အလက် ရယူ၍ မရပါ" : "Failed to load data"}
-        </h3>
-        <p className="text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : "Unknown error occurred"}
-        </p>
-        <button
-          onClick={() => {
-            setCachedFullData(null);
-            setIsDataLoaded(false);
-            refetch();
-          }}
-          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
-          <IconComponent name="RotateCcw" className="w-4 h-4 mr-2" />
-          {currentLanguage === "mm" ? "ပြန်လည်ကြိုးစားမည်" : "Retry"}
-        </button>
-      </div>
+      <ModuleErrorDisplay
+        error={error}
+        module={module.slug}
+        onRetry={() => {
+          setCachedFullData(null);
+          setIsDataLoaded(false);
+          refetch();
+        }}
+        isRetrying={isFetching}
+      />
     );
   }
 

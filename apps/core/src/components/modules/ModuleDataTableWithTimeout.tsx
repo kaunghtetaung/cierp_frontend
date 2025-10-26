@@ -58,7 +58,27 @@ async function fetchModuleDataWithTimeout(
       if (response.status === 408 || response.status === 504) {
         return { error: 'Request timed out', isTimeout: true }
       }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+
+      // Try to extract enhanced error details from response
+      let errorDetails: any = {};
+      try {
+        const errorData = await response.json();
+        errorDetails = {
+          message: errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+          statusCode: errorData.statusCode || response.status,
+          errorCode: errorData.errorCode || errorData.code,
+          traceId: errorData.traceId,
+          userMessage: errorData.userMessage || errorData.backendMessage,
+          category: errorData.category || errorData.errorCategory,
+        };
+      } catch {
+        errorDetails = {
+          message: `HTTP ${response.status}: ${response.statusText}`,
+          statusCode: response.status,
+        };
+      }
+
+      return { error: errorDetails.message, ...errorDetails };
     }
     
     const data = await response.json()

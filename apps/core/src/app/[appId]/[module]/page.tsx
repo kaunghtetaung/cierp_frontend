@@ -95,9 +95,18 @@ export default async function ModulePage({
     );
     moduleData = (await Promise.race([dataPromise, timeoutPromise])) as any[];
   } catch (error) {
-    console.log(
+    // Enhanced error logging with full context
+    console.error(
       `Server-side data fetch failed for ${resolvedParams.module}:`,
-      error
+      {
+        module: resolvedParams.module,
+        error: error instanceof Error ? error.message : String(error),
+        statusCode: (error as any)?.statusCode,
+        errorCode: (error as any)?.errorCode,
+        category: (error as any)?.category,
+        traceId: (error as any)?.traceId,
+        stack: error instanceof Error ? error.stack : undefined,
+      }
     );
     serverError = true;
     // Don't throw - let client handle it

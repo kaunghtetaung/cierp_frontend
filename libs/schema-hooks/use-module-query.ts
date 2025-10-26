@@ -108,9 +108,18 @@ export function useModuleList<T = any>(
     queryFn: async () => {
       const result = await getModuleListAction<T>(module, params);
       if (!result.success) {
-        throw new Error(result.error || "Failed to fetch module list");
+        // Create enhanced error with all metadata from ActionResponse
+        const enhancedError: any = new Error(result.error || "Failed to fetch module list");
+        enhancedError.statusCode = result.statusCode;
+        enhancedError.errorCode = result.errorCode;
+        enhancedError.category = result.errorCategory;
+        enhancedError.traceId = result.traceId;
+        enhancedError.userMessage = result.userMessage;
+        enhancedError.backendMessage = result.backendMessage;
+        enhancedError.recoveryActions = result.recoveryActions;
+        throw enhancedError;
       }
-      
+
       // Return both data and pagination metadata for server-side pagination support
       return {
         data: result.data || [],

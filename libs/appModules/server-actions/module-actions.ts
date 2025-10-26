@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { reportError, ApplicationError } from "@repo/utils/common";
+import { reportError, ApplicationError, ErrorSeverity, ErrorCategory } from "@repo/utils/common";
 import { getRequestContext } from "@repo/utils/server/error-context";
 import {
   createModuleItem,
@@ -42,6 +42,13 @@ export interface ActionResponse<T = any> {
   fieldErrors?: string[];
   traceId?: string;
   redirectTo?: string;
+  // Enhanced error metadata from backend/HTTP client
+  statusCode?: number;
+  errorCode?: string;
+  errorCategory?: string;
+  userMessage?: string;
+  recoveryActions?: string[];
+  backendMessage?: string;
 }
 
 /**
@@ -61,49 +68,84 @@ export async function getModuleListAction<T = any>(
       pagination: response.pagination,
     };
   } catch (error) {
+    // Extract enhanced error details from ApiError (from error interceptor)
+    const enhancedError = error as any;
+    const errorMessage = error instanceof Error ? error.message : `Failed to fetch ${module} list`;
+
+    // Extract enhanced metadata if available
+    const statusCode = enhancedError?.statusCode;
+    const errorCode = enhancedError?.errorCode || enhancedError?.backendErrorCode;
+    const errorCategory = enhancedError?.category;
+    const traceId = enhancedError?.traceId;
+    const userMessage = enhancedError?.userMessage || enhancedError?.backendMessage;
+    const recoveryActions = enhancedError?.recoveryActions;
+
     // Extract request context
     const requestContext = await getRequestContext();
 
-    // Report error with full context
-    const appError = new ApplicationError({
-      type: 'SERVER_ACTION_ERROR',
-      message: error instanceof Error ? error.message : `Failed to fetch ${module} list`,
-      severity: 'high',
-      category: 'server-action',
-      operation: 'fetch-module-list',
-      component: 'module-actions',
-      cause: error instanceof Error ? error : undefined,
-      // Include request context
-      hostname: requestContext.hostname,
-      appName: requestContext.appName,
-      service: requestContext.service,
-      tenantId: requestContext.tenantId,
-      userId: requestContext.userId,
-      sessionId: requestContext.sessionId,
-      requestId: requestContext.requestId,
-      path: requestContext.path,
-      method: requestContext.method,
-      userAgent: requestContext.userAgent,
-      metadata: {
-        module,
-        params,
-        action: 'getModuleListAction'
+    // Report error with full context using ApplicationError
+    const appError = new ApplicationError(
+      'API_ERROR',
+      errorCode || 'MODULE_FETCH_ERROR',
+      errorMessage,
+      {
+        timestamp: new Date(),
+        operation: 'fetch-module-list',
+        component: 'module-actions',
+        hostname: requestContext.hostname,
+        appName: requestContext.appName,
+        service: requestContext.service,
+        tenantId: requestContext.tenantId,
+        userId: requestContext.userId,
+        sessionId: requestContext.sessionId,
+        requestId: requestContext.requestId,
+        path: requestContext.path,
+        method: requestContext.method,
+        userAgent: requestContext.userAgent,
+        metadata: {
+          module,
+          params,
+          action: 'getModuleListAction',
+          errorCategory,
+          traceId,
+          statusCode,
+        }
+      },
+      {
+        cause: error instanceof Error ? error : undefined,
+        statusCode,
+        severity: ErrorSeverity.HIGH,
+        category: ErrorCategory.SERVER,
       }
-    });
+    );
 
     reportError(appError).catch(err => {
       console.error('Failed to report server action error:', err);
     });
 
-    // Fallback console logging
-    console.error(`Error fetching ${module} list:`, error);
+    // Enhanced console logging with full error details
+    console.error(`Error fetching ${module} list:`, {
+      message: errorMessage,
+      statusCode,
+      errorCode,
+      category: errorCategory,
+      traceId,
+      module,
+      params,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : `Failed to fetch ${module} list`,
+      error: errorMessage,
+      // Include enhanced error metadata in response
+      statusCode,
+      errorCode,
+      errorCategory,
+      traceId,
+      userMessage,
+      recoveryActions,
+      backendMessage: enhancedError?.backendMessage,
     };
   }
 }
@@ -124,7 +166,12 @@ export async function getModuleItemAction<T = any>(
       data,
     };
   } catch (error) {
-    console.error(`Error fetching ${module} item:`, error);
+    console.error(`Error fetching ${module} item:`, {
+      module,
+      id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return {
       success: false,
       error:
@@ -264,7 +311,7 @@ export async function submitModuleForm(
         
         // Handle various backend error types that should show user-friendly messages
         if (errorData.errorCode === 'FORM_VALIDATION_FAIL') {
-          console.log("🔍 Backend validation error detected:", errorData);
+          console.error("🔍 Backend validation error detected:", errorData);
           return {
             success: false,
             error: errorData.message,
@@ -272,7 +319,7 @@ export async function submitModuleForm(
             traceId: errorData.traceId,
           };
         } else if (errorData.errorCode === 'BAD_REQUEST_FORMAT') {
-          console.log("🔍 Bad request format error detected:", errorData);
+          console.error("🔍 Bad request format error detected:", errorData);
           return {
             success: false,
             error: errorData.message || "The request format is invalid",
@@ -280,7 +327,7 @@ export async function submitModuleForm(
           };
         } else if (errorData.statusCode >= 400 && errorData.statusCode < 500) {
           // Handle other client errors (4xx) with user-friendly messages
-          console.log("🔍 Client error detected:", errorData);
+          console.error("🔍 Client error detected:", errorData);
           return {
             success: false,
             error: errorData.message || `Request failed with status ${errorData.statusCode}`,
@@ -289,7 +336,7 @@ export async function submitModuleForm(
         }
       } catch (parseError) {
         // Not a JSON error, handle as regular error
-        console.log("📝 Regular error (not JSON):", error.message);
+        console.error("📝 Regular error (not JSON):", error.message);
       }
     }
     
