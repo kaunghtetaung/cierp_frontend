@@ -25,7 +25,6 @@ export async function ThemeLayout({
   let tenantId: string | null = null;
   let currentLanguage: "en" | "mm" = "en";
 
-  console.log("\n🏠 === THEME LAYOUT START ===");
   
   try {
     middlewareData = await getMiddlewareDataFromHeaders();
@@ -47,7 +46,6 @@ export async function ThemeLayout({
     });
   }
   
-  console.log("🏠 === THEME LAYOUT END ===\n");
 
   // Get real authentication data from server-side auth system
   let isAuthenticated = false;

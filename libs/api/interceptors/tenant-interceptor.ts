@@ -9,7 +9,6 @@ import type { RequestInterceptor, HttpRequestContext } from '../types/http-types
 
 export class TenantRequestInterceptor implements RequestInterceptor {
   async intercept(context: HttpRequestContext): Promise<HttpRequestContext> {
-    console.log("\n🔐 === TENANT INTERCEPTOR START ===");
     console.log("🔐 Request URL:", context.url);
     console.log("🔐 Request Method:", context.method);
     

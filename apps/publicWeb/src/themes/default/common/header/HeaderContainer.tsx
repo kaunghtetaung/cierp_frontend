@@ -26,7 +26,6 @@ export async function HeaderContainer({
   showLanguageSelector = true,
   showUserMenu = true,
 }: HeaderContainerProps) {
-  console.log("\n🎨 === HEADER CONTAINER START ===");
   console.log("🎨 TenantId:", tenantId);
   console.log("🎨 Language:", currentLanguage);
 

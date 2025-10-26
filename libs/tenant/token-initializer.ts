@@ -42,7 +42,6 @@ export const initializeTenantToken = cache(
     }
 
     const tenantId = tenantSettings.id;
-    console.log(`\n🔧 === TENANT TOKEN INITIALIZER START === Tenant: ${tenantId}`);
 
     try {
       // Check if tenant has secrets

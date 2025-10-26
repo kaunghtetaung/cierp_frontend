@@ -66,7 +66,6 @@ export class ContentWrapper {
    * Get effective content settings using ContentService
    */
   async getEffective(tenantId: string): Promise<ContentSettingsData | null> {
-    console.log("\n🎯 === CONTENT WRAPPER GET EFFECTIVE START ===");
     console.log("🎯 Tenant ID:", tenantId);
     
     if (!isValidTenantId(tenantId)) {
