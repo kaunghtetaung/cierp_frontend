@@ -6,6 +6,7 @@ import {
   DEFAULT_CONFIG,
 } from "@repo/tenant/middleware-core";
 import type { NextRequest } from "next/server";
+import { wrapMiddleware, logMiddlewareError } from "@repo/utils/server";
 
 /**
  * Common static file exclusions
@@ -74,10 +75,10 @@ async function getValidLanguage(request: NextRequest) {
 async function getAppInfo(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   const pathname = request.nextUrl.pathname;
-  
+
   // Try to get app ID from x-app-id header first
   const headerAppId = request.headers.get("x-app-id");
-  
+
   let appId: string;
   if (headerAppId) {
     appId = headerAppId;
@@ -86,7 +87,7 @@ async function getAppInfo(request: NextRequest) {
     // The getAppFromHostname function might return "core" for certain domains
     // but this is the PublicWeb app, so we should always use "PublicWeb"
     appId = "PublicWeb";
-    
+
     // Optional: Still call the function for logging purposes
     try {
       const { getAppFromHostname } = await import("@repo/app-config");
@@ -95,12 +96,19 @@ async function getAppInfo(request: NextRequest) {
         console.log(`Note: getAppFromHostname returned "${detectedApp}" but using "PublicWeb" for PublicWeb app`);
       }
     } catch (error) {
-      // Silently continue with "PublicWeb"
+      // Log error but continue with "PublicWeb"
+      await logMiddlewareError(
+        error,
+        request,
+        'publicWeb-middleware',
+        'app-detection',
+        { fallbackUsed: 'PublicWeb', hostname }
+      );
     }
   }
-  
+
   const currentAppCookie = request.cookies.get("x-app-id")?.value;
-  
+
   return {
     appId,
     needsCookieUpdate: currentAppCookie !== appId,
@@ -111,46 +119,48 @@ async function getAppInfo(request: NextRequest) {
  * PublicWeb middleware implementation
  */
 export async function middleware(request: NextRequest) {
-  console.log("PublicWeb middleware triggered for:", request.nextUrl.pathname);
+  return wrapMiddleware(request, 'publicWeb-middleware', async (req) => {
+    console.log("PublicWeb middleware triggered for:", req.nextUrl.pathname);
 
-  // Get app information
-  const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppInfo(request);
+    // Get app information
+    const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppInfo(req);
 
-  // Get language information
-  const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(request);
+    // Get language information
+    const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(req);
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/api/auth");
+    const isAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
 
-  // Select appropriate configuration
-  const middlewareConfig = isAuthRoute ? authApiConfig : publicWebConfig;
+    // Select appropriate configuration
+    const middlewareConfig = isAuthRoute ? authApiConfig : publicWebConfig;
 
-  if (isAuthRoute) {
-    console.log("Running middleware for auth API route");
-  }
+    if (isAuthRoute) {
+      console.log("Running middleware for auth API route");
+    }
 
-  // Prepare middleware options
-  const middlewareOptions: MiddlewareOptions = {
-    appId,
-    shouldSetLanguageCookie: needsLangCookieUpdate && !isAuthRoute,
-    shouldSetAppCookie: needsAppCookieUpdate && !isAuthRoute,
-    customLanguage: validLanguage,
-  };
+    // Prepare middleware options
+    const middlewareOptions: MiddlewareOptions = {
+      appId,
+      shouldSetLanguageCookie: needsLangCookieUpdate && !isAuthRoute,
+      shouldSetAppCookie: needsAppCookieUpdate && !isAuthRoute,
+      customLanguage: validLanguage,
+    };
 
-  // Run tenant middleware with enhanced cookie handling
-  const response = await createTenantMiddleware(
-    request,
-    middlewareConfig,
-    "PublicWeb",
-    middlewareOptions
-  );
+    // Run tenant middleware with enhanced cookie handling
+    const response = await createTenantMiddleware(
+      req,
+      middlewareConfig,
+      "PublicWeb",
+      middlewareOptions
+    );
 
-  // Set additional headers if response exists
-  if (response) {
-    response.headers.set("x-app-id", appId);
-    response.headers.set("x-lang", validLanguage);
-  }
+    // Set additional headers if response exists
+    if (response) {
+      response.headers.set("x-app-id", appId);
+      response.headers.set("x-lang", validLanguage);
+    }
 
-  return response;
+    return response;
+  });
 }
 
 /**

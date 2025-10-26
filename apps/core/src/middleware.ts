@@ -6,6 +6,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAMES } from "@repo/utils/common/constants";
 import { getPublicUrl } from "@repo/utils/server/domain";
+import { wrapMiddleware, logMiddlewareError } from "@repo/utils/server";
 
 /**
  * Middleware configuration
@@ -164,7 +165,15 @@ async function handleAuthRedirect(request: NextRequest): Promise<NextResponse> {
     console.log(`[AUTH_REDIRECT] Redirecting from ${actualUrl} to: ${loginUrl}`);
     return NextResponse.redirect(loginUrl);
   } catch (error) {
-    console.error("Failed to create auth redirect:", error);
+    // Log error to Loki
+    await logMiddlewareError(
+      error,
+      request,
+      'core-middleware',
+      'auth-redirect',
+      { attemptedUrl: request.url }
+    );
+
     // Fallback: construct URL from request hostname with environment-based subdomain
     const hostname = request.headers.get("host") || "localhost";
     const protocol = request.headers.get("x-forwarded-proto") || "http";
@@ -180,56 +189,58 @@ async function handleAuthRedirect(request: NextRequest): Promise<NextResponse> {
  * Main middleware implementation
  */
 export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  return wrapMiddleware(request, 'core-middleware', async (req) => {
+    const pathname = req.nextUrl.pathname;
 
-  // Get app information from request (path-based detection)
-  const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppFromRequest(request);
+    // Get app information from request (path-based detection)
+    const { appId, needsCookieUpdate: needsAppCookieUpdate } = await getAppFromRequest(req);
 
-  // Get language information
-  const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(request);
+    // Get language information
+    const { validLanguage, needsCookieUpdate: needsLangCookieUpdate } = await getValidLanguage(req);
 
-  // NEW: Check session cookie for authenticated routes
-  if (requiresAuthentication(pathname)) {
-    const sessionCookie = request.cookies.get(COOKIE_NAMES.SESSION)?.value;
+    // NEW: Check session cookie for authenticated routes
+    if (requiresAuthentication(pathname)) {
+      const sessionCookie = req.cookies.get(COOKIE_NAMES.SESSION)?.value;
 
-    if (!sessionCookie) {
-      // No session cookie found - redirect to login
-      return await handleAuthRedirect(request);
+      if (!sessionCookie) {
+        // No session cookie found - redirect to login
+        return await handleAuthRedirect(req);
+      }
     }
-  }
 
-  // Determine which config to use based on route
-  const isAuthRoute = pathname.startsWith("/api/auth");
-  const middlewareConfig = isAuthRoute ? authConfig : coreConfig;
+    // Determine which config to use based on route
+    const isAuthRoute = pathname.startsWith("/api/auth");
+    const middlewareConfig = isAuthRoute ? authConfig : coreConfig;
 
-  // Prepare middleware options
-  const middlewareOptions: MiddlewareOptions = {
-    appId,
-    shouldSetLanguageCookie: needsLangCookieUpdate && !isAuthRoute,
-    shouldSetAppCookie: needsAppCookieUpdate && !isAuthRoute,
-    customLanguage: validLanguage,
-  };
+    // Prepare middleware options
+    const middlewareOptions: MiddlewareOptions = {
+      appId,
+      shouldSetLanguageCookie: needsLangCookieUpdate && !isAuthRoute,
+      shouldSetAppCookie: needsAppCookieUpdate && !isAuthRoute,
+      customLanguage: validLanguage,
+    };
 
-  // Run tenant middleware with enhanced cookie handling
-  const response = await createTenantMiddleware(
-    request,
-    middlewareConfig,
-    "Core",
-    middlewareOptions
-  );
+    // Run tenant middleware with enhanced cookie handling
+    const response = await createTenantMiddleware(
+      req,
+      middlewareConfig,
+      "Core",
+      middlewareOptions
+    );
 
-  // Set additional headers if response exists
-  if (response) {
-    response.headers.set("x-app-id", appId);
-    response.headers.set("x-lang", validLanguage);
-    response.headers.set("x-pathname", pathname);
+    // Set additional headers if response exists
+    if (response) {
+      response.headers.set("x-app-id", appId);
+      response.headers.set("x-lang", validLanguage);
+      response.headers.set("x-pathname", pathname);
 
-    // NEW: Forward session ID to layout for auth validation
-    const sessionCookie = request.cookies.get(COOKIE_NAMES.SESSION)?.value;
-    if (sessionCookie) {
-      response.headers.set("x-session-id", sessionCookie);
+      // NEW: Forward session ID to layout for auth validation
+      const sessionCookie = req.cookies.get(COOKIE_NAMES.SESSION)?.value;
+      if (sessionCookie) {
+        response.headers.set("x-session-id", sessionCookie);
+      }
     }
-  }
 
-  return response;
+    return response;
+  });
 }

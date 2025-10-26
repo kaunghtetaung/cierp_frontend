@@ -13,6 +13,8 @@ import {
 import { setMiddlewareHeaders } from "./middleware/headers";
 import { createErrorResponse } from "./middleware/response";
 import { MiddlewareConfig } from "./middleware/types";
+import { ApplicationError, reportError } from "@repo/utils/common";
+import { getMiddlewareRequestContext } from "@repo/utils/server/error-context";
 
 /**
  * Additional middleware options for cookie handling
@@ -162,12 +164,35 @@ export async function createTenantMiddleware(
     return response;
   } catch (error) {
     const duration = Date.now() - start;
-    console.error(
-      `❌ [${requestId}] ${
-        appName || "App"
-      } Middleware error after ${duration}ms:`,
-      error
-    );
+
+    // Log structured error to stdout → Loki
+    const requestContext = getMiddlewareRequestContext(request);
+    const appError = new ApplicationError({
+      type: 'MIDDLEWARE_ERROR',
+      message: error instanceof Error ? error.message : 'Tenant resolution failed',
+      severity: 'high',
+      category: 'middleware',
+      operation: 'tenant-resolution',
+      component: `${appName || 'tenant'}-middleware`,
+      cause: error instanceof Error ? error : undefined,
+      hostname: requestContext.hostname,
+      appName: requestContext.appName,
+      service: requestContext.service,
+      tenantId: requestContext.tenantId,
+      userId: requestContext.userId,
+      sessionId: requestContext.sessionId,
+      requestId: requestContext.requestId,
+      path: requestContext.path,
+      method: requestContext.method,
+      userAgent: requestContext.userAgent,
+      metadata: {
+        duration,
+        url: request.url,
+        nextUrl: request.nextUrl.toString()
+      }
+    });
+
+    await reportError(appError);
 
     return createErrorResponse(
       request,
