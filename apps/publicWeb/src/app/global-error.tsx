@@ -3,6 +3,7 @@
 import React from 'react';
 import { reportError } from '@repo/utils/common/error-reporter';
 import { ApplicationError } from '@repo/utils/common/error-types';
+import { getClientRequestContext } from '@repo/utils/client/error-context';
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -11,7 +12,10 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   React.useEffect(() => {
-    // Report critical error with high priority
+    // Extract request context from browser
+    const requestContext = getClientRequestContext();
+
+    // Report critical error with full context
     const appError = new ApplicationError({
       type: 'UNKNOWN_ERROR',
       message: error.message,
@@ -20,6 +24,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       operation: 'app-initialization',
       component: 'global-error-boundary',
       cause: error,
+      // Include request context
+      hostname: requestContext.hostname,
+      appName: requestContext.appName,
+      service: requestContext.service,
+      tenantId: requestContext.tenantId,
+      userId: requestContext.userId,
+      path: requestContext.path,
+      userAgent: requestContext.userAgent,
       metadata: {
         digest: error.digest,
         errorName: error.name,

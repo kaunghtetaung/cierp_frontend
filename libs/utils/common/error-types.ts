@@ -6,7 +6,14 @@ export interface ErrorContext {
   readonly component?: string;
   readonly tenantId?: string;
   readonly userId?: string;
+  readonly sessionId?: string;
   readonly requestId?: string;
+  readonly hostname?: string;
+  readonly appName?: string;
+  readonly service?: string;
+  readonly path?: string;
+  readonly method?: string;
+  readonly userAgent?: string;
   readonly metadata?: Record<string, any>;
 }
 
