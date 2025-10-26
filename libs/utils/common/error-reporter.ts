@@ -11,6 +11,7 @@ export interface ErrorReportingConfig {
   readonly timeout: number;
   readonly batchSize: number;
   readonly flushInterval: number;
+  readonly logFormat: 'json' | 'pretty'; // 'json' for Loki/production, 'pretty' for development
 }
 
 const DEFAULT_CONFIG: ErrorReportingConfig = {
@@ -21,7 +22,9 @@ const DEFAULT_CONFIG: ErrorReportingConfig = {
   maxRetries: 3,
   timeout: ERROR_CONSTANTS.ERROR_REPORT_TIMEOUT,
   batchSize: 10,
-  flushInterval: 30000 // 30 seconds
+  flushInterval: 30000, // 30 seconds
+  logFormat: (process.env.LOG_FORMAT as 'json' | 'pretty') ||
+             (process.env.NODE_ENV === 'production' ? 'json' : 'pretty')
 };
 
 export class StandardErrorReporter implements ErrorReporter {
@@ -48,6 +51,7 @@ export class StandardErrorReporter implements ErrorReporter {
 
   private logToConsole(error: ApplicationError): void {
     const logData = {
+      level: this.getSeverityLevel(error.severity),
       timestamp: error.context.timestamp.toISOString(),
       type: error.type,
       code: error.code,
@@ -60,29 +64,46 @@ export class StandardErrorReporter implements ErrorReporter {
       userId: error.context.userId,
       retryable: error.retryable,
       cause: error.cause?.message,
+      stack: error.cause?.stack,
       metadata: error.context.metadata
     };
 
-    switch (error.severity) {
-      case 'critical':
-        console.error('🔥 CRITICAL ERROR:', logData);
-        break;
-      case 'high':
-        console.error('❌ HIGH SEVERITY ERROR:', logData);
-        break;
-      case 'medium':
-        console.warn('⚠️ MEDIUM SEVERITY ERROR:', logData);
-        break;
-      case 'low':
-        console.log('ℹ️ LOW SEVERITY ERROR:', logData);
-        break;
-      default:
-        console.error('❓ UNKNOWN SEVERITY ERROR:', logData);
-    }
+    if (this.config.logFormat === 'json') {
+      // JSON format for Loki/Grafana (structured logging)
+      console.log(JSON.stringify(logData));
+    } else {
+      // Pretty format for development (human-readable with emojis)
+      switch (error.severity) {
+        case 'critical':
+          console.error('🔥 CRITICAL ERROR:', logData);
+          break;
+        case 'high':
+          console.error('❌ HIGH SEVERITY ERROR:', logData);
+          break;
+        case 'medium':
+          console.warn('⚠️ MEDIUM SEVERITY ERROR:', logData);
+          break;
+        case 'low':
+          console.log('ℹ️ LOW SEVERITY ERROR:', logData);
+          break;
+        default:
+          console.error('❓ UNKNOWN SEVERITY ERROR:', logData);
+      }
 
-    // Log stack trace if available
-    if (error.cause?.stack) {
-      console.error('Stack trace:', error.cause.stack);
+      // Log stack trace separately in pretty mode
+      if (error.cause?.stack) {
+        console.error('Stack trace:', error.cause.stack);
+      }
+    }
+  }
+
+  private getSeverityLevel(severity: string): string {
+    switch (severity) {
+      case 'critical': return 'fatal';
+      case 'high': return 'error';
+      case 'medium': return 'warn';
+      case 'low': return 'info';
+      default: return 'error';
     }
   }
 
