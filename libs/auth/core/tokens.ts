@@ -218,11 +218,7 @@ export async function getUserAccessToken(tenantId: string, userId: string): Prom
   const key = CacheKeys.userAccessToken(tenantId, userId);
 
   console.log(`✅ [getUserAccessToken] Checking user access token for tenant=${tenantId}, user=${userId}`);
-  console.log(`🔍 [DEBUG getUserAccessToken] tenantId type:`, typeof tenantId, "value:", tenantId);
-  console.log(`🔍 [DEBUG getUserAccessToken] userId type:`, typeof userId, "value:", userId);
-  console.log(`🔍 [DEBUG getUserAccessToken] Generated cache key:`, key);
   const token = await cache.get<string>(key);
-  console.log(`🔍 [DEBUG getUserAccessToken] Cache lookup result:`, token ? "FOUND ✅" : "NOT FOUND ❌");
 
   // If we have a valid token, check if it's expired
   if (token) {
@@ -480,8 +476,6 @@ export async function getTokenForRequest(
   tokenStrategy: TokenStrategy = 'auto'
 ): Promise<string | null> {
   console.log(`[TokenManager] Getting token for request: tenantId=${tenantId}, userId=${userId}, strategy=${tokenStrategy}`);
-  console.log(`🔍 [DEBUG getTokenForRequest] tenantId type:`, typeof tenantId, "value:", tenantId);
-  console.log(`🔍 [DEBUG getTokenForRequest] userId type:`, typeof userId, "value:", userId);
 
   // Try user token if we have both tenantId and userId
   if (tenantId && userId) {

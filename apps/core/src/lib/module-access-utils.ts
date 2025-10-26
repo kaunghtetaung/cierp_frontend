@@ -227,7 +227,6 @@ export function getModulePermissions(module: ModuleSchema, user: User | null) {
  * Debug function to log user role information
  */
 export function debugUserRoles(user: User | null): void {
-  console.log('[MODULE_DEBUG] User role information:')
   console.log('  - Email:', user?.email || 'N/A')
   console.log('  - Roles count:', user?.roles?.length || 0)
   console.log('  - Raw roles:', JSON.stringify(user?.roles, null, 2))

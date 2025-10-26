@@ -409,12 +409,6 @@ export async function submitStudentSelfRegistration(data: any) {
     }
 
     // DEBUG: Log tenantId and userId details for token lookup debugging
-    console.log("🔍 [DEBUG] tenantId type:", typeof tenantId, "value:", tenantId);
-    console.log("🔍 [DEBUG] userId type:", typeof userId, "value:", userId);
-    console.log("🔍 [DEBUG] tenantId constructor:", tenantId?.constructor?.name);
-    console.log("🔍 [DEBUG] userId constructor:", userId?.constructor?.name);
-    console.log("🔍 [DEBUG] Expected cache key format: ciApp:{tenantId}:Token:userAccessToken:{userId}");
-    console.log("🔍 [DEBUG] Expected cache key:", `ciApp:${tenantId}:Token:userAccessToken:${userId}`);
 
     // Get tenant-based API domain (e.g., http://api.um1ygn.edu.mm)
     const apiUrl = await getApiDomain();

@@ -35,7 +35,6 @@ export class ContentService {
    * This is the main method for fetching content settings
    */
   async getEffective(tenantId: string): Promise<ContentSettingsData> {
-    console.log("\n📚 === CONTENT SERVICE GET EFFECTIVE DEBUG START ===");
     console.log("📚 Step 1: Getting content settings for tenant:", tenantId);
     
     const cacheKey = CacheKeys.contentSettings(tenantId);
@@ -46,7 +45,6 @@ export class ContentService {
       const cachedSettings = await this.cache.get<ContentSettingsData>(cacheKey);
       if (cachedSettings && this.isValidContentSettings(cachedSettings)) {
         console.log("📚 Step 3: Found valid settings in cache, returning");
-        console.log("📚 === CONTENT SERVICE GET EFFECTIVE DEBUG END (CACHED) ===\n");
         return cachedSettings;
       }
       console.log("📚 Step 3: No valid cached settings found");
@@ -82,7 +80,6 @@ export class ContentService {
       
       if (!response.success) {
         console.error("📚 Step ERROR: API response not successful:", response.error);
-        console.log("📚 === CONTENT SERVICE GET EFFECTIVE DEBUG END (API ERROR) ===\n");
         throw new Error(response.error || 'Failed to fetch content settings');
       }
 
@@ -105,13 +102,11 @@ export class ContentService {
         console.warn("📚 Step 9: Settings validation failed");
       }
 
-      console.log("📚 === CONTENT SERVICE GET EFFECTIVE DEBUG END (SUCCESS) ===\n");
       return settingsData;
       
     } catch (error) {
       const fetchTime = Date.now() - startTime;
       console.error(`📚 Step ERROR: API request failed after ${fetchTime}ms:`, error);
-      console.log("📚 === CONTENT SERVICE GET EFFECTIVE DEBUG END (EXCEPTION) ===\n");
       throw error;
     }
   }
@@ -150,7 +145,6 @@ export class ContentService {
    * Get navigation menu items
    */
   async getHeaderMenu(tenantId: string): Promise<MenuItemSettings[]> {
-    console.log("\n📚 === CONTENT SERVICE GET HEADER MENU DEBUG START ===");
     console.log("📚 Header Menu Step 1: Getting settings for tenant:", tenantId);
     
     try {
@@ -163,11 +157,9 @@ export class ContentService {
       
       const result = settings.enableHeaderMenu ? settings.headerMenu : [];
       console.log("📚 Header Menu Step 3: Returning menu items:", result.length);
-      console.log("📚 === CONTENT SERVICE GET HEADER MENU DEBUG END ===\n");
       return result;
     } catch (error) {
       console.error("📚 Header Menu ERROR:", error);
-      console.log("📚 === CONTENT SERVICE GET HEADER MENU DEBUG END (ERROR) ===\n");
       throw error;
     }
   }

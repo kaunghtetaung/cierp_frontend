@@ -100,7 +100,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
 
     // Handle special actions that require custom endpoints
     if (actionKey === 'resetPassword') {
-      console.log(`🔐 RESET PASSWORD DEBUG: Starting password reset for user ${targetId}`);
       
       // For password reset, use the specific endpoint with PATCH method
       const moduleService = await createModuleService();
@@ -109,27 +108,20 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       const resetData: any = {};
       const mode = formData.get("mode") as string;
       
-      console.log(`🔐 RESET PASSWORD DEBUG: Mode = ${mode}`);
       
       if (mode === "custom") {
         const password = formData.get("password") as string;
         if (password) {
           resetData.password = password;
-          console.log(`🔐 RESET PASSWORD DEBUG: Custom password provided (length: ${password.length})`);
         } else {
-          console.log(`🔐 RESET PASSWORD DEBUG: Custom mode selected but no password provided`);
         }
       } else {
-        console.log(`🔐 RESET PASSWORD DEBUG: Generate mode - sending empty body`);
       }
       // For "generate" mode, send empty body to let server generate password
 
       // Build endpoint - use the moduleSlug as the resource name (e.g., "users")
       const appName = 'core'; // TODO: This should come from config or context
       const endpoint = `/${appName}/${moduleSlug}/${targetId}/reset-password`;
-      console.log(`🔐 RESET PASSWORD DEBUG: Calling API endpoint: ${endpoint}`);
-      console.log(`🔐 RESET PASSWORD DEBUG: Request body:`, resetData);
-      console.log(`🔐 RESET PASSWORD DEBUG: Auth details:`, {
         tenantId: moduleService['tenantId'],
         userSessionId: moduleService['userSessionId'],
         userId: moduleService['userId']
@@ -148,7 +140,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         }
       );
 
-      console.log(`🔐 RESET PASSWORD DEBUG: API Response received:`, {
         success: response.success,
         status: response.status,
         error: response.error,
@@ -166,18 +157,14 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         throw new Error(response.error || "Failed to reset password");
       }
 
-      console.log(`🔐 RESET PASSWORD DEBUG: API call successful`);
       result = response.data;
       
       // For password reset, preserve the generated password in the response
       if (response.data?.newPassword) {
-        console.log(`🔐 RESET PASSWORD DEBUG: Generated password received from server`);
         result.newPassword = response.data.newPassword;
       } else {
-        console.log(`🔐 RESET PASSWORD DEBUG: No generated password in response`);
       }
     } else if (actionKey === 'assignRoles') {
-      console.log(`🎭 ASSIGN ROLES DEBUG: Starting role assignment for user ${targetId}`);
       
       // For role assignment, use the specific endpoint with PATCH method
       const moduleService = await createModuleService();
@@ -188,7 +175,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       const departmentId = formData.get("departmentId") as string;
       const roleId = formData.get("roleId") as string;
       
-      console.log(`🎭 ASSIGN ROLES DEBUG: Role assignment data`, {
         organizationId,
         departmentId,
         roleId
@@ -207,8 +193,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       // Build endpoint - use the moduleSlug as the resource name (e.g., "users")
       const appName = 'core'; // TODO: This should come from config or context
       const endpoint = `/${appName}/${moduleSlug}/${targetId}/roles`;
-      console.log(`🎭 ASSIGN ROLES DEBUG: Calling API endpoint: ${endpoint}`);
-      console.log(`🎭 ASSIGN ROLES DEBUG: Request body:`, assignRolesData);
 
       // Make direct API call to assign roles endpoint using PUT method
       const response = await moduleService['httpClient'].request(
@@ -223,7 +207,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         }
       );
 
-      console.log(`🎭 ASSIGN ROLES DEBUG: API Response received:`, {
         success: response.success,
         status: response.status,
         error: response.error,
@@ -239,7 +222,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         throw new Error(response.error || "Failed to assign roles");
       }
 
-      console.log(`🎭 ASSIGN ROLES DEBUG: API call successful`);
       result = response.data;
     } else {
       // Use standard PATCH method for other extra actions
@@ -250,7 +232,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
     revalidatePath(`/${moduleSlug}`);
     revalidatePath(`/${moduleSlug}/[id]`, 'page');
 
-    console.log(`🔐 RESET PASSWORD DEBUG: Final server action result:`, {
       success: true,
       message: result.message || "Action completed successfully",
       data: result,

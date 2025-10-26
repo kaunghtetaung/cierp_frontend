@@ -50,7 +50,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const appId = pathSegments.length > 0 ? pathSegments[0] : undefined;
 
   // Debug: Log pathname and appId to understand routing
-  console.log(`[LAYOUT_DEBUG] pathname: '${pathname}', appId: '${appId}', startsWith /unauthorized: ${pathname.startsWith('/unauthorized')}`);
 
   // Skip access control for unauthorized page to prevent redirect loops
   if (pathname.startsWith('/unauthorized')) {

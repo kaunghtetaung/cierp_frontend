@@ -406,7 +406,6 @@ export function StudentFormFieldRenderer({
                       checked={toggleController.field.value}
                       onCheckedChange={(checked) => {
                         console.log('='.repeat(50));
-                        console.log('🎯 MANUAL DEBUG - ADDRESS COPY TOGGLE CLICKED');
                         console.log('='.repeat(50));
 
                         console.log('STEP 1: Initial State Check');
@@ -517,7 +516,6 @@ export function StudentFormFieldRenderer({
                         }
 
                         console.log('='.repeat(50));
-                        console.log('🏁 MANUAL DEBUG - END');
                         console.log('='.repeat(50));
                       }}
                     />
