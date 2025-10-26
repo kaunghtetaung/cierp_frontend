@@ -1,5 +1,5 @@
 /**
- * Client-Side Console Logs API Endpoint (SECURED)
+ * Client-Side Console Logs API Endpoint (SECURED) - Core App
  *
  * Receives browser console logs from the client and outputs them to stdout
  * for Promtail → Loki ingestion.
@@ -242,8 +242,8 @@ export async function POST(request: NextRequest) {
         level: mapLogLevel(log.level),
         timestamp: log.timestamp,
 
-        // Service identification
-        service: 'frontend-browser',
+        // Service identification (core app)
+        service: 'core-browser',
         source: 'client-console',
 
         // Log content (sanitized)
@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
         }[log.level] || 'ℹ️';
 
         console.log(
-          `${emoji} [BROWSER ${log.level.toUpperCase()}] ${sanitizedMessage}`,
+          `${emoji} [CORE BROWSER ${log.level.toUpperCase()}] ${sanitizedMessage}`,
           log.metadata
         );
       }

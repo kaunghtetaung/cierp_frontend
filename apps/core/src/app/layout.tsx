@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { ThemeScript } from "@/components/theme-script";
 import { Toaster } from "@repo/ui";
 import type { RootLayoutProps } from "@/types/layout";
+import { ConsoleLoggerProvider } from "@/components/ConsoleLoggerProvider";
 
 import "./globals.css";
 
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <ThemeScript />
         </head>
         <body suppressHydrationWarning>
+          <ConsoleLoggerProvider />
           {children}
           <Toaster />
         </body>
@@ -95,6 +97,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <ThemeScript />
         </head>
         <body suppressHydrationWarning>
+          <ConsoleLoggerProvider />
           {children}
           <Toaster />
         </body>
@@ -136,6 +139,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <ThemeScript />
       </head>
       <body suppressHydrationWarning>
+        <ConsoleLoggerProvider />
         <AppProviders
           initialLanguage={fullMiddlewareData.language}
           initialTenant={tenant}

@@ -33,6 +33,7 @@ const publicWebConfig: Partial<MiddlewareConfig> = {
     "/api/ping",
     "/api/status",
     "/api/lang",
+    "/api/logs", // Client-side console logger endpoint (has own security)
     // Exclude Redis test routes
     "/redis",
     "/api/redis/test",

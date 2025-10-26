@@ -5,6 +5,7 @@ import { initializeTenantToken } from "@repo/tenant/token-initializer";
 import { GlobalErrorFallback } from "@/base-components/error/GlobalErrorFallback";
 import { Toaster } from "@repo/ui/components/sonner";
 import { getLocalizedText } from "@repo/utils";
+import { ConsoleLoggerProvider } from "@/components/ConsoleLoggerProvider";
 import "./globals.css";
 
 // Force dynamic rendering - required for tenant resolution with cookies/headers
@@ -136,6 +137,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <ConsoleLoggerProvider />
         <TenantProvider initialTenant={initialTenant} initialError={initialError}>
           {children}
           <Toaster />

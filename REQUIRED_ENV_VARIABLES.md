@@ -35,18 +35,36 @@
 
 ## 🟢 LOGGING - Promtail → Loki → Grafana
 
+### Server-Side Logging
+
 | Variable | Description | Values | Required |
 |----------|-------------|--------|----------|
-| `LOG_FORMAT` | Log output format | `json` (prod) / `pretty` (dev) | ✅ Yes |
+| `LOG_FORMAT` | Server log output format | `json` (prod) / `pretty` (dev) | ✅ Yes |
 
 **Log Format Details:**
 - `json` - Structured JSON logs for Loki ingestion (production)
 - `pretty` - Human-readable logs with emojis (development)
 
-**Architecture:**
+**Server-Side Architecture:**
 ```
 ApplicationError → stdout (LOG_FORMAT) → Promtail → Loki → Grafana
 ```
+
+### Client-Side Logging (publicWeb only)
+
+| Variable | Description | Values | Required |
+|----------|-------------|--------|----------|
+| `NEXT_PUBLIC_ENABLE_CONSOLE_LOGGER` | Enable browser console capture | `true` / `false` | Optional |
+
+**Client-Side Architecture:**
+```
+Browser console.log → Batch (10 logs/5s) → POST /api/logs → stdout → Promtail → Loki
+```
+
+**Behavior:**
+- **Production:** Auto-enabled by default
+- **Development:** Disabled unless `NEXT_PUBLIC_ENABLE_CONSOLE_LOGGER=true`
+- **Features:** Captures console.log/warn/error/info/debug with browser metadata
 
 ---
 
@@ -109,6 +127,9 @@ PORT_AUTH=3332
 
 # Logging (stdout → Promtail → Loki)
 LOG_FORMAT=pretty
+
+# Client-Side Logging (optional in development)
+# NEXT_PUBLIC_ENABLE_CONSOLE_LOGGER=true
 ```
 
 ### Production (.env.production)
@@ -138,6 +159,9 @@ PORT_AUTH=3332
 
 # Logging (stdout → Promtail → Loki → Grafana)
 LOG_FORMAT=json
+
+# Client-Side Logging (auto-enabled in production)
+# NEXT_PUBLIC_ENABLE_CONSOLE_LOGGER=true
 
 # Optional Production Settings
 AUTH_SESSION_TIMEOUT_MINUTES=60

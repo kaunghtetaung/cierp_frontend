@@ -47,6 +47,7 @@ const PUBLIC_API_EXCLUDES = [
   "/api/ping",
   "/api/status",
   "/api/lang",
+  "/api/logs", // Client-side console logger endpoint (has own security)
 ] as const;
 
 /**
