@@ -26,13 +26,14 @@
 - ✅ `apps/core/src/app/global-error.tsx` - Client-side
 - ✅ `apps/core/src/app/error.tsx` - Client-side
 
-### API Routes (15% - 4/~27 files)
+### API Routes (25% - 4/16 files)
+*Note: Removed 8 test/debug routes (testToken, test-tenant) - not used in production*
 
-#### publicWeb (3/16 files)
+#### publicWeb (3/9 files)
 - ✅ `apps/publicWeb/src/app/api/lang/route.ts` - GET & POST
 - ✅ `apps/publicWeb/src/app/api/verify-email/route.ts` - POST
 
-#### core (2/11 files)
+#### core (2/9 files)
 - ✅ `apps/core/src/app/api/lang/route.ts` - GET & POST
 - ✅ `apps/core/src/app/api/modules/[module]/route.ts` - GET
 
@@ -43,7 +44,7 @@
 
 ## ⏳ Remaining Migrations
 
-### API Routes - publicWeb (13 files)
+### API Routes - publicWeb (6 files)
 
 **Auth Routes (6 files):**
 ```bash
@@ -55,16 +56,9 @@ apps/publicWeb/src/app/api/auth/refresh/route.ts
 apps/publicWeb/src/app/api/auth/session/route.ts
 ```
 
-**TestToken Routes (7 files):**
-```bash
-apps/publicWeb/src/app/testToken/api/extend-session/route.ts
-apps/publicWeb/src/app/testToken/api/refresh-initializer/route.ts
-apps/publicWeb/src/app/testToken/api/refresh-tenant/route.ts
-apps/publicWeb/src/app/testToken/api/refresh-user/route.ts
-apps/publicWeb/src/app/testToken/api/tokens/route.ts
-```
+**~~TestToken Routes~~ (REMOVED - not used in production)**
 
-### API Routes - core (9 files)
+### API Routes - core (7 files)
 
 **Auth Routes (6 files):**
 ```bash
@@ -78,11 +72,13 @@ apps/core/src/app/api/auth/sessions/route.ts
 apps/core/src/app/api/auth/tokens/route.ts
 ```
 
-**Other Routes (2 files):**
+**Other Routes (1 file):**
 ```bash
-apps/core/src/app/api/test-tenant/route.ts
 apps/core/src/app/[appId]/[module]/[id]/print/route.ts
 ```
+
+**~~Test Route~~ (REMOVED - not used in production)**
+- ~~apps/core/src/app/api/test-tenant/route.ts~~
 
 ### Server Actions - publicWeb (10 files)
 
@@ -242,12 +238,13 @@ All errors have same structure:
 
 ## Time Estimate
 
-- **Remaining API routes:** ~22 files × 2 min = 44 minutes
+- **Removed test routes:** 8 files (testToken, test-tenant) ✅
+- **Remaining API routes:** 14 files × 2 min = 28 minutes
 - **Remaining server actions:** ~10 files × 3 min = 30 minutes
 - **Testing & verification:** 15 minutes
-- **Total:** ~1.5 hours
+- **Total:** ~1.2 hours (was 1.5 hours)
 
 ---
 
-**Current Status:** Foundation complete, ~50% migrated
+**Current Status:** Foundation complete, ~55% migrated (removed test files)
 **Next Session:** Continue with auth routes batch migration
