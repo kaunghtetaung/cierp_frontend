@@ -43,5 +43,8 @@ export { ERROR_CONSTANTS } from "./error-types";
 export { ApplicationError, ErrorFactory } from "./error-factory";
 export * from "./error-reporter";
 
+// Structured logging for Loki compatibility
+export * from "./logger";
+
 // Re-export commonly used items with aliases for backward compatibility
 export { generateSecureRandomString as generateRandomString } from "./security";
