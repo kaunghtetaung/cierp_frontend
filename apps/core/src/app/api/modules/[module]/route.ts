@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getModuleList } from '@repo/app-modules'
 import { headers } from 'next/headers'
+import { reportError } from '@repo/utils/common/error-reporter'
+import { ApplicationError } from '@repo/utils/common/error-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,12 +64,38 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error(`API Error for module ${(await params).module}:`, error)
+    const moduleSlug = (await params).module
+    const headerStore = await headers()
+    const tenantId = headerStore.get('x-tenant-id')
+
+    // Report error with structured logging
+    const appError = new ApplicationError({
+      type: 'API_ERROR',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      severity: error instanceof Error && error.message === 'Request timeout' ? 'medium' : 'high',
+      category: 'api',
+      operation: 'fetch-module-list',
+      component: 'api-route',
+      cause: error instanceof Error ? error : undefined,
+      metadata: {
+        module: moduleSlug,
+        endpoint: `/api/modules/${moduleSlug}`,
+        tenantId,
+        isTimeout: error instanceof Error && error.message === 'Request timeout'
+      }
+    })
+
+    reportError(appError).catch(err => {
+      console.error('Failed to report API error:', err)
+    })
+
+    // Fallback console logging
+    console.error(`API Error for module ${moduleSlug}:`, error)
 
     // Handle timeout specifically
     if (error instanceof Error && error.message === 'Request timeout') {
       return NextResponse.json(
-        { 
+        {
           error: 'Request to microservice timed out',
           isTimeout: true,
           retryAfter: 3000
@@ -78,7 +106,7 @@ export async function GET(
 
     // Handle other errors
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString()
       },

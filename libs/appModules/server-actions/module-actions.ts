@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { reportError } from "@repo/utils/common/error-reporter";
+import { ApplicationError } from "@repo/utils/common/error-types";
 import {
   createModuleItem,
   updateModuleItem,
@@ -59,7 +61,29 @@ export async function getModuleListAction<T = any>(
       pagination: response.pagination,
     };
   } catch (error) {
+    // Report error with structured logging
+    const appError = new ApplicationError({
+      type: 'SERVER_ACTION_ERROR',
+      message: error instanceof Error ? error.message : `Failed to fetch ${module} list`,
+      severity: 'high',
+      category: 'server-action',
+      operation: 'fetch-module-list',
+      component: 'module-actions',
+      cause: error instanceof Error ? error : undefined,
+      metadata: {
+        module,
+        params,
+        action: 'getModuleListAction'
+      }
+    });
+
+    reportError(appError).catch(err => {
+      console.error('Failed to report server action error:', err);
+    });
+
+    // Fallback console logging
     console.error(`Error fetching ${module} list:`, error);
+
     return {
       success: false,
       error:
