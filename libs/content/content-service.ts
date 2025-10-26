@@ -35,35 +35,22 @@ export class ContentService {
    * This is the main method for fetching content settings
    */
   async getEffective(tenantId: string): Promise<ContentSettingsData> {
-    console.log("📚 Step 1: Getting content settings for tenant:", tenantId);
-    
     const cacheKey = CacheKeys.contentSettings(tenantId);
-    console.log("📚 Step 2: Cache key:", cacheKey);
 
     // Try to get from cache first
     try {
       const cachedSettings = await this.cache.get<ContentSettingsData>(cacheKey);
       if (cachedSettings && this.isValidContentSettings(cachedSettings)) {
-        console.log("📚 Step 3: Found valid settings in cache, returning");
         return cachedSettings;
       }
-      console.log("📚 Step 3: No valid cached settings found");
     } catch (cacheError) {
-      console.error("📚 Step 3: Cache error:", cacheError);
+      console.error("Cache error while fetching content settings:", cacheError);
     }
 
     // Fetch from API using HTTP client with tenant context
-    console.log("📚 Step 4: Fetching from API endpoint: /content/settings/tenant/effective");
-    console.log("📚 Step 5: Request params:", { 
-      method: 'GET',
-      tenantId,
-      withAuth: true 
-    });
-    
     const startTime = Date.now();
-    
+
     try {
-      console.log("📚 Step 4a: Preparing request with tenantId in config:", tenantId);
       const response: ApiResponse<ContentSettingsData> = await this.httpClient.request(
         `/content/settings/tenant/effective`,
         {
@@ -72,41 +59,28 @@ export class ContentService {
           withAuth: true
         }
       );
-      console.log("📚 Step 4b: Request sent to HTTP client");
-      
+
       const fetchTime = Date.now() - startTime;
-      console.log(`📚 Step 6: API response received in ${fetchTime}ms`);
-      console.log("📚 Step 7: Response success:", response.success);
-      
+
       if (!response.success) {
-        console.error("📚 Step ERROR: API response not successful:", response.error);
+        console.error(`Failed to fetch content settings (${fetchTime}ms):`, response.error);
         throw new Error(response.error || 'Failed to fetch content settings');
       }
 
       const settingsData = response.data;
-      console.log("📚 Step 8: Settings data received:", {
-        hasData: !!settingsData,
-        hasId: !!settingsData?.id,
-        hasOrganizationId: !!settingsData?.organizationId,
-        hasHeaderMenu: !!settingsData?.headerMenu,
-        headerMenuLength: settingsData?.headerMenu?.length || 0,
-        enableHeaderMenu: settingsData?.enableHeaderMenu
-      });
 
       // Validate and cache the result
       if (this.isValidContentSettings(settingsData)) {
-        console.log("📚 Step 9: Settings are valid, caching...");
         await this.cache.set(cacheKey, settingsData, CacheTTL.CONTENT || 60 * 60 * 24);
-        console.log("📚 Step 10: Settings cached successfully");
       } else {
-        console.warn("📚 Step 9: Settings validation failed");
+        console.warn("Content settings validation failed for tenant:", tenantId);
       }
 
       return settingsData;
-      
+
     } catch (error) {
       const fetchTime = Date.now() - startTime;
-      console.error(`📚 Step ERROR: API request failed after ${fetchTime}ms:`, error);
+      console.error(`API request failed after ${fetchTime}ms:`, error);
       throw error;
     }
   }
@@ -145,21 +119,11 @@ export class ContentService {
    * Get navigation menu items
    */
   async getHeaderMenu(tenantId: string): Promise<MenuItemSettings[]> {
-    console.log("📚 Header Menu Step 1: Getting settings for tenant:", tenantId);
-    
     try {
       const settings = await this.getEffective(tenantId);
-      console.log("📚 Header Menu Step 2: Settings received:", {
-        hasSettings: !!settings,
-        enableHeaderMenu: settings?.enableHeaderMenu,
-        headerMenuLength: settings?.headerMenu?.length || 0
-      });
-      
-      const result = settings.enableHeaderMenu ? settings.headerMenu : [];
-      console.log("📚 Header Menu Step 3: Returning menu items:", result.length);
-      return result;
+      return settings.enableHeaderMenu ? settings.headerMenu : [];
     } catch (error) {
-      console.error("📚 Header Menu ERROR:", error);
+      console.error("Failed to fetch header menu:", error);
       throw error;
     }
   }
@@ -225,28 +189,13 @@ export class ContentService {
  */
 export const getContentSettings = cache(
   async (tenantId: string): Promise<ContentSettingsData> => {
-    console.log("\n🌐 === GET CONTENT SETTINGS (CACHED) START ===");
-    console.log("🌐 Step 1: Tenant ID:", tenantId);
-    
-    console.log("🌐 Step 2: Getting API domain...");
     const apiUrl = await getApiDomain();
-    console.log("🌐 Step 3: API URL:", apiUrl);
-    
-    console.log("🌐 Step 4: Creating ContentService instance...");
     const contentService = new ContentService(apiUrl);
 
-    console.log(
-      `🌐 Step 5: Fetching content settings for tenant: ${tenantId} from: ${apiUrl} (using tenant context)`
-    );
-
     try {
-      const result = await contentService.getEffective(tenantId);
-      console.log("🌐 Step 6: Content settings fetched successfully");
-      console.log("🌐 === GET CONTENT SETTINGS (CACHED) END (SUCCESS) ===\n");
-      return result;
+      return await contentService.getEffective(tenantId);
     } catch (error) {
-      console.error("🌐 Step ERROR: Failed to fetch content settings:", error);
-      console.log("🌐 === GET CONTENT SETTINGS (CACHED) END (ERROR) ===\n");
+      console.error("Failed to fetch content settings:", error);
       throw error;
     }
   }
@@ -277,24 +226,11 @@ export const getFooterSettings = cache(
  */
 export const getHeaderMenu = cache(
   async (tenantId: string): Promise<MenuItemSettings[]> => {
-    console.log("\n🌐 === GET HEADER MENU (CACHED) START ===");
-    console.log("🌐 Menu Step 1: Tenant ID:", tenantId);
-    
     try {
       const settings = await getContentSettings(tenantId);
-      console.log("🌐 Menu Step 2: Settings fetched:", {
-        hasSettings: !!settings,
-        enableHeaderMenu: settings?.enableHeaderMenu,
-        headerMenuLength: settings?.headerMenu?.length || 0
-      });
-      
-      const result = settings.enableHeaderMenu ? settings.headerMenu : [];
-      console.log("🌐 Menu Step 3: Menu items to return:", result.length);
-      console.log("🌐 === GET HEADER MENU (CACHED) END (SUCCESS) ===\n");
-      return result;
+      return settings.enableHeaderMenu ? settings.headerMenu : [];
     } catch (error) {
-      console.error("🌐 Menu ERROR:", error);
-      console.log("🌐 === GET HEADER MENU (CACHED) END (ERROR) ===\n");
+      console.error("Failed to fetch header menu:", error);
       throw error;
     }
   }
