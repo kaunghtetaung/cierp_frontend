@@ -100,32 +100,24 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
 
     // Handle special actions that require custom endpoints
     if (actionKey === 'resetPassword') {
-      
       // For password reset, use the specific endpoint with PATCH method
       const moduleService = await createModuleService();
       
       // Prepare password reset data
       const resetData: any = {};
       const mode = formData.get("mode") as string;
-      
-      
+
       if (mode === "custom") {
         const password = formData.get("password") as string;
         if (password) {
           resetData.password = password;
-        } else {
         }
-      } else {
       }
       // For "generate" mode, send empty body to let server generate password
 
       // Build endpoint - use the moduleSlug as the resource name (e.g., "users")
       const appName = 'core'; // TODO: This should come from config or context
       const endpoint = `/${appName}/${moduleSlug}/${targetId}/reset-password`;
-        tenantId: moduleService['tenantId'],
-        userSessionId: moduleService['userSessionId'],
-        userId: moduleService['userId']
-      });
 
       // Make direct API call to reset password endpoint
       const response = await moduleService['httpClient'].request(
@@ -140,32 +132,18 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         }
       );
 
-        success: response.success,
-        status: response.status,
-        error: response.error,
-        data: response.data,
-        hasNewPassword: !!response.data?.newPassword,
-        newPassword: response.data?.newPassword ? '[REDACTED]' : undefined
-      });
-
       if (!response.success) {
-        console.error(`🔐 RESET PASSWORD DEBUG: API call failed:`, {
-          error: response.error,
-          status: response.status,
-          details: response
-        });
+        console.error("Failed to reset password:", response.error);
         throw new Error(response.error || "Failed to reset password");
       }
 
       result = response.data;
-      
+
       // For password reset, preserve the generated password in the response
       if (response.data?.newPassword) {
         result.newPassword = response.data.newPassword;
-      } else {
       }
     } else if (actionKey === 'assignRoles') {
-      
       // For role assignment, use the specific endpoint with PATCH method
       const moduleService = await createModuleService();
       
@@ -174,12 +152,7 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
       const organizationId = formData.get("organizationId") as string;
       const departmentId = formData.get("departmentId") as string;
       const roleId = formData.get("roleId") as string;
-      
-        organizationId,
-        departmentId,
-        roleId
-      });
-      
+
       if (organizationId) {
         assignRolesData.organizationId = organizationId;
       }
@@ -207,18 +180,8 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
         }
       );
 
-        success: response.success,
-        status: response.status,
-        error: response.error,
-        data: response.data
-      });
-
       if (!response.success) {
-        console.error(`🎭 ASSIGN ROLES DEBUG: API call failed:`, {
-          error: response.error,
-          status: response.status,
-          details: response
-        });
+        console.error("Failed to assign roles:", response.error);
         throw new Error(response.error || "Failed to assign roles");
       }
 
@@ -232,13 +195,6 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
     revalidatePath(`/${moduleSlug}`);
     revalidatePath(`/${moduleSlug}/[id]`, 'page');
 
-      success: true,
-      message: result.message || "Action completed successfully",
-      data: result,
-      hasNewPassword: !!result?.newPassword,
-      newPasswordLength: result?.newPassword?.length
-    });
-
     return {
       success: true,
       message: result.message || "Action completed successfully",
@@ -247,18 +203,8 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
 
   } catch (error) {
     const actionKey = formData.get("actionKey") as string;
-    const moduleSlug = formData.get("moduleSlug") as string;
-    
-    console.error(`💥 EXTRA ACTION ERROR: Failed to execute action "${actionKey}"`, {
-      actionKey: actionKey,
-      moduleSlug: moduleSlug,
-      error,
-      errorMessage: error instanceof Error ? error.message : 'Unknown error',
-      errorStack: error instanceof Error ? error.stack : undefined,
-      errorType: typeof error,
-      errorConstructor: error?.constructor?.name
-    });
-    
+    console.error(`Failed to execute action "${actionKey}":`, error);
+
     return {
       success: false,
       message: error instanceof Error ? error.message : "An unexpected error occurred",
