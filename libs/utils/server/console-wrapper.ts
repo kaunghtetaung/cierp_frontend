@@ -109,6 +109,23 @@ class ConsoleWrapper {
   private wrapConsoleMethod(method: ConsoleMethod, level: string) {
     return (...args: any[]) => {
       try {
+        // Check if first argument is already a stringified structured log
+        if (args.length > 0 && typeof args[0] === 'string') {
+          const firstArg = args[0].trim();
+          if (firstArg.startsWith('{') && firstArg.endsWith('}')) {
+            try {
+              const parsed = JSON.parse(firstArg);
+              // If it's already a structured log with our format, pass through
+              if (parsed.level && parsed.timestamp && parsed.message && parsed.service) {
+                this.originalConsole.log(firstArg);
+                return;
+              }
+            } catch {
+              // Not valid JSON, continue with normal processing
+            }
+          }
+        }
+
         const structuredLog = this.formatAsStructuredLog(level, args);
 
         // Output as single-line JSON
