@@ -3,6 +3,9 @@ export * from "./middleware";
 export * from "./domain";
 export * from "./api";
 export * from "./content";
+export * from "./error-context";
+export * from "./error-handler";
+export * from "./middleware-error-wrapper";
 
 // Re-export selected common utilities (avoiding conflicts)
 export * from "../common/date";
