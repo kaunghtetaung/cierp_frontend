@@ -2,6 +2,10 @@
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
+  // Enable instrumentation for console wrapper
+  experimental: {
+    instrumentationHook: true,
+  },
   env: {
     // Expose subdomain configuration to client-side
     NEXT_PUBLIC_API_SUBDOMAIN: process.env.API_SUBDOMAIN || process.env.NEXT_PUBLIC_API_SUBDOMAIN || (process.env.NODE_ENV === 'development' ? 'api-dev' : 'api'),

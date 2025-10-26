@@ -9,6 +9,7 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['@repo/ui', '@repo/utils', '@repo/language'],
+    instrumentationHook: true,
   },
   turbopack: {
     rules: {
@@ -30,7 +31,9 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // IMPORTANT: Do NOT remove console in production
+    // We use console wrapper to output structured JSON logs for Loki
+    removeConsole: false,
   },
   headers: async () => [
     {

@@ -6,6 +6,7 @@ export * from "./content";
 export * from "./error-context";
 export * from "./error-handler";
 export * from "./middleware-error-wrapper";
+export * from "./console-wrapper";
 
 // Re-export selected common utilities (avoiding conflicts)
 export * from "../common/date";
