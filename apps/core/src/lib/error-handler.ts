@@ -1,5 +1,6 @@
-// Global unhandled error catching and reporting
-// Catches unhandled errors, promise rejections, and provides centralized error reporting
+// LEGACY: Global unhandled error catching (browser-side only)
+// NOTE: New error reporting uses ApplicationError → stdout → Loki (see @repo/utils/common)
+// This legacy handler catches browser window errors and unhandled promise rejections
 
 /**
  * Global error information interface
@@ -414,11 +415,12 @@ class GlobalErrorHandler {
 }
 
 // Create global instance
+// NOTE: Remote reporting disabled - using stdout → Loki instead
 export const globalErrorHandler = new GlobalErrorHandler({
   enableConsoleLogging: true,
-  enableRemoteReporting: process.env.NODE_ENV === 'production',
+  enableRemoteReporting: false, // Disabled - using ApplicationError → stdout → Loki
   maxErrorsPerSession: 50,
-  reportingEndpoint: process.env.NEXT_PUBLIC_ERROR_REPORTING_ENDPOINT
+  reportingEndpoint: undefined
 })
 
 // Auto-initialize if in browser environment
