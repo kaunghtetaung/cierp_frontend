@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { reportError } from "@repo/utils/common/error-reporter";
 import { ApplicationError } from "@repo/utils/common/error-types";
+import { getRequestContext } from "@repo/utils/server/error-context";
 import {
   createModuleItem,
   updateModuleItem,
@@ -61,7 +62,10 @@ export async function getModuleListAction<T = any>(
       pagination: response.pagination,
     };
   } catch (error) {
-    // Report error with structured logging
+    // Extract request context
+    const requestContext = await getRequestContext();
+
+    // Report error with full context
     const appError = new ApplicationError({
       type: 'SERVER_ACTION_ERROR',
       message: error instanceof Error ? error.message : `Failed to fetch ${module} list`,
@@ -70,6 +74,17 @@ export async function getModuleListAction<T = any>(
       operation: 'fetch-module-list',
       component: 'module-actions',
       cause: error instanceof Error ? error : undefined,
+      // Include request context
+      hostname: requestContext.hostname,
+      appName: requestContext.appName,
+      service: requestContext.service,
+      tenantId: requestContext.tenantId,
+      userId: requestContext.userId,
+      sessionId: requestContext.sessionId,
+      requestId: requestContext.requestId,
+      path: requestContext.path,
+      method: requestContext.method,
+      userAgent: requestContext.userAgent,
       metadata: {
         module,
         params,

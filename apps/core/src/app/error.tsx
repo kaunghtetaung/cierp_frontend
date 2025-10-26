@@ -8,6 +8,7 @@ import { IconComponent } from '@repo/ui'
 import { getLocalizedText } from '@repo/utils'
 import { reportError } from '@repo/utils/common/error-reporter'
 import { ApplicationError } from '@repo/utils/common/error-types'
+import { getClientRequestContext } from '@repo/utils/client/error-context'
 
 interface ErrorPageProps {
   error: Error & { digest?: string }
@@ -21,7 +22,10 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
   // Log error for debugging and monitoring
   useEffect(() => {
-    // Report error to monitoring service
+    // Extract request context from browser
+    const requestContext = getClientRequestContext();
+
+    // Report error to monitoring service with full context
     const appError = new ApplicationError({
       type: 'UNKNOWN_ERROR',
       message: error.message,
@@ -30,6 +34,14 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       operation: 'page-render',
       component: 'error-boundary',
       cause: error,
+      // Include request context
+      hostname: requestContext.hostname,
+      appName: requestContext.appName,
+      service: requestContext.service,
+      tenantId: requestContext.tenantId,
+      userId: requestContext.userId,
+      path: requestContext.path,
+      userAgent: requestContext.userAgent,
       metadata: {
         digest: error.digest,
         errorName: error.name

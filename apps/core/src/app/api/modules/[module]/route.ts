@@ -3,6 +3,7 @@ import { getModuleList } from '@repo/app-modules'
 import { headers } from 'next/headers'
 import { reportError } from '@repo/utils/common/error-reporter'
 import { ApplicationError } from '@repo/utils/common/error-types'
+import { getApiRouteRequestContext } from '@repo/utils/server/error-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,10 +66,11 @@ export async function GET(
 
   } catch (error) {
     const moduleSlug = (await params).module
-    const headerStore = await headers()
-    const tenantId = headerStore.get('x-tenant-id')
 
-    // Report error with structured logging
+    // Extract full request context
+    const requestContext = getApiRouteRequestContext(request);
+
+    // Report error with full context
     const appError = new ApplicationError({
       type: 'API_ERROR',
       message: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -77,10 +79,20 @@ export async function GET(
       operation: 'fetch-module-list',
       component: 'api-route',
       cause: error instanceof Error ? error : undefined,
+      // Include request context
+      hostname: requestContext.hostname,
+      appName: requestContext.appName,
+      service: requestContext.service,
+      tenantId: requestContext.tenantId,
+      userId: requestContext.userId,
+      sessionId: requestContext.sessionId,
+      requestId: requestContext.requestId,
+      path: requestContext.path,
+      method: requestContext.method,
+      userAgent: requestContext.userAgent,
       metadata: {
         module: moduleSlug,
         endpoint: `/api/modules/${moduleSlug}`,
-        tenantId,
         isTimeout: error instanceof Error && error.message === 'Request timeout'
       }
     })
