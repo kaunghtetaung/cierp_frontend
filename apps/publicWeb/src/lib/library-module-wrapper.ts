@@ -88,13 +88,16 @@ async function createLibraryServiceInstance() {
 
 /**
  * Get library module list (bibliographies, news, etc.)
- * Uses React.cache for request-level deduplication
  */
 export const getLibraryModuleList = cache(
   async <T = any>(
     module: string,
     params: ModuleListParams = {}
   ): Promise<{ data: T[]; pagination?: any }> => {
+    console.log("🎯 [LIBRARY WRAPPER] getLibraryModuleList called");
+    console.log("   Module:", module);
+    console.log("   Params:", JSON.stringify(params, null, 2));
+
     const moduleService = await createLibraryServiceInstance();
     return await moduleService.getList<T>(module, params);
   }

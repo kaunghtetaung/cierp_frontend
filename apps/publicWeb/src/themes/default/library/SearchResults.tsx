@@ -105,24 +105,67 @@ export function SearchResults({
 
   if (!books || books.length === 0) {
     return (
-      <div className="text-center py-12">
-        <svg
-          className="mx-auto h-12 w-12 text-muted-foreground"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-          />
-        </svg>
-        <h3 className="mt-4 text-lg font-medium text-foreground">{texts.noBooks}</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {query ? `${texts.noResultsFor} "${query}". ${texts.tryDifferent}` : texts.startSearching}
-        </p>
+      <div className="py-16 px-8 rounded-xl" style={{ background: 'linear-gradient(135deg, #E8EEF8 0%, #D6E2F4 100%)' }}>
+        <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+          {/* Icon Container */}
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6" style={{ backgroundColor: 'rgba(31, 84, 181, 0.1)' }}>
+            <svg
+              className="w-10 h-10"
+              style={{ color: '#1F54B5' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+              />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            {texts.noBooks}
+          </h3>
+
+          {/* Description */}
+          <p className="text-center text-gray-600 mb-6">
+            {query ? (
+              <>
+                No results found for <span className="font-semibold" style={{ color: '#1F54B5' }}>"{query}"</span>
+                <br />
+                {texts.tryDifferent}
+              </>
+            ) : (
+              texts.startSearching
+            )}
+          </p>
+
+          {/* Suggestions */}
+          {query && (
+            <div className="w-full bg-white rounded-lg p-4 shadow-sm" style={{ borderLeft: '4px solid #1F54B5' }}>
+              <p className="text-sm font-semibold text-gray-900 mb-2">
+                {currentLanguage === 'mm' ? 'အကြံပြုချက်များ:' : 'Suggestions:'}
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5" style={{ color: '#1F54B5' }}>•</span>
+                  <span>{currentLanguage === 'mm' ? 'စာလုံးပေါင်းစစ်ဆေးပါ' : 'Check your spelling'}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5" style={{ color: '#1F54B5' }}>•</span>
+                  <span>{currentLanguage === 'mm' ? 'ပိုမိုရိုးရှင်းသောစာလုံးများကို သုံးပါ' : 'Try more general keywords'}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5" style={{ color: '#1F54B5' }}>•</span>
+                  <span>{currentLanguage === 'mm' ? 'ရှာဖွေမှုအမျိုးအစားကို ပြောင်းလဲကြည့်ပါ' : 'Try changing search filters'}</span>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -271,81 +314,98 @@ function BookCard({ book, texts, onOpenPdf }: { book: Bibliography; texts: any; 
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
-      {/* Book Cover */}
-      <div className="bg-muted h-48 flex items-center justify-center relative">
-        {book.coverImage ? (
-          <img
-            src={book.coverImage}
-            alt={book.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <svg
-            className="h-20 w-20 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+      {/* Book Cover - Portrait ratio for book covers */}
+      <div className="bg-muted aspect-[2/3] flex items-center justify-center relative overflow-hidden">
+        {book.bookCoverImage ? (
+          <>
+            <img
+              src={book.bookCoverImage}
+              alt={book.title}
+              className="h-full w-full object-cover"
             />
-          </svg>
+
+            {/* Call Number Badge - Top Left */}
+            {book.callNo && (
+              <div className="absolute top-2 left-2">
+                <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded font-medium shadow-md">
+                  {book.callNo}
+                </span>
+              </div>
+            )}
+
+            {/* Status Badge - Top Right */}
+            <div className="absolute top-2 right-2">
+              <span
+                className={`inline-block px-2 py-1 text-xs font-medium rounded shadow-md ${
+                  book.status === 'Active'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-500 text-white'
+                }`}
+              >
+                {book.status}
+              </span>
+            </div>
+
+            {/* Title overlay at bottom - always visible */}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm p-3">
+              <h3 className="font-semibold text-sm text-white line-clamp-2 leading-snug" title={book.title}>
+                {book.title}
+              </h3>
+              {book.author && (
+                <p className="text-xs text-gray-200 line-clamp-1 mt-1">
+                  {getAuthorName(book.author)}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center">
+            <svg
+              className="h-16 w-16 text-muted-foreground mb-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+              />
+            </svg>
+            {/* Title for books without cover - always visible */}
+            <h3 className="font-semibold text-sm text-foreground line-clamp-3 leading-snug mb-2" title={book.title}>
+              {book.title}
+            </h3>
+            {book.author && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {getAuthorName(book.author)}
+              </p>
+            )}
+          </div>
         )}
 
-        {/* PDF Badges */}
+        {/* PDF Badge - Below Status */}
         {(hasAbstract || hasContent) && (
-          <div className="absolute top-2 right-2 flex gap-1">
-            {hasAbstract && (
-              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-md">
-                PDF
-              </span>
-            )}
+          <div className="absolute top-10 right-2">
+            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-medium shadow-md">
+              PDF
+            </span>
           </div>
         )}
       </div>
 
       {/* Book Info */}
       <div className="p-4">
-        <h3 className="font-semibold text-foreground line-clamp-2 mb-2" title={book.title}>
-          {book.title}
-        </h3>
-
-        {book.author && (
-          <p className="text-sm text-muted-foreground mb-1">
-            {texts.by} {getAuthorName(book.author)}
-          </p>
-        )}
-
         {book.publisher && (
-          <p className="text-sm text-muted-foreground mb-1">
+          <p className="text-sm text-muted-foreground mb-2">
             {texts.publisher} {book.publisher.name}
           </p>
         )}
 
-        <div className="flex gap-2 text-xs text-muted-foreground mb-2">
+        <div className="flex gap-2 text-xs text-muted-foreground mb-3">
           {book.year && <span>{texts.year} {book.year}</span>}
           {book.isbn && <span>• {texts.isbn} {book.isbn}</span>}
-        </div>
-
-        {book.callNo && (
-          <p className="text-xs text-muted-foreground mb-2">
-            {texts.callNo} {book.callNo}
-          </p>
-        )}
-
-        <div className="mt-3">
-          <span
-            className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-              book.status === 'Active'
-                ? 'bg-success/10 text-success'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {book.status}
-          </span>
         </div>
 
         {/* PDF Buttons */}
@@ -399,9 +459,9 @@ function BookListItem({ book, texts, onOpenPdf }: { book: Bibliography; texts: a
       <div className="flex gap-4 p-4">
         {/* Book Cover Thumbnail */}
         <div className="flex-shrink-0 w-24 h-32 bg-muted rounded flex items-center justify-center relative">
-          {book.coverImage ? (
+          {book.bookCoverImage ? (
             <img
-              src={book.coverImage}
+              src={book.bookCoverImage}
               alt={book.title}
               className="h-full w-full object-cover rounded"
             />

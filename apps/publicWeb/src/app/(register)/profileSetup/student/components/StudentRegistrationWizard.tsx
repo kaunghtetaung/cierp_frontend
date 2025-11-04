@@ -12,6 +12,7 @@ import {
   GraduationCap,
   BookOpen,
   FileText,
+  HelpCircle,
 } from "lucide-react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -164,11 +165,27 @@ export function StudentRegistrationWizard({
   // Success state - simple inline UI replacement
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Helper text visibility
+  const [showHelper, setShowHelper] = useState(false);
+
   // Ref to track if we should allow form submission
   const canSubmitRef = useRef(false);
 
   // Filter and prepare form fields
   const filteredFormFields = React.useMemo(() => {
+    // 🔍 DEBUG: Log all form fields from module schema
+    console.log('📋 [WIZARD] Module schema formFields count:', moduleSchema.formFields.length);
+    console.log('📋 [WIZARD] All field names:', moduleSchema.formFields.map((f) => f.fieldName));
+
+    // Check if placeOfBirth is in the schema
+    const hasPlaceOfBirth = moduleSchema.formFields.some((f) => f.fieldName === 'placeOfBirth');
+    console.log('📋 [WIZARD] placeOfBirth in module schema?', hasPlaceOfBirth);
+
+    if (hasPlaceOfBirth) {
+      const placeOfBirthField = moduleSchema.formFields.find((f) => f.fieldName === 'placeOfBirth');
+      console.log('📋 [WIZARD] placeOfBirth field config:', placeOfBirthField);
+    }
+
     return moduleSchema.formFields
       .filter((field) => !field.hidden)
       .map((field) => {
@@ -179,11 +196,29 @@ export function StudentRegistrationWizard({
       });
   }, [moduleSchema.formFields]);
 
+  // 🔍 DEBUG: Log filtered fields
+  console.log('📋 [WIZARD] Filtered formFields count:', filteredFormFields.length);
+  console.log('📋 [WIZARD] Filtered field names:', filteredFormFields.map((f) => f.fieldName));
+
   // Generate Zod schema
   const validationSchema = generateZodSchema(filteredFormFields);
 
   // Generate default values
   const defaultValues = generateDefaultValues(filteredFormFields);
+
+  // 🔍 DEBUG: Log default values
+  console.log('🎯 [WIZARD] Default values generated:', defaultValues);
+  console.log('🎯 [WIZARD] placeOfBirth in defaultValues:', defaultValues.placeOfBirth);
+  console.log('🎯 [WIZARD] placeOfBirth type in defaultValues:', typeof defaultValues.placeOfBirth);
+
+  // 🔧 FIX: Ensure placeOfBirth has a default value if missing
+  // This is critical because React Hook Form won't track fields that don't exist in defaultValues
+  if (!('placeOfBirth' in defaultValues)) {
+    console.warn('⚠️ [WIZARD] placeOfBirth not in defaultValues, adding it manually');
+    defaultValues.placeOfBirth = '';
+  }
+
+  console.log('🎯 [WIZARD] Final placeOfBirth in defaultValues:', defaultValues.placeOfBirth);
 
   // Initialize React Hook Form
   const methods = useForm({
@@ -199,6 +234,13 @@ export function StudentRegistrationWizard({
     trigger,
     formState: { errors },
   } = methods;
+
+  // 🔍 DEBUG: Watch placeOfBirth field to monitor changes
+  const placeOfBirthValue = watch('placeOfBirth');
+  useEffect(() => {
+    console.log('🎯 [WIZARD] placeOfBirth value changed:', placeOfBirthValue);
+    console.log('🎯 [WIZARD] placeOfBirth type:', typeof placeOfBirthValue);
+  }, [placeOfBirthValue]);
 
   // Initialize email from user on mount
   useEffect(() => {
@@ -280,6 +322,10 @@ export function StudentRegistrationWizard({
         phone: existingProfile.phoneNumber || '', // Backend uses phoneNumber, form uses phone
         email: existingProfile.email || user?.email || '',
         profilePhoto: existingProfile.profilePhoto || '',
+
+        // 🔍 DEBUG: Log placeOfBirth from existing profile
+        ...(console.log('🔍 [EDIT MODE] placeOfBirth from API:', existingProfile.placeOfBirth), {}),
+        ...(console.log('🔍 [EDIT MODE] placeOfBirth in formData:', existingProfile.placeOfBirth || ''), {}),
 
         // Address Information
         stateRegionName: existingProfile.stateRegionName || '',
@@ -484,13 +530,48 @@ export function StudentRegistrationWizard({
     try {
       setIsSubmitting(true);
 
+      // 🔍 CRITICAL DEBUGGING: Log the complete form data before submission
+      console.log('🚀 [FORM SUBMIT] === FORM SUBMISSION STARTED ===');
+      console.log('🚀 [FORM SUBMIT] Mode:', mode);
+      console.log('🚀 [FORM SUBMIT] User ID:', user.id);
+      console.log('🚀 [FORM SUBMIT] Complete Form Data:', JSON.stringify(data, null, 2));
+      console.log('🔍 [FORM SUBMIT] placeOfBirth value:', data.placeOfBirth);
+      console.log('🔍 [FORM SUBMIT] placeOfBirth type:', typeof data.placeOfBirth);
+      console.log('🔍 [FORM SUBMIT] placeOfBirth is undefined?', data.placeOfBirth === undefined);
+      console.log('🔍 [FORM SUBMIT] placeOfBirth is null?', data.placeOfBirth === null);
+      console.log('🔍 [FORM SUBMIT] placeOfBirth is empty string?', data.placeOfBirth === '');
+      console.log('🔍 [FORM SUBMIT] All personal fields:', {
+        nameMyanmar: data.nameMyanmar,
+        nameEnglish: data.nameEnglish,
+        gender: data.gender,
+        dateOfBirth: data.dateOfBirth,
+        placeOfBirth: data.placeOfBirth,
+        nrcNumber: data.nrcNumber,
+        race: data.race,
+        religion: data.religion,
+        bloodType: data.bloodType,
+      });
+
       let result;
 
       if (mode === 'edit') {
         // Update existing profile
         console.log('📝 [EDIT MODE] Updating profile');
+
+        // Get student _id from existingProfile
+        const studentId = existingProfile?._id;
+        if (!studentId) {
+          toast.error("Missing Student ID", {
+            description: "Could not find student record ID. Please refresh and try again.",
+            duration: 7000,
+          });
+          return;
+        }
+
+        console.log('📝 [EDIT MODE] Student ID:', studentId);
+
         const { updateMyProfile } = await import("@/app/profile/student/actions");
-        result = await updateMyProfile(data);
+        result = await updateMyProfile(data, studentId);
 
         if (result.success) {
           toast.success("Profile Updated", {
@@ -751,40 +832,73 @@ export function StudentRegistrationWizard({
 
           {/* Step Indicators - Desktop */}
           <div className="hidden md:block bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex justify-center items-center gap-2 mb-3">
-              {WIZARD_STEPS.map((step, index) => {
-                const Icon = step.icon;
-                const isActive = index === currentStep;
-                const isCompleted = index < currentStep;
+            <div className="flex justify-between items-center gap-4 mb-3">
+              {/* Previous Button - Circle */}
+              <button
+                type="button"
+                onClick={handlePrevious}
+                disabled={currentStep === 0}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                  currentStep === 0
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white border-2 border-[#4C67E1] text-[#4C67E1] hover:bg-[#4C67E1] hover:text-white shadow-sm"
+                }`}
+                title={t.previousButton}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
 
-                return (
-                  <div key={step.id} className="flex items-center gap-2">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                        isActive
-                          ? "bg-[#4C67E1] text-white shadow-md"
-                          : isCompleted
-                          ? "bg-[#4C67E1] text-white"
-                          : "bg-gray-200 text-gray-400"
-                      }`}
-                      title={step.title}
-                    >
-                      {isCompleted ? (
-                        <Check className="h-3.5 w-3.5" />
-                      ) : (
-                        <Icon className="h-3.5 w-3.5" />
+              {/* Step Icons */}
+              <div className="flex justify-center items-center gap-2 flex-1">
+                {WIZARD_STEPS.map((step, index) => {
+                  const Icon = step.icon;
+                  const isActive = index === currentStep;
+                  const isCompleted = index < currentStep;
+
+                  return (
+                    <div key={step.id} className="flex items-center gap-2">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                          isActive
+                            ? "bg-[#4C67E1] text-white shadow-md"
+                            : isCompleted
+                            ? "bg-[#4C67E1] text-white"
+                            : "bg-gray-200 text-gray-400"
+                        }`}
+                        title={step.title}
+                      >
+                        {isCompleted ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Icon className="h-3.5 w-3.5" />
+                        )}
+                      </div>
+                      {index < WIZARD_STEPS.length - 1 && (
+                        <div
+                          className={`w-8 h-0.5 ${
+                            isCompleted ? "bg-[#4C67E1]" : "bg-gray-300"
+                          }`}
+                        />
                       )}
                     </div>
-                    {index < WIZARD_STEPS.length - 1 && (
-                      <div
-                        className={`w-8 h-0.5 ${
-                          isCompleted ? "bg-[#4C67E1]" : "bg-gray-300"
-                        }`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+
+              {/* Next Button - Circle */}
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={currentStep === WIZARD_STEPS.length - 1}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                  currentStep === WIZARD_STEPS.length - 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-[#4C67E1] text-white hover:bg-[#3B56D1] shadow-sm"
+                }`}
+                title={t.nextButton}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
             {/* Progress Bar - Small */}
             <div className="w-full bg-gray-200 rounded-full h-1">
@@ -797,20 +911,24 @@ export function StudentRegistrationWizard({
 
           {/* Mobile Step Indicator */}
           <div className="md:hidden bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#4C67E1] text-white shadow-md">
-                  <StepIcon className="h-3.5 w-3.5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[#19184A]">
-                    {currentStepConfig.title}
-                  </h3>
-                  <p className="text-xs text-gray-600">
-                    {currentStepConfig.description}
-                  </p>
-                </div>
-              </div>
+            {/* Navigation Buttons Row */}
+            <div className="flex items-center justify-between gap-3 mb-3">
+              {/* Previous Button - Circle */}
+              <button
+                type="button"
+                onClick={handlePrevious}
+                disabled={currentStep === 0}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  currentStep === 0
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white border-2 border-[#4C67E1] text-[#4C67E1] hover:bg-[#4C67E1] hover:text-white shadow-sm"
+                }`}
+                title={t.previousButton}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {/* Step Dots */}
               <div className="flex items-center gap-1">
                 {WIZARD_STEPS.map((step, index) => {
                   const isActive = index === currentStep;
@@ -829,7 +947,40 @@ export function StudentRegistrationWizard({
                   );
                 })}
               </div>
+
+              {/* Next Button - Circle */}
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={currentStep === WIZARD_STEPS.length - 1}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  currentStep === WIZARD_STEPS.length - 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-[#4C67E1] text-white hover:bg-[#3B56D1] shadow-sm"
+                }`}
+                title={t.nextButton}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
+
+            {/* Step Info Row */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#4C67E1] text-white shadow-md">
+                  <StepIcon className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-[#19184A]">
+                    {currentStepConfig.title}
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    {currentStepConfig.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Progress Bar - Small */}
             <div className="w-full bg-gray-200 rounded-full h-1">
               <div
@@ -841,9 +992,82 @@ export function StudentRegistrationWizard({
 
           {/* Step Content */}
           <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 border border-gray-200">
-            <h2 className="text-2xl font-bold text-[#19184A] mb-6 hidden md:block">
-              {currentStepConfig.title}
-            </h2>
+            {/* Step Header with Helper */}
+            <div className="mb-6 hidden md:block">
+              <div className="flex items-start justify-between">
+                <h2 className="text-2xl font-bold text-[#19184A]">
+                  {currentStepConfig.title}
+                </h2>
+
+                {/* Helper Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowHelper(!showHelper)}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[#4C67E1]/10 hover:bg-[#4C67E1]/20 text-[#4C67E1] transition-all"
+                  title="Show help"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Helper Text */}
+              {showHelper && (
+                <div className="mt-4 p-4 bg-blue-50 border-l-4 border-[#4C67E1] rounded-r-lg">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="h-5 w-5 text-[#4C67E1] flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {currentStep === 0 && t.personalInfoHelper}
+                      {currentStep === 1 && t.addressInfoHelper}
+                      {currentStep === 2 && t.familyInfoHelper}
+                      {currentStep === 3 && t.academicInfoHelper}
+                      {currentStep === 4 && t.currentAcademicHelper}
+                      {currentStep === 5 && t.additionalInfoHelper}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile: Step Header with Helper */}
+            <div className="mb-6 md:hidden">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-[#19184A]">
+                    {currentStepConfig.title}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {currentStepConfig.description}
+                  </p>
+                </div>
+
+                {/* Helper Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowHelper(!showHelper)}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[#4C67E1]/10 hover:bg-[#4C67E1]/20 text-[#4C67E1] transition-all flex-shrink-0"
+                  title="Show help"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Helper Text */}
+              {showHelper && (
+                <div className="mt-4 p-3 bg-blue-50 border-l-4 border-[#4C67E1] rounded-r-lg">
+                  <div className="flex items-start gap-2">
+                    <HelpCircle className="h-4 w-4 text-[#4C67E1] flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-gray-700 leading-relaxed">
+                      {currentStep === 0 && t.personalInfoHelper}
+                      {currentStep === 1 && t.addressInfoHelper}
+                      {currentStep === 2 && t.familyInfoHelper}
+                      {currentStep === 3 && t.academicInfoHelper}
+                      {currentStep === 4 && t.currentAcademicHelper}
+                      {currentStep === 5 && t.additionalInfoHelper}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Form Fields */}
             <div className="space-y-6">

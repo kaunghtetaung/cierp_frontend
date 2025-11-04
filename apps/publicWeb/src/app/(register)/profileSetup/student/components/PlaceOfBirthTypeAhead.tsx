@@ -28,10 +28,11 @@ export function PlaceOfBirthTypeAhead({
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Update input when external value changes
-  // If value contains pipe separator, extract only the town name (last part)
+  // If value contains pipe separator (legacy data), extract only the town name (last part)
+  // New data will already be just the town name
   useEffect(() => {
     if (value && value.includes('|')) {
-      // Extract town name from full path: "Yangon|Yangon (West)|Lanmadaw|Lanmadaw" -> "Lanmadaw"
+      // Extract town name from full path (backward compatibility): "Yangon|Yangon (West)|Lanmadaw|Lanmadaw" -> "Lanmadaw"
       const parts = value.split('|');
       const townName = parts[parts.length - 1]; // Get last part (town)
       setInputValue(townName);
@@ -55,6 +56,14 @@ export function PlaceOfBirthTypeAhead({
   // Search regions with debounce
   const handleInputChange = async (searchValue: string) => {
     setInputValue(searchValue);
+
+    // 🔍 DEBUG: Log onChange calls
+    console.log('🏙️ [PlaceOfBirth] handleInputChange called');
+    console.log('🏙️ [PlaceOfBirth] searchValue:', searchValue);
+    console.log('🏙️ [PlaceOfBirth] searchValue type:', typeof searchValue);
+    console.log('🏙️ [PlaceOfBirth] searchValue length:', searchValue.length);
+    console.log('🏙️ [PlaceOfBirth] Calling onChange with:', searchValue);
+
     onChange(searchValue);
 
     if (debounceTimer.current) {
@@ -97,8 +106,14 @@ export function PlaceOfBirthTypeAhead({
 
   // Handle suggestion selection
   const handleSelectSuggestion = (suggestion: Region) => {
+    // 🔍 DEBUG: Log suggestion selection
+    console.log('🏙️ [PlaceOfBirth] handleSelectSuggestion called');
+    console.log('🏙️ [PlaceOfBirth] suggestion.displayValue:', suggestion.displayValue);
+    console.log('🏙️ [PlaceOfBirth] suggestion.value:', suggestion.value);
+    console.log('🏙️ [PlaceOfBirth] Calling onChange with:', suggestion.displayValue);
+
     setInputValue(suggestion.displayValue); // Use displayValue for selected text (just town name)
-    onChange(suggestion.value); // Use full path value for form data
+    onChange(suggestion.displayValue); // Save only the town name (last level) to form data
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
@@ -117,6 +132,8 @@ export function PlaceOfBirthTypeAhead({
         setSelectedIndex(-1);
       } else if (inputValue) {
         // Clear field if suggestions are closed
+        console.log('🏙️ [PlaceOfBirth] ESC key - clearing field');
+        console.log('🏙️ [PlaceOfBirth] Calling onChange with empty string');
         setInputValue("");
         onChange("");
       }

@@ -122,6 +122,38 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
     try {
       setIsDownloading(true);
 
+      // Convert profile photo to base64 if it exists (to avoid CORS issues in PDF)
+      let profilePhotoBase64 = '';
+      if (profilePhotoUrl) {
+        try {
+          console.log('📸 [PDF] Loading profile photo for PDF...');
+
+          // Show visual feedback for image loading
+          const profileImg = contentRef.current.querySelector('img[alt="Student Profile Photo"]') as HTMLImageElement;
+          const originalSrc = profileImg?.src;
+
+          const response = await fetch(profilePhotoUrl);
+          const blob = await response.blob();
+
+          profilePhotoBase64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+
+          console.log('✅ [PDF] Profile photo loaded and converted to base64');
+
+          // Temporarily replace the image src with base64
+          if (profileImg) {
+            profileImg.src = profilePhotoBase64;
+            // Store original src to restore later
+            profileImg.dataset.originalSrc = originalSrc || '';
+          }
+        } catch (err) {
+          console.error('❌ [PDF] Failed to load profile photo:', err);
+        }
+      }
+
       // Add a temporary style tag to override all colors with fallback RGB values
       const styleElement = document.createElement('style');
       styleElement.id = 'pdf-color-override';
@@ -168,8 +200,8 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
       const originalClasses = contentRef.current.className;
       contentRef.current.className = `${originalClasses} pdf-export-mode`;
 
-      // Wait a moment for styles to apply
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait a moment for styles to apply and image to load
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Get all sections with page-break-after class
       const sections = contentRef.current.querySelectorAll('section');
@@ -250,6 +282,13 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
       // Remove temporary class and style
       contentRef.current.className = originalClasses;
       document.head.removeChild(styleElement);
+
+      // Restore original profile photo src if it was changed
+      const profileImg = contentRef.current.querySelector('img[alt="Student Profile Photo"]') as HTMLImageElement;
+      if (profileImg && profileImg.dataset.originalSrc) {
+        profileImg.src = profileImg.dataset.originalSrc;
+        delete profileImg.dataset.originalSrc;
+      }
 
       // Save the PDF
       pdf.save(`${profile.slug}.pdf`);
@@ -443,6 +482,11 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
             <h1 className="text-2xl font-bold text-[#19184A] mb-2">
               Student Registration Profile
             </h1>
+            {(profile as any).medm && (
+              <p className="text-sm text-gray-600">
+                University Registration Number (MEDM): <span className="font-semibold">{(profile as any).medm}</span>
+              </p>
+            )}
             <p className="text-sm text-gray-600">
               Record ID: <span className="font-semibold">{profile.slug}</span>
             </p>
@@ -464,9 +508,11 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
                   ? 'bg-red-100 text-red-800 border border-red-300'
                   : 'bg-gray-100 text-gray-800 border border-gray-300'
               }`}>
-                {profile.registrationStatus === 'pending' && '⏳'}
-                {profile.registrationStatus === 'approved' && '✓'}
-                {profile.registrationStatus === 'rejected' && '✗'}
+                <span className="no-print">
+                  {profile.registrationStatus === 'pending' && '⏳'}
+                  {profile.registrationStatus === 'approved' && '✓'}
+                  {profile.registrationStatus === 'rejected' && '✗'}
+                </span>
                 <span className="capitalize">{profile.registrationStatus}</span>
               </span>
             </div>
@@ -502,14 +548,15 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
           </div>
         </div>
 
-        {/* PAGE 1: Personal, Contact & Address Information Combined */}
+        {/* PAGE 1: Personal Information, Contact & Address Information, Family Information */}
         <section className="mb-6 pb-8 page-break-after">
+          {/* Personal Information */}
           <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
             Personal Information / ကိုယ်ရေးအချက်အလက်
           </h2>
 
           {/* Personal Details */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-4 gap-3 mb-4">
             <div>
               <p className="text-xs text-gray-500">Name (Myanmar)</p>
               <p className="font-medium text-sm">{profile.nameMyanmar}</p>
@@ -535,8 +582,8 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
               <p className="font-medium text-sm">{profile.nrcNumber}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Ethnicity</p>
-              <p className="font-medium text-sm">{profile.ethnicity}</p>
+              <p className="text-xs text-gray-500">Race</p>
+              <p className="font-medium text-sm">{profile.race}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Religion</p>
@@ -550,11 +597,13 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
             )}
           </div>
 
-          {/* Contact Details */}
-          <h3 className="text-md font-semibold text-[#19184A] mb-3 mt-4 pb-1 border-b border-gray-200">
-            Contact Information / ဆက်သွယ်ရန်
+          {/* Contact & Address Information */}
+          <h3 className="text-md font-semibold text-[#19184A] mb-3 mt-8 pb-1 border-b border-gray-200">
+            Contact & Address Information / ဆက်သွယ်ရန်နှင့် နေရပ်လိပ်စာ
           </h3>
-          <div className="grid grid-cols-2 gap-3 mb-4">
+
+          {/* First row: Phone No, Email, State/Region, District */}
+          <div className="grid grid-cols-4 gap-3 mb-3">
             <div>
               <p className="text-xs text-gray-500 leading-relaxed">Phone Number</p>
               <p className="font-medium text-sm leading-relaxed">{profile.phoneNumber}</p>
@@ -563,13 +612,6 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
               <p className="text-xs text-gray-500 leading-relaxed">Email</p>
               <p className="font-medium text-sm leading-relaxed break-all">{profile.email}</p>
             </div>
-          </div>
-
-          {/* Address Details */}
-          <h3 className="text-md font-semibold text-[#19184A] mb-3 mt-4 pb-1 border-b border-gray-200">
-            Address Information / နေရပ်လိပ်စာ
-          </h3>
-          <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <p className="text-xs text-gray-500">State/Region</p>
               <p className="font-medium text-sm">{profile.stateRegionName}</p>
@@ -578,6 +620,10 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
               <p className="text-xs text-gray-500">District</p>
               <p className="font-medium text-sm">{profile.districtName}</p>
             </div>
+          </div>
+
+          {/* Second row: Township, Town */}
+          <div className="grid grid-cols-4 gap-3 mb-3">
             <div>
               <p className="text-xs text-gray-500">Township</p>
               <p className="font-medium text-sm">{profile.townshipName}</p>
@@ -586,182 +632,42 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
               <p className="text-xs text-gray-500">Town</p>
               <p className="font-medium text-sm">{profile.townName}</p>
             </div>
+          </div>
+          {/* Third row: Ward/Village (1 col) and Address fields (3 col) */}
+          <div className="grid grid-cols-4 gap-3 mb-3">
             {profile.wardVillageName && (
               <div>
                 <p className="text-xs text-gray-500">Ward/Village</p>
                 <p className="font-medium text-sm">{profile.wardVillageName}</p>
               </div>
             )}
-          </div>
-          <div className="space-y-2">
-            <div>
+            <div className={profile.wardVillageName ? "col-span-3" : "col-span-4"}>
               <p className="text-xs text-gray-500">
                 {isSameAddress() ? "Address" : "Permanent Address"}
               </p>
               <p className="font-medium text-sm">{profile.permanentAddress}</p>
             </div>
-            {!isSameAddress() && (
-              <div>
-                <p className="text-xs text-gray-500">Current Address</p>
-                <p className="font-medium text-sm">{profile.currentAddress}</p>
-              </div>
-            )}
           </div>
-        </section>
-
-        {/* PAGE 2: Current Academic & Previous Education */}
-        <section className="mb-6 pb-8 page-break-after">
-          {/* Current Academic - Batch Information */}
-          {profile.batches && profile.batches.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
-                Current Academic / လက်ရှိပညာရေး
-              </h2>
-              {profile.batches.map((batch, index) => {
-                // Handle batch name - it might be an object or string
-                const getBatchName = () => {
-                  if (typeof batch.batchId === 'object' && batch.batchId !== null) {
-                    return batch.batchId.name;
-                  }
-                  return batch.batchId;
-                };
-
-                // Handle academic year name - it might be an object or string
-                const getAcademicYearName = () => {
-                  if (typeof batch.academicYearId === 'object' && batch.academicYearId !== null) {
-                    return batch.academicYearId.name;
-                  }
-                  return null;
-                };
-
-                const batchName = getBatchName();
-                const academicYearName = getAcademicYearName();
-
-                return (
-                  <div key={batch._id} className={index > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-xs text-gray-500">Batch</p>
-                        <p className="font-medium text-sm">{batchName}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Roll Number</p>
-                        <p className="font-medium text-sm">{batch.rollNo}</p>
-                      </div>
-                      {academicYearName && (
-                        <div className="col-span-2">
-                          <p className="text-xs text-gray-500">Academic Year</p>
-                          <p className="font-medium text-sm">{academicYearName}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Current address if different */}
+          {!isSameAddress() && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-500">Current Address</p>
+              <p className="font-medium text-sm">{profile.currentAddress}</p>
             </div>
           )}
 
-          {/* Previous Education */}
-          {profile.previousEducation && profile.previousEducation.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
-                Previous Education / ယခင်ပညာရေး
-              </h2>
-              {profile.previousEducation.map((edu, index) => (
-                <div key={edu._id} className={index > 0 ? "mt-5 pt-5 border-t border-gray-200" : ""}>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                      <p className="text-xs text-gray-500">Class</p>
-                      <p className="font-medium text-sm">{edu.className}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Roll Number</p>
-                      <p className="font-medium text-sm">{edu.rollNumber}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Exam Board</p>
-                      <p className="font-medium text-sm">{edu.examBoard}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Year</p>
-                      <p className="font-medium text-sm">{edu.year}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Total Marks</p>
-                      <p className="font-medium text-sm">{edu.totalMarks}</p>
-                    </div>
-                  </div>
-
-                  {/* Subjects Table */}
-                  {edu.subjects && edu.subjects.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Subjects / ဘာသာရပ်များ</p>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full border border-gray-200 text-xs">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">#</th>
-                              <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">Subject</th>
-                              <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">Mark</th>
-                              <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">Distinction</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {edu.subjects.map((subject, idx) => {
-                              // Handle subject name - it might be an object or string
-                              const getSubjectName = () => {
-                                if (typeof subject.name === 'object' && subject.name !== null) {
-                                  return subject.name.name;
-                                }
-                                if (typeof subject.name === 'string') {
-                                  return subject.name;
-                                }
-                                if (typeof subject.subjectId === 'object' && subject.subjectId !== null) {
-                                  return subject.subjectId.name;
-                                }
-                                return subject.subjectId;
-                              };
-
-                              return (
-                                <tr key={subject._id} className="border-b">
-                                  <td className="px-3 py-1.5 text-xs">{idx + 1}</td>
-                                  <td className="px-3 py-1.5 text-xs">{getSubjectName()}</td>
-                                  <td className="px-3 py-1.5 text-xs font-medium">{subject.mark}</td>
-                                  <td className="px-3 py-1.5 text-xs">
-                                    {subject.isDistinction ? (
-                                      <span className="text-green-600 font-medium">✓</span>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* PAGE 3: Family Information & Additional Information */}
-        <section className="mb-6 pb-8">
           {/* Family Information */}
           {(profile.father || profile.mother || profile.guardian) && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
+            <div className="mt-8">
+              <h3 className="text-md font-semibold text-[#19184A] mb-3 pb-1 border-b border-gray-200">
                 Family Information / မိသားစုအချက်အလက်
-              </h2>
+              </h3>
 
               {/* Father - Hide if same as guardian */}
               {profile.father && !isGuardianSameAsFather() && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Father / အဖ</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h4 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Father / အဖ</h4>
+                  <div className="grid grid-cols-4 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Name (Myanmar)</p>
                       <p className="font-medium text-sm">{profile.father.nameMyanmar}</p>
@@ -785,8 +691,8 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
               {/* Mother - Hide if same as guardian */}
               {profile.mother && !isGuardianSameAsMother() && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Mother / အမိ</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h4 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Mother / အမိ</h4>
+                  <div className="grid grid-cols-4 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Name (Myanmar)</p>
                       <p className="font-medium text-sm">{profile.mother.nameMyanmar}</p>
@@ -809,8 +715,9 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
 
               {profile.guardian && (
                 <div className="pb-2">
-                  <h3 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Guardian / အုပ်ထိန်းသူ</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h4 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Guardian / အုပ်ထိန်းသူ</h4>
+                  {/* First row: 4 columns */}
+                  <div className="grid grid-cols-4 gap-3 mb-3">
                     <div>
                       <p className="text-xs text-gray-500">Name (Myanmar)</p>
                       <p className="font-medium text-sm">{profile.guardian.nameMyanmar}</p>
@@ -827,6 +734,9 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
                       <p className="text-xs text-gray-500">Occupation</p>
                       <p className="font-medium text-sm">{profile.guardian.occupation}</p>
                     </div>
+                  </div>
+                  {/* Second row: First 2 columns for fields, then Address (2 columns) */}
+                  <div className="grid grid-cols-4 gap-3 mb-3">
                     <div>
                       <p className="text-xs text-gray-500">Relationship</p>
                       <p className="font-medium text-sm">{profile.guardian.relationship}</p>
@@ -836,26 +746,179 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
                       <p className="font-medium text-sm">{profile.guardian.phoneNumber}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-xs text-gray-500">Email</p>
-                      <p className="font-medium text-sm">{profile.guardian.email}</p>
-                    </div>
-                    <div className="col-span-2">
                       <p className="text-xs text-gray-500">Address</p>
                       <p className="font-medium text-sm">{profile.guardian.address}</p>
                     </div>
                   </div>
+                  {/* Third row: Email (optional, if needed) */}
+                  {profile.guardian.email && (
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="col-span-4">
+                        <p className="text-xs text-gray-500">Email</p>
+                        <p className="font-medium text-sm">{profile.guardian.email}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
+          )}
+        </section>
+
+        {/* PAGE 2: Current Academic, Previous Education, Additional Information */}
+        <section className="mb-6 pb-8">
+          {/* Current Academic - Batch Information */}
+          {(profile.batches && profile.batches.length > 0) && (
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
+                Current Academic / လက်ရှိပညာရေး
+              </h2>
+
+              {profile.batches && profile.batches.length > 0 && profile.batches.map((batch, index) => {
+                // Handle batch name - it might be an object or string
+                const getBatchName = () => {
+                  if (typeof batch.batchId === 'object' && batch.batchId !== null) {
+                    return batch.batchId.name;
+                  }
+                  return batch.batchId;
+                };
+
+                // Handle academic year name - it might be an object or string
+                const getAcademicYearName = () => {
+                  if (typeof batch.academicYearId === 'object' && batch.academicYearId !== null) {
+                    return batch.academicYearId.name;
+                  }
+                  return null;
+                };
+
+                const batchName = getBatchName();
+                const academicYearName = getAcademicYearName();
+
+                return (
+                  <div key={batch._id} className={index > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
+                    <div className="grid grid-cols-3 gap-3">
+                      {academicYearName && (
+                        <div>
+                          <p className="text-xs text-gray-500">Academic Year</p>
+                          <p className="font-medium text-sm">{academicYearName}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-gray-500">Batch</p>
+                        <p className="font-medium text-sm">{batchName}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Roll Number</p>
+                        <p className="font-medium text-sm">{batch.rollNo}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Previous Education */}
+          {profile.previousEducation && profile.previousEducation.length > 0 && (
+            <div className="mb-6 mt-8">
+              <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
+                Previous Education / ယခင်ပညာရေး
+              </h2>
+              {profile.previousEducation.map((edu, index) => (
+                <div key={edu._id} className={index > 0 ? "mt-5 pt-5 border-t border-gray-200" : ""}>
+                  {/* Two column layout: Main details on left, Subjects table on right */}
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Left Column: Education Details in 2 columns */}
+                    <div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-gray-500">Class</p>
+                          <p className="font-medium text-sm">{edu.className}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Roll Number</p>
+                          <p className="font-medium text-sm">{edu.rollNumber}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Exam Board</p>
+                          <p className="font-medium text-sm">{edu.examBoard}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Year</p>
+                          <p className="font-medium text-sm">{edu.year}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-500">Total Marks</p>
+                          <p className="font-medium text-sm">{edu.totalMarks}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Subjects Table */}
+                    <div>
+                      {edu.subjects && edu.subjects.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700 mb-2">Subjects / ဘာသာရပ်များ</p>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full border border-gray-200 text-xs">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">#</th>
+                                  <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">Subject</th>
+                                  <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">Mark</th>
+                                  <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-700 border-b">Distinction</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {edu.subjects.map((subject, idx) => {
+                                  // Handle subject name - it might be an object or string
+                                  const getSubjectName = () => {
+                                    if (typeof subject.name === 'object' && subject.name !== null) {
+                                      return subject.name.name;
+                                    }
+                                    if (typeof subject.name === 'string') {
+                                      return subject.name;
+                                    }
+                                    if (typeof subject.subjectId === 'object' && subject.subjectId !== null) {
+                                      return subject.subjectId.name;
+                                    }
+                                    return subject.subjectId;
+                                  };
+
+                                  return (
+                                    <tr key={subject._id} className="border-b">
+                                      <td className="px-3 py-1.5 text-xs">{idx + 1}</td>
+                                      <td className="px-3 py-1.5 text-xs">{getSubjectName()}</td>
+                                      <td className="px-3 py-1.5 text-xs font-medium">{subject.mark}</td>
+                                      <td className="px-3 py-1.5 text-xs">
+                                        {subject.isDistinction ? (
+                                          <span className="text-green-600 font-medium">✓</span>
+                                        ) : (
+                                          <span className="text-gray-400">-</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
           {/* Additional Information */}
           {(profile.hobbies || profile.skills || profile.disabilities || profile.medicalConditions || profile.specialRequirements) && (
-            <div>
+            <div className="mt-8">
               <h2 className="text-lg font-bold text-[#19184A] mb-4 pb-2 border-b border-gray-200">
                 Additional Information / နောက်ထပ်အချက်အလက်
               </h2>
-              <div className="space-y-3">
+              <div className="grid grid-cols-4 gap-3">
                 {profile.hobbies && (
                   <div>
                     <p className="text-xs text-gray-500">Hobbies</p>

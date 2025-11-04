@@ -89,6 +89,15 @@ export async function submitStudentSelfRegistration(
   data: StudentSelfRegistrationData
 ) {
   return withServerActionErrorHandler(async () => {
+    // 🔍 CRITICAL DEBUGGING: Log the received data from client
+    console.log('📥 [SERVER ACTION] === RECEIVED DATA FROM CLIENT ===');
+    console.log('📥 [SERVER ACTION] Complete data object:', JSON.stringify(data, null, 2));
+    console.log('📥 [SERVER ACTION] placeOfBirth value:', data.placeOfBirth);
+    console.log('📥 [SERVER ACTION] placeOfBirth type:', typeof data.placeOfBirth);
+    console.log('📥 [SERVER ACTION] placeOfBirth is undefined?', data.placeOfBirth === undefined);
+    console.log('📥 [SERVER ACTION] placeOfBirth is null?', data.placeOfBirth === null);
+    console.log('📥 [SERVER ACTION] placeOfBirth is empty string?', data.placeOfBirth === '');
+
     // Get current user and validate guest role
     const user = await getCurrentUser();
 
@@ -114,6 +123,14 @@ export async function submitStudentSelfRegistration(
       return { success: false, error: "Tenant context not found" };
     }
 
+    // Helper function to clean empty strings to undefined (will be omitted in JSON)
+    const cleanValue = (value: any) => {
+      if (value === '' || value === null || value === undefined) {
+        return undefined;
+      }
+      return value;
+    };
+
     // Prepare request payload
     const payload = {
       // Personal Information
@@ -121,22 +138,22 @@ export async function submitStudentSelfRegistration(
       nameEnglish: data.nameEnglish,
       dateOfBirth: data.dateOfBirth,
       gender: data.gender,
-      nrcNumber: data.nrcNumber,
-      placeOfBirth: data.placeOfBirth,
-      bloodType: data.bloodType,
-      race: data.race,
-      religion: data.religion,
+      nrcNumber: cleanValue(data.nrcNumber),
+      placeOfBirth: cleanValue(data.placeOfBirth),
+      bloodType: cleanValue(data.bloodType),
+      race: cleanValue(data.race),
+      religion: cleanValue(data.religion),
 
       // Contact & Address
       phone: data.phone,
-      email: data.email,
-      stateRegionName: data.stateRegionName,
-      districtName: data.districtName,
-      townshipName: data.townshipName,
-      townName: data.townName,
-      wardVillageName: data.wardVillageName,
-      permanentAddress: data.permanentAddress,
-      currentAddress: data.currentAddress,
+      email: cleanValue(data.email),
+      stateRegionName: cleanValue(data.stateRegionName),
+      districtName: cleanValue(data.districtName),
+      townshipName: cleanValue(data.townshipName),
+      townName: cleanValue(data.townName),
+      wardVillageName: cleanValue(data.wardVillageName),
+      permanentAddress: cleanValue(data.permanentAddress),
+      currentAddress: cleanValue(data.currentAddress),
 
       // Family Information
       father: data.father,
@@ -144,12 +161,12 @@ export async function submitStudentSelfRegistration(
       guardian: data.guardian,
 
       // Academic Information
-      medmNumber: data.medmNumber,
-      hobbies: data.hobbies,
-      skills: data.skills,
-      disabilities: data.disabilities,
-      medicalConditions: data.medicalConditions,
-      specialRequirements: data.specialRequirements,
+      medmNumber: cleanValue(data.medmNumber),
+      hobbies: cleanValue(data.hobbies),
+      skills: cleanValue(data.skills),
+      disabilities: cleanValue(data.disabilities),
+      medicalConditions: cleanValue(data.medicalConditions),
+      specialRequirements: cleanValue(data.specialRequirements),
       batches: data.batches,
       previousEducation: data.previousEducation,
     };
@@ -157,6 +174,22 @@ export async function submitStudentSelfRegistration(
     console.log(
       `🎓 [Student Registration] Submitting for user: ${user.id}, tenant: ${tenantId}`
     );
+    console.log('📦 [SERVER ACTION] === PAYLOAD TO BACKEND ===');
+    console.log('📦 [SERVER ACTION] Complete payload:', JSON.stringify(payload, null, 2));
+    console.log('📦 [SERVER ACTION] placeOfBirth in payload:', payload.placeOfBirth);
+    console.log('📦 [SERVER ACTION] placeOfBirth type:', typeof payload.placeOfBirth);
+    console.log('📦 [SERVER ACTION] placeOfBirth is undefined?', payload.placeOfBirth === undefined);
+    console.log('📦 [SERVER ACTION] Personal info in payload:', {
+      nameMyanmar: payload.nameMyanmar,
+      nameEnglish: payload.nameEnglish,
+      gender: payload.gender,
+      dateOfBirth: payload.dateOfBirth,
+      placeOfBirth: payload.placeOfBirth,
+      nrcNumber: payload.nrcNumber,
+      race: payload.race,
+      religion: payload.religion,
+      bloodType: payload.bloodType,
+    });
 
     // Create HTTP client
     const httpClient = createHttpClient();

@@ -1,7 +1,6 @@
 'use server';
 
 import { getLibraryModuleReference } from "@/lib/library-module-wrapper";
-import { withServerActionErrorHandler } from "@repo/utils/server";
 
 export interface CatalogType {
   _id: string;
@@ -16,16 +15,28 @@ export interface CatalogType {
  */
 export async function getCatalogTypesReference(
   queryParams?: Record<string, string>
-) {
-  return withServerActionErrorHandler(async () => {
+): Promise<CatalogType[]> {
+  try {
     const response = await getLibraryModuleReference<CatalogType>(
       'catalog-types',
       queryParams
     );
 
-    return response || [];
-  }, {
-    operation: 'get-catalog-types-reference',
-    component: 'library-catalog-types-actions'
-  });
+    // Ensure we always return an array
+    if (!response) {
+      console.warn('getCatalogTypesReference: No response from API, returning empty array');
+      return [];
+    }
+
+    if (!Array.isArray(response)) {
+      console.error('getCatalogTypesReference: Response is not an array:', typeof response, response);
+      return [];
+    }
+
+    return response;
+  } catch (error) {
+    console.error('getCatalogTypesReference: Error fetching catalog types:', error);
+    // Return empty array on error instead of throwing
+    return [];
+  }
 }

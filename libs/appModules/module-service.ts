@@ -86,12 +86,13 @@ export class ModuleService {
       endpoint += `?${queryParams.toString()}`;
     }
 
-    console.log("ModuleService API call:", {
-      endpoint,
-      params,
-      queryParams: queryParams.toString(),
-      fullUrl: endpoint
-    });
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📡 [MODULE SERVICE] API REQUEST");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔗 Full Endpoint:", endpoint);
+    console.log("📋 Input Params:", JSON.stringify(params, null, 2));
+    console.log("🔍 Query String:", queryParams.toString());
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const response = await this.httpClient.request<any>(endpoint, {
       method: "GET",

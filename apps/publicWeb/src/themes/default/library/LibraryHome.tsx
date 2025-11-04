@@ -4,21 +4,29 @@ import { useRouter } from 'next/navigation';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
 import { SearchHero } from './SearchHero';
 import { NewArrivals } from './NewArrivals';
-import { TopReading } from './TopReading';
-import { LibraryNews } from './LibraryNews';
 import type { Bibliography } from '@/actions/library/books.actions';
-import type { LibraryNews as NewsItem } from '@/actions/library/news.actions';
+
+interface PaginationInfo {
+  page: number;
+  totalPages: number;
+  total: number;
+  limit: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+}
+
+interface SectionData {
+  books: Bibliography[];
+  pagination?: PaginationInfo;
+  error: string | null;
+}
 
 interface LibraryHomeProps {
-  newArrivals: Bibliography[];
-  topReading: Bibliography[];
-  news: NewsItem[];
+  newArrivals: SectionData;
 }
 
 export function LibraryHome({
-  newArrivals,
-  topReading,
-  news
+  newArrivals
 }: LibraryHomeProps) {
   const router = useRouter();
 
@@ -51,24 +59,15 @@ export function LibraryHome({
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-12">
           {/* New Arrivals Section */}
-          {newArrivals && newArrivals.length > 0 && (
-            <NewArrivals books={newArrivals} />
-          )}
-
-          {/* Top Reading List Section */}
-          {topReading && topReading.length > 0 && (
-            <TopReading books={topReading} />
-          )}
-
-          {/* Library News Section */}
-          {news && news.length > 0 && (
-            <LibraryNews news={news} />
-          )}
+          <NewArrivals
+            initialBooks={newArrivals.books}
+            initialPagination={newArrivals.pagination}
+            error={newArrivals.error}
+          />
 
           {/* Empty State */}
-          {(!newArrivals || newArrivals.length === 0) &&
-            (!topReading || topReading.length === 0) &&
-            (!news || news.length === 0) && (
+          {(!newArrivals.books || newArrivals.books.length === 0) &&
+            !newArrivals.error && (
               <div className="text-center py-16">
                 <svg
                   className="mx-auto h-16 w-16 text-muted-foreground mb-4"

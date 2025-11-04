@@ -1,6 +1,27 @@
-import { useParams } from "next/navigation";
+import { QueryProvider } from '@/lib/providers/QueryProvider';
+import { LibraryDashboardClient } from '@/components/library/dashboard/LibraryDashboardClient';
 
-export default function DashboardPage() {
+interface DashboardPageProps {
+  params: Promise<{
+    appId: string;
+  }>;
+}
+
+export default async function DashboardPage({ params }: DashboardPageProps) {
+  const resolvedParams = await params;
+
+  // If appId is "library", render the library dashboard
+  if (resolvedParams.appId === 'library') {
+    return (
+      <QueryProvider>
+        <div className="container mx-auto py-8">
+          <LibraryDashboardClient />
+        </div>
+      </QueryProvider>
+    );
+  }
+
+  // Default dashboard for other apps
   return (
     <div className="container mx-auto py-8">
       <div className="space-y-6">

@@ -16,14 +16,23 @@ export interface RequestContext {
 
 /**
  * Determine app name from environment or detection
+ * Safe for Edge Runtime (doesn't use process.cwd)
  */
 function getAppName(): string {
-  // Try to detect from process or package.json
-  if (typeof process !== 'undefined') {
-    // Check if we're in publicWeb or core based on cwd
-    const cwd = process.cwd();
-    if (cwd.includes('/apps/publicWeb')) return 'publicWeb';
-    if (cwd.includes('/apps/core')) return 'core';
+  // Try environment variable first
+  if (typeof process !== 'undefined' && process.env.APP_NAME) {
+    return process.env.APP_NAME;
+  }
+
+  // Try to detect from package.json if available (not in Edge Runtime)
+  if (typeof process !== 'undefined' && typeof process.cwd === 'function') {
+    try {
+      const cwd = process.cwd();
+      if (cwd.includes('/apps/publicWeb')) return 'publicWeb';
+      if (cwd.includes('/apps/core')) return 'core';
+    } catch {
+      // process.cwd() not available in Edge Runtime
+    }
   }
 
   // Fallback: try to detect from hostname pattern

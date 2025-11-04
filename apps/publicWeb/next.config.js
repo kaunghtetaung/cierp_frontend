@@ -6,10 +6,44 @@ const nextConfig = {
     // Expose subdomain configuration to client-side
     NEXT_PUBLIC_API_SUBDOMAIN: process.env.API_SUBDOMAIN || process.env.NEXT_PUBLIC_API_SUBDOMAIN || (process.env.NODE_ENV === 'development' ? 'api-dev' : 'api'),
     NEXT_PUBLIC_AUTH_SUBDOMAIN: process.env.AUTH_SUBDOMAIN || process.env.NEXT_PUBLIC_AUTH_SUBDOMAIN || (process.env.NODE_ENV === 'development' ? 'auth-dev' : 'auth'),
+    // Disable canvas in pdfjs-dist
+    PDFJS_PREBUILT_DIR: '',
   },
   experimental: {
     optimizePackageImports: ['@repo/ui', '@repo/utils', '@repo/language'],
     instrumentationHook: true,
+  },
+  webpack: (config, { isServer, webpack, dev }) => {
+    // Configure devtool for react-pdf compatibility (avoid 'eval-*') in production only
+    if (!dev) {
+      config.devtool = 'source-map';
+    }
+
+    if (!isServer) {
+      // Use IgnorePlugin to completely skip canvas module resolution
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^canvas$/,
+        })
+      );
+
+      // Add alias to prevent canvas imports
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
+
+      // Add fallback for Node.js modules
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+        path: false,
+        stream: false,
+        util: false,
+      };
+    }
+    return config;
   },
   turbopack: {
     rules: {

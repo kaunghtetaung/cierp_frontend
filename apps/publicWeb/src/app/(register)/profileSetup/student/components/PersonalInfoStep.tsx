@@ -439,13 +439,25 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
           <Controller
             name="placeOfBirth"
             control={control}
-            render={({ field }) => (
-              <PlaceOfBirthTypeAhead
-                value={field.value || ""}
-                onChange={field.onChange}
-                error={errors.placeOfBirth?.message as string}
-              />
-            )}
+            render={({ field }) => {
+              // 🔍 DEBUG: Log field state
+              console.log('📍 [PersonalInfoStep] PlaceOfBirth Controller render');
+              console.log('📍 [PersonalInfoStep] field.value:', field.value);
+              console.log('📍 [PersonalInfoStep] field.value type:', typeof field.value);
+
+              return (
+                <PlaceOfBirthTypeAhead
+                  value={field.value || ""}
+                  onChange={(value) => {
+                    console.log('📍 [PersonalInfoStep] PlaceOfBirth onChange called from child');
+                    console.log('📍 [PersonalInfoStep] New value:', value);
+                    console.log('📍 [PersonalInfoStep] Calling field.onChange with:', value);
+                    field.onChange(value);
+                  }}
+                  error={errors.placeOfBirth?.message as string}
+                />
+              );
+            }}
           />
         </div>
 

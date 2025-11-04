@@ -29,28 +29,28 @@ export class StandardErrorReporter implements ErrorReporter {
   private logToConsole(error: ApplicationError): void {
     const logData = {
       level: this.getSeverityLevel(error.severity),
-      timestamp: error.context.timestamp.toISOString(),
-      service: error.context.service,
-      hostname: error.context.hostname,
-      appName: error.context.appName,
+      timestamp: error.context?.timestamp?.toISOString() || new Date().toISOString(),
+      service: error.context?.service,
+      hostname: error.context?.hostname,
+      appName: error.context?.appName,
       type: error.type,
       code: error.code,
       message: error.message,
       severity: error.severity,
       category: error.category,
-      operation: error.context.operation,
-      component: error.context.component,
-      tenantId: error.context.tenantId,
-      userId: error.context.userId,
-      sessionId: error.context.sessionId,
-      requestId: error.context.requestId,
-      path: error.context.path,
-      method: error.context.method,
-      userAgent: error.context.userAgent,
+      operation: error.context?.operation,
+      component: error.context?.component,
+      tenantId: error.context?.tenantId,
+      userId: error.context?.userId,
+      sessionId: error.context?.sessionId,
+      requestId: error.context?.requestId,
+      path: error.context?.path,
+      method: error.context?.method,
+      userAgent: error.context?.userAgent,
       retryable: error.retryable,
       cause: error.cause?.message,
       stack: error.cause?.stack,
-      metadata: error.context.metadata
+      metadata: error.context?.metadata
     };
 
     if (this.config.logFormat === 'json') {

@@ -1,5 +1,5 @@
 /**
- * PDF Proxy API Route for core app
+ * PDF Proxy API Route for publicWeb app
  * Streams private PDF files from S3 with page-by-page watermark overlay
  *
  * How it works:
@@ -8,7 +8,7 @@
  *
  * Query parameters:
  * - file: S3 file path (required)
- * - app: App name for S3 bucket (default: 'core')
+ * - app: App name for S3 bucket (default: 'publicWeb')
  * - watermark: Watermark text (optional)
  * - page: Page number to fetch (1-indexed, optional - if not provided, sends full PDF)
  */
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const filePath = searchParams.get('file');
-    const app = searchParams.get('app') || 'core';
+    const app = searchParams.get('app') || 'publicWeb';
     const watermarkText = searchParams.get('watermark');
     const pageNum = searchParams.get('page'); // Optional: page number (1-indexed)
 
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     if (!sessionId) {
       console.log('[PDF_PROXY] No session cookie found');
-      return NextResponse.json({ error: 'No active session' }, { status: 401 });
+      return NextResponse.json({ error: 'No active session. Please log in to read eBooks.' }, { status: 401 });
     }
 
     // Validate session
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     if (!sessionInfo.isAuthenticated || !sessionInfo.session) {
       console.log('[PDF_PROXY] Session validation failed');
-      return NextResponse.json({ error: 'Session not found or invalid' }, { status: 401 });
+      return NextResponse.json({ error: 'Session not found or invalid. Please log in to read eBooks.' }, { status: 401 });
     }
 
     const { tenantId, userId } = sessionInfo.session;
@@ -253,7 +253,7 @@ async function extractAndWatermarkPage(
         rotate: { angle: -45, type: 'degrees' },
       });
 
-      // Center diagonal watermark - Document title
+      // Center diagonal watermark - Book title
       const centerFontSize = 36;
       const centerWidth = font.widthOfTextAtSize(watermarkText, centerFontSize);
 

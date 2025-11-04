@@ -1,9 +1,10 @@
-// Authenticated API client utility for server-side API calls in core app
-// This is a utility module, NOT a server action file
-// Can be imported by server components or server actions
+// Authenticated fetch utility function for server-side API calls
+// This is NOT a server action, just a utility function
+// Import this in wrapper functions or server actions as needed
 
+import { headers } from 'next/headers';
 import { getCurrentUser, getCurrentSession, TokenManager } from '@repo/auth/server-api';
-import { getCurrentTenant } from '@repo/tenant/server';
+import { getApiDomain } from '@repo/utils/server';
 import type { ApiResponse } from '@repo/types';
 
 /**
@@ -19,11 +20,14 @@ export async function authenticatedFetch<T = any>(
   } = {}
 ): Promise<ApiResponse<T>> {
   try {
-    // Get current user and tenant from server context
-    const [user, session, tenant] = await Promise.all([
-      getCurrentUser(),
-      getCurrentSession(),
-      getCurrentTenant()
+    // Get headers for tenant context
+    const headerStore = await headers();
+    let tenantId = headerStore.get('x-tenant-id') || undefined;
+
+    // Get current user and session from server context
+    const [user, session] = await Promise.all([
+      getCurrentUser(headerStore),
+      getCurrentSession(headerStore)
     ]);
 
     if (!user || !session) {
@@ -34,7 +38,10 @@ export async function authenticatedFetch<T = any>(
       };
     }
 
-    if (!tenant) {
+    // Use tenant from user/session if not in headers
+    tenantId = tenantId || user.tenantId || session.tenantId;
+
+    if (!tenantId) {
       return {
         success: false,
         error: 'Tenant context required',
@@ -44,7 +51,7 @@ export async function authenticatedFetch<T = any>(
 
     // Get user access token using TokenManager
     const tokenManager = TokenManager.getInstance();
-    const token = await tokenManager.getTokenForRequest(tenant.id, user.id);
+    const token = await tokenManager.getTokenForRequest(tenantId, user.userId || user.id);
 
     if (!token) {
       return {
@@ -54,11 +61,8 @@ export async function authenticatedFetch<T = any>(
       };
     }
 
-    // Build full URL
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_GATEWAY_URL;
-    if (!apiUrl && !endpoint.startsWith('http')) {
-      throw new Error('NEXT_PUBLIC_API_URL or API_GATEWAY_URL environment variable is required');
-    }
+    // Build full URL using getApiDomain (same as appModules wrapper)
+    const apiUrl = await getApiDomain();
     const url = endpoint.startsWith('http')
       ? endpoint
       : `${apiUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
@@ -69,8 +73,8 @@ export async function authenticatedFetch<T = any>(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'x-tenant-id': tenant.id,
-        'x-user-id': user.id,
+        'x-tenant-id': tenantId,
+        'x-user-id': user.userId || user.id,
         ...options.headers
       },
       body: options.body ? JSON.stringify(options.body) : undefined
@@ -102,23 +106,3 @@ export async function authenticatedFetch<T = any>(
     };
   }
 }
-
-/**
- * Helper functions for common HTTP methods
- */
-export const apiClient = {
-  get: <T = any>(endpoint: string, headers?: Record<string, string>) => 
-    authenticatedFetch<T>(endpoint, { method: 'GET', headers }),
-
-  post: <T = any>(endpoint: string, body?: any, headers?: Record<string, string>) =>
-    authenticatedFetch<T>(endpoint, { method: 'POST', body, headers }),
-
-  put: <T = any>(endpoint: string, body?: any, headers?: Record<string, string>) =>
-    authenticatedFetch<T>(endpoint, { method: 'PUT', body, headers }),
-
-  patch: <T = any>(endpoint: string, body?: any, headers?: Record<string, string>) =>
-    authenticatedFetch<T>(endpoint, { method: 'PATCH', body, headers }),
-
-  delete: <T = any>(endpoint: string, headers?: Record<string, string>) =>
-    authenticatedFetch<T>(endpoint, { method: 'DELETE', headers })
-};

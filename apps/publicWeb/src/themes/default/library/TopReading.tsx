@@ -4,40 +4,88 @@ import Link from 'next/link';
 
 interface TopReadingProps {
   books: Bibliography[];
+  error?: string | null;
 }
 
-export function TopReading({ books }: TopReadingProps) {
+export function TopReading({ books, error }: TopReadingProps) {
+  // Show error state
+  if (error) {
+    return (
+      <div className="py-10 px-8 rounded-xl bg-gradient-to-br from-[#F6F7FA] to-[#ECEEF5]">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center max-w-md">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Unable to Load Top Reading List
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              We're having trouble loading the popular books. Please try refreshing the page.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state
   if (!books || books.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-8">
+    <div className="py-10 px-8 rounded-xl bg-gradient-to-br from-[#F6F7FA] to-[#ECEEF5]">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Top Reading List</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-3xl font-bold text-gray-900">Top Reading List</h2>
+          <p className="text-sm text-gray-600 mt-2">
             Most popular books in our library
           </p>
         </div>
         <Link
           href="/library"
-          className="text-primary hover:underline text-sm font-medium"
+          className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors"
         >
-          View All →
+          View All
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </Link>
       </div>
 
       {/* Books List (Table-like layout) */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-white rounded-xl overflow-hidden shadow">
         <div className="divide-y divide-border">
           {books.map((book, index) => (
             <BookRow key={book._id} book={book} rank={index + 1} />
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -62,9 +110,9 @@ function BookRow({ book, rank }: { book: Bibliography; rank: number }) {
 
       {/* Book Cover Thumbnail */}
       <div className="flex-shrink-0 w-12 h-16 bg-muted rounded overflow-hidden">
-        {book.coverImage ? (
+        {book.bookCoverImage ? (
           <img
-            src={book.coverImage}
+            src={book.bookCoverImage}
             alt={book.title}
             className="h-full w-full object-cover"
           />

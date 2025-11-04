@@ -47,6 +47,18 @@ export const translations = {
     // Validation messages
     required: "This field is required",
 
+    // Navigation
+    previousButton: "Previous",
+    nextButton: "Next",
+
+    // Helper Text
+    personalInfoHelper: "Please provide your basic personal information including your full name, date of birth, and contact details. Make sure all information matches your official documents.",
+    addressInfoHelper: "Enter your current residential address and permanent address. If both addresses are the same, you can check 'Same as permanent address'.",
+    familyInfoHelper: "Provide information about your parents or legal guardian. This information is required for emergency contacts and official records.",
+    academicInfoHelper: "Fill in your previous education details including the examination board, class, roll number, and marks obtained. For matriculation exam (တက္ကသိုလ်ဝင်တန်း), please include all subjects and marks.",
+    currentAcademicHelper: "Select your current academic year and batch. If you have a MEDM number, please provide it here.",
+    additionalInfoHelper: "Provide any additional information such as hobbies, skills, medical conditions, or special requirements that the institution should be aware of.",
+
     // Common
     loading: "Loading...",
     error: "Error",
@@ -94,6 +106,18 @@ export const translations = {
 
     // Validation messages
     required: "ဤအကွက်ဖြည့်ရန် လိုအပ်သည်",
+
+    // Navigation
+    previousButton: "နောက်သို့",
+    nextButton: "ရှေ့သို့",
+
+    // Helper Text
+    personalInfoHelper: "သင်၏ အခြေခံကိုယ်ရေးအချက်အလက်များဖြစ်သော အမည်အပြည့်အစုံ၊ မွေးသက္ကရာဇ်နှင့် ဆက်သွယ်ရန်အချက်အလက်များကို ထည့်သွင်းပေးပါ။ သင့်တရားဝင်စာရွက်စာတမ်းများနှင့် ကိုက်ညီကြောင်း သေချာစေပါ။",
+    addressInfoHelper: "သင်၏ လက်ရှိနေထိုင်သည့်လိပ်စာနှင့် အမြဲတမ်းနေရပ်လိပ်စာကို ဖြည့်သွင်းပါ။ နှစ်ခုလုံးတူညီပါက 'အမြဲတမ်းလိပ်စာနှင့်တူသည်' ကို အမှန်ခြစ်နိုင်ပါသည်။",
+    familyInfoHelper: "သင်၏မိဘ သို့မဟုတ် တရားဝင်အုပ်ထိန်းသူ၏ အချက်အလက်များကို ထည့်သွင်းပေးပါ။ ဤအချက်အလက်များသည် အရေးပေါ်ဆက်သွယ်ရန်နှင့် တရားဝင်မှတ်တမ်းများအတွက် လိုအပ်ပါသည်။",
+    academicInfoHelper: "သင်၏ယခင်ပညာရေးအချက်အလက်များဖြစ်သော စာမေးပွဲအဖွဲ့၊ တန်း၊ ခုံအမှတ်နှင့် ရမှတ်များကို ဖြည့်သွင်းပါ။ တက္ကသိုလ်ဝင်တန်းအတွက် ဘာသာရပ်အားလုံးနှင့် ရမှတ်များကို ပါဝင်ပါစေ။",
+    currentAcademicHelper: "သင်၏လက်ရှိပညာသင်နှစ်နှင့် အုပ်စုကို ရွေးချယ်ပါ။ MEDM နံပါတ်ရှိပါက ဤနေရာတွင် ထည့်သွင်းပေးပါ။",
+    additionalInfoHelper: "အခြားထပ်ဆောင်းအချက်အလက်များဖြစ်သော ဝါသနာများ၊ ကျွမ်းကျင်မှုများ၊ ကျန်းမာရေးအခြေအနေများ သို့မဟုတ် အထူးလိုအပ်ချက်များကို ဖြည့်သွင်းပေးပါ။",
 
     // Common
     loading: "ရယူနေသည်...",

@@ -47,22 +47,35 @@ export function LibrarySearchClient({
   }, [initialQuery, initialSearchType, initialCatalogType, initialSortBy, initialSortOrder]);
 
   // React Query for search
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['library-search', query, searchType, catalogTypeName, currentPage, pageSize, sortBy, sortOrder],
     queryFn: async () => {
-      const result = await searchBooks(
-        query,
-        currentPage,
-        pageSize,
-        sortBy,
-        sortOrder,
-        searchType,
-        catalogTypeName
-      );
-      return result;
+      try {
+        const result = await searchBooks(
+          query,
+          currentPage,
+          pageSize,
+          sortBy,
+          sortOrder,
+          searchType,
+          catalogTypeName
+        );
+
+        // Check if the API returned an error response
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to search books');
+        }
+
+        return result;
+      } catch (err) {
+        console.error('Search error:', err);
+        throw err;
+      }
     },
     enabled: !!query.trim(),
     staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const handleSearch = (
@@ -122,11 +135,45 @@ export function LibrarySearchClient({
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {error && (
-            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-lg">
-              <p className="font-medium">Error loading search results</p>
-              <p className="text-sm mt-1">
-                {error instanceof Error ? error.message : 'An unexpected error occurred'}
-              </p>
+            <div className="py-10 px-8 rounded-xl bg-gradient-to-br from-red-50 to-red-100">
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center max-w-md">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                    <svg
+                      className="w-8 h-8 text-red-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Unable to Load Search Results
+                  </h3>
+                  <p className="text-sm text-gray-700 mb-1">
+                    {error instanceof Error ? error.message : 'An unexpected error occurred'}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Please check your connection and try again.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => refetch()}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Try Again
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -177,30 +224,6 @@ export function LibrarySearchClient({
               </h3>
               <p className="text-muted-foreground">
                 Search by title, author, publisher, ISBN, or call number
-              </p>
-            </div>
-          )}
-
-          {!isLoading && !error && data?.success && data.data.length === 0 && query && (
-            <div className="text-center py-16">
-              <svg
-                className="mx-auto h-16 w-16 text-muted-foreground mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                No results found
-              </h3>
-              <p className="text-muted-foreground">
-                Try adjusting your search terms or filters
               </p>
             </div>
           )}

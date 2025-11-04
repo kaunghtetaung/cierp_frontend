@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLangSelector } from '@/feature-components/lang-selector';
 import { PublicPdfViewer } from '@/components/pdf-viewer/PublicPdfViewer';
+import { PageByPagePdfViewer } from '@/components/pdf-viewer/PageByPagePdfViewer';
 import { getAuthorName } from '@/lib/library-utils';
+import { checkAuthStatus } from '@/actions/auth/session.actions';
 import type { Bibliography } from '@/actions/library/books.actions';
 import Image from 'next/image';
 
@@ -25,6 +27,42 @@ export function BookDetails({ book }: BookDetailsProps) {
     title: ''
   });
 
+  const [ebookViewerState, setEbookViewerState] = useState<{
+    isOpen: boolean;
+    pdfUrl: string;
+    title: string;
+  }>({
+    isOpen: false,
+    pdfUrl: '',
+    title: ''
+  });
+
+  // Check if user is logged in
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check login status on mount using server action (can access HttpOnly cookies)
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        console.log('[BookDetails] Checking auth status...');
+        const authStatus = await checkAuthStatus();
+        console.log('[BookDetails] Auth status:', authStatus);
+        setIsLoggedIn(authStatus.isAuthenticated);
+        setUserId(authStatus.userId);
+      } catch (error) {
+        console.error('[BookDetails] Error checking auth:', error);
+        setIsLoggedIn(false);
+        setUserId(undefined);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   // Multilingual text
   const texts = {
     backToSearch: currentLanguage === 'mm' ? 'ရှာဖွေမှုသို့ပြန်သွားမည်' : 'Back to Search',
@@ -42,6 +80,7 @@ export function BookDetails({ book }: BookDetailsProps) {
     description: currentLanguage === 'mm' ? 'ဖော်ပြချက်:' : 'Description:',
     viewAbstract: currentLanguage === 'mm' ? 'အကျဉ်းချုပ်ကြည့်မည်' : 'View Abstract',
     viewContent: currentLanguage === 'mm' ? 'အကြောင်းအရာကြည့်မည်' : 'View Content',
+    readEbook: currentLanguage === 'mm' ? 'eBook ဖတ်မည်' : 'Read eBook',
     downloadAbstract: currentLanguage === 'mm' ? 'အကျဉ်းချုပ်ဒေါင်းလုဒ်' : 'Download Abstract',
     downloadContent: currentLanguage === 'mm' ? 'အကြောင်းအရာဒေါင်းလုဒ်' : 'Download Content',
     remark: currentLanguage === 'mm' ? 'မှတ်ချက်:' : 'Remark:',
@@ -50,6 +89,7 @@ export function BookDetails({ book }: BookDetailsProps) {
     reserveBook: currentLanguage === 'mm' ? 'စာအုပ်ကြိုတင်မှာကြားမည်' : 'Reserve Book',
     available: currentLanguage === 'mm' ? 'ရရှိနိုင်သည်' : 'Available',
     notAvailable: currentLanguage === 'mm' ? 'ရရှိနိုင်မှုမရှိပါ' : 'Not Available',
+    loginRequired: currentLanguage === 'mm' ? 'eBook ဖတ်ရန် အကောင့်ဝင်ရန်လိုအပ်သည်' : 'Login required to read eBook',
   };
 
   const handleOpenPdfViewer = (pdfUrl: string, title: string) => {
@@ -68,6 +108,14 @@ export function BookDetails({ book }: BookDetailsProps) {
     });
   };
 
+  const handleCloseEbookViewer = () => {
+    setEbookViewerState({
+      isOpen: false,
+      pdfUrl: '',
+      title: ''
+    });
+  };
+
   const handleDownload = (url: string, filename: string) => {
     const link = document.createElement('a');
     link.href = url;
@@ -78,9 +126,40 @@ export function BookDetails({ book }: BookDetailsProps) {
     document.body.removeChild(link);
   };
 
-  // Check if abstract or content files exist
+  const handleReadEbook = () => {
+    console.log('[BookDetails] handleReadEbook called', {
+      isLoggedIn,
+      hasEbookFile: !!book.ebookFile,
+      ebookFile: book.ebookFile
+    });
+
+    if (!isLoggedIn) {
+      alert(texts.loginRequired);
+      // TODO: Redirect to login page
+      return;
+    }
+
+    if (!book.ebookFile) {
+      console.log('[BookDetails] No ebookFile available');
+      return;
+    }
+
+    // Build proxy URL (without page parameter - viewer will add it)
+    // IMPORTANT: Use 'library' as app name because eBooks are stored in library service bucket
+    const proxyUrl = `/api/media/pdf-proxy?file=${encodeURIComponent(book.ebookFile)}&app=library`;
+    console.log('[BookDetails] Opening eBook with page-by-page viewer:', proxyUrl);
+
+    setEbookViewerState({
+      isOpen: true,
+      pdfUrl: proxyUrl,
+      title: `${book.title} - eBook`
+    });
+  };
+
+  // Check if abstract, content, or ebook files exist
   const hasAbstract = book.abstract && book.abstractFile;
   const hasContent = book.content && book.contentFile;
+  const hasEbook = !!book.ebookFile;
 
   // Check if book is available for reservation
   const isAvailable = book.bookCopyCount && book.bookCopyCount > 0;
@@ -122,9 +201,9 @@ export function BookDetails({ book }: BookDetailsProps) {
                 {/* Book Cover */}
                 <div className="bg-card border border-border rounded-lg overflow-hidden shadow-md">
                   <div className="aspect-[2/3] bg-muted flex items-center justify-center relative">
-                    {book.coverImage ? (
+                    {book.bookCoverImage ? (
                       <Image
-                        src={book.coverImage}
+                        src={book.bookCoverImage}
                         alt={book.title}
                         fill
                         className="object-cover"
@@ -173,11 +252,41 @@ export function BookDetails({ book }: BookDetailsProps) {
                   </div>
 
                   {/* PDF Actions */}
-                  {(hasAbstract || hasContent) && (
+                  {(hasAbstract || hasContent || hasEbook) && (
                     <div className="p-4 border-t border-border space-y-2">
                       <p className="text-sm font-semibold text-foreground mb-3">
                         {currentLanguage === 'mm' ? 'PDF ဖိုင်များ' : 'Available PDFs'}
                       </p>
+
+                      {/* eBook Button - Only show if user is logged in */}
+                      {hasEbook && (
+                        <div className="space-y-2 mb-3">
+                          <button
+                            onClick={handleReadEbook}
+                            className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                              isLoggedIn
+                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                : 'bg-muted hover:bg-muted/80 text-muted-foreground cursor-not-allowed'
+                            }`}
+                            disabled={!isLoggedIn}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            {texts.readEbook}
+                            {!isLoggedIn && (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            )}
+                          </button>
+                          {!isLoggedIn && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              {texts.loginRequired}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {hasAbstract && (
                         <div className="space-y-2">
@@ -414,12 +523,24 @@ export function BookDetails({ book }: BookDetailsProps) {
         </div>
       </div>
 
-      {/* PDF Viewer Modal */}
+      {/* PDF Viewer Modal (for abstracts and content files) */}
       {pdfViewerState.isOpen && (
         <PublicPdfViewer
           pdfUrl={pdfViewerState.pdfUrl}
           title={pdfViewerState.title}
           onClose={handleClosePdfViewer}
+        />
+      )}
+
+      {/* eBook Viewer Modal (page-by-page with watermarks) */}
+      {ebookViewerState.isOpen && (
+        <PageByPagePdfViewer
+          pdfUrl={ebookViewerState.pdfUrl}
+          title={ebookViewerState.title}
+          watermark={book.title}
+          onClose={handleCloseEbookViewer}
+          bookId={book._id || book.id}
+          userId={userId}
         />
       )}
     </div>

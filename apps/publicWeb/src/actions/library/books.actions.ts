@@ -63,12 +63,13 @@ export interface Bibliography {
   isbn?: string;
   callNo?: string;
   status: string;
-  coverImage?: string;
+  bookCoverImage?: string;
   description?: string;
   abstract?: boolean;
   content?: boolean;
   abstractFile?: string;
   contentFile?: string;
+  ebookFile?: string; // Private S3 path for eBook (e.g., "/private/library/common/ebook/id.pdf")
   subjects?: Subject[];
   degrees?: Degree[];
   editors?: any[];
@@ -149,13 +150,24 @@ export async function searchBooks(
 /**
  * Get new arrivals (recently added books)
  */
-export async function getNewArrivals(limit = 10) {
+export async function getNewArrivals(limit = 10, page = 1) {
   return withServerActionErrorHandler(async () => {
-    const response = await getLibraryModuleList<Bibliography>('bibliographies', {
-      page: 1,
+    console.log('📖 [getNewArrivals] Called with:', { limit, page });
+
+    const params = {
+      page,
       limit,
       sort: 'createdAt',
-      order: 'desc'
+      order: 'desc' as const
+    };
+
+    console.log('📖 [getNewArrivals] Calling getLibraryModuleList with params:', params);
+
+    const response = await getLibraryModuleList<Bibliography>('bibliographies', params);
+
+    console.log('📖 [getNewArrivals] Response:', {
+      dataCount: response.data?.length,
+      pagination: response.pagination
     });
 
     return {
@@ -166,7 +178,7 @@ export async function getNewArrivals(limit = 10) {
   }, {
     operation: 'get-new-arrivals',
     component: 'library-books-actions',
-    metadata: { limit }
+    metadata: { limit, page }
   });
 }
 

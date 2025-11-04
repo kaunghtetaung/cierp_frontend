@@ -1,34 +1,29 @@
 import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { LibraryHome } from '@/themes/default/library/LibraryHome';
-import { getNewArrivals, getTopReading } from '@/actions/library/books.actions';
-import { getLibraryNews } from '@/actions/library/news.actions';
+import { getNewArrivals } from '@/actions/library/books.actions';
 
 export default async function LibraryPage() {
   // Fetch homepage data only - no search results
-  const [newArrivalsResponse, topReadingResponse, newsResponse] = await Promise.all([
-    getNewArrivals(10),
-    getTopReading(10),
-    getLibraryNews(6)
-  ]);
+  // IMPORTANT: Explicitly pass page=1 to ensure page parameter is not null
+  const newArrivalsResponse = await getNewArrivals(10, 1).catch((error) => {
+    console.error('Failed to fetch new arrivals:', error);
+    return { success: false, error: 'Failed to load new arrivals' };
+  });
 
-  const newArrivals = newArrivalsResponse?.success && newArrivalsResponse.data
-    ? newArrivalsResponse.data
-    : [];
-
-  const topReading = topReadingResponse?.success && topReadingResponse.data
-    ? topReadingResponse.data
-    : [];
-
-  const news = newsResponse?.success && newsResponse.data?.data
-    ? newsResponse.data.data
-    : [];
+  const newArrivalsData = {
+    books: newArrivalsResponse?.success && newArrivalsResponse.data
+      ? newArrivalsResponse.data
+      : [],
+    pagination: newArrivalsResponse?.success && newArrivalsResponse.pagination
+      ? newArrivalsResponse.pagination
+      : undefined,
+    error: !newArrivalsResponse?.success ? (newArrivalsResponse?.error || 'Failed to load new arrivals') : null
+  };
 
   return (
     <QueryProvider>
       <LibraryHome
-        newArrivals={newArrivals}
-        topReading={topReading}
-        news={news}
+        newArrivals={newArrivalsData}
       />
     </QueryProvider>
   );

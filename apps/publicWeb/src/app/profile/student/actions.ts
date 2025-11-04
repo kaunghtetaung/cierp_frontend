@@ -53,7 +53,7 @@ export interface StudentProfileData {
   gender: string;
   dateOfBirth: string;
   placeOfBirth: string;
-  ethnicity: string;
+  race: string;
   religion: string;
   bloodGroup?: string;
   nrcNumber: string;
@@ -225,12 +225,25 @@ export async function getProfilePhotoUrl(params: {
 /**
  * Update student profile (for pending/incomplete status only)
  * Uses PATCH method as per backend implementation
+ * @param data - Form data to update
+ * @param studentId - Student record _id (required by backend)
  */
-export async function updateMyProfile(data: any) {
+export async function updateMyProfile(data: any, studentId: string) {
   return withServerActionErrorHandler(async () => {
+    // 🔍 CRITICAL DEBUGGING: Log the received data from client (EDIT MODE)
+    console.log('📥 [EDIT SERVER ACTION] === RECEIVED DATA FROM CLIENT ===');
+    console.log('📥 [EDIT SERVER ACTION] Student ID:', studentId);
+    console.log('📥 [EDIT SERVER ACTION] Complete data object:', JSON.stringify(data, null, 2));
+    console.log('📥 [EDIT SERVER ACTION] placeOfBirth value:', data.placeOfBirth);
+    console.log('📥 [EDIT SERVER ACTION] placeOfBirth type:', typeof data.placeOfBirth);
+    console.log('📥 [EDIT SERVER ACTION] placeOfBirth is undefined?', data.placeOfBirth === undefined);
+    console.log('📥 [EDIT SERVER ACTION] placeOfBirth is null?', data.placeOfBirth === null);
+    console.log('📥 [EDIT SERVER ACTION] placeOfBirth is empty string?', data.placeOfBirth === '');
+
     logger.info('Updating student profile', {
       component: 'profile-student-actions',
       operation: 'updateMyProfile',
+      studentId,
     });
 
     // Get authentication status
@@ -251,18 +264,45 @@ export async function updateMyProfile(data: any) {
       operation: 'updateMyProfile',
       userId,
       tenantId,
+      studentId,
     });
 
     // Get API domain
     const apiUrl = await getApiDomain();
     const httpClient = createHttpClient({ baseURL: apiUrl });
 
-    // IMPORTANT: Use PATCH method (not PUT) as per backend implementation
+    // IMPORTANT: Use PATCH method with student ID as URL parameter
+    // Backend requires student record _id in URL: /students/:id/my-profile
+    // Format: /cpms/students/{studentId}/my-profile (NOT /my-profile/{studentId})
+    logger.info('Making PATCH request with student ID in URL', {
+      component: 'profile-student-actions',
+      operation: 'updateMyProfile',
+      endpoint: `/cpms/students/${studentId}/my-profile`,
+    });
+
+    // 🔍 CRITICAL DEBUGGING: Log the data being sent to backend API
+    console.log('📤 [EDIT SERVER ACTION] === DATA SENT TO BACKEND API ===');
+    console.log('📤 [EDIT SERVER ACTION] Endpoint:', `/cpms/students/${studentId}/my-profile`);
+    console.log('📤 [EDIT SERVER ACTION] Method: PATCH');
+    console.log('📤 [EDIT SERVER ACTION] Body data:', JSON.stringify(data, null, 2));
+    console.log('📤 [EDIT SERVER ACTION] placeOfBirth in body:', data.placeOfBirth);
+    console.log('📤 [EDIT SERVER ACTION] Personal fields in body:', {
+      nameMyanmar: data.nameMyanmar,
+      nameEnglish: data.nameEnglish,
+      gender: data.gender,
+      dateOfBirth: data.dateOfBirth,
+      placeOfBirth: data.placeOfBirth,
+      nrcNumber: data.nrcNumber,
+      race: data.race,
+      religion: data.religion,
+      bloodType: data.bloodType,
+    });
+
     const result = await httpClient.request<StudentProfileData>(
-      "/cpms/students/my-profile",
+      `/cpms/students/${studentId}/my-profile`,
       {
         method: "PATCH",  // Backend uses PATCH
-        body: data,
+        body: data, // No id field in body - ID is in URL
         withAuth: true,
         userId: userId,
         tokenStrategy: "auto",
