@@ -25,6 +25,9 @@ interface ReactHookWizardFormProps {
   itemId?: string;
   currentLanguage: string;
   userId?: string;
+  tenantId?: string;
+  appId?: string;
+  username?: string;
 }
 
 interface LocalWizardStep {
@@ -764,6 +767,9 @@ export function ReactHookWizardForm({
   itemId,
   currentLanguage = 'en',
   userId,
+  tenantId,
+  appId,
+  username,
 }: ReactHookWizardFormProps) {
   // Debug logging
   console.log('🧙 ReactHookWizardForm received props:', {
@@ -1387,9 +1393,68 @@ export function ReactHookWizardForm({
         }
       }
       
-      // Clear stored draft after successful submission
+      // ========================================
+      // 🧹 COMPREHENSIVE BROWSER CLEANUP
+      // ========================================
+      console.log(`🧹 Starting comprehensive browser cleanup after successful ${action}...`);
+
+      // 1. Clear the current wizard draft
       wizardStorage.clearStorage();
-      
+
+      // 2. Clear all wizard-related localStorage for this module (in case of multiple drafts)
+      try {
+        const prefix = `wizard_${moduleSlug}_`;
+        const keysToRemove: string[] = [];
+
+        // Collect all wizard keys for this module
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith(prefix)) {
+            keysToRemove.push(key);
+          }
+        }
+
+        // Remove all collected keys
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+          console.log(`🧹 Removed localStorage key: ${key}`);
+        });
+
+        console.log(`✅ Cleaned up ${keysToRemove.length} wizard draft(s) from localStorage`);
+      } catch (error) {
+        console.warn('⚠️ Error cleaning up wizard localStorage:', error);
+      }
+
+      // 3. Clear sessionStorage for this module (if any)
+      try {
+        const sessionPrefix = `wizard_${moduleSlug}_`;
+        const sessionKeysToRemove: string[] = [];
+
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith(sessionPrefix)) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+
+        sessionKeysToRemove.forEach(key => {
+          sessionStorage.removeItem(key);
+          console.log(`🧹 Removed sessionStorage key: ${key}`);
+        });
+
+        if (sessionKeysToRemove.length > 0) {
+          console.log(`✅ Cleaned up ${sessionKeysToRemove.length} item(s) from sessionStorage`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error cleaning up wizard sessionStorage:', error);
+      }
+
+      // 4. Reset React Hook Form state
+      reset({});
+      console.log(`✅ Reset React Hook Form to empty state`);
+
+      console.log(`✅ Browser cleanup complete!`);
+
       // Invalidate React Query cache to force data refetch
       console.log(`🔄 Invalidating React Query cache for module: ${moduleSlug}`);
       
@@ -1443,9 +1508,11 @@ export function ReactHookWizardForm({
           queryKey: [...moduleKeys.lists(), moduleSlug],
           exact: false
         });
-        
-        // Navigate to the list page
-        router.push(`/${moduleSlug}`);
+
+        // Navigate to the list page with proper appId and force refresh via URL parameter
+        const redirectPath = appId ? `/${appId}/${moduleSlug}` : `/${moduleSlug}`;
+        const timestamp = Date.now();
+        router.push(`${redirectPath}?_refresh=${timestamp}`);
       }, 1500); // Give user time to see success message
     } catch (error) {
       console.error("🧙 Wizard form submission error:", error);
@@ -1636,6 +1703,9 @@ export function ReactHookWizardForm({
                         isVerticalLayout={isVerticalLayout}
                         errors={errors}
                         watch={watch}
+                        tenantId={tenantId}
+                        appId={appId}
+                        username={username}
                       />
                     </div>
                   );

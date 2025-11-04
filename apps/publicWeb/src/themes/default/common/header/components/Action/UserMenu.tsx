@@ -312,15 +312,16 @@ export const UserMenu: React.FC<{
 
     // Desktop - show compact text links
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
-        <LoginButton className="px-2 py-1 text-sm font-medium transition-colors bg-transparent border-0 text-white hover:text-white/90">
+      <div className={`flex items-center gap-2 mt-0 ${className}`}>
+        <LoginButton className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors bg-[var(--color-header-action-button)] border-0 text-white rounded-b-md rounded-t-none hover:opacity-90">
+          <LogIn className="h-4 w-4" />
           Sign In
         </LoginButton>
-        <span className="text-sm text-white">|</span>
         <Link
           href="/signup"
-          className="px-2 py-1 text-sm font-medium transition-colors text-white hover:text-white/90"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors bg-[var(--color-header-signup-button)] text-white rounded-b-md rounded-t-none hover:opacity-90"
         >
+          <UserPlus className="h-4 w-4" />
           Sign Up
         </Link>
       </div>
@@ -404,7 +405,7 @@ export const UserMenu: React.FC<{
     );
   }
 
-  // Desktop user menu - Inspired by language selector pattern
+  // Desktop user menu - Matches sign-in button design
   return (
     <>
       <ProfileSelectionDialog
@@ -416,31 +417,32 @@ export const UserMenu: React.FC<{
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="group flex items-center gap-1 text-sm font-medium transition-colors text-white hover:text-white/90"
+              className="group flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors bg-[var(--color-header-action-button)] border-0 text-white rounded-b-md rounded-t-none hover:opacity-90"
               aria-haspopup="menu"
               aria-label="User menu"
               type="button"
             >
+              <User className="h-4 w-4" />
               <span>{user?.name || "Account"}</span>
               <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="min-w-[280px] bg-card border border-border shadow-lg rounded-md"
+            className="min-w-[280px] !bg-[var(--color-banner-bg)] border-white/20 shadow-lg rounded-md"
           >
-            <div className="p-3 border-b border-border">
-              <div className="text-sm text-foreground font-medium">
+            <div className="p-3 border-b border-white/20">
+              <div className="text-sm text-white font-medium">
                 {user?.name || "User"}
               </div>
-              <div className="text-xs text-muted-foreground">{user?.email}</div>
+              <div className="text-xs text-white/80">{user?.email}</div>
               {user?.roles && user.roles.length > 0 && (
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="text-xs text-white/80 mt-1">
                   Role: {user.roles.map((r: any) => r.Role).join(", ")}
                 </div>
               )}
               {user?.profileState && (
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="text-xs text-white/80 mt-1">
                   Profile Status: {user.profileState}
                 </div>
               )}
@@ -449,35 +451,35 @@ export const UserMenu: React.FC<{
               <>
                 <DropdownMenuItem
                   onClick={() => setShowProfileDialog(true)}
-                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3 text-amber-600 hover:text-amber-700 font-medium"
+                  className="cursor-pointer hover:bg-white/10 p-3 text-amber-400 hover:text-amber-300 font-medium"
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
                   Complete Your Profile
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="border-white/20" />
               </>
             )}
-            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+            <DropdownMenuItem className="cursor-pointer hover:bg-white/10 text-white p-3">
               <Link href="/profile" className="flex items-center w-full">
                 <UserCircle className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+            <DropdownMenuItem className="cursor-pointer hover:bg-white/10 text-white p-3">
               <Link href="/settings" className="flex items-center w-full">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
+            <DropdownMenuItem className="cursor-pointer hover:bg-white/10 text-white p-3">
               <Link href="/profile" className="flex items-center w-full">
                 <Lock className="mr-2 h-4 w-4" />
                 Change Password
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer hover:bg-accent hover:text-accent-foreground p-3">
-              <LogoutButton className="w-full justify-start p-0 border-0 bg-transparent hover:bg-transparent text-foreground flex items-center">
+            <DropdownMenuSeparator className="border-white/20" />
+            <DropdownMenuItem className="cursor-pointer hover:bg-white/10 text-white p-3">
+              <LogoutButton className="w-full justify-start p-0 border-0 bg-transparent hover:bg-transparent text-white flex items-center">
                 <LogIn className="mr-2 h-4 w-4 rotate-180" />
                 Sign Out
               </LogoutButton>

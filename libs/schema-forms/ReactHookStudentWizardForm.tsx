@@ -670,13 +670,70 @@ export function ReactHookStudentWizardForm({
 
       toastSuccess(successMessage)
 
-      // Clear storage on successful submission
-      console.log('🧙 StudentWizardForm: Clearing storage after successful submission');
+      // ========================================
+      // 🧹 COMPREHENSIVE BROWSER CLEANUP
+      // ========================================
+      console.log(`🧹 Starting comprehensive browser cleanup after successful ${action}...`);
+
+      // 1. Clear the current wizard draft
       wizardStorage.clearStorage();
 
-      // Navigate back to list
+      // 2. Clear all wizard-related localStorage for this module
+      try {
+        const prefix = `wizard_${moduleSlug}_`;
+        const keysToRemove: string[] = [];
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith(prefix)) {
+            keysToRemove.push(key);
+          }
+        }
+
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+          console.log(`🧹 Removed localStorage key: ${key}`);
+        });
+
+        console.log(`✅ Cleaned up ${keysToRemove.length} wizard draft(s) from localStorage`);
+      } catch (error) {
+        console.warn('⚠️ Error cleaning up wizard localStorage:', error);
+      }
+
+      // 3. Clear sessionStorage for this module
+      try {
+        const sessionPrefix = `wizard_${moduleSlug}_`;
+        const sessionKeysToRemove: string[] = [];
+
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith(sessionPrefix)) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+
+        sessionKeysToRemove.forEach(key => {
+          sessionStorage.removeItem(key);
+          console.log(`🧹 Removed sessionStorage key: ${key}`);
+        });
+
+        if (sessionKeysToRemove.length > 0) {
+          console.log(`✅ Cleaned up ${sessionKeysToRemove.length} item(s) from sessionStorage`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error cleaning up wizard sessionStorage:', error);
+      }
+
+      // 4. Reset React Hook Form state
+      reset({});
+      console.log(`✅ Reset React Hook Form to empty state`);
+
+      console.log(`✅ Browser cleanup complete!`);
+
+      // Navigate back to list with refresh trigger
       setTimeout(() => {
-        router.push(`/${appId}/${moduleSlug}`)
+        const timestamp = Date.now();
+        router.push(`/${appId}/${moduleSlug}?_refresh=${timestamp}`)
       }, 1500)
 
     } catch (error) {

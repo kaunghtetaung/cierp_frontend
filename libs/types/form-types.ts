@@ -22,6 +22,9 @@ export type FieldType =
   | 'date'
   | 'radio'
   | 'file'
+  | 'mediaBrowser'      // Single file selection with media browser dialog
+  | 'mediaGallery'      // Multiple file selection with media browser dialog
+  | 'mediaUploader'     // Upload + browse combo
   | 'textArea'
   | 'htmlContent'
   | 'icon'
@@ -171,6 +174,47 @@ export interface NrcFieldConfig {
   allowFreeForm?: boolean; // Allow custom free-form NRC entry (default: true)
 }
 
+// Media browser configuration
+export interface MediaBrowserConfig {
+  // Selection behavior
+  selectionMode?: 'single' | 'multiple';  // Single or multiple file selection (default: 'single' for mediaBrowser, 'multiple' for mediaGallery)
+  maxFiles?: number;                      // Maximum files for multiple selection (default: 10)
+
+  // File filtering
+  allowedTypes?: string[];                // MIME types (e.g., ['image/*', 'application/pdf'])
+  allowedExtensions?: string[];           // File extensions (e.g., ['.jpg', '.png', '.pdf'])
+  maxFileSize?: number;                   // Maximum file size in bytes (e.g., 5242880 = 5MB)
+
+  // Folder access
+  basePath?: string;                      // Starting folder (e.g., 'public', 'private/common', 'personal')
+  allowFolderNavigation?: boolean;        // Allow navigating folders (default: true)
+  restrictToPath?: boolean;               // Restrict to basePath only (default: false)
+  allowedFolders?: string[];              // Specific folders user can access (e.g., ['public', 'private/common'])
+
+  // Upload behavior
+  allowUpload?: boolean;                  // Allow uploading new files (default: true)
+  uploadPath?: string;                    // Where to upload new files (default: basePath)
+
+  // UI customization
+  viewMode?: 'grid' | 'list';            // Default view mode (default: 'grid')
+  dialogSize?: 'md' | 'lg' | 'xl' | 'full';  // Dialog size (default: 'xl')
+  showFolderTree?: boolean;               // Show folder tree sidebar (default: true)
+  showPreview?: boolean;                  // Show file preview (default: true)
+
+  // Return value format
+  returnFormat?: 'url' | 'key' | 'object';  // What to return as field value (default: 'url')
+  // 'url': Full URL (e.g., "https://s3.../file.pdf")
+  // 'key': S3 key (e.g., "core/public/file.pdf")
+  // 'object': Full file object { key, url, name, size, type, thumbnail }
+
+  // Signed URL configuration (for private files)
+  useSignedUrl?: boolean;                     // Force signed URL for private files (default: true)
+  signedUrlExpiry?: number;                   // Default expiry in seconds (default: 604800 * 520 = ~10 years)
+  allowExpirySelection?: boolean;             // Show dropdown to select expiry time (default: false)
+  expiryOptions?: Array<{ label: string; value: number }>; // Custom expiry options
+  // Default options: [Permanent (~10 years), 1 Month (30 days), 1 Year (365 days)]
+}
+
 // Form field configuration
 export interface FormField {
   fieldName: string;
@@ -209,7 +253,10 @@ export interface FormField {
 
   // NRC field configuration (for fieldType: 'nrcField')
   nrcConfig?: NrcFieldConfig; // Configuration for Myanmar NRC input fields
-  
+
+  // Media browser configuration (for fieldType: 'mediaBrowser', 'mediaGallery', 'mediaUploader')
+  mediaBrowserConfig?: MediaBrowserConfig; // Configuration for media file browser
+
   // Quick Entry configuration for dynamic fields
   quickEntry?: QuickEntryConfig; // Configuration for inline entity creation
   

@@ -62,7 +62,7 @@ export function GlobalErrorFallback({ title, message, reasons, error }: GlobalEr
             </div>
             
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a 
+              <a
                 href={typeof window !== 'undefined' ? window.location.href : '/'}
                 style={{
                   padding: '14px 28px',

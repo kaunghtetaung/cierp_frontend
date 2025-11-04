@@ -1,24 +1,33 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Loader2, Printer, Download } from "lucide-react";
+import { Loader2, Printer, Download, User as UserIcon, ArrowLeft, Edit } from "lucide-react";
 import QRCode from "qrcode";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import type { User } from "@repo/types";
 import { Button } from "@repo/ui";
-import { getMyProfile, type StudentProfileData } from "./actions";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { getMyProfile, getProfilePhotoUrl, type StudentProfileData } from "./actions";
 
 interface StudentProfileViewProps {
   user: User;
   tenantName: string;
+  tenantSlug: string;
+  tenantRootDomain: string;
+  tenantLogo?: string;
+  tenantDisplayName?: string;
 }
 
-export function StudentProfileView({ user, tenantName }: StudentProfileViewProps) {
+export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDomain, tenantLogo, tenantDisplayName }: StudentProfileViewProps) {
+  const router = useRouter();
   const [profile, setProfile] = useState<StudentProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
+  const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +41,14 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
         if (result.success && result.data) {
           setProfile(result.data);
 
+          console.log('📸 [PROFILE PHOTO DEBUG] Profile data:', {
+            hasProfilePhoto: !!result.data.profilePhoto,
+            profilePhotoValue: result.data.profilePhoto,
+            tenantId: user.tenantId,
+            tenantSlug,
+            tenantRootDomain,
+          });
+
           // Generate QR code with record ID (slug)
           if (result.data.slug) {
             const qrUrl = await QRCode.toDataURL(result.data.slug, {
@@ -39,6 +56,45 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
               margin: 1,
             });
             setQrCodeUrl(qrUrl);
+          }
+
+          // Get signed URL for profile photo if it exists
+          if (result.data.profilePhoto && user.tenantId && tenantSlug && tenantRootDomain) {
+            try {
+              setIsLoadingPhoto(true);
+              console.log('📸 [PROFILE PHOTO DEBUG] Fetching signed URL...');
+              const photoResult = await getProfilePhotoUrl({
+                s3Key: result.data.profilePhoto,
+                tenantId: user.tenantId,
+                tenantSlug,
+                tenantRootDomain,
+              });
+
+              console.log('📸 [PROFILE PHOTO DEBUG] Photo result:', {
+                success: photoResult.success,
+                hasSignedUrl: !!photoResult.signedUrl,
+                signedUrl: photoResult.signedUrl,
+              });
+
+              if (photoResult.success && photoResult.signedUrl) {
+                setProfilePhotoUrl(photoResult.signedUrl);
+                console.log('✅ [PROFILE PHOTO DEBUG] Photo URL set successfully');
+              } else {
+                console.warn('⚠️ [PROFILE PHOTO DEBUG] No signed URL in response');
+              }
+            } catch (photoErr) {
+              console.error("❌ [PROFILE PHOTO DEBUG] Error fetching profile photo:", photoErr);
+              // Don't fail the whole page if photo fails to load
+            } finally {
+              setIsLoadingPhoto(false);
+            }
+          } else {
+            console.log('⚠️ [PROFILE PHOTO DEBUG] Missing required data:', {
+              hasProfilePhoto: !!result.data.profilePhoto,
+              hasTenantId: !!user.tenantId,
+              hasTenantSlug: !!tenantSlug,
+              hasTenantRootDomain: !!tenantRootDomain,
+            });
           }
         } else {
           setError(result.error || "Failed to load profile");
@@ -52,7 +108,7 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
     }
 
     fetchProfile();
-  }, []);
+  }, [user.tenantId, tenantSlug, tenantRootDomain]);
 
   // Print handler
   const handlePrint = () => {
@@ -277,52 +333,113 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
     );
   }
 
+  // Simple dots pattern (clean and professional)
+  const backgroundPattern = `data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E`;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Print/Download Buttons - Hidden on print */}
-      <div className="no-print sticky top-0 bg-white border-b border-gray-200 px-4 py-3 shadow-sm z-10">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <h1 className="text-lg font-semibold text-[#19184A]">
-            Student Registration Profile
-          </h1>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleDownloadPDF}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-              disabled={isDownloading}
+    <div className="min-h-screen" style={{ backgroundColor: "#e8f0fa" }}>
+      {/* Blue Header with pattern - Hidden on print */}
+      <header
+        className="no-print relative z-50"
+        style={{
+          backgroundColor: "#2460B9",
+          backgroundImage: `url("${backgroundPattern}")`,
+          backgroundRepeat: "repeat",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            {/* Back button */}
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
             >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Download PDF
-                </>
+              <ArrowLeft className="h-5 w-5" />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+
+            {/* Logo and Title */}
+            <div className="flex items-center gap-3">
+              {tenantLogo && (
+                <div className="relative h-12 w-12">
+                  <Image
+                    src={tenantLogo}
+                    alt={tenantDisplayName || "Organization Logo"}
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
               )}
-            </Button>
-            <Button
-              onClick={handlePrint}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
+              <div className="text-white">
+                <h1 className="text-xl font-semibold">
+                  {tenantDisplayName || tenantName}
+                </h1>
+                <p className="text-sm text-blue-100">Student Profile</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {profile?.registrationStatus === 'pending' && (
+                <Button
+                  onClick={() => router.push('/profileSetup/student')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-white border-amber-400/50"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Profile
+                </Button>
+              )}
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border-white/30"
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handlePrint}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border-white/30"
+              >
+                <Printer className="h-4 w-4" />
+                Print
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Printable Content */}
       <div ref={contentRef} className="max-w-4xl mx-auto p-8 bg-white my-8 shadow-lg print:shadow-none print:my-0">
-        {/* Header with QR Code */}
+        {/* Header with Profile Photo and QR Code */}
         <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-300">
-          <div>
+          {/* Left: QR Code */}
+          {qrCodeUrl && (
+            <div className="text-center">
+              <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32" />
+              <p className="text-xs text-gray-500 mt-1">Scan for Record ID</p>
+            </div>
+          )}
+
+          {/* Center: Student Info */}
+          <div className="flex-1 mx-8">
             <h1 className="text-2xl font-bold text-[#19184A] mb-2">
               Student Registration Profile
             </h1>
@@ -336,16 +453,53 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
                 day: 'numeric',
               })}
             </p>
-            <p className="text-sm text-gray-600">
-              Status: <span className="font-semibold capitalize">{profile.registrationStatus}</span>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600">Status:</span>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                profile.registrationStatus === 'pending'
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : profile.registrationStatus === 'approved'
+                  ? 'bg-green-100 text-green-800 border border-green-300'
+                  : profile.registrationStatus === 'rejected'
+                  ? 'bg-red-100 text-red-800 border border-red-300'
+                  : 'bg-gray-100 text-gray-800 border border-gray-300'
+              }`}>
+                {profile.registrationStatus === 'pending' && '⏳'}
+                {profile.registrationStatus === 'approved' && '✓'}
+                {profile.registrationStatus === 'rejected' && '✗'}
+                <span className="capitalize">{profile.registrationStatus}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Profile Photo */}
+          <div className="flex flex-col items-center">
+            {isLoadingPhoto ? (
+              <div className="w-32 h-32 rounded-lg border-2 border-gray-300 bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#4C67E1] mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">Loading...</p>
+                </div>
+              </div>
+            ) : profilePhotoUrl ? (
+              <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-50">
+                <Image
+                  src={profilePhotoUrl}
+                  alt="Student Profile Photo"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="w-32 h-32 rounded-lg border-2 border-gray-300 bg-gray-50 flex items-center justify-center">
+                <UserIcon className="w-16 h-16 text-gray-400" />
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              {isLoadingPhoto ? "Loading Photo..." : "Student Photo"}
             </p>
           </div>
-          {qrCodeUrl && (
-            <div className="text-center">
-              <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32" />
-              <p className="text-xs text-gray-500 mt-1">Scan for Record ID</p>
-            </div>
-          )}
         </div>
 
         {/* PAGE 1: Personal, Contact & Address Information Combined */}
@@ -605,8 +759,8 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
 
               {/* Father - Hide if same as guardian */}
               {profile.father && !isGuardianSameAsFather() && (
-                <div className="mb-4">
-                  <h3 className="font-semibold text-sm text-gray-700 mb-2">Father / အဖ</h3>
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Father / အဖ</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Name (Myanmar)</p>
@@ -630,8 +784,8 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
 
               {/* Mother - Hide if same as guardian */}
               {profile.mother && !isGuardianSameAsMother() && (
-                <div className="mb-4">
-                  <h3 className="font-semibold text-sm text-gray-700 mb-2">Mother / အမိ</h3>
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Mother / အမိ</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Name (Myanmar)</p>
@@ -654,8 +808,8 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
               )}
 
               {profile.guardian && (
-                <div>
-                  <h3 className="font-semibold text-sm text-gray-700 mb-2">Guardian / အုပ်ထိန်းသူ</h3>
+                <div className="pb-2">
+                  <h3 className="font-semibold text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">Guardian / အုပ်ထိန်းသူ</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Name (Myanmar)</p>
@@ -743,6 +897,40 @@ export function StudentProfileView({ user, tenantName }: StudentProfileViewProps
           <p className="mt-1">ဤစာရွက်စာတမ်းသည် တရားဝင်စာရင်းသွင်းမှုစာရွက်စာတမ်းဖြစ်ပါသည်။ သိမ်းဆည်းထားရှိပါ။</p>
         </div>
       </div>
+
+      {/* Edit Notice - Hidden on print */}
+      {profile.registrationStatus === 'pending' && (
+        <div className="no-print max-w-4xl mx-auto mb-8">
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <Edit className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-amber-800">
+                  Profile Pending Review
+                </h3>
+                <div className="mt-2 text-sm text-amber-700">
+                  <p>
+                    Your registration is currently under review. You can still edit your profile information
+                    by clicking the <strong>"Edit Profile"</strong> button in the header above.
+                  </p>
+                  <p className="mt-1 text-xs">
+                    မှတ်ချက်: သင့်မှတ်ပုံတင်ခြင်းကို လက်ရှိ စစ်ဆေးနေပါသည်။ အထက်ခေါင်းစီးရှိ <strong>"Edit Profile"</strong> ခလုတ်ကို နှိပ်၍ သင့်ကိုယ်ရေးအချက်အလက်များကို ပြင်ဆင်နိုင်ပါသေးသည်။
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => router.push('/profileSetup/student')}
+                size="sm"
+                className="ml-4 bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                Edit Now
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Print CSS */}
       <style jsx global>{`

@@ -1,4 +1,5 @@
 import type { Bibliography } from '@/actions/library/books.actions';
+import { getAuthorName } from '@/lib/library-utils';
 import Link from 'next/link';
 
 interface TopReadingProps {
@@ -45,7 +46,7 @@ export function TopReading({ books }: TopReadingProps) {
  */
 function BookRow({ book, rank }: { book: Bibliography; rank: number }) {
   return (
-    <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+    <Link href={`/library/${book._id}`} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer">
       {/* Rank Badge */}
       <div className="flex-shrink-0">
         <div
@@ -92,7 +93,7 @@ function BookRow({ book, rank }: { book: Bibliography; rank: number }) {
         <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
           {book.author && (
             <span className="truncate">
-              {book.author.fullName || `${book.author.firstName || ''} ${book.author.lastName || ''}`.trim()}
+              {getAuthorName(book.author)}
             </span>
           )}
           {book.year && (
@@ -129,6 +130,6 @@ function BookRow({ book, rank }: { book: Bibliography; rank: number }) {
           {book.status === 'Active' ? 'Available' : book.status}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }

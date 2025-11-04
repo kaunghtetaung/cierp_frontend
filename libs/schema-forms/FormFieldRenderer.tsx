@@ -18,6 +18,7 @@ import { PhoneInput } from './PhoneInput'
 import { NrcField } from './NrcField'
 import { IconComponent, IconSelector } from '@repo/ui'
 import { DatePicker } from './components/DatePicker'
+import { MediaBrowserField } from './fields/MediaBrowserField'
 import type { FormField as SchemaFormField } from '@repo/types'
 
 // Auto-configure dropdownConfig - NO HARDCODING
@@ -100,13 +101,13 @@ export interface FormFieldRendererProps {
   onValueChange?: (value: any) => void
 }
 
-export function FormFieldRenderer({ 
-  field: originalField, 
+export function FormFieldRenderer({
+  field: originalField,
   currentLanguage = 'en',
   isVerticalLayout = false,
   errors = {},
   watch: watchProp,
-  onValueChange
+  onValueChange,
 }: FormFieldRendererProps) {
   const formContext = useFormContext()
   const control = formContext?.control
@@ -666,7 +667,36 @@ function FormFieldInput({
           className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive' : ''}`}
         />
       )
-    
+
+    case 'mediaBrowser':
+    case 'mediaGallery':
+    case 'mediaUploader':
+      return (
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: formField }) => (
+            <MediaBrowserField
+              value={formField.value}
+              onChange={formField.onChange}
+              config={{
+                ...field.mediaBrowserConfig,
+                // Respect backend selectionMode config, with defaults per field type
+                selectionMode: field.fieldType === 'mediaGallery' ? 'multiple' :
+                              field.mediaBrowserConfig?.selectionMode || 'single',
+                allowUpload: field.fieldType === 'mediaUploader' ? true : field.mediaBrowserConfig?.allowUpload,
+              }}
+              label={field.label}
+              fieldName={field.fieldName}
+              error={errors[field.fieldName]?.message as string}
+              disabled={field.readonly || field.disabled}
+              currentLanguage={currentLanguage}
+              showUploadButton={field.fieldType === 'mediaUploader'}
+            />
+          )}
+        />
+      )
+
     case 'htmlContent':
       return (
         <Textarea

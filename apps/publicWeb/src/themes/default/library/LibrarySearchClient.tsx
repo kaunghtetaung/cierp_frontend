@@ -135,7 +135,7 @@ export function LibrarySearchClient({
           {!isLoading && !error && data?.success && query && (
             <>
               <SearchResults
-                books={data.data}
+                books={data.data || []}
                 query={query}
                 total={data.pagination?.total}
                 currentPage={currentPage}
@@ -143,7 +143,7 @@ export function LibrarySearchClient({
                 onPageChange={handlePageChange}
               />
 
-              {data.pagination && (
+              {data.pagination && data.pagination.totalPages && data.pagination.totalPages > 1 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={data.pagination.totalPages}

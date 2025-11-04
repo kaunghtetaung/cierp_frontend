@@ -2,9 +2,12 @@
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
-  // Enable instrumentation for console wrapper
+  // Enable instrumentation for console wrapper and configure Server Actions
   experimental: {
     instrumentationHook: true,
+    serverActions: {
+      bodySizeLimit: '50mb', // Allow up to 50MB file uploads
+    },
   },
   env: {
     // Expose subdomain configuration to client-side
@@ -17,19 +20,36 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Configure webpack to handle source maps properly
+  // Configure webpack to handle source maps properly and pdfjs-dist compatibility
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
       // Use source-map for better debugging experience in Chrome DevTools
       // This provides the best quality source maps for debugging
       config.devtool = 'source-map';
-      
+
       // Ignore missing source map files to prevent 404 errors
       config.ignoreWarnings = [
         /Failed to parse source map/,
         /Critical dependency: the request of a dependency is an expression/,
       ];
     }
+
+    // Fix pdfjs-dist compatibility with webpack
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+        path: false,
+      };
+
+      // Exclude canvas module from client-side bundle
+      config.externals = {
+        ...config.externals,
+        canvas: 'canvas',
+      };
+    }
+
     return config;
   },
   // Disable production source maps to reduce bundle size

@@ -92,13 +92,13 @@ export function MegaMenu({
       }}
     >
       <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-background border border-border rounded-lg shadow-xl animate-in fade-in-0 zoom-in-95">
+        <div className="mega-menu-pattern-bg border-0 rounded-b-lg rounded-t-none shadow-xl animate-in fade-in-0 zoom-in-95">
           <div className="px-6 py-6">
             <div className="grid grid-cols-4 gap-6">
               {columns.map((column, colIndex) => (
                 <div key={colIndex} className="space-y-3">
                   {/* Column Header */}
-                  <h3 className="text-sm font-semibold text-primary border-b border-border pb-2">
+                  <h3 className="text-sm font-semibold border-b border-white/20 pb-2 !text-[#FF6855]">
                     {column.title}
                   </h3>
 
@@ -110,7 +110,7 @@ export function MegaMenu({
                         href={generateHref(child)}
                         target={getLinkTarget(child)}
                         rel={getLinkRel(child)}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors leading-tight"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-white hover:bg-white/10 rounded-md transition-colors leading-tight"
                         onClick={onClose}
                       >
                         {child.icon && (

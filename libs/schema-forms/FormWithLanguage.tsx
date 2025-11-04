@@ -31,6 +31,8 @@ interface FormWithLanguageProps {
     totalRecords?: number;
   };
   appId?: string;
+  tenantId?: string;
+  username?: string;
 }
 
 export function FormWithLanguage({
@@ -46,6 +48,8 @@ export function FormWithLanguage({
   isStaffWizardForm = false,
   navigation,
   appId,
+  tenantId,
+  username,
 }: FormWithLanguageProps) {
   const { currentLanguage } = useLanguage();
 
@@ -96,7 +100,10 @@ export function FormWithLanguage({
         moduleSlug={moduleSlug}
         itemId={itemId}
         currentLanguage={currentLanguage}
-        {...(isEnhanced && navigation ? { navigation, appId } : {})}
+        appId={appId}
+        tenantId={tenantId}
+        username={username}
+        {...(isEnhanced && navigation ? { navigation } : {})}
       />
     </QueryClientProvider>
   );

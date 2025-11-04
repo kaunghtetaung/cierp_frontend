@@ -38,6 +38,9 @@ export function ServerSidePaginationWrapper({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Check for refresh trigger from form save redirect
+  const refreshTrigger = searchParams.get('_refresh');
+
   // Build query parameters for server-side pagination
   const queryParams = React.useMemo(() => {
     const params: Record<string, any> = {};
@@ -159,6 +162,24 @@ export function ServerSidePaginationWrapper({
     staleTime: 8 * 60 * 1000, // Increased to 8 minutes for better performance
     enabled: true, // Always enabled for server-side pagination
   });
+
+  // Handle refresh trigger from URL parameter (from form save redirect)
+  React.useEffect(() => {
+    if (refreshTrigger) {
+      console.log("🖥️ [SERVER-SIDE] Refresh triggered from URL parameter:", refreshTrigger);
+
+      // Trigger immediate refetch
+      refetch();
+
+      // Remove the refresh parameter from URL without triggering navigation
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      newSearchParams.delete('_refresh');
+      const newUrl = newSearchParams.toString()
+        ? `${pathname}?${newSearchParams.toString()}`
+        : pathname;
+      router.replace(newUrl);
+    }
+  }, [refreshTrigger, refetch, searchParams, pathname, router]);
 
   // Debounced navigation to prevent rapid-fire API calls
   const debouncedNavigate = React.useCallback(

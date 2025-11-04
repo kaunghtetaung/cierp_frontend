@@ -34,106 +34,124 @@ import {
   getCachedDataAge,
   formatCacheAge,
 } from "@/lib/form-cache";
+import { useLangSelector } from "@/feature-components/lang-selector";
+import { translations } from "../translations";
+import type { StudentProfileData } from "@/app/profile/student/actions";
 
 interface StudentRegistrationWizardProps {
   moduleSchema: ModuleSchema;
   user: UserType;
+  mode: 'create' | 'edit';
+  existingProfile: StudentProfileData | null;
 }
-
-// Define 6 wizard steps (Contact merged into Personal)
-const WIZARD_STEPS = [
-  {
-    id: "personal",
-    title: "Personal Information",
-    description: "Basic personal details",
-    icon: User,
-    fields: [
-      "nameMyanmar",
-      "nameEnglish",
-      "gender",
-      "race",
-      "religion",
-      "bloodType",
-      "nrcNumber",
-      "dateOfBirth",
-      "placeOfBirth",
-      "phone",
-      "email",
-    ],
-  },
-  {
-    id: "address",
-    title: "Address Information",
-    description: "Location and address details",
-    icon: MapPin,
-    fields: [
-      "stateRegionName",
-      "districtName",
-      "townshipName",
-      "townName",
-      "wardVillageName",
-      "permanentAddress",
-      "currentAddress",
-    ],
-  },
-  {
-    id: "family",
-    title: "Family Information",
-    description: "Parent and guardian details",
-    icon: Users,
-    fields: [
-      "father.nameMyanmar",
-      "father.nameEnglish",
-      "father.nrcNumber",
-      "father.occupation",
-      "mother.nameMyanmar",
-      "mother.nameEnglish",
-      "mother.nrcNumber",
-      "mother.occupation",
-      "guardian.nameMyanmar",
-      "guardian.nameEnglish",
-      "guardian.nrcNumber",
-      "guardian.occupation",
-      "guardian.relationship",
-      "guardian.phoneNumber",
-      "guardian.email",
-      "guardian.address",
-    ],
-  },
-  {
-    id: "academic",
-    title: "Academic Background",
-    description: "Previous education records",
-    icon: BookOpen,
-    fields: ["previousEducation"],
-  },
-  {
-    id: "current",
-    title: "Current Academic",
-    description: "University and batch enrollment",
-    icon: GraduationCap,
-    fields: ["medm", "batches"],
-  },
-  {
-    id: "additional",
-    title: "Additional Information",
-    description: "Optional details",
-    icon: FileText,
-    fields: [
-      "hobbies",
-      "skills",
-      "disabilities",
-      "medicalConditions",
-      "specialRequirements",
-    ],
-  },
-];
 
 export function StudentRegistrationWizard({
   moduleSchema,
   user,
+  mode,
+  existingProfile,
 }: StudentRegistrationWizardProps) {
+  console.log('🎨 [WIZARD] Component initialized with:', {
+    mode,
+    hasExistingProfile: !!existingProfile,
+    existingProfileStatus: existingProfile?.registrationStatus,
+    userId: user.id,
+  });
+
   const router = useRouter();
+  const { currentLanguage } = useLangSelector();
+  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+
+  // Define 6 wizard steps (Contact merged into Personal) - using translations
+  const WIZARD_STEPS = React.useMemo(() => [
+    {
+      id: "personal",
+      title: t.personalInfoTitle,
+      description: t.personalInfoDesc,
+      icon: User,
+      fields: [
+        "nameMyanmar",
+        "nameEnglish",
+        "gender",
+        "race",
+        "religion",
+        "bloodType",
+        "nrcNumber",
+        "dateOfBirth",
+        "placeOfBirth",
+        "phone",
+        "email",
+        "profilePhoto",
+      ],
+    },
+    {
+      id: "address",
+      title: t.addressInfoTitle,
+      description: t.addressInfoDesc,
+      icon: MapPin,
+      fields: [
+        "stateRegionName",
+        "districtName",
+        "townshipName",
+        "townName",
+        "wardVillageName",
+        "permanentAddress",
+        "currentAddress",
+      ],
+    },
+    {
+      id: "family",
+      title: t.familyInfoTitle,
+      description: t.familyInfoDesc,
+      icon: Users,
+      fields: [
+        "father.nameMyanmar",
+        "father.nameEnglish",
+        "father.nrcNumber",
+        "father.occupation",
+        "mother.nameMyanmar",
+        "mother.nameEnglish",
+        "mother.nrcNumber",
+        "mother.occupation",
+        "guardian.nameMyanmar",
+        "guardian.nameEnglish",
+        "guardian.nrcNumber",
+        "guardian.occupation",
+        "guardian.relationship",
+        "guardian.phoneNumber",
+        "guardian.email",
+        "guardian.address",
+      ],
+    },
+    {
+      id: "academic",
+      title: t.academicInfoTitle,
+      description: t.academicInfoDesc,
+      icon: BookOpen,
+      fields: ["previousEducation"],
+    },
+    {
+      id: "current",
+      title: t.currentAcademicTitle,
+      description: t.currentAcademicDesc,
+      icon: GraduationCap,
+      fields: ["medm", "batches"],
+    },
+    {
+      id: "additional",
+      title: t.additionalInfoTitle,
+      description: t.additionalInfoDesc,
+      icon: FileText,
+      fields: [
+        "hobbies",
+        "skills",
+        "disabilities",
+        "medicalConditions",
+        "specialRequirements",
+      ],
+    },
+  ], [t]);
+
   const [currentStep, setCurrentStep] = useState(0); // Start at step 0 (personal info)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
@@ -182,12 +200,161 @@ export function StudentRegistrationWizard({
     formState: { errors },
   } = methods;
 
-  // Check for cached data on mount
+  // Initialize email from user on mount
   useEffect(() => {
-    if (!user?.id) return;
+    if (user?.email) {
+      methods.setValue("email", user.email);
+    }
+  }, [user?.email, methods]);
+
+  // Pre-populate form with existing profile data in edit mode
+  useEffect(() => {
+    const populateForm = async () => {
+      if (mode === 'edit' && existingProfile) {
+        console.log('📝 [EDIT MODE] Pre-populating form with existing profile data');
+        console.log('📝 [EDIT MODE] Raw profile data:', existingProfile);
+
+      // Helper function to extract ID from populated object or string
+      const extractId = (field: any): string | undefined => {
+        if (!field) return undefined;
+        if (typeof field === 'string') return field;
+        if (typeof field === 'object' && field._id) return field._id;
+        return undefined;
+      };
+
+      // Log raw profile data for debugging
+      console.log('🔍 [EDIT MODE] Raw batches from API:', existingProfile.batches);
+      console.log('🔍 [EDIT MODE] Raw medm from API:', (existingProfile as any).medm);
+
+      // Transform batches - handle populated batchId and academicYearId
+      const transformedBatches = (existingProfile.batches || []).map((batch: any) => {
+        console.log('🔄 [EDIT MODE] Transforming batch:', batch);
+        const transformed = {
+          batchId: extractId(batch.batchId),
+          academicYearId: extractId(batch.academicYearId),
+          rollNo: batch.rollNo || '',
+          subjects: (batch.subjects || []).map((subject: any) => extractId(subject.subjectId) || extractId(subject)).filter(Boolean),
+        };
+        console.log('✅ [EDIT MODE] Batch transformed to:', transformed);
+        return transformed;
+      });
+
+      // Transform previousEducation - handle populated subjects
+      const transformedPreviousEducation = (existingProfile.previousEducation || []).map((edu: any) => ({
+        className: edu.className || '',
+        rollNumber: edu.rollNumber || '',
+        examBoard: edu.examBoard || '',
+        totalMarks: edu.totalMarks?.toString() || '',
+        year: edu.year?.toString() || '',
+        subjects: (edu.subjects || []).map((subject: any) => ({
+          subjectId: extractId(subject.subjectId),
+          mark: subject.mark || 0,
+          isDistinction: subject.isDistinction || false,
+        })),
+      }));
+
+      // Convert date of birth to YYYY-MM-DD format for date input
+      // API returns ISO string like "1990-01-15T00:00:00.000Z"
+      // HTML date input expects "YYYY-MM-DD" string
+      let dobValue: string | undefined = undefined;
+      if (existingProfile.dateOfBirth) {
+        const date = new Date(existingProfile.dateOfBirth);
+        // Format to YYYY-MM-DD (local date, not UTC)
+        dobValue = date.toISOString().split('T')[0];
+        console.log('📅 [EDIT MODE] Date of birth raw:', existingProfile.dateOfBirth);
+        console.log('📅 [EDIT MODE] Date of birth formatted:', dobValue);
+      }
+
+      // Transform API data to form format
+      const formData: any = {
+        // Personal Information
+        nameMyanmar: existingProfile.nameMyanmar || '',
+        nameEnglish: existingProfile.nameEnglish || '',
+        gender: existingProfile.gender || '',
+        race: (existingProfile as any).race || '', // API uses 'race' not 'ethnicity'
+        religion: existingProfile.religion || '',
+        bloodType: (existingProfile as any).bloodType || '', // API uses 'bloodType' not 'bloodGroup'
+        nrcNumber: existingProfile.nrcNumber || '',
+        dateOfBirth: dobValue,
+        placeOfBirth: existingProfile.placeOfBirth || '',
+        phone: existingProfile.phoneNumber || '', // Backend uses phoneNumber, form uses phone
+        email: existingProfile.email || user?.email || '',
+        profilePhoto: existingProfile.profilePhoto || '',
+
+        // Address Information
+        stateRegionName: existingProfile.stateRegionName || '',
+        districtName: existingProfile.districtName || '',
+        townshipName: existingProfile.townshipName || '',
+        townName: existingProfile.townName || '',
+        wardVillageName: existingProfile.wardVillageName || '',
+        permanentAddress: existingProfile.permanentAddress || '',
+        currentAddress: existingProfile.currentAddress || '',
+
+        // Family Information
+        father: existingProfile.father || undefined,
+        mother: existingProfile.mother || undefined,
+        guardian: existingProfile.guardian || undefined,
+
+        // Academic Information
+        medm: (existingProfile as any).medm || '', // API uses 'medm', form uses 'medm'
+        batches: transformedBatches,
+        previousEducation: transformedPreviousEducation,
+
+        // Additional Information
+        hobbies: existingProfile.hobbies || '',
+        skills: existingProfile.skills || '',
+        disabilities: existingProfile.disabilities || '',
+        medicalConditions: existingProfile.medicalConditions || '',
+        specialRequirements: existingProfile.specialRequirements || '',
+      };
+
+      console.log('📝 [EDIT MODE] Transformed form data:', formData);
+      console.log('📝 [EDIT MODE] MEDM Number in formData:', formData.medm);
+      console.log('📝 [EDIT MODE] Profile Photo in formData:', formData.profilePhoto);
+      console.log('📝 [EDIT MODE] Batches in formData:', formData.batches);
+      console.log('📝 [EDIT MODE] Previous education in formData:', formData.previousEducation);
+
+      // Log each batch detail for debugging
+      formData.batches?.forEach((batch: any, idx: number) => {
+        console.log(`📚 [EDIT MODE] Batch ${idx}:`, {
+          batchId: batch.batchId,
+          academicYearId: batch.academicYearId,
+          rollNo: batch.rollNo
+        });
+      });
+
+        // Reset form with existing data
+        console.log('🔄 [EDIT MODE] Calling reset() with formData');
+
+        // Use setTimeout to ensure form is fully mounted before resetting
+        // This helps with Controller fields like DynamicSelect that need time to initialize
+        // Increased delay to 500ms to allow components to mount and prepare
+        setTimeout(() => {
+          reset(formData);
+          console.log('✅ [EDIT MODE] Form reset complete');
+        }, 500);
+      }
+    };
+
+    populateForm();
+  }, [mode, existingProfile, reset, user?.email]);
+
+  // Check for cached data on mount (only in create mode)
+  useEffect(() => {
+    console.log('🗄️ [CACHE CHECK] Running cache check:', {
+      userId: user?.id,
+      mode,
+      shouldSkip: !user?.id || mode === 'edit'
+    });
+
+    if (!user?.id || mode === 'edit') {
+      console.log('⏭️ [CACHE CHECK] Skipping cache check (edit mode or no userId)');
+      return; // Skip cache check in edit mode
+    }
 
     // Check if there's cached form data
     if (hasCachedFormData(user.id)) {
+      console.log('📦 [CACHE CHECK] Found cached data');
       const cached = loadFormDataFromCache(user.id);
       if (cached) {
         const age = getCachedDataAge(user.id);
@@ -197,9 +364,12 @@ export function StudentRegistrationWizard({
           cacheAge: formatCacheAge(age || 0),
         });
         setShowRestoreDialog(true);
+        console.log('🔔 [CACHE CHECK] Showing restore dialog');
       }
+    } else {
+      console.log('📭 [CACHE CHECK] No cached data found');
     }
-  }, [user?.id]);
+  }, [user?.id, mode]);
 
   // Auto-save form data to cache whenever form values change
   useEffect(() => {
@@ -215,7 +385,9 @@ export function StudentRegistrationWizard({
   // Handle restore cached data
   const handleRestoreCache = () => {
     if (cachedData) {
-      reset(cachedData.formData);
+      // Restore cached data but preserve email from user account
+      const emailValue = user.email || '';
+      reset({ ...cachedData.formData, email: emailValue });
       setCurrentStep(cachedData.currentStep);
       setShowRestoreDialog(false);
     }
@@ -225,7 +397,9 @@ export function StudentRegistrationWizard({
   const handleStartFresh = () => {
     if (user?.id) {
       clearFormDataCache(user.id);
-      reset();
+      // Reset form but preserve email from user account
+      const emailValue = user.email || '';
+      reset({ ...defaultValues, email: emailValue });
       setCurrentStep(0);
       setShowRestoreDialog(false);
     }
@@ -250,7 +424,9 @@ export function StudentRegistrationWizard({
         // Only reset form if ESC is pressed outside of interactive elements
         if (!isInInput && !isInButton && !isInDropdown) {
           event.preventDefault();
-          reset();
+          // Reset form but preserve email from user account
+          const emailValue = user.email || '';
+          reset({ ...defaultValues, email: emailValue });
         }
       }
     };
@@ -259,7 +435,7 @@ export function StudentRegistrationWizard({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [reset]);
+  }, [reset, user, defaultValues]);
 
   // Navigation handlers
   const handleNext = async () => {
@@ -308,25 +484,66 @@ export function StudentRegistrationWizard({
     try {
       setIsSubmitting(true);
 
-      // Submit to backend using custom self-registration endpoint
-      const { submitStudentSelfRegistration } = await import(
-        "@/actions/student-registration"
-      );
-      const result = await submitStudentSelfRegistration(data);
+      let result;
 
-      if (result.success) {
-        // Clear cache on successful submission
-        if (user?.id) {
-          clearFormDataCache(user.id);
+      if (mode === 'edit') {
+        // Update existing profile
+        console.log('📝 [EDIT MODE] Updating profile');
+        const { updateMyProfile } = await import("@/app/profile/student/actions");
+        result = await updateMyProfile(data);
+
+        if (result.success) {
+          toast.success("Profile Updated", {
+            description: "Your profile has been updated successfully.",
+            duration: 5000,
+          });
+
+          // Clear cache on successful update
+          if (user?.id) {
+            clearFormDataCache(user.id);
+          }
+
+          // Redirect to profile view page
+          router.push("/profile/student");
+          return;
+        }
+      } else {
+        // Create new profile
+        console.log('📝 [CREATE MODE] Creating new profile');
+        const { submitStudentSelfRegistration } = await import(
+          "@/actions/student-registration"
+        );
+        result = await submitStudentSelfRegistration(data);
+
+        if (result.success) {
+          // Clear cache on successful submission
+          if (user?.id) {
+            clearFormDataCache(user.id);
+          }
+
+          // Show success UI inline
+          setIsSuccess(true);
+          return;
+        }
+      }
+
+      // Handle errors
+      if (!result.success) {
+        console.error("❌ [FORM SUBMIT] Submission failed:", result.error);
+
+        // Check for PROFILE_LOCKED error (edit mode only)
+        if (mode === 'edit' && result.error?.includes('PROFILE_LOCKED')) {
+          toast.error("Profile Locked", {
+            description: "Your profile can no longer be edited because it has been approved or rejected.",
+            duration: 7000,
+          });
+          // Redirect to profile view
+          setTimeout(() => router.push("/profile/student"), 2000);
+          return;
         }
 
-        // Show success UI inline
-        setIsSuccess(true);
-      } else {
-        console.error("❌ [FORM SUBMIT] Registration failed:", result.error);
-
         // Display error to user with toast
-        if (result.fieldErrors && result.fieldErrors.length > 0) {
+        if ('fieldErrors' in result && result.fieldErrors && Array.isArray(result.fieldErrors) && result.fieldErrors.length > 0) {
           toast.error("Validation Failed", {
             description: (
               <div className="space-y-1">
@@ -343,10 +560,10 @@ export function StudentRegistrationWizard({
             duration: 10000,
           });
         } else {
-          toast.error("Registration Failed", {
+          toast.error(mode === 'edit' ? "Update Failed" : "Registration Failed", {
             description:
               result.error ||
-              "Failed to submit registration. Please try again.",
+              `Failed to ${mode === 'edit' ? 'update' : 'submit'} profile. Please try again.`,
             duration: 7000,
           });
         }
@@ -511,6 +728,27 @@ export function StudentRegistrationWizard({
           }}
           className="space-y-6"
         >
+          {/* Edit Mode Indicator */}
+          {mode === 'edit' && (
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg shadow-sm">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-amber-800">
+                    Edit Mode - Your registration status is pending
+                  </p>
+                  <p className="mt-1 text-sm text-amber-700">
+                    You can update your profile information. Changes will be reviewed by the administration.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Step Indicators - Desktop */}
           <div className="hidden md:block bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <div className="flex justify-center items-center gap-2 mb-3">
@@ -666,7 +904,10 @@ export function StudentRegistrationWizard({
                 }}
                 className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
               >
-                {isSubmitting ? "Submitting..." : "Submit Registration"}
+                {isSubmitting
+                  ? (mode === 'edit' ? "Updating..." : "Submitting...")
+                  : (mode === 'edit' ? "Update Profile" : "Submit Registration")
+                }
                 <Check className="h-4 w-4" />
               </Button>
             )}

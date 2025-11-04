@@ -1,0 +1,29 @@
+{
+  "name": "@repo/media",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./components": "./src/components/index.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./services": "./src/services/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/s3": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "lucide-react": "^0.469.0",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.6",
+    "typescript": "^5.7.2"
+  }
+}

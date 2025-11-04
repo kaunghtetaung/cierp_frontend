@@ -128,7 +128,7 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
                 )}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-300 max-h-[300px] max-w-[300px]">
+            <SelectContent className="bg-white border border-gray-300 max-h-[300px] max-w-[300px] z-[100]">
               {nrcData.nrcStates.map((state: any) => (
                 <SelectItem key={state.id} value={state.number.en} className="truncate">
                   {state.number.en} - {state.name.en}
@@ -159,7 +159,7 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
                 )}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-300 max-h-[300px] overflow-y-auto max-w-[400px]">
+            <SelectContent className="bg-white border border-gray-300 max-h-[300px] overflow-y-auto max-w-[400px] z-[100]">
               {availableTownships.map((township: any) => (
                 <SelectItem key={township.id} value={township.short.en} className="truncate">
                   {township.short.en} - {township.name.en}
@@ -184,7 +184,7 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
             >
               <SelectValue placeholder="Type" />
             </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-300">
+            <SelectContent className="bg-white border border-gray-300 z-[100]">
               {nrcData.nrcTypes.map((type: any) => (
                 <SelectItem key={type.id} value={type.name.en}>
                   {type.name.en}

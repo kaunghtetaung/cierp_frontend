@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useLangSelector } from '@/feature-components/lang-selector';
+import { PublicPdfViewer } from '@/components/pdf-viewer/PublicPdfViewer';
+import { getAuthorName } from '@/lib/library-utils';
 import type { Bibliography } from '@/actions/library/books.actions';
 
 interface SearchResultsProps {
@@ -36,6 +39,17 @@ export function SearchResults({
     return 'card';
   });
 
+  // PDF Viewer state
+  const [pdfViewerState, setPdfViewerState] = useState<{
+    isOpen: boolean;
+    pdfUrl: string;
+    title: string;
+  }>({
+    isOpen: false,
+    pdfUrl: '',
+    title: ''
+  });
+
   // Save view mode to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,12 +66,30 @@ export function SearchResults({
     tryDifferent: currentLanguage === 'mm' ? 'အခြားစကားလုံးများဖြင့် ကြိုးစားကြည့်ပါ။' : 'Try different keywords.',
     startSearching: currentLanguage === 'mm' ? 'စာအုပ်များရှာရန် စတင်ရှာဖွေပါ' : 'Start searching to find books.',
     viewDetails: currentLanguage === 'mm' ? 'အသေးစိတ်ကြည့်ရှုမည်' : 'View Details',
+    viewAbstract: currentLanguage === 'mm' ? 'အကျဉ်းချုပ်' : 'Abstract',
+    viewContent: currentLanguage === 'mm' ? 'အကြောင်းအရာ' : 'Content',
     by: currentLanguage === 'mm' ? 'စာရေးသူ:' : 'By:',
     publisher: currentLanguage === 'mm' ? 'ထုတ်ဝေသူ:' : 'Publisher:',
     year: currentLanguage === 'mm' ? 'နှစ်:' : 'Year:',
     isbn: currentLanguage === 'mm' ? 'ISBN:' : 'ISBN:',
     callNo: currentLanguage === 'mm' ? 'Call No:' : 'Call No:',
     searching: currentLanguage === 'mm' ? 'ရှာဖွေနေသည်...' : 'Searching...',
+  };
+
+  const handleOpenPdfViewer = (pdfUrl: string, title: string) => {
+    setPdfViewerState({
+      isOpen: true,
+      pdfUrl,
+      title
+    });
+  };
+
+  const handleClosePdfViewer = () => {
+    setPdfViewerState({
+      isOpen: false,
+      pdfUrl: '',
+      title: ''
+    });
   };
 
   if (isLoading) {
@@ -204,17 +236,26 @@ export function SearchResults({
       {viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {books.map((book) => (
-            <BookCard key={book._id} book={book} texts={texts} />
+            <BookCard key={book._id} book={book} texts={texts} onOpenPdf={handleOpenPdfViewer} />
           ))}
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-4">
           {books.map((book) => (
-            <BookListItem key={book._id} book={book} texts={texts} />
+            <BookListItem key={book._id} book={book} texts={texts} onOpenPdf={handleOpenPdfViewer} />
           ))}
         </div>
       ) : (
-        <BookTable books={books} texts={texts} />
+        <BookTable books={books} texts={texts} onOpenPdf={handleOpenPdfViewer} />
+      )}
+
+      {/* PDF Viewer Modal */}
+      {pdfViewerState.isOpen && (
+        <PublicPdfViewer
+          pdfUrl={pdfViewerState.pdfUrl}
+          title={pdfViewerState.title}
+          onClose={handleClosePdfViewer}
+        />
       )}
     </div>
   );
@@ -223,11 +264,15 @@ export function SearchResults({
 /**
  * Book Card Component (Grid View)
  */
-function BookCard({ book, texts }: { book: Bibliography; texts: any }) {
+function BookCard({ book, texts, onOpenPdf }: { book: Bibliography; texts: any; onOpenPdf: (url: string, title: string) => void }) {
+  // Check if abstract or content files exist
+  const hasAbstract = book.abstract && (book as any).abstractFile;
+  const hasContent = book.content && (book as any).contentFile;
+
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
       {/* Book Cover */}
-      <div className="bg-muted h-48 flex items-center justify-center">
+      <div className="bg-muted h-48 flex items-center justify-center relative">
         {book.coverImage ? (
           <img
             src={book.coverImage}
@@ -249,6 +294,17 @@ function BookCard({ book, texts }: { book: Bibliography; texts: any }) {
             />
           </svg>
         )}
+
+        {/* PDF Badges */}
+        {(hasAbstract || hasContent) && (
+          <div className="absolute top-2 right-2 flex gap-1">
+            {hasAbstract && (
+              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-md">
+                PDF
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Book Info */}
@@ -259,7 +315,7 @@ function BookCard({ book, texts }: { book: Bibliography; texts: any }) {
 
         {book.author && (
           <p className="text-sm text-muted-foreground mb-1">
-            {texts.by} {book.author.fullName || `${book.author.firstName || ''} ${book.author.lastName || ''}`.trim()}
+            {texts.by} {getAuthorName(book.author)}
           </p>
         )}
 
@@ -292,9 +348,40 @@ function BookCard({ book, texts }: { book: Bibliography; texts: any }) {
           </span>
         </div>
 
-        <button className="mt-3 w-full bg-warning text-warning-foreground py-2 rounded-md text-sm font-medium hover:bg-warning/90 transition-colors">
+        {/* PDF Buttons */}
+        {(hasAbstract || hasContent) && (
+          <div className="mt-3 flex gap-2">
+            {hasAbstract && (
+              <button
+                onClick={() => onOpenPdf((book as any).abstractFile, `${book.title} - Abstract`)}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {texts.viewAbstract}
+              </button>
+            )}
+            {hasContent && (
+              <button
+                onClick={() => onOpenPdf((book as any).contentFile, `${book.title} - Content`)}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                {texts.viewContent}
+              </button>
+            )}
+          </div>
+        )}
+
+        <Link
+          href={`/library/${book._id}`}
+          className="mt-3 w-full bg-warning text-warning-foreground py-2 rounded-md text-sm font-medium hover:bg-warning/90 transition-colors block text-center"
+        >
           {texts.viewDetails}
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -303,12 +390,15 @@ function BookCard({ book, texts }: { book: Bibliography; texts: any }) {
 /**
  * Book List Item Component (List View)
  */
-function BookListItem({ book, texts }: { book: Bibliography; texts: any }) {
+function BookListItem({ book, texts, onOpenPdf }: { book: Bibliography; texts: any; onOpenPdf: (url: string, title: string) => void }) {
+  const hasAbstract = book.abstract && (book as any).abstractFile;
+  const hasContent = book.content && (book as any).contentFile;
+
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
       <div className="flex gap-4 p-4">
         {/* Book Cover Thumbnail */}
-        <div className="flex-shrink-0 w-24 h-32 bg-muted rounded flex items-center justify-center">
+        <div className="flex-shrink-0 w-24 h-32 bg-muted rounded flex items-center justify-center relative">
           {book.coverImage ? (
             <img
               src={book.coverImage}
@@ -330,6 +420,11 @@ function BookListItem({ book, texts }: { book: Bibliography; texts: any }) {
               />
             </svg>
           )}
+          {(hasAbstract || hasContent) && (
+            <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium shadow-md">
+              PDF
+            </span>
+          )}
         </div>
 
         {/* Book Info */}
@@ -341,7 +436,7 @@ function BookListItem({ book, texts }: { book: Bibliography; texts: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
             {book.author && (
               <p>
-                {texts.by} {book.author.fullName || `${book.author.firstName || ''} ${book.author.lastName || ''}`.trim()}
+                {texts.by} {getAuthorName(book.author)}
               </p>
             )}
 
@@ -370,7 +465,7 @@ function BookListItem({ book, texts }: { book: Bibliography; texts: any }) {
             )}
           </div>
 
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
             <span
               className={`inline-block px-2 py-1 text-xs font-medium rounded ${
                 book.status === 'Active'
@@ -381,9 +476,36 @@ function BookListItem({ book, texts }: { book: Bibliography; texts: any }) {
               {book.status}
             </span>
 
-            <button className="ml-auto bg-warning text-warning-foreground px-6 py-2 rounded-md text-sm font-medium hover:bg-warning/90 transition-colors">
+            {/* PDF Buttons */}
+            {hasAbstract && (
+              <button
+                onClick={() => onOpenPdf((book as any).abstractFile, `${book.title} - Abstract`)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {texts.viewAbstract}
+              </button>
+            )}
+            {hasContent && (
+              <button
+                onClick={() => onOpenPdf((book as any).contentFile, `${book.title} - Content`)}
+                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                {texts.viewContent}
+              </button>
+            )}
+
+            <Link
+              href={`/library/${book._id}`}
+              className="ml-auto bg-warning text-warning-foreground px-6 py-2 rounded-md text-sm font-medium hover:bg-warning/90 transition-colors inline-block"
+            >
               {texts.viewDetails}
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -394,7 +516,7 @@ function BookListItem({ book, texts }: { book: Bibliography; texts: any }) {
 /**
  * Book Table Component (Table View)
  */
-function BookTable({ books, texts }: { books: Bibliography[]; texts: any }) {
+function BookTable({ books, texts, onOpenPdf }: { books: Bibliography[]; texts: any; onOpenPdf: (url: string, title: string) => void }) {
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -428,43 +550,73 @@ function BookTable({ books, texts }: { books: Bibliography[]; texts: any }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {books.map((book) => (
-              <tr key={book._id} className="hover:bg-muted/20 transition-colors">
-                <td className="px-4 py-3 text-sm text-foreground max-w-xs">
-                  <div className="line-clamp-2" title={book.title}>
-                    {book.title}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {book.author
-                    ? book.author.fullName ||
-                      `${book.author.firstName || ''} ${book.author.lastName || ''}`.trim()
-                    : '-'}
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {book.publisher?.name || '-'}
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{book.year || '-'}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{book.isbn || '-'}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{book.callNo || '-'}</td>
-                <td className="px-4 py-3 text-sm">
-                  <span
-                    className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-                      book.status === 'Active'
-                        ? 'bg-success/10 text-success'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {book.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <button className="bg-warning text-warning-foreground px-4 py-1.5 rounded-md text-xs font-medium hover:bg-warning/90 transition-colors">
-                    {texts.viewDetails}
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {books.map((book) => {
+              const hasAbstract = book.abstract && (book as any).abstractFile;
+              const hasContent = book.content && (book as any).contentFile;
+
+              return (
+                <tr key={book._id} className="hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 text-sm text-foreground max-w-xs">
+                    <div className="line-clamp-2" title={book.title}>
+                      {book.title}
+                      {(hasAbstract || hasContent) && (
+                        <span className="ml-2 inline-block bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                          PDF
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {getAuthorName(book.author)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {book.publisher?.name || '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{book.year || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{book.isbn || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{book.callNo || '-'}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-medium rounded ${
+                        book.status === 'Active'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {book.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <div className="flex gap-1 flex-wrap">
+                      {hasAbstract && (
+                        <button
+                          onClick={() => onOpenPdf((book as any).abstractFile, `${book.title} - Abstract`)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
+                          title={texts.viewAbstract}
+                        >
+                          {texts.viewAbstract}
+                        </button>
+                      )}
+                      {hasContent && (
+                        <button
+                          onClick={() => onOpenPdf((book as any).contentFile, `${book.title} - Content`)}
+                          className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
+                          title={texts.viewContent}
+                        >
+                          {texts.viewContent}
+                        </button>
+                      )}
+                      <Link
+                        href={`/library/${book._id}`}
+                        className="bg-warning text-warning-foreground px-2 py-1 rounded text-xs font-medium hover:bg-warning/90 transition-colors inline-block"
+                      >
+                        {texts.viewDetails}
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

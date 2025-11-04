@@ -59,7 +59,18 @@ export function DynamicSelect({
   // Normalize value to handle both string IDs and object values
   const normalizedValue = useMemo(() => {
     if (!value) return value;
-    
+
+    // Debug logging for catalogType field
+    if (field.fieldName === 'catalogType') {
+      console.log('🔍 [catalogType] Value normalization:', {
+        rawValue: value,
+        valueType: typeof value,
+        isArray: Array.isArray(value),
+        hasId: value?._id,
+        hasObjectId: value?.id
+      });
+    }
+
     // If it's an array, normalize each item
     if (Array.isArray(value)) {
       return value.map(v => {
@@ -68,12 +79,32 @@ export function DynamicSelect({
         return v;
       });
     }
-    
+
     // Single value normalization
-    if (typeof value === 'string') return value;
-    if (value && typeof value === 'object') return value._id || value.id || value;
+    if (typeof value === 'string') {
+      if (field.fieldName === 'catalogType') {
+        console.log('✅ [catalogType] Normalized to string:', value);
+      }
+      return value;
+    }
+
+    if (value && typeof value === 'object') {
+      const normalizedId = value._id || value.id || value;
+      if (field.fieldName === 'catalogType') {
+        console.log('✅ [catalogType] Normalized object to:', {
+          normalizedId,
+          originalObject: value,
+          hasUnderscore_id: !!value._id,
+          hasId: !!value.id,
+          _idValue: value._id,
+          idValue: value.id
+        });
+      }
+      return normalizedId;
+    }
+
     return value;
-  }, [value]);
+  }, [value, field.fieldName]);
   
   // Check if this should be a typeahead field and redirect if necessary
   const isTypeaheadField = Boolean(
@@ -345,7 +376,18 @@ export function DynamicSelect({
       setOptions(uniqueOptions);
       setError(null);
       lastFetchedDependencyKey.current = dependencyKey;
-      
+
+      // Debug logging for catalogType field
+      if (field.fieldName === 'catalogType') {
+        console.log('📋 [catalogType] Options loaded:', {
+          optionsCount: uniqueOptions.length,
+          options: uniqueOptions.map(opt => ({ value: opt.value, label: opt.label })),
+          currentValue: normalizedValue,
+          valueField: dropdownConfig.valueField || field.dataSource?.valueField || 'id',
+          labelField: dropdownConfig.labelField || field.dataSource?.labelField || 'name'
+        });
+      }
+
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : getLocalizedErrorMessage('DATA_LOAD_FAILED', currentLanguage as 'en' | 'mm');
       setError(errorMsg);
@@ -462,10 +504,35 @@ export function DynamicSelect({
   // Get selected option(s) for display
   const selectedOptions = useMemo(() => {
     if (!normalizedValue) return [];
-    
+
     const selectedValues = Array.isArray(normalizedValue) ? normalizedValue : [normalizedValue];
-    return options.filter((option) => selectedValues.includes(option.value));
-  }, [normalizedValue, options]);
+    const selected = options.filter((option) => selectedValues.includes(option.value));
+
+    // Debug logging for catalogType field
+    if (field.fieldName === 'catalogType') {
+      const matchFound = selected.length > 0;
+      console.log('🎯 [catalogType] Selected options calculated:', {
+        normalizedValue,
+        normalizedValueType: typeof normalizedValue,
+        selectedValues,
+        selectedOptions: selected.map(opt => ({ value: opt.value, label: opt.label })),
+        allOptionsValues: options.map(opt => opt.value),
+        matchFound,
+        exactMatch: options.find(opt => opt.value === normalizedValue)
+      });
+
+      // Warn if value doesn't match any option
+      if (!matchFound && normalizedValue) {
+        console.warn('⚠️ [catalogType] Value mismatch detected!', {
+          storedValue: normalizedValue,
+          availableOptions: options.map(opt => opt.value),
+          message: 'The stored catalogType ID does not exist in the current catalog types. This record may have an outdated or deleted catalog type reference.'
+        });
+      }
+    }
+
+    return selected;
+  }, [normalizedValue, options, field.fieldName]);
 
   // Handle option selection
   const handleSelect = (optionValue: string) => {

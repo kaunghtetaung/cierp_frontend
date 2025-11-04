@@ -493,7 +493,11 @@ export function ReactHookStudentForm({
           queryKey: [...moduleKeys.lists(), moduleSlug],
           exact: false
         });
-        router.push(`/${moduleSlug}`);
+
+        // Navigate to the list page with proper appId and force refresh via URL parameter
+        const redirectPath = appId ? `/${appId}/${moduleSlug}` : `/${moduleSlug}`;
+        const timestamp = Date.now();
+        router.push(`${redirectPath}?_refresh=${timestamp}`);
       }, 1500);
     } catch (error) {
       console.error("Form submission error:", error);

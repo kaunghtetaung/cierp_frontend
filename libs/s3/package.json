@@ -1,0 +1,32 @@
+{
+  "name": "@repo/s3",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client/index.ts",
+    "./strategies": "./src/strategies/index.ts",
+    "./services": "./src/services/index.ts",
+    "./services/*": "./src/services/*.ts",
+    "./services/thumbnail-generator": "./src/services/thumbnail-generator.ts",
+    "./types": "./src/types/index.ts",
+    "./middleware": "./src/middleware/index.ts",
+    "./middleware/*": "./src/middleware/*.ts",
+    "./utils": "./src/utils/index.ts",
+    "./utils/*": "./src/utils/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.709.0",
+    "@aws-sdk/s3-request-presigner": "^3.709.0",
+    "@repo/types": "workspace:*",
+    "@repo/cache": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

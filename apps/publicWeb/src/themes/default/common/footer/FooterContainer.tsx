@@ -23,7 +23,7 @@ export async function FooterContainer({
       getTenantSettingClientSafe(tenantId),
       // getContentSettings(tenantId), // Temporarily commented out
     ]);
-    
+
     // Placeholder content settings
     const contentSettings = {
       footer: {
@@ -35,7 +35,7 @@ export async function FooterContainer({
         customFooterText: null,
         socialLinks: [],
         columns: [],
-      }
+      },
     } as any;
 
     // Extract footer data from your settings
@@ -62,7 +62,7 @@ export async function FooterContainer({
       copyrightText:
         contentSettings.footer?.customCopyrightText?.[currentLanguage] ||
         `© ${new Date().getFullYear()} ${
-          (tenantSettings as any)?.fullName || 'Organization'
+          (tenantSettings as any)?.fullName || "Organization"
         }. All rights reserved.`,
 
       customFooterText:
@@ -92,10 +92,13 @@ export async function FooterContainer({
 
     // Fallback footer in case of error
     return (
-      <footer className={`bg-muted border-t border-border ${className || ""}`}>
+      <footer
+        className={`${className || ""}`}
+        style={{ backgroundColor: "#1F54B5" }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center">
-            <p className="text-muted-foreground">
+            <p className="text-white/80">
               © {new Date().getFullYear()} CMS. All rights reserved.
             </p>
           </div>

@@ -28,6 +28,7 @@ interface ReactHookFormProps {
   moduleSlug: string;
   itemId?: string;
   currentLanguage: string;
+  appId?: string;
 }
 
 export function ReactHookForm({
@@ -37,6 +38,7 @@ export function ReactHookForm({
   moduleSlug,
   itemId,
   currentLanguage,
+  appId,
 }: ReactHookFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -277,9 +279,11 @@ export function ReactHookForm({
           queryKey: [...moduleKeys.lists(), moduleSlug],
           exact: false
         });
-        
-        // Navigate to the list page
-        router.push(`/${moduleSlug}`);
+
+        // Navigate to the list page with proper appId and force refresh via URL parameter
+        const redirectPath = appId ? `/${appId}/${moduleSlug}` : `/${moduleSlug}`;
+        const timestamp = Date.now();
+        router.push(`${redirectPath}?_refresh=${timestamp}`);
       }, 1500); // Give user time to see success message
     } catch (error) {
       console.error("Form submission error:", error);

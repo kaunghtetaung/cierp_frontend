@@ -5,13 +5,18 @@ import { Loader2 } from "lucide-react";
 import type { User, ModuleSchema } from "@repo/types";
 import { getStudentsModuleSchema } from "@/actions/student-registration";
 import { StudentRegistrationWizard } from "./StudentRegistrationWizard";
+import type { StudentProfileData } from "@/app/profile/student/actions";
 
 interface StudentSelfRegistrationFormProps {
   user: User;
+  mode: 'create' | 'edit';
+  existingProfile: StudentProfileData | null;
 }
 
 export function StudentSelfRegistrationForm({
   user,
+  mode,
+  existingProfile,
 }: StudentSelfRegistrationFormProps) {
   const [moduleSchema, setModuleSchema] = useState<ModuleSchema | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,9 +67,7 @@ export function StudentSelfRegistrationForm({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
-          <h2 className="text-2xl font-bold text-[#FF6954] mb-4">
-            Error
-          </h2>
+          <h2 className="text-2xl font-bold text-[#FF6954] mb-4">Error</h2>
           <p className="text-gray-600">
             {error || "Unable to load registration form"}
           </p>
@@ -74,10 +77,15 @@ export function StudentSelfRegistrationForm({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen p-4">
+      <div className="max-w-5xl mx-auto">
         {/* Student Registration Wizard */}
-        <StudentRegistrationWizard moduleSchema={moduleSchema} user={user} />
+        <StudentRegistrationWizard
+          moduleSchema={moduleSchema}
+          user={user}
+          mode={mode}
+          existingProfile={existingProfile}
+        />
       </div>
     </div>
   );

@@ -48,13 +48,13 @@ export function HeaderBanner({
               <Image
                 src={logoUrl}
                 alt={displayTitle || "Logo"}
-                className="w-10 h-10 object-contain rounded-lg"
-                width={40}
-                height={40}
+                className="w-20 h-20 object-contain rounded-lg"
+                width={80}
+                height={80}
                 priority
               />
             ) : (
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary/30 text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-transparent before:via-white/20 before:to-transparent before:rotate-45 before:scale-150 before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100">
+              <div className="flex items-center justify-center w-20 h-20 rounded-lg bg-gradient-to-br from-primary to-secondary/30 text-primary-foreground font-bold text-2xl shadow-lg shadow-primary/20 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-transparent before:via-white/20 before:to-transparent before:rotate-45 before:scale-150 before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100">
                 {displayTitle?.charAt(0) || "L"}
               </div>
             )}
@@ -64,12 +64,12 @@ export function HeaderBanner({
         {/* Title and Subtitle */}
         <div className={`flex flex-col gap-1 min-w-0`}>
           {displayTitle && (
-            <h1 className="text-xl font-bold m-0 leading-tight bg-gradient-to-r from-neutral-900 to-primary bg-clip-text text-transparent transition-all duration-300">
+            <h1 className="text-xl font-bold m-0 leading-tight text-[var(--color-header-banner-title)] transition-all duration-300">
               {displayTitle}
             </h1>
           )}
           {displaySubtitle && (
-            <p className="text-sm text-neutral-600 m-0 leading-snug opacity-80 transition-opacity duration-300 group-hover:opacity-100">
+            <p className="text-sm text-[var(--color-header-banner-subtitle)] m-0 leading-snug opacity-80 transition-opacity duration-300 group-hover:opacity-100">
               {displaySubtitle}
             </p>
           )}

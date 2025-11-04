@@ -1,13 +1,13 @@
 // Section utilities
 // Helper functions for section components
 
-import { 
-  SectionData, 
-  MultiLanguageText, 
-  HeroSectionData, 
-  ContentWithImageSectionData, 
-  FeatureListSectionData, 
-  CallToActionSectionData, 
+import {
+  SectionData,
+  MultiLanguageText,
+  HeroSectionData,
+  ContentWithImageSectionData,
+  FeatureListSectionData,
+  CallToActionSectionData,
   GallerySectionData,
   TestimonialsSectionData,
   FaqSectionData,
@@ -15,6 +15,7 @@ import {
   DataTableSectionData,
   OrganizationStructureSectionData
 } from './types';
+import { AppListSectionData } from './applist/AppListSection';
 
 /**
  * Get localized text from MultiLanguageText object
@@ -95,6 +96,10 @@ export function isStatusColorsShowcase(section: SectionData): boolean {
   return (section as any).type === 'statusColorsShowcase';
 }
 
+export function isAppListSection(section: SectionData): section is AppListSectionData {
+  return section.type === 'appList';
+}
+
 /**
  * Get button variant class
  */
@@ -125,7 +130,11 @@ export function getGridColumns(columns: 2 | 3 | 4): string {
  * Sort sections by order
  */
 export function sortSectionsByOrder(sections: SectionData[]): SectionData[] {
-  return [...sections].sort((a, b) => a.order - b.order);
+  return [...sections].sort((a, b) => {
+    const orderA = a.order ?? 999;
+    const orderB = b.order ?? 999;
+    return orderA - orderB;
+  });
 }
 
 /**

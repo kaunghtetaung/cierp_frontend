@@ -51,7 +51,7 @@ export function DesktopNavigation({
   }
 
   return (
-    <nav className={cn("flex items-center space-x-6", className)}>
+    <nav className={cn("flex items-center space-x-6 overflow-visible", className)}>
       {visibleItems.map((item) => {
         const title = getTitle(item, currentLanguage);
         const href = generateHref(item);
@@ -79,13 +79,14 @@ export function DesktopNavigation({
               if (isOpen && buttonRef.current) {
                 const rect = buttonRef.current.getBoundingClientRect();
                 document.documentElement.style.setProperty(
-                  '--mega-menu-top',
+                  "--mega-menu-top",
                   `${rect.bottom + 8}px`
                 );
               }
             }, [isOpen]);
 
-            const isActive = currentPath === href || currentPath.startsWith(href + '/');
+            const isActive =
+              currentPath === href || currentPath.startsWith(href + "/");
 
             return (
               <div key={item.id} className="dropdown-container">
@@ -94,8 +95,8 @@ export function DesktopNavigation({
                   className={cn(
                     "flex items-center gap-2 text-sm font-medium transition-colors min-h-[36px] px-2 py-1.5 touch-manipulation",
                     isActive
-                      ? "text-primary border-b-2 border-primary"
-                      : "text-foreground hover:text-primary"
+                      ? "text-[var(--color-nav-active)] border-b-2 border-[var(--color-nav-active)]"
+                      : "text-[var(--color-nav-menu-text)] hover:text-[var(--color-nav-active)]"
                   )}
                   type="button"
                   onClick={() => setOpenDropdown(isOpen ? null : item.id)}
@@ -104,7 +105,11 @@ export function DesktopNavigation({
                   aria-haspopup="menu"
                 >
                   {item.icon && (
-                    <IconComponent name={item.icon} size={16} className="flex-shrink-0" />
+                    <IconComponent
+                      name={item.icon}
+                      size={16}
+                      className="flex-shrink-0"
+                    />
                   )}
                   <span>{title}</span>
                   <svg
@@ -153,7 +158,8 @@ export function DesktopNavigation({
             return "w-[800px]";
           };
 
-          const isActive = currentPath === href || currentPath.startsWith(href + '/');
+          const isActive =
+            currentPath === href || currentPath.startsWith(href + "/");
 
           return (
             <div key={item.id} className="relative dropdown-container">
@@ -161,8 +167,8 @@ export function DesktopNavigation({
                 className={cn(
                   "flex items-center gap-2 text-sm font-medium transition-colors min-h-[36px] px-2 py-1.5 touch-manipulation",
                   isActive
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-foreground hover:text-primary"
+                    ? "text-[var(--color-nav-active)] border-b-2 border-[var(--color-nav-active)]"
+                    : "text-[var(--color-nav-menu-text)] hover:text-[var(--color-nav-active)]"
                 )}
                 type="button"
                 onClick={() => setOpenDropdown(isOpen ? null : item.id)}
@@ -171,7 +177,11 @@ export function DesktopNavigation({
                 aria-haspopup="menu"
               >
                 {item.icon && (
-                  <IconComponent name={item.icon} size={16} className="flex-shrink-0" />
+                  <IconComponent
+                    name={item.icon}
+                    size={16}
+                    className="flex-shrink-0"
+                  />
                 )}
                 <span>{title}</span>
                 <svg
@@ -195,13 +205,13 @@ export function DesktopNavigation({
               {isOpen && (
                 <div
                   className={cn(
-                    "absolute left-0 top-full mt-2 bg-background border border-border rounded-md shadow-lg z-50 animate-in fade-in-0 zoom-in-95",
+                    "absolute left-0 top-full mt-2 bg-[var(--color-banner-bg)] dropdown-menu border border-white/20 rounded-md shadow-lg z-50 animate-in fade-in-0 zoom-in-95",
                     getWidth(visibleChildren.length)
                   )}
                 >
                   <div
                     className={cn(
-                      "grid gap-1 p-3",
+                      "grid gap-0 p-1",
                       getGridCols(visibleChildren.length)
                     )}
                   >
@@ -211,7 +221,7 @@ export function DesktopNavigation({
                         href={generateHref(child)}
                         target={getLinkTarget(child)}
                         rel={getLinkRel(child)}
-                        className="block px-3 py-3 text-sm text-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors min-h-[44px] touch-manipulation"
+                        className="block px-3 py-2 text-sm text-white hover:bg-white/10 rounded-sm transition-colors"
                         onClick={() => setOpenDropdown(null)}
                       >
                         {getTitle(child, currentLanguage)}
@@ -225,7 +235,8 @@ export function DesktopNavigation({
         }
 
         // Regular navigation item
-        const isActive = currentPath === href || currentPath.startsWith(href + '/');
+        const isActive =
+          currentPath === href || currentPath.startsWith(href + "/");
 
         return (
           <Link
@@ -236,12 +247,16 @@ export function DesktopNavigation({
             className={cn(
               "text-sm font-medium transition-colors min-h-[36px] px-2 py-1.5 flex items-center gap-2 touch-manipulation",
               isActive
-                ? "text-primary border-b-2 border-primary"
-                : "text-foreground hover:text-primary"
+                ? "text-[var(--color-nav-active)] border-b-2 border-[var(--color-nav-active)]"
+                : "text-[var(--color-nav-menu-text)] hover:text-[var(--color-nav-active)]"
             )}
           >
             {item.icon && (
-              <IconComponent name={item.icon} size={16} className="flex-shrink-0" />
+              <IconComponent
+                name={item.icon}
+                size={16}
+                className="flex-shrink-0"
+              />
             )}
             {title}
           </Link>

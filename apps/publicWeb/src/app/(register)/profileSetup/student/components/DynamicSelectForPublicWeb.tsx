@@ -120,12 +120,19 @@ export function DynamicSelectForPublicWeb({
     }
   }, [endpoint, serviceName]);
 
-  // Fetch options on mount and when dropdown opens
+  // Fetch options on mount if there's a value (for edit mode)
+  // or when dropdown opens
   useEffect(() => {
-    if (showDropdown && options.length === 0) {
+    // Fetch immediately if we have a value but no options (edit mode scenario)
+    if (value && options.length === 0 && !loading) {
+      console.log('🔄 [DynamicSelect] Fetching options for initial value:', value);
       fetchOptions();
     }
-  }, [showDropdown, fetchOptions, options.length]);
+    // Also fetch when dropdown opens
+    else if (showDropdown && options.length === 0) {
+      fetchOptions();
+    }
+  }, [value, showDropdown, fetchOptions, options.length, loading]);
 
   // Debounced search
   useEffect(() => {

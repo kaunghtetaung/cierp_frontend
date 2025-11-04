@@ -49,6 +49,11 @@ export class ApplicationErrorImpl implements ApplicationError {
   }
 
   private truncateMessage(message: string): string {
+    // Handle undefined/null/empty messages
+    if (!message || typeof message !== 'string') {
+      return 'Unknown error';
+    }
+
     if (message.length <= ERROR_CONSTANTS.MAX_ERROR_MESSAGE_LENGTH) {
       return message;
     }

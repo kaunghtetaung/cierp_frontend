@@ -8,6 +8,9 @@ import { cn } from "@repo/utils";
 import { PublicNrcField } from "./PublicNrcField";
 import { PlaceOfBirthTypeAhead } from "./PlaceOfBirthTypeAhead";
 import { PhoneInput } from "@repo/schema-forms/PhoneInput";
+import { StudentPhotoUpload } from "./StudentPhotoUpload";
+import { useLangSelector } from "@/feature-components/lang-selector";
+import { translations } from "../translations";
 
 // Predefined options
 const ETHNICITY_OPTIONS = [
@@ -38,6 +41,8 @@ interface PersonalInfoStepProps {
 
 export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
   const { register, formState: { errors }, control, setValue } = useFormContext();
+  const { currentLanguage } = useLangSelector();
+  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
 
   // Set email from user on mount
   useEffect(() => {
@@ -79,7 +84,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Name Myanmar */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Name (Myanmar)
+            {t.nameMyanmarLabel}
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <div className="relative">
@@ -88,7 +93,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             </div>
             <Input
               {...register("nameMyanmar")}
-              placeholder="မြန်မာလို အမည်ထည့်ပါ (မောင်/မ) မပါရ"
+              placeholder={t.nameMyanmarPlaceholder}
               className={cn(
                 "pl-10 border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
                 errors.nameMyanmar && "border-red-300 focus:border-red-500"
@@ -104,7 +109,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Name English */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Name (English)
+            {t.nameEnglishLabel}
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <div className="relative">
@@ -113,7 +118,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             </div>
             <Input
               {...register("nameEnglish")}
-              placeholder="Type in english (Without Mg/Ma)"
+              placeholder={t.nameEnglishPlaceholder}
               className={cn(
                 "pl-10 border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
                 errors.nameEnglish && "border-red-300 focus:border-red-500"
@@ -132,7 +137,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Gender */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Gender
+            {t.genderLabel}
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <Controller
@@ -150,12 +155,12 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                   )}
                   onKeyDown={handleSelectEscKey("gender", field.value)}
                 >
-                  <SelectValue placeholder="Select gender" />
+                  <SelectValue placeholder={t.genderPlaceholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-300">
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                <SelectContent className="bg-white border border-gray-300 z-[100]">
+                  <SelectItem value="male">{t.genderMale}</SelectItem>
+                  <SelectItem value="female">{t.genderFemale}</SelectItem>
+                  <SelectItem value="other">{t.genderOther}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -168,7 +173,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Ethnicity */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Race/Ethnicity
+            {t.raceLabel}
           </Label>
           <Controller
             name="race"
@@ -233,17 +238,17 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                         }
                       }}
                     >
-                      <span className="truncate">{field.value || "Select or type ethnicity"}</span>
+                      <span className="truncate">{field.value || t.racePlaceholder}</span>
                       <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-full p-0 bg-white border border-gray-300"
+                    className="w-full p-0 bg-white border border-gray-300 z-[100]"
                     align="start"
                   >
                     <div className="flex items-center border-b border-gray-200 px-3 bg-white">
                       <Input
-                        placeholder="Search or type custom..."
+                        placeholder={t.searchOrType}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleInputKeyDown}
@@ -253,7 +258,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                     <div className="max-h-[200px] overflow-y-auto bg-white p-1">
                       {filteredOptions.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-gray-500">
-                          Press Enter to use "{inputValue}"
+                          {t.pressEnterToUse.replace('{value}', inputValue)}
                         </div>
                       ) : (
                         filteredOptions.map((option) => (
@@ -283,7 +288,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Religion */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Religion
+            {t.religionLabel}
           </Label>
           <Controller
             name="religion"
@@ -348,17 +353,17 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                         }
                       }}
                     >
-                      <span className="truncate">{field.value || "Select or type religion"}</span>
+                      <span className="truncate">{field.value || t.religionPlaceholder}</span>
                       <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-full p-0 bg-white border border-gray-300"
+                    className="w-full p-0 bg-white border border-gray-300 z-[100]"
                     align="start"
                   >
                     <div className="flex items-center border-b border-gray-200 px-3 bg-white">
                       <Input
-                        placeholder="Search or type custom..."
+                        placeholder={t.searchOrType}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleInputKeyDown}
@@ -368,7 +373,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                     <div className="max-h-[200px] overflow-y-auto bg-white p-1">
                       {filteredOptions.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-gray-500">
-                          Press Enter to use "{inputValue}"
+                          {t.pressEnterToUse.replace('{value}', inputValue)}
                         </div>
                       ) : (
                         filteredOptions.map((option) => (
@@ -398,7 +403,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Blood Group */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Blood Type
+            {t.bloodTypeLabel}
           </Label>
           <Controller
             name="bloodType"
@@ -409,9 +414,9 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                   className="w-full bg-white border border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]"
                   onKeyDown={handleSelectEscKey("bloodType", field.value)}
                 >
-                  <SelectValue placeholder="Select blood type" />
+                  <SelectValue placeholder={t.bloodTypePlaceholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-300">
+                <SelectContent className="bg-white border border-gray-300 z-[100]">
                   <SelectItem value="A+">A+</SelectItem>
                   <SelectItem value="A-">A-</SelectItem>
                   <SelectItem value="B+">B+</SelectItem>
@@ -447,7 +452,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Date of Birth */}
         <div className="md:col-span-1 space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Date of Birth
+            {t.dateOfBirthLabel}
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <Input
@@ -486,7 +491,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Phone Number */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Phone Number
+            {t.phoneLabel}
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <Controller
@@ -525,7 +530,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
         {/* Email Address */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Email Address
+            {t.emailLabel}
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -534,7 +539,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             <Input
               {...register("email")}
               type="email"
-              placeholder="email@example.com"
+              placeholder={t.emailPlaceholder}
               readOnly
               className={cn(
                 "pl-10 border-gray-300 bg-gray-50 cursor-not-allowed",
@@ -546,6 +551,27 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             <p className="text-sm text-red-600">{errors.email.message as string}</p>
           )}
         </div>
+      </div>
+
+      {/* Row 5: Profile Photo */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-gray-700">
+          {t.studentPhotoLabel}
+        </Label>
+        <Controller
+          name="profilePhoto"
+          control={control}
+          render={({ field }) => (
+            <StudentPhotoUpload
+              value={field.value || ''}
+              onChange={field.onChange}
+              error={errors.profilePhoto?.message as string}
+              disabled={false}
+              tenantId={user?.tenantId || ''}
+              appId="publicWeb"
+            />
+          )}
+        />
       </div>
     </div>
   );

@@ -37,6 +37,7 @@ const STATIC_EXCLUDES = [
   "/ping",
   "/uploads/",
   "/images/",
+  "/pdf-viewer.html",
 ] as const;
 
 /**

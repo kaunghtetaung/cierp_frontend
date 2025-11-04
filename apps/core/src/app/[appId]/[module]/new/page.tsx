@@ -59,6 +59,8 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
         isStudentWizardForm={isStudentWizardForm}
         isStaffWizardForm={isStaffWizardForm}
         appId={resolvedParams.appId}
+        tenantId={tenant.tenantId}
+        username={user.email?.split('@')[0] || user.id}
         // No navigation needed for new records
       />
     </div>

@@ -15,6 +15,7 @@ import {
   isDataTableSection,
   isOrganizationStructureSection,
   isStatusColorsShowcase,
+  isAppListSection,
 } from "./utils";
 
 // Section components
@@ -29,6 +30,7 @@ import PricingSection from "./pricing/PricingSection";
 import DataTableSection from "./datatable/DataTableSection";
 import OrganizationStructureSection from "./organization/OrganizationStructureSection";
 import StatusColorsShowcase from "./showcase/StatusColorsShowcase";
+import AppListSection from "./applist/AppListSection";
 
 /**
  * Section Renderer Component
@@ -125,6 +127,13 @@ export function SectionRenderer({
             currentLanguage={currentLanguage}
           />
         );
+      } else if (isAppListSection(section)) {
+        sectionComponent = (
+          <AppListSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
       } else if (isStatusColorsShowcase(section)) {
         sectionComponent = <StatusColorsShowcase />;
       } else {
@@ -163,7 +172,7 @@ export function SectionRenderer({
   };
 
   return (
-    <div className={`space-y-16 ${className}`}>
+    <div className={`space-y-0 ${className}`}>
       {processedSections.map((section, index) => (
         <React.Fragment key={section._id || `section-${index}`}>
           {renderSection(section)}

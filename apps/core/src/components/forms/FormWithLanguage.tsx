@@ -13,6 +13,9 @@ interface FormWithLanguageProps {
   moduleSlug: string;
   itemId?: string;
   isWizard?: boolean;
+  tenantId?: string;
+  appId?: string;
+  username?: string;
 }
 
 export function FormWithLanguage({
@@ -22,6 +25,9 @@ export function FormWithLanguage({
   moduleSlug,
   itemId,
   isWizard = false,
+  tenantId,
+  appId,
+  username,
 }: FormWithLanguageProps) {
   const { currentLanguage } = useLanguage();
 
@@ -35,6 +41,9 @@ export function FormWithLanguage({
       moduleSlug={moduleSlug}
       itemId={itemId}
       currentLanguage={currentLanguage}
+      tenantId={tenantId}
+      appId={appId}
+      username={username}
     />
   );
 }

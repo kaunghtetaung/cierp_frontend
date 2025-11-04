@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { HeaderNavigationProps } from './types';
-import { DesktopNavigation } from './DesktopNavigation';
-import { MobileNavigation } from './MobileNavigation';
+import React, { useState } from "react";
+import { HeaderNavigationProps } from "./types";
+import { DesktopNavigation } from "./DesktopNavigation";
+import { MobileNavigation } from "./MobileNavigation";
 
 /**
  * Header Navigation Component
@@ -11,10 +11,10 @@ import { MobileNavigation } from './MobileNavigation';
  */
 export function HeaderNavigation({
   items,
-  currentLanguage = 'en',
+  currentLanguage = "en",
   isAuthenticated = false,
   userRoles = [],
-  className
+  className,
 }: HeaderNavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -36,7 +36,7 @@ export function HeaderNavigation({
       <div className="hidden md:block">
         <DesktopNavigation {...commonProps} />
       </div>
-      
+
       {/* Mobile Navigation */}
       <div className="md:hidden">
         <MobileNavigation
@@ -50,8 +50,8 @@ export function HeaderNavigation({
 }
 
 // Export individual components for flexibility
-export { DesktopNavigation } from './DesktopNavigation';
-export { MobileNavigation } from './MobileNavigation';
+export { DesktopNavigation } from "./DesktopNavigation";
+export { MobileNavigation } from "./MobileNavigation";
 
 // Export types
 export type {
@@ -60,8 +60,8 @@ export type {
   NavigationItemProps,
   MobileNavigationProps,
   DesktopNavigationProps,
-  MultiLanguageText
-} from './types';
+  MultiLanguageText,
+} from "./types";
 
 // Default export
 export default HeaderNavigation;

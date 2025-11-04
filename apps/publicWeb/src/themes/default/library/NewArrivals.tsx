@@ -1,4 +1,5 @@
 import type { Bibliography } from '@/actions/library/books.actions';
+import { getAuthorName } from '@/lib/library-utils';
 import Link from 'next/link';
 
 interface NewArrivalsProps {
@@ -43,7 +44,7 @@ export function NewArrivals({ books }: NewArrivalsProps) {
  */
 function BookCard({ book }: { book: Bibliography }) {
   return (
-    <div className="group cursor-pointer">
+    <Link href={`/library/${book._id}`} className="group cursor-pointer block">
       {/* Book Cover */}
       <div className="bg-muted rounded-lg overflow-hidden aspect-[2/3] mb-3 group-hover:shadow-md transition-shadow">
         {book.coverImage ? (
@@ -81,13 +82,13 @@ function BookCard({ book }: { book: Bibliography }) {
         </h3>
         {book.author && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-            {book.author.fullName || `${book.author.firstName || ''} ${book.author.lastName || ''}`.trim()}
+            {getAuthorName(book.author)}
           </p>
         )}
         {book.year && (
           <p className="text-xs text-muted-foreground mt-1">{book.year}</p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }

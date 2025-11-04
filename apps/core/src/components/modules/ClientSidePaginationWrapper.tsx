@@ -40,10 +40,13 @@ export function ClientSidePaginationWrapper({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // State for client-side data management
   const [cachedFullData, setCachedFullData] = React.useState<any[] | null>(null);
   const [isDataLoaded, setIsDataLoaded] = React.useState(false);
+
+  // Check for refresh trigger from form save redirect
+  const refreshTrigger = searchParams.get('_refresh');
 
   // Build initial query parameters (only for first API call)
   const initialQueryParams = React.useMemo(() => {
@@ -141,8 +144,27 @@ export function ClientSidePaginationWrapper({
   } = useModuleList(module.slug, initialQueryParams, {
     initialData: initialData && initialData.length > 0 ? initialData : undefined,
     staleTime: 15 * 60 * 1000, // Increased to 15 minutes for client-side (data rarely changes)
-    enabled: !isDataLoaded, // Only fetch once
+    enabled: !isDataLoaded, // Only fetch once (unless refresh triggered)
   });
+
+  // Handle refresh trigger from URL parameter (from form save redirect)
+  React.useEffect(() => {
+    if (refreshTrigger) {
+      console.log("🔄 [CLIENT-SIDE] Refresh triggered from URL parameter:", refreshTrigger);
+
+      // Clear cache and refetch fresh data
+      setCachedFullData(null);
+      setIsDataLoaded(false);
+
+      // Remove the refresh parameter from URL without triggering navigation
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      newSearchParams.delete('_refresh');
+      const newUrl = newSearchParams.toString()
+        ? `${pathname}?${newSearchParams.toString()}`
+        : pathname;
+      router.replace(newUrl);
+    }
+  }, [refreshTrigger, searchParams, pathname, router]);
 
   // Cache the full dataset when loaded
   React.useEffect(() => {

@@ -24,6 +24,9 @@ interface ReactHookWizardFormProps {
   itemId?: string;
   currentLanguage: string;
   userId?: string;
+  tenantId?: string;
+  appId?: string;
+  username?: string;
 }
 
 interface LocalWizardStep {
@@ -763,6 +766,9 @@ export function ReactHookWizardForm({
   itemId,
   currentLanguage = 'en',
   userId,
+  tenantId,
+  appId,
+  username,
 }: ReactHookWizardFormProps) {
   // Debug logging
   console.log('🧙 ReactHookWizardForm received props:', {
@@ -1595,6 +1601,9 @@ export function ReactHookWizardForm({
                         isVerticalLayout={isVerticalLayout}
                         errors={errors}
                         watch={watch}
+                        tenantId={tenantId}
+                        appId={appId}
+                        username={username}
                       />
                     </div>
                   );

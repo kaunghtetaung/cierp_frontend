@@ -4,6 +4,8 @@ import { createHttpClient } from "@repo/api";
 import { getApiDomain } from "@repo/utils/server";
 import { getAuthenticationStatus } from "@repo/auth/server-api";
 import { withServerActionErrorHandler } from "@repo/utils/server";
+import { createTenantS3Client } from '@repo/s3';
+import { logger } from '@repo/utils/common/logger';
 
 export interface PreviousEducationSubject {
   subjectId: string | { _id: string; name: string; code: string };
@@ -64,6 +66,7 @@ export interface StudentProfileData {
   townshipName: string;
   townName: string;
   wardVillageName: string;
+  profilePhoto?: string; // S3 key path to student profile photo
   father?: {
     nameMyanmar: string;
     nameEnglish: string;
@@ -130,14 +133,169 @@ export async function getMyProfile() {
       }
     );
 
-    console.log("✅ [getMyProfile] Profile fetched successfully");
+    console.log("📬 [getMyProfile] API Response:", {
+      success: result.success,
+      hasData: !!result.data,
+      error: result.error
+    });
 
+    if (result.success && result.data) {
+      console.log("✅ [getMyProfile] Profile fetched successfully");
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    // Handle failure case
+    console.error("❌ [getMyProfile] Profile fetch failed:", result.error);
     return {
-      success: true,
-      data: result.data,
+      success: false,
+      error: result.error || "Failed to fetch profile",
     };
   }, {
     operation: 'get-my-profile',
+    component: 'profile-student-actions'
+  });
+}
+
+/**
+ * Get signed URL for student profile photo
+ * @param s3Key - The S3 key path (format: {organizationSlug}/cpms/private/common/students/photos/{filename})
+ * @param tenantId - The tenant ID
+ * @param tenantSlug - The organization slug (bucket name)
+ * @param tenantRootDomain - The root domain
+ */
+export async function getProfilePhotoUrl(params: {
+  s3Key: string;
+  tenantId: string;
+  tenantSlug: string;
+  tenantRootDomain: string;
+}) {
+  return withServerActionErrorHandler(async () => {
+    const { s3Key, tenantId, tenantSlug, tenantRootDomain } = params;
+
+    logger.info('Getting profile photo URL', {
+      component: 'profile-student-actions',
+      operation: 'getProfilePhotoUrl',
+      s3Key,
+      tenantSlug,
+    });
+
+    // Extract the actual S3 key (remove organization slug prefix)
+    // s3Key format: um1/cpms/private/common/students/photos/{filename}
+    // We need: cpms/private/common/students/photos/{filename}
+    const keyParts = s3Key.split('/');
+    const actualKey = keyParts.slice(1).join('/'); // Remove first part (organization slug)
+
+    // Create S3 client
+    const s3Client = createTenantS3Client({
+      tenantId,
+      tenantSlug, // Bucket name
+      tenantRootDomain,
+      app: 'cpms',
+      basePath: '',
+    });
+
+    // Generate signed URL (7 days expiry for profile viewing)
+    const signedUrl = await s3Client.getPreSignedUrl(
+      actualKey,
+      {
+        expiresIn: 604800, // 7 days
+      },
+      true // skipPathResolution
+    );
+
+    logger.info('Generated signed URL for profile photo', {
+      component: 'profile-student-actions',
+      operation: 'getProfilePhotoUrl',
+      signedUrlGenerated: !!signedUrl,
+    });
+
+    return {
+      success: true,
+      signedUrl,
+    };
+  }, {
+    operation: 'get-profile-photo-url',
+    component: 'profile-student-actions'
+  });
+}
+
+/**
+ * Update student profile (for pending/incomplete status only)
+ * Uses PATCH method as per backend implementation
+ */
+export async function updateMyProfile(data: any) {
+  return withServerActionErrorHandler(async () => {
+    logger.info('Updating student profile', {
+      component: 'profile-student-actions',
+      operation: 'updateMyProfile',
+    });
+
+    // Get authentication status
+    const authResult = await getAuthenticationStatus();
+
+    if (!authResult.isAuthenticated || !authResult.user) {
+      return {
+        success: false,
+        error: "User not authenticated",
+      };
+    }
+
+    const userId = authResult.user.id;
+    const tenantId = authResult.tenantId;
+
+    logger.info('Update profile request', {
+      component: 'profile-student-actions',
+      operation: 'updateMyProfile',
+      userId,
+      tenantId,
+    });
+
+    // Get API domain
+    const apiUrl = await getApiDomain();
+    const httpClient = createHttpClient({ baseURL: apiUrl });
+
+    // IMPORTANT: Use PATCH method (not PUT) as per backend implementation
+    const result = await httpClient.request<StudentProfileData>(
+      "/cpms/students/my-profile",
+      {
+        method: "PATCH",  // Backend uses PATCH
+        body: data,
+        withAuth: true,
+        userId: userId,
+        tokenStrategy: "auto",
+      }
+    );
+
+    if (result.success) {
+      logger.info('Profile updated successfully', {
+        component: 'profile-student-actions',
+        operation: 'updateMyProfile',
+        userId,
+      });
+
+      return {
+        success: true,
+        data: result.data,
+        message: "Profile updated successfully",
+      };
+    }
+
+    // Handle error responses
+    logger.error('Profile update failed', {
+      component: 'profile-student-actions',
+      operation: 'updateMyProfile',
+      error: result.error,
+    });
+
+    return {
+      success: false,
+      error: result.error || "Failed to update profile",
+    };
+  }, {
+    operation: 'update-my-profile',
     component: 'profile-student-actions'
   });
 }

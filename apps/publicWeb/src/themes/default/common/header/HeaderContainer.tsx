@@ -98,100 +98,101 @@ export async function HeaderContainer({
 
     return (
       <header
-        className={`sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm ${className}`}
+        className={`sticky top-0 z-40 w-full bg-background/95 backdrop-blur-sm ${className}`}
       >
-        {/* Desktop Layout: Three Row Design */}
+        {/* Desktop Layout: Two Row Design */}
         <div className="hidden lg:block">
-          {/* First Row: Icon Bar (Actions) - Full Width Background */}
-          <div
-            className="w-full border-b border-border/50"
-            style={{ backgroundColor: "#1A48A4" }}
-          >
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex items-center justify-between py-1">
-                <HeaderActions
-                  showSearch={headerSettings.showSearch}
-                  showLanguageSelector={false}
-                  showUserMenu={false}
-                  currentLanguage={currentLanguage}
-                />
-                <div className="flex items-center gap-1">
-                  <HeaderActions
-                    showSearch={false}
-                    showLanguageSelector={false}
-                    showUserMenu={headerSettings.showUserMenu}
+          {/* First Row: Banner with Logo, Title, and Actions */}
+          <div className="w-full medical-pattern-bg">
+            <div className="relative max-w-7xl mx-auto px-4">
+              {headerSettings.showLogo && (
+                <div className="flex items-center justify-between py-6">
+                  {/* Left: Logo + Title + Subtitle */}
+                  <HeaderBanner
+                    logoUrl={headerData.logoUrl}
+                    title={headerData.title as any}
+                    subtitle={headerData.subtitle as any}
                     currentLanguage={currentLanguage}
+                    showLogo={headerSettings.showLogo}
                   />
-                  {headerSettings.showLanguageSelector && (
-                    <LangSelectorWrapper
-                      initialLanguage={currentLanguage}
-                      languages={[
-                        {
-                          code: "en",
-                          name: "English",
-                          nativeName: "English",
-                          flag: "🇺🇸",
-                          direction: "ltr" as const,
-                        },
-                        {
-                          code: "mm",
-                          name: "Myanmar",
-                          nativeName: "မြန်မာ",
-                          flag: "🇲🇲",
-                          direction: "ltr" as const,
-                        },
-                      ]}
-                    >
-                      <LangSelectorUI
-                        variant="dropdown"
-                        showFlag={true}
-                        showNativeName={false}
-                        showName={false}
-                        className="relative"
-                        triggerClassName="flex items-center gap-1 px-2 py-1 text-sm font-medium transition-colors border-0 bg-transparent rounded-none text-white hover:text-white/90"
-                        contentClassName="w-48"
+
+                  {/* Right: Actions in vertical layout */}
+                  <div className="flex flex-col items-end gap-2">
+                    {/* Top Right: Sign In/Sign Up - Absolute positioned at top */}
+                    <div className="absolute top-0 right-4 flex items-center gap-2">
+                      <HeaderActions
+                        showSearch={false}
+                        showLanguageSelector={false}
+                        showUserMenu={headerSettings.showUserMenu}
+                        currentLanguage={currentLanguage}
                       />
-                    </LangSelectorWrapper>
-                  )}
+                    </div>
+
+                    {/* Bottom Right: Search Box + Language Selector - With top padding */}
+                    <div className="flex items-center gap-2 mt-8">
+                      {headerSettings.showSearch && (
+                        <HeaderActions
+                          showSearch={true}
+                          showLanguageSelector={false}
+                          showUserMenu={false}
+                          currentLanguage={currentLanguage}
+                        />
+                      )}
+                      {headerSettings.showLanguageSelector && (
+                        <LangSelectorWrapper
+                          initialLanguage={currentLanguage}
+                          languages={[
+                            {
+                              code: "en",
+                              name: "English",
+                              nativeName: "English",
+                              flag: "🇺🇸",
+                            },
+                            {
+                              code: "mm",
+                              name: "Myanmar",
+                              nativeName: "မြန်မာ",
+                              flag: "🇲🇲",
+                            },
+                          ]}
+                        >
+                          <LangSelectorUI
+                            variant="dropdown"
+                            showFlag={true}
+                            showNativeName={true}
+                            showName={false}
+                            className="relative"
+                            triggerClassName="text-white hover:text-blue-100 transition-colors"
+                            contentClassName="!bg-[#1e4f99] border-white/30 backdrop-blur-sm"
+                          />
+                        </LangSelectorWrapper>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Remaining rows with max-width container */}
-          <div className="relative max-w-7xl mx-auto px-4">
-            {/* Second Row: Brand Info (Logo + Title + Subtitle) */}
-            {headerSettings.showLogo && (
-              <div className="flex items-center justify-start py-6 border-b border-border/50">
-                <HeaderBanner
-                  logoUrl={headerData.logoUrl}
-                  title={headerData.title as any}
-                  subtitle={headerData.subtitle as any}
-                  currentLanguage={currentLanguage}
-                  showLogo={headerSettings.showLogo}
-                />
+          {/* Second Row: Navigation Menu */}
+          {headerSettings.showNavigation && (
+            <div className="w-full bg-[var(--color-nav-bg)] overflow-visible">
+              <div className="max-w-7xl mx-auto px-4 overflow-visible">
+                <div className="flex items-center justify-start py-2 overflow-visible">
+                  <HeaderNavigation
+                    items={headerData.navigationItems}
+                    currentLanguage={currentLanguage}
+                    isAuthenticated={isAuthenticated}
+                    userRoles={userRoles}
+                  />
+                </div>
               </div>
-            )}
-
-            {/* Third Row: Navigation Menu */}
-            {headerSettings.showNavigation && (
-              <div className="flex items-center justify-start py-2">
-                <HeaderNavigation
-                  items={headerData.navigationItems}
-                  currentLanguage={currentLanguage}
-                  isAuthenticated={isAuthenticated}
-                  userRoles={userRoles}
-                />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile and Tablet Layout: Simple header bar - Full Width Background */}
-        <div
-          className="lg:hidden w-full"
-          style={{ backgroundColor: "#1A48A4" }}
-        >
+        <div className="lg:hidden w-full bg-[var(--color-mobile-header-bg)]">
           <div className="flex items-center justify-between px-4 py-3 touch-manipulation">
             <HeaderActions
               isMobileView={true}

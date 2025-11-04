@@ -6,7 +6,9 @@ import { withServerActionErrorHandler } from "@repo/utils/server";
 // Types for library data
 export interface Author {
   _id: string;
-  fullName: string;
+  id?: string;
+  name?: string;         // API returns 'name' field
+  fullName?: string;     // Some APIs might use 'fullName'
   firstName?: string;
   lastName?: string;
 }
@@ -24,6 +26,32 @@ export interface CatalogType {
   description?: string;
 }
 
+export interface Subject {
+  id: string;
+  name: string;
+  _id?: string;  // Optional: present in list response, missing in by-ID response
+}
+
+export interface Degree {
+  id: string;
+  name: string;
+  _id?: string;  // Optional: present in list response, missing in by-ID response
+}
+
+export interface Organization {
+  _id: string;
+  fullName: string;
+  shortName: string;
+  description?: string;
+  displayName?: {
+    en: string;
+    mm: string;
+  };
+  status?: string;      // Added: present in by-ID response
+  lat?: number | null;  // Added: present in by-ID response
+  lng?: number | null;  // Added: present in by-ID response
+}
+
 export interface Bibliography {
   _id: string;
   legacyBookId?: string;
@@ -37,6 +65,23 @@ export interface Bibliography {
   status: string;
   coverImage?: string;
   description?: string;
+  abstract?: boolean;
+  content?: boolean;
+  abstractFile?: string;
+  contentFile?: string;
+  subjects?: Subject[];
+  degrees?: Degree[];
+  editors?: any[];
+  additionalAuthors?: any[];
+  accessionNumbers?: any[];
+  bookCopyCount?: number;
+  varyingTitles?: string[];
+  corporateAuthors?: any[];
+  organizationId?: Organization;
+  slug?: string;
+  remark?: string;
+  version?: number;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
