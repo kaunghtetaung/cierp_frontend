@@ -54,6 +54,61 @@ const nextConfig = {
   },
   // Disable production source maps to reduce bundle size
   productionBrowserSourceMaps: false,
+  compiler: {
+    // IMPORTANT: Do NOT remove console in production
+    // We use console wrapper to output structured JSON logs for Loki
+    removeConsole: false,
+  },
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.edu.mm',
+      },
+      {
+        protocol: 'http',
+        hostname: '**.edu.mm',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.crystal-image.net',
+      },
+      {
+        protocol: 'http',
+        hostname: '**.crystal-image.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.*.edu.mm',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.crystal-image.net',
+      },
+    ],
+  },
+  headers: async () => [
+    {
+      source: '/(.*)',
+      headers: [
+        {
+          key: 'X-Frame-Options',
+          value: 'DENY',
+        },
+        {
+          key: 'X-Content-Type-Options',
+          value: 'nosniff',
+        },
+        {
+          key: 'Referrer-Policy',
+          value: 'strict-origin-when-cross-origin',
+        },
+      ],
+    },
+  ],
 };
 
 module.exports = nextConfig;

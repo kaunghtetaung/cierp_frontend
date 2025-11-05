@@ -72,6 +72,22 @@ const nextConfig = {
         protocol: 'http',
         hostname: '**.edu.mm',
       },
+      {
+        protocol: 'https',
+        hostname: '**.crystal-image.net',
+      },
+      {
+        protocol: 'http',
+        hostname: '**.crystal-image.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.*.edu.mm',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.crystal-image.net',
+      },
     ],
   },
   compiler: {
