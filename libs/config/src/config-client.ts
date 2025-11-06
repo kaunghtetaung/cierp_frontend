@@ -65,7 +65,7 @@ class ConfigServiceClient {
   constructor(options: ConfigClientOptions = {}) {
     this.options = {
       enableHotReload: options.enableHotReload ?? process.env.ENABLE_CONFIG_HOT_RELOAD === 'true',
-      serviceUrl: options.serviceUrl ?? process.env.CONFIG_SERVICE_URL ?? 'http://config:3330/api/config',
+      serviceUrl: options.serviceUrl ?? process.env.CONFIG_SERVICE_URL ?? 'http://config:3330',
       appName: options.appName ?? process.env.CONFIG_SERVICE_APP_NAME ?? 'publicWeb',
       environment: options.environment ?? process.env.CONFIG_SERVICE_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
       refreshInterval: options.refreshInterval ?? Number(process.env.CONFIG_REFRESH_INTERVAL) || 300000, // 5 minutes
@@ -123,7 +123,7 @@ class ConfigServiceClient {
   }
 
   private async _loadConfigInternal(): Promise<void> {
-    const url = `${this.options.serviceUrl}/${this.options.appName}?environment=${this.options.environment}`;
+    const url = `${this.options.serviceUrl}/config/${this.options.appName}?environment=${this.options.environment}`;
 
     this.log('Fetching config from service', { url });
 

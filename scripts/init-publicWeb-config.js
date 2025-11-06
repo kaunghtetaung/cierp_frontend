@@ -79,7 +79,8 @@ const config = {
 };
 
 async function initializeConfig() {
-  const configServiceUrl = process.env.CONFIG_SERVICE_URL || 'http://localhost:3330/api/config';
+  // Use localhost for init scripts (running from host machine)
+  const configServiceUrl = 'http://localhost:3330';
 
   console.log('🚀 Initializing publicWeb configuration...');
   console.log(`📍 Config Service URL: ${configServiceUrl}`);
@@ -89,7 +90,7 @@ async function initializeConfig() {
   try {
     // Try to create the config
     const response = await axios.post(
-      `${configServiceUrl}/publicWeb`,
+      `${configServiceUrl}/config/publicWeb`,
       config,
       {
         headers: { 'Content-Type': 'application/json' },
@@ -102,7 +103,7 @@ async function initializeConfig() {
     console.log('📋 Response:', JSON.stringify(response.data, null, 2));
     console.log('');
     console.log('🎯 Next steps:');
-    console.log('1. Verify config: curl ' + configServiceUrl + '/publicWeb?environment=' + environment);
+    console.log('1. Verify config: curl ' + configServiceUrl + '/config/publicWeb?environment=' + environment);
     console.log('2. Update your .env file with config service settings');
     console.log('3. Start your Next.js app with ENABLE_CONFIG_HOT_RELOAD=true');
 
@@ -112,7 +113,7 @@ async function initializeConfig() {
         console.log('⚠️  Configuration already exists');
         console.log('');
         console.log('To update the config, use:');
-        console.log(`curl -X PUT ${configServiceUrl}/publicWeb?environment=${environment} \\`);
+        console.log(`curl -X PUT ${configServiceUrl}/config/publicWeb?environment=${environment} \\`);
         console.log('  -H "Content-Type: application/json" \\');
         console.log(`  -d '${JSON.stringify({ version: '1.0.1', config: config.config, metadata: { updatedBy: 'system', changeReason: 'Update config' } }, null, 2)}'`);
       } else {
