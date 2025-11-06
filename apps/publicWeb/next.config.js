@@ -10,6 +10,7 @@ const nextConfig = {
     PDFJS_PREBUILT_DIR: '',
   },
   experimental: {
+    instrumentationHook: true, // Enable instrumentation hook for config service
     optimizePackageImports: ['@repo/ui', '@repo/utils', '@repo/language'],
   },
   webpack: (config, { isServer, webpack, dev }) => {

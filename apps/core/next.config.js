@@ -4,6 +4,7 @@ const nextConfig = {
   output: 'standalone',
   // Configure Server Actions
   experimental: {
+    instrumentationHook: true, // Enable instrumentation hook for config service
     serverActions: {
       bodySizeLimit: '50mb', // Allow up to 50MB file uploads
     },

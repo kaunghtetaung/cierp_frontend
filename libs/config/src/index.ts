@@ -20,3 +20,8 @@ export type {
   ConfigClientOptions,
   ConfigResponse,
 } from './config-client';
+
+export {
+  initializeConfigWithLogging,
+  logConfigServiceStatus,
+} from './init-logger';
