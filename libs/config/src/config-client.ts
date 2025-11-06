@@ -14,8 +14,8 @@
  * import { configClient } from '@repo/config';
  *
  * // In Server Components, API Routes, or Server Actions
- * const dbUrl = await configClient.get('database.url', process.env.DATABASE_URL);
- * const cacheEnabled = await configClient.get('cache.enabled', true);
+ * const redisHost = await configClient.get('redis.host', process.env.REDIS_HOST);
+ * const cacheTtl = await configClient.get('redis.ttl.default', 3600);
  * ```
  */
 

@@ -1,0 +1,137 @@
+/**
+ * Initialize publicWeb Configuration in Config Service
+ *
+ * This script creates the initial configuration for the publicWeb app
+ * in the centralized config service (MongoDB).
+ *
+ * Usage:
+ *   node scripts/init-publicWeb-config.js [environment]
+ *
+ * Examples:
+ *   node scripts/init-publicWeb-config.js development
+ *   node scripts/init-publicWeb-config.js production
+ */
+
+const axios = require('axios');
+require('dotenv').config({ path: './apps/publicWeb/.env.production' });
+
+const environment = process.argv[2] || 'production';
+
+// Determine which env values to use
+const isDev = environment === 'development';
+
+const config = {
+  appName: 'publicWeb',
+  environment: environment,
+  version: '1.0.0',
+  config: {
+    redis: {
+      host: isDev ? 'localhost' : '192.168.200.32',
+      port: 6379,
+      password: 'cidb1234',
+      username: 'cidbaccess',
+      db: 0,
+      ttl: {
+        default: 3600,
+        tenantSettings: 1800,
+        userSession: 7200,
+        authToken: 900,
+        content: 600
+      }
+    },
+    minio: {
+      internal: {
+        endpoint: isDev ? '203.81.66.116' : '192.168.200.33',
+        port: 9000,
+        useSSL: false,
+        region: 'us-east-1'
+      },
+      public: {
+        endpointTemplate: 'storage.{tenantRootDomain}',
+        port: 443,
+        useSSL: true
+      },
+      credentials: {
+        rootUser: 'minioadmin',
+        rootPassword: 'cidb1234'
+      },
+      bucketStrategy: 'per-tenant'
+    },
+    oidc: {
+      clientId: 'f63672873ab7908f14f889c9a4d1b0747b8036257aa08c3568f5b1aa102f75d2',
+      clientSecret: 'T7uAqmC0utEiQO4ifCDvlnscjFTxaV8/XLPngmA7phCCif8mZy25MrTTu9OaDRPs'
+    },
+    api: {
+      subdomain: isDev ? 'api-dev' : 'api',
+      authSubdomain: isDev ? 'auth-dev' : 'auth'
+    },
+    logging: {
+      format: isDev ? 'pretty' : 'json'
+    },
+    server: {
+      port: 3000
+    }
+  },
+  metadata: {
+    createdBy: 'system',
+    changeReason: `Initial ${environment} configuration for publicWeb app`
+  }
+};
+
+async function initializeConfig() {
+  const configServiceUrl = process.env.CONFIG_SERVICE_URL || 'http://localhost:3330/api/config';
+
+  console.log('🚀 Initializing publicWeb configuration...');
+  console.log(`📍 Config Service URL: ${configServiceUrl}`);
+  console.log(`🌍 Environment: ${environment}`);
+  console.log('');
+
+  try {
+    // Try to create the config
+    const response = await axios.post(
+      `${configServiceUrl}/publicWeb`,
+      config,
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
+      }
+    );
+
+    console.log('✅ Configuration created successfully!');
+    console.log('');
+    console.log('📋 Response:', JSON.stringify(response.data, null, 2));
+    console.log('');
+    console.log('🎯 Next steps:');
+    console.log('1. Verify config: curl ' + configServiceUrl + '/publicWeb?environment=' + environment);
+    console.log('2. Update your .env file with config service settings');
+    console.log('3. Start your Next.js app with ENABLE_CONFIG_HOT_RELOAD=true');
+
+  } catch (error) {
+    if (error.response) {
+      if (error.response.status === 400 && error.response.data.message?.includes('already exists')) {
+        console.log('⚠️  Configuration already exists');
+        console.log('');
+        console.log('To update the config, use:');
+        console.log(`curl -X PUT ${configServiceUrl}/publicWeb?environment=${environment} \\`);
+        console.log('  -H "Content-Type: application/json" \\');
+        console.log(`  -d '${JSON.stringify({ version: '1.0.1', config: config.config, metadata: { updatedBy: 'system', changeReason: 'Update config' } }, null, 2)}'`);
+      } else {
+        console.error('❌ Error creating configuration:');
+        console.error('Status:', error.response.status);
+        console.error('Data:', JSON.stringify(error.response.data, null, 2));
+      }
+    } else if (error.request) {
+      console.error('❌ No response from config service');
+      console.error('Make sure the config service is running at:', configServiceUrl);
+      console.error('');
+      console.error('To start config service:');
+      console.error('  cd /Users/kaunghtet/Projects/ciapp');
+      console.error('  npm run serve:config');
+    } else {
+      console.error('❌ Error:', error.message);
+    }
+    process.exit(1);
+  }
+}
+
+initializeConfig();
