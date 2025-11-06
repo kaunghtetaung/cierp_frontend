@@ -75,7 +75,8 @@ class ConfigServiceClient {
       debug: options.debug ?? process.env.CONFIG_DEBUG === 'true',
     };
 
-    this.log('ConfigServiceClient initialized', { options: this.options });
+    // Only log at initialization, not construction (reduces noise)
+    // this.log('ConfigServiceClient initialized', { options: this.options });
   }
 
   /**
@@ -84,10 +85,11 @@ class ConfigServiceClient {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    this.log('Initializing config client');
+    // Only log if debug is enabled - reduces noise
+    // this.log('Initializing config client');
 
     if (!this.options.enableHotReload) {
-      this.log('Hot-reload disabled, using environment variables only');
+      // this.log('Hot-reload disabled, using environment variables only');
       this.isInitialized = true;
       return;
     }
@@ -99,9 +101,9 @@ class ConfigServiceClient {
     this.startPeriodicRefresh();
 
     this.isInitialized = true;
-    this.log('Config client initialized successfully', {
-      configLoaded: this.config !== null,
-    });
+    // this.log('Config client initialized successfully', {
+    //   configLoaded: this.config !== null,
+    // });
   }
 
   /**
@@ -125,7 +127,8 @@ class ConfigServiceClient {
   private async _loadConfigInternal(): Promise<void> {
     const url = `${this.options.serviceUrl}/config/${this.options.appName}?environment=${this.options.environment}`;
 
-    this.log('Fetching config from service', { url });
+    // Only log initial fetch if debug enabled - reduces noise
+    // this.log('Fetching config from service', { url });
 
     for (let attempt = 1; attempt <= this.options.retryAttempts; attempt++) {
       try {
@@ -152,10 +155,11 @@ class ConfigServiceClient {
         if (data.success && data.config) {
           this.config = data.config;
           this.lastFetchTime = Date.now();
-          this.log('✅ Config loaded successfully', {
-            timestamp: data.timestamp,
-            keysCount: Object.keys(data.config).length,
-          });
+          // Only log success on first load or if debug enabled
+          // this.log('✅ Config loaded successfully', {
+          //   timestamp: data.timestamp,
+          //   keysCount: Object.keys(data.config).length,
+          // });
           return;
         } else {
           throw new Error('Invalid response format from config service');
@@ -163,16 +167,17 @@ class ConfigServiceClient {
       } catch (error) {
         const isLastAttempt = attempt === this.options.retryAttempts;
 
-        if (error instanceof Error) {
+        // Only log errors, not every attempt
+        if (isLastAttempt && error instanceof Error) {
           if (error.name === 'AbortError') {
-            this.log(`⚠️ Config fetch timeout (attempt ${attempt}/${this.options.retryAttempts})`);
+            console.error(`[ConfigClient] Config fetch timeout after ${this.options.retryAttempts} attempts`);
           } else {
-            this.log(`⚠️ Config fetch failed (attempt ${attempt}/${this.options.retryAttempts}): ${error.message}`);
+            console.error(`[ConfigClient] Config fetch failed after ${this.options.retryAttempts} attempts: ${error.message}`);
           }
         }
 
         if (isLastAttempt) {
-          this.log('❌ All config fetch attempts failed, falling back to environment variables');
+          // this.log('❌ All config fetch attempts failed, falling back to environment variables');
           break;
         }
 
@@ -189,9 +194,10 @@ class ConfigServiceClient {
     if (!this.options.enableHotReload || this.refreshTimer) return;
 
     this.refreshTimer = setInterval(() => {
-      this.log('Periodic config refresh triggered');
+      // Silent refresh - only log errors
+      // this.log('Periodic config refresh triggered');
       this.loadConfig().catch(error => {
-        this.log('Periodic refresh failed:', error);
+        console.error('[ConfigClient] Periodic refresh failed:', error);
       });
     }, this.options.refreshInterval);
 
