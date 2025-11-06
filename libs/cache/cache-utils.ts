@@ -1,16 +1,15 @@
 // Cache configuration and utilities
 import { UnifiedCache } from './unified-cache';
-import { configClient } from '@repo/config';
 import type { CacheConfig, CacheInstance } from './types';
 
-// Get default cache configuration from config service with fallback to env vars
+// Get default cache configuration - Redis now uses ONLY .env variables
 async function getDefaultCacheConfig(): Promise<CacheConfig> {
   return {
-    host: await configClient.get('redis.host', process.env.REDIS_HOST || 'localhost'),
-    port: await configClient.get('redis.port', parseInt(process.env.REDIS_PORT || '6379', 10)),
-    username: await configClient.get('redis.username', process.env.REDIS_USERNAME),
-    password: await configClient.get('redis.password', process.env.REDIS_PASSWORD),
-    db: await configClient.get('redis.db', parseInt(process.env.REDIS_DB || '0', 10)),
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    username: process.env.REDIS_USERNAME,
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_DB || '0', 10),
     keyPrefix: '',
     lazyConnect: true,
     enableLogging: process.env.NODE_ENV !== 'production',

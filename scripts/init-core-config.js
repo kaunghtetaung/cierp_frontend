@@ -25,20 +25,6 @@ const config = {
   environment: environment,
   version: '1.0.0',
   config: {
-    redis: {
-      host: isDev ? 'localhost' : '192.168.200.32',
-      port: 6379,
-      password: 'cidb1234',
-      username: 'cidbaccess',
-      db: 0,
-      ttl: {
-        default: 3600,
-        tenantSettings: 1800,
-        userSession: 7200,
-        authToken: 900,
-        content: 600
-      }
-    },
     minio: {
       internal: {
         endpoint: isDev ? '203.81.66.116' : '192.168.200.33',
