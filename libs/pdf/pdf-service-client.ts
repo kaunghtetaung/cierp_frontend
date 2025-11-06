@@ -33,6 +33,36 @@ export interface PdfWatermarkRequest {
 }
 
 /**
+ * Request format for PDF metadata
+ */
+export interface PdfMetadataRequest {
+  /** S3 file path */
+  filePath: string;
+  /** Tenant ID */
+  tenantId: string;
+}
+
+/**
+ * Response format for PDF metadata
+ */
+export interface PdfMetadataResponse {
+  success: boolean;
+  data: {
+    pageCount: number;
+    filePath: string;
+    fileSize: number;
+    title?: string;
+    author?: string;
+    subject?: string;
+    creator?: string;
+    producer?: string;
+    creationDate?: string;
+    modificationDate?: string;
+  };
+  processingTime: number;
+}
+
+/**
  * PDF Service client configuration
  */
 export interface PdfServiceConfig {
@@ -94,6 +124,57 @@ export class PdfServiceClient {
       // Get binary data
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error(`PDF service timeout after ${this.timeout}ms`);
+        }
+        throw error;
+      }
+
+      throw new Error('Unknown error calling PDF service');
+    }
+  }
+
+  /**
+   * Get PDF metadata (page count, file info, etc.)
+   *
+   * @param request - Metadata request parameters
+   * @returns Metadata response with page count and file info
+   * @throws Error if service fails or returns non-2xx status
+   */
+  async getMetadata(request: PdfMetadataRequest): Promise<PdfMetadataResponse> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(`${this.serviceUrl}/metadata`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorMessage = `PDF service returned ${response.status}`;
+
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `${errorMessage}: ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
     } catch (error) {
       clearTimeout(timeoutId);
 

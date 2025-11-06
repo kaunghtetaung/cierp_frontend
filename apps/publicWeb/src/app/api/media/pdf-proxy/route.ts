@@ -42,18 +42,11 @@ export async function GET(request: NextRequest) {
     const filePath = searchParams.get('file');
     const app = searchParams.get('app') || 'library';
     const watermarkText = searchParams.get('watermark');
-    const pageNum = searchParams.get('page'); // Required: page number (1-indexed)
+    const pageNum = searchParams.get('page'); // Optional: if not provided, fetch page 1 for metadata
 
     if (!filePath) {
       return NextResponse.json(
         { error: 'Missing file parameter' },
-        { status: 400 }
-      );
-    }
-
-    if (!pageNum) {
-      return NextResponse.json(
-        { error: 'Missing page parameter' },
         { status: 400 }
       );
     }
@@ -106,45 +99,75 @@ export async function GET(request: NextRequest) {
     // Example: um1/library/private/common/ebooks/68d14ff9125447a7a4f8161c.pdf
     const s3Path = `${tenantSlug}/${app}/${relativePath}`;
 
-    const page = parseInt(pageNum, 10);
-    if (isNaN(page) || page < 1) {
-      return NextResponse.json(
-        { error: 'Invalid page number' },
-        { status: 400 }
-      );
+    // If page number provided, fetch watermarked page from PDF service
+    if (pageNum) {
+      const page = parseInt(pageNum, 10);
+      if (isNaN(page) || page < 1) {
+        return NextResponse.json(
+          { error: 'Invalid page number' },
+          { status: 400 }
+        );
+      }
+
+      console.log('[PDF_PROXY] Requesting watermarked page', page, 'from PDF service. S3 path:', s3Path);
+
+      try {
+        const pdfServiceClient = createPdfServiceClient();
+
+        const watermarkedPage = await pdfServiceClient.getWatermarkedPage({
+          filePath: s3Path, // Full S3 path: bucket/app/file
+          pageNumber: page,
+          userName: userEmail || userId,
+          userId: userId,
+          watermarkText: watermarkText || 'CONFIDENTIAL',
+          tenantId: tenantId,
+          tenantName: tenantSlug,
+          outputFormat: 'pdf', // PDF format for viewer compatibility
+        });
+
+        console.log('[PDF_PROXY] Watermarked page received from PDF service');
+
+        return new NextResponse(watermarkedPage, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Length': watermarkedPage.length.toString(),
+            'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+            'Content-Disposition': 'inline',
+          },
+        });
+      } catch (pdfServiceError) {
+        console.error('[PDF_PROXY] PDF service error:', pdfServiceError);
+        return NextResponse.json(
+          { error: 'Failed to watermark PDF page', details: pdfServiceError instanceof Error ? pdfServiceError.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
     }
 
-    console.log('[PDF_PROXY] Requesting page', page, 'from PDF service. S3 path:', s3Path);
+    // No page number - fetch metadata from PDF service
+    console.log('[PDF_PROXY] Fetching metadata from PDF service. S3 path:', s3Path);
 
     try {
       const pdfServiceClient = createPdfServiceClient();
 
-      const watermarkedPage = await pdfServiceClient.getWatermarkedPage({
-        filePath: s3Path, // Full S3 path: bucket/app/file
-        pageNumber: page,
-        userName: userEmail || userId,
-        userId: userId,
-        watermarkText: watermarkText || 'CONFIDENTIAL',
+      const metadata = await pdfServiceClient.getMetadata({
+        filePath: s3Path,
         tenantId: tenantId,
-        tenantName: tenantSlug,
-        outputFormat: 'pdf', // PDF format for viewer compatibility
       });
 
-      console.log('[PDF_PROXY] Watermarked page received from PDF service');
+      console.log('[PDF_PROXY] Metadata received:', metadata.data.pageCount, 'pages');
 
-      return new NextResponse(watermarkedPage, {
+      return NextResponse.json(metadata, {
         status: 200,
         headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Length': watermarkedPage.length.toString(),
-          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-          'Content-Disposition': 'inline',
+          'Cache-Control': 'private, max-age=3600', // Cache metadata for 1 hour
         },
       });
-    } catch (pdfServiceError) {
-      console.error('[PDF_PROXY] PDF service error:', pdfServiceError);
+    } catch (metadataError) {
+      console.error('[PDF_PROXY] PDF service metadata error:', metadataError);
       return NextResponse.json(
-        { error: 'Failed to watermark PDF page', details: pdfServiceError instanceof Error ? pdfServiceError.message : 'Unknown error' },
+        { error: 'Failed to fetch PDF metadata', details: metadataError instanceof Error ? metadataError.message : 'Unknown error' },
         { status: 500 }
       );
     }

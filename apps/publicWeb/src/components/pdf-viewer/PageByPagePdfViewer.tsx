@@ -66,19 +66,48 @@ export function PageByPagePdfViewer({
     return url.toString();
   };
 
-  // Handle document load success (get metadata)
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    console.log('[PageByPagePdfViewer] Loaded metadata, total pages:', numPages);
-    setTotalPages(numPages);
-    setIsLoading(false);
+  // Fetch PDF metadata (page count) from API
+  const fetchMetadata = async () => {
+    try {
+      console.log('[PageByPagePdfViewer] Fetching metadata from:', pdfUrl);
+      const response = await fetch(pdfUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metadata: ${response.status}`);
+      }
+
+      const metadata = await response.json();
+      console.log('[PageByPagePdfViewer] Metadata received:', metadata);
+
+      if (metadata.success && metadata.data?.pageCount) {
+        setTotalPages(metadata.data.pageCount);
+        setIsLoading(false);
+      } else {
+        throw new Error('Invalid metadata format');
+      }
+    } catch (err) {
+      console.error('[PageByPagePdfViewer] Error fetching metadata:', err);
+      setError(texts.error);
+      setIsLoading(false);
+    }
+  };
+
+  // Handle document load success (for individual pages)
+  const onDocumentLoadSuccess = () => {
+    // Page loaded successfully
   };
 
   // Handle document load error
   const onDocumentLoadError = (err: Error) => {
-    console.error('[PageByPagePdfViewer] Error loading PDF:', err);
+    console.error('[PageByPagePdfViewer] Error loading PDF page:', err);
     setError(texts.error);
     setIsLoading(false);
   };
+
+  // Fetch metadata on mount
+  useEffect(() => {
+    fetchMetadata();
+  }, [pdfUrl]);
 
   // Update container width on mount and resize
   useEffect(() => {
@@ -189,10 +218,7 @@ export function PageByPagePdfViewer({
     return false;
   };
 
-  // First, load full PDF to get metadata (page count)
-  const metadataUrl = pdfUrl;
-
-  // Then load individual watermarked pages
+  // Build URL for current watermarked page
   const currentPageUrl = getPageUrl(currentPage);
 
   return (
@@ -246,24 +272,10 @@ export function PageByPagePdfViewer({
         )}
 
         {/* PDF Rendering */}
-        {!error && (
+        {!error && totalPages && (
           <div className="w-full min-h-full flex items-start justify-center py-8 px-4" onContextMenu={handleContextMenu}>
-            {/* Hidden document to get metadata */}
-            {!totalPages && (
-              <div style={{ position: 'absolute', left: '-9999px' }}>
-                <Document
-                  file={metadataUrl}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={onDocumentLoadError}
-                  loading={<div>{texts.loading}</div>}
-                >
-                  <Page pageNumber={1} width={100} />
-                </Document>
-              </div>
-            )}
-
             {/* Render current watermarked page */}
-            {totalPages && (
+            {(
               <Document
                 file={currentPageUrl}
                 loading={
