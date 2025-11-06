@@ -3,8 +3,15 @@
  * Streams private PDF files from S3 with page-by-page watermark overlay
  *
  * How it works:
- * 1. First request: Fetch entire PDF from S3 → Cache in Redis (24h TTL)
- * 2. Page requests: Get from Redis → Watermark only requested page → Send that page
+ * 1. Validate session and permissions
+ * 2. For page requests: Call PDF watermark service
+ * 3. For metadata requests: Fetch full PDF from S3 (cached 24h)
+ *
+ * The PDF watermark service handles:
+ * - Fetching from S3
+ * - Redis caching (3min TTL)
+ * - Page extraction
+ * - Watermark application (diagonal grid pattern)
  *
  * Query parameters:
  * - file: S3 file path (required)
@@ -15,11 +22,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { createTenantS3Client } from '@repo/s3/client';
 import { validateRequest } from '@repo/auth/core';
 import { COOKIE_NAMES } from '@repo/utils/common/constants';
 import { getCacheInstance, CacheKeys } from '@repo/cache';
+import { createPdfServiceClient } from '@repo/pdf';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -137,7 +144,7 @@ export async function GET(request: NextRequest) {
       console.log('[PDF_PROXY] PDF cached in Redis');
     }
 
-    // If page number is specified, return only that page with watermark
+    // If page number is specified, use PDF watermark service
     if (pageNum) {
       const page = parseInt(pageNum, 10);
       if (isNaN(page) || page < 1) {
@@ -147,24 +154,40 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      console.log('[PDF_PROXY] Extracting page', page);
+      console.log('[PDF_PROXY] Requesting watermarked page from PDF service:', page);
 
-      const singlePagePdf = await extractAndWatermarkPage(
-        pdfBuffer,
-        page,
-        watermarkText || '',
-        { userId, userEmail }
-      );
+      try {
+        const pdfServiceClient = createPdfServiceClient();
 
-      return new NextResponse(singlePagePdf, {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Length': singlePagePdf.length.toString(),
-          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-          'Content-Disposition': 'inline',
-        },
-      });
+        const watermarkedPage = await pdfServiceClient.getWatermarkedPage({
+          filePath: relativePath,
+          pageNumber: page,
+          userName: userEmail || userId,
+          userId: userId,
+          watermarkText: watermarkText || 'CONFIDENTIAL',
+          tenantId: tenantId,
+          tenantName: tenantSlug,
+          outputFormat: 'pdf', // Use PDF format for viewer compatibility
+        });
+
+        console.log('[PDF_PROXY] Watermarked page received from PDF service');
+
+        return new NextResponse(watermarkedPage, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Length': watermarkedPage.length.toString(),
+            'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+            'Content-Disposition': 'inline',
+          },
+        });
+      } catch (pdfServiceError) {
+        console.error('[PDF_PROXY] PDF service error:', pdfServiceError);
+        return NextResponse.json(
+          { error: 'Failed to watermark PDF page', details: pdfServiceError instanceof Error ? pdfServiceError.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
     }
 
     // No page specified - return full PDF (for initial metadata/page count)
@@ -190,106 +213,10 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Extract a single page from PDF and add watermark
- * @param pdfBuffer - Full PDF buffer (from cache or S3)
- * @param pageNumber - Page number to extract (1-indexed)
- * @param watermarkText - Text to use for center watermark
- * @param session - User session info for footer watermark
- * @returns Buffer containing single-page PDF with watermarks
+ * NOTE: Watermarking is now handled by the centralized PDF watermark service
+ * The old extractAndWatermarkPage function has been removed
+ * See PDF_IMPLEMENTATION_BACKUP.md for the original implementation
  */
-async function extractAndWatermarkPage(
-  pdfBuffer: Buffer,
-  pageNumber: number,
-  watermarkText: string,
-  session: { userId: string; userEmail?: string }
-): Promise<Buffer> {
-  try {
-    // Load the original PDF
-    const originalPdf = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
-    const totalPages = originalPdf.getPageCount();
-
-    // Validate page number
-    if (pageNumber < 1 || pageNumber > totalPages) {
-      throw new Error(`Invalid page number: ${pageNumber}. PDF has ${totalPages} pages.`);
-    }
-
-    console.log('[PDF_PROXY] Extracting page', pageNumber, 'of', totalPages);
-
-    // Create a new PDF document for the single page
-    const newPdf = await PDFDocument.create();
-
-    // Copy the requested page (0-indexed in pdf-lib)
-    const [copiedPage] = await newPdf.copyPages(originalPdf, [pageNumber - 1]);
-    const page = newPdf.addPage(copiedPage);
-
-    // Add watermarks if watermarkText is provided
-    if (watermarkText) {
-      // Embed font
-      const font = await newPdf.embedFont(StandardFonts.HelveticaBold);
-
-      // Create timestamp
-      const timestamp = new Date().toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      const { width, height } = page.getSize();
-
-      // Center diagonal watermark - CONFIDENTIAL
-      const confidentialText = 'CONFIDENTIAL';
-      const confidentialFontSize = 60;
-      const confidentialWidth = font.widthOfTextAtSize(confidentialText, confidentialFontSize);
-
-      page.drawText(confidentialText, {
-        x: (width - confidentialWidth) / 2,
-        y: height / 2 + 40,
-        size: confidentialFontSize,
-        font: font,
-        color: rgb(0.9, 0.1, 0.1), // Red color for confidential
-        opacity: 0.15,
-        rotate: { angle: -45, type: 'degrees' },
-      });
-
-      // Center diagonal watermark - Book title
-      const centerFontSize = 36;
-      const centerWidth = font.widthOfTextAtSize(watermarkText, centerFontSize);
-
-      page.drawText(watermarkText, {
-        x: (width - centerWidth) / 2,
-        y: height / 2 - 20,
-        size: centerFontSize,
-        font: font,
-        color: rgb(0.85, 0.85, 0.85),
-        opacity: 0.25,
-        rotate: { angle: -45, type: 'degrees' },
-      });
-
-      // Footer watermark with user info and page number
-      const footerText = `CONFIDENTIAL - ${session.userEmail || session.userId} - ${timestamp} - Page ${pageNumber}/${totalPages}`;
-      page.drawText(footerText, {
-        x: 50,
-        y: 30,
-        size: 8,
-        font: font,
-        color: rgb(0.4, 0.4, 0.4),
-        opacity: 0.7,
-      });
-    }
-
-    // Save the single-page PDF
-    const pdfBytes = await newPdf.save();
-    console.log('[PDF_PROXY] Page extracted and watermarked, size:', pdfBytes.length, 'bytes');
-
-    return Buffer.from(pdfBytes);
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('[PDF_PROXY] Error extracting/watermarking page:', errorMsg);
-    throw error;
-  }
-}
 
 /**
  * Get tenant slug from cache
