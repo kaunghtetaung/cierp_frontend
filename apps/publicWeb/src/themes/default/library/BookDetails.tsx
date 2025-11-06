@@ -8,7 +8,7 @@ import { PageByPagePdfViewer } from '@/components/pdf-viewer/PageByPagePdfViewer
 import { getAuthorName } from '@/lib/library-utils';
 import { checkAuthStatus } from '@/actions/auth/session.actions';
 import type { Bibliography } from '@/actions/library/books.actions';
-import Image from 'next/image';
+import { S3Image } from '@/components/common/S3Image';
 
 interface BookDetailsProps {
   book: Bibliography;
@@ -202,7 +202,7 @@ export function BookDetails({ book }: BookDetailsProps) {
                 <div className="bg-card border border-border rounded-lg overflow-hidden shadow-md">
                   <div className="aspect-[2/3] bg-muted flex items-center justify-center relative">
                     {book.bookCoverImage ? (
-                      <Image
+                      <S3Image
                         src={book.bookCoverImage}
                         alt={book.title}
                         fill

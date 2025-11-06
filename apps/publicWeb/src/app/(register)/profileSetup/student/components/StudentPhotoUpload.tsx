@@ -4,7 +4,7 @@ import React, { useState, useRef } from "react";
 import { Upload, X, User, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@repo/ui";
 import { cn } from "@repo/utils";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 
 interface StudentPhotoUploadProps {
   value: string;
@@ -206,12 +206,11 @@ export function StudentPhotoUpload({
         ) : previewUrl ? (
           // Photo Preview
           <div className="relative w-40 h-40 mx-auto rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-50">
-            <Image
+            <S3Image
               src={previewUrl}
               alt="Student photo"
               fill
               className="object-cover"
-              unoptimized
             />
             {!isUploading && (
               <button

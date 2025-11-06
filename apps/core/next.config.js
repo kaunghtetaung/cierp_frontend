@@ -2,9 +2,8 @@
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
-  // Enable instrumentation for console wrapper and configure Server Actions
+  // Configure Server Actions
   experimental: {
-    instrumentationHook: true,
     serverActions: {
       bodySizeLimit: '50mb', // Allow up to 50MB file uploads
     },
@@ -60,10 +59,11 @@ const nextConfig = {
     removeConsole: false,
   },
   images: {
-    formats: ['image/avif', 'image/webp', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'],
+    formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
+      // Allow images from tenant domains for Next.js optimization
       {
         protocol: 'https',
         hostname: '**.edu.mm',
@@ -80,14 +80,8 @@ const nextConfig = {
         protocol: 'http',
         hostname: '**.crystal-image.net',
       },
-      {
-        protocol: 'https',
-        hostname: 'storage.*.edu.mm',
-      },
-      {
-        protocol: 'https',
-        hostname: 'storage.crystal-image.net',
-      },
+      // Note: S3/storage domains should use unoptimized flag in Image component
+      // This allows any storage domain without needing to update config
     ],
   },
   headers: async () => [

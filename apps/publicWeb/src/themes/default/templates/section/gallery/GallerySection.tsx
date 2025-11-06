@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 import { GallerySectionData, SectionProps } from "../types";
 import { getLocalizedText } from "../utils";
 
@@ -98,7 +98,7 @@ export function GallerySection({
                     {image?.url && (
                       <div className="relative overflow-hidden rounded-lg bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-border hover:border-primary">
                         <div className="relative overflow-hidden">
-                          <Image
+                          <S3Image
                             src={image.url}
                             alt={imageAlt}
                             className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"

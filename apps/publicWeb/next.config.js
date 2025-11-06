@@ -11,7 +11,6 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['@repo/ui', '@repo/utils', '@repo/language'],
-    instrumentationHook: true,
   },
   webpack: (config, { isServer, webpack, dev }) => {
     // Configure devtool for react-pdf compatibility (avoid 'eval-*') in production only
@@ -60,10 +59,11 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    formats: ['image/avif', 'image/webp', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'],
+    formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
+      // Allow images from tenant domains for Next.js optimization
       {
         protocol: 'https',
         hostname: '**.edu.mm',
@@ -80,14 +80,8 @@ const nextConfig = {
         protocol: 'http',
         hostname: '**.crystal-image.net',
       },
-      {
-        protocol: 'https',
-        hostname: 'storage.*.edu.mm',
-      },
-      {
-        protocol: 'https',
-        hostname: 'storage.crystal-image.net',
-      },
+      // Note: S3/storage domains are handled by S3Image component with unoptimized flag
+      // This allows any storage domain without needing to update config
     ],
   },
   compiler: {

@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { getLocalizedText } from "@repo/utils";
 import { HeaderBannerProps } from "./types";
+import { S3Image } from "@/components/common/S3Image";
 
 /**
  * Header Banner Component
@@ -45,7 +45,7 @@ export function HeaderBanner({
         {showLogo && (
           <div className="flex-shrink-0">
             {logoUrl ? (
-              <Image
+              <S3Image
                 src={logoUrl}
                 alt={displayTitle || "Logo"}
                 className="w-20 h-20 object-contain rounded-lg"

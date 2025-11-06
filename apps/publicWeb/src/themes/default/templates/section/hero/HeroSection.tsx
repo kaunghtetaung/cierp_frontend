@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 import { Button } from "@/styled-components/ui/Button";
 import { HeroSectionData, SectionProps } from "../types";
 import { getLocalizedText } from "../utils";
@@ -238,7 +238,7 @@ function RectorSlide({ slide, currentLanguage }: { slide: any; currentLanguage: 
         <div className="mb-4 shadow-2xl rounded-lg overflow-hidden">
           {rectorPhoto && (
             <div className="relative">
-              <Image
+              <S3Image
                 src={rectorPhoto}
                 alt={rectorName}
                 width={162}

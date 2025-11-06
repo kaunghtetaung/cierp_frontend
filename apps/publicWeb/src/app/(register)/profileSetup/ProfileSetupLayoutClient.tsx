@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 import { ArrowLeft } from "lucide-react";
 import { useTenant } from "@repo/tenant";
 import { LangSelectorUI } from "@/themes/default/common/navigation/header/LangSelectorUI";
@@ -73,12 +73,11 @@ export default function ProfileSetupLayoutClient({
             <div className="flex items-center gap-3">
               {tenant.brandInfo?.logoUrl && (
                 <div className="relative h-12 w-12">
-                  <Image
+                  <S3Image
                     src={tenant.brandInfo.logoUrl}
                     alt={tenant.brandInfo.title || "Organization Logo"}
                     fill
                     className="object-contain"
-                    unoptimized
                   />
                 </div>
               )}

@@ -7,7 +7,7 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import type { User } from "@repo/types";
 import { Button } from "@repo/ui";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 import { useRouter } from "next/navigation";
 import { getMyProfile, getProfilePhotoUrl, type StudentProfileData } from "./actions";
 
@@ -402,12 +402,11 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
             <div className="flex items-center gap-3">
               {tenantLogo && (
                 <div className="relative h-12 w-12">
-                  <Image
+                  <S3Image
                     src={tenantLogo}
                     alt={tenantDisplayName || "Organization Logo"}
                     fill
                     className="object-contain"
-                    unoptimized
                   />
                 </div>
               )}
@@ -529,12 +528,11 @@ export function StudentProfileView({ user, tenantName, tenantSlug, tenantRootDom
               </div>
             ) : profilePhotoUrl ? (
               <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-50">
-                <Image
+                <S3Image
                   src={profilePhotoUrl}
                   alt="Student Profile Photo"
                   fill
                   className="object-cover"
-                  unoptimized
                 />
               </div>
             ) : (

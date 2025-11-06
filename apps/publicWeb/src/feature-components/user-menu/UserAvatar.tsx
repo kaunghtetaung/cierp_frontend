@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 import { getLocalizedText } from "@repo/utils";
 import { UserAvatarProps } from "./types";
 
@@ -41,7 +41,7 @@ export function UserAvatar({
   return (
     <div className={`relative ${avatarClass}`}>
       {user.avatar ? (
-        <Image
+        <S3Image
           src={user.avatar}
           alt={`${getUserDisplayName()}'s avatar`}
           className="rounded-full object-cover"

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
+import { S3Image } from "@/components/common/S3Image";
 import Link from "next/link";
 import { ContentWithImageSectionData, SectionProps } from "../types";
 import { getLocalizedText } from "../utils";
@@ -43,7 +43,7 @@ export function ContentWithImageSection({
           {content?.image?.url && (
             <div className={`${!isImageLeft ? "lg:order-2" : ""}`}>
               <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-background p-2 transform hover:scale-105 transition-transform duration-300">
-                <Image
+                <S3Image
                   src={content.image.url}
                   alt={imageAlt}
                   className="w-full h-auto object-cover rounded-xl"
