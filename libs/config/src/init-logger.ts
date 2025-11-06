@@ -51,9 +51,6 @@ export async function initializeConfigWithLogging(): Promise<void> {
       if (allConfig) {
         console.error('');
         console.error('📝 Sample Config Values:');
-        if (allConfig.redis) {
-          console.error(`   Redis: ${allConfig.redis.host}:${allConfig.redis.port}`);
-        }
         if (allConfig.minio?.internal) {
           console.error(`   MinIO: ${allConfig.minio.internal.endpoint}:${allConfig.minio.internal.port}`);
         }
