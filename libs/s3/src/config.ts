@@ -1,42 +1,57 @@
 /**
  * S3 Configuration
- * Loads MinIO configuration from environment variables
+ * Loads MinIO configuration from config service with fallback to environment variables
  *
  * Dual Endpoint Setup:
  * - Internal: Direct to MinIO server (server-side operations)
  * - Public: Via reverse proxy (client-side pre-signed URLs)
  */
 
+import { configClient } from '@repo/config';
 import type { S3Config } from './types';
 
-export function getS3Config(): S3Config {
-  const endpoint = process.env.MINIO_ENDPOINT;
-  const rootUser = process.env.MINIO_ROOT_USER;
-  const rootPassword = process.env.MINIO_ROOT_PASSWORD;
+export async function getS3Config(): Promise<S3Config> {
+  // Load internal endpoint config
+  const endpoint = await configClient.get('minio.internal.endpoint', process.env.MINIO_ENDPOINT);
+  const port = await configClient.get('minio.internal.port', process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT, 10) : undefined);
+  const useSSL = await configClient.get('minio.internal.useSSL', process.env.MINIO_USE_SSL === 'true');
+
+  // Load public endpoint config
+  const publicEndpointTemplate = await configClient.get('minio.public.endpointTemplate', process.env.MINIO_PUBLIC_ENDPOINT_TEMPLATE);
+  const publicPort = await configClient.get('minio.public.port', process.env.MINIO_PUBLIC_PORT ? parseInt(process.env.MINIO_PUBLIC_PORT, 10) : 443);
+  const publicUseSSL = await configClient.get('minio.public.useSSL', process.env.MINIO_PUBLIC_USE_SSL !== 'false');
+
+  // Load credentials
+  const rootUser = await configClient.get('minio.credentials.rootUser', process.env.MINIO_ROOT_USER);
+  const rootPassword = await configClient.get('minio.credentials.rootPassword', process.env.MINIO_ROOT_PASSWORD);
+
+  // Load other settings
+  const region = await configClient.get('minio.region', process.env.MINIO_REGION || 'us-east-1');
+  const bucketStrategy = await configClient.get('minio.bucketStrategy', process.env.MINIO_BUCKET_STRATEGY || 'per-tenant') as 'per-tenant' | 'shared';
 
   if (!endpoint) {
-    throw new Error('Missing MINIO_ENDPOINT environment variable');
+    throw new Error('Missing MINIO_ENDPOINT - not found in config service or environment variables');
   }
 
   if (!rootUser || !rootPassword) {
-    throw new Error('Missing MINIO_ROOT_USER or MINIO_ROOT_PASSWORD environment variables');
+    throw new Error('Missing MINIO_ROOT_USER or MINIO_ROOT_PASSWORD - not found in config service or environment variables');
   }
 
   return {
     // Internal endpoint for server-side operations
     endpoint,
-    port: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT, 10) : undefined,
-    useSSL: process.env.MINIO_USE_SSL === 'true',
+    port,
+    useSSL,
 
     // Public endpoint for pre-signed URLs (via reverse proxy)
-    publicEndpointTemplate: process.env.MINIO_PUBLIC_ENDPOINT_TEMPLATE,
-    publicPort: process.env.MINIO_PUBLIC_PORT ? parseInt(process.env.MINIO_PUBLIC_PORT, 10) : 443,
-    publicUseSSL: process.env.MINIO_PUBLIC_USE_SSL !== 'false',
+    publicEndpointTemplate,
+    publicPort,
+    publicUseSSL,
 
-    region: process.env.MINIO_REGION || 'us-east-1',
+    region,
     accessKey: rootUser,
     secretKey: rootPassword,
-    bucketStrategy: (process.env.MINIO_BUCKET_STRATEGY as 'per-tenant' | 'shared') || 'per-tenant',
+    bucketStrategy,
   };
 }
 

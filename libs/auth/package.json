@@ -36,7 +36,8 @@
     "@repo/security": "workspace:*",
     "@repo/cache": "workspace:*",
     "@repo/api": "workspace:*",
-    "@repo/tenant": "workspace:*"
+    "@repo/tenant": "workspace:*",
+    "@repo/config": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

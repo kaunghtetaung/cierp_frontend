@@ -68,10 +68,10 @@ class ConfigServiceClient {
       serviceUrl: options.serviceUrl ?? process.env.CONFIG_SERVICE_URL ?? 'http://config:3330',
       appName: options.appName ?? process.env.CONFIG_SERVICE_APP_NAME ?? 'publicWeb',
       environment: options.environment ?? process.env.CONFIG_SERVICE_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
-      refreshInterval: options.refreshInterval ?? Number(process.env.CONFIG_REFRESH_INTERVAL) || 300000, // 5 minutes
+      refreshInterval: options.refreshInterval ?? (Number(process.env.CONFIG_REFRESH_INTERVAL) || 300000), // 5 minutes
       timeout: options.timeout ?? 10000, // 10 seconds
-      retryAttempts: options.retryAttempts ?? Number(process.env.CONFIG_RETRY_ATTEMPTS) || 3,
-      retryDelay: options.retryDelay ?? Number(process.env.CONFIG_RETRY_DELAY) || 5000,
+      retryAttempts: options.retryAttempts ?? (Number(process.env.CONFIG_RETRY_ATTEMPTS) || 3),
+      retryDelay: options.retryDelay ?? (Number(process.env.CONFIG_RETRY_DELAY) || 5000),
       debug: options.debug ?? process.env.CONFIG_DEBUG === 'true',
     };
 

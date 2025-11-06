@@ -25,7 +25,8 @@
     "tldts": "^6.1.59",
     "next": "15.4.3",
     "react": "^19.0.0",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "@repo/config": "workspace:*"
   },
   "devDependencies": {
     "@repo/app-config": "workspace:*",

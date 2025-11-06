@@ -26,6 +26,7 @@
     "@repo/security": "workspace:*",
     "@repo/cache": "workspace:*",
     "@repo/api": "workspace:*",
+    "@repo/config": "workspace:*",
     "tldts": "^6.1.59",
     "uuid": "^9.0.0"
   },

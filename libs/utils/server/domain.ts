@@ -1,5 +1,6 @@
 // Server-side domain helper utilities
 import { cache } from "react";
+import { configClient } from "@repo/config";
 import {
   buildSubdomainUrl,
   buildPublicUrl,
@@ -10,14 +11,14 @@ import {
 import { getSafeHeaders } from './headers-compat';
 
 /**
- * Get API subdomain based on environment
+ * Get API subdomain from config service
  * Production: api
- * Development: api-dev (or custom from API_SUBDOMAIN env var)
+ * Development: api-dev (or custom from config service/API_SUBDOMAIN env var)
  */
-function getApiSubdomain(): string {
-  const envSubdomain = process.env.API_SUBDOMAIN;
-  if (envSubdomain) {
-    return envSubdomain;
+async function getApiSubdomain(): Promise<string> {
+  const subdomain = await configClient.get('api.subdomain', process.env.API_SUBDOMAIN);
+  if (subdomain) {
+    return subdomain;
   }
 
   // Default: use 'api' for production, 'api-dev' for development
@@ -26,14 +27,14 @@ function getApiSubdomain(): string {
 }
 
 /**
- * Get Auth subdomain based on environment
+ * Get Auth subdomain from config service
  * Production: auth
- * Development: auth-dev (or custom from AUTH_SUBDOMAIN env var)
+ * Development: auth-dev (or custom from config service/AUTH_SUBDOMAIN env var)
  */
-function getAuthSubdomain(): string {
-  const envSubdomain = process.env.AUTH_SUBDOMAIN;
-  if (envSubdomain) {
-    return envSubdomain;
+async function getAuthSubdomain(): Promise<string> {
+  const subdomain = await configClient.get('api.authSubdomain', process.env.AUTH_SUBDOMAIN);
+  if (subdomain) {
+    return subdomain;
   }
 
   // Default: use 'auth' for production, 'auth-dev' for development
@@ -54,11 +55,11 @@ async function getDomainUrl(subdomain: string): Promise<string> {
 
 /**
  * Get API domain URL (api-dev.tenant.com or api.tenant.com) - standard port 80
- * Uses environment-based subdomain
+ * Uses config service for subdomain with fallback to environment
  * Cached with React.cache for request-level deduplication
  */
 export const getApiDomain = cache(async function (): Promise<string> {
-  const apiSubdomain = getApiSubdomain();
+  const apiSubdomain = await getApiSubdomain();
   const url = await getDomainUrl(apiSubdomain);
   console.log("🔗 === GET API DOMAIN ===");
   console.log("🔗 API Subdomain:", apiSubdomain);
@@ -69,11 +70,11 @@ export const getApiDomain = cache(async function (): Promise<string> {
 
 /**
  * Get Auth domain URL (auth-dev.tenant.com or auth.tenant.com) - standard port 80
- * Uses environment-based subdomain
+ * Uses config service for subdomain with fallback to environment
  * Cached with React.cache for request-level deduplication
  */
 export const getAuthDomain = cache(async function (): Promise<string> {
-  const authSubdomain = getAuthSubdomain();
+  const authSubdomain = await getAuthSubdomain();
   return await getDomainUrl(authSubdomain);
 });
 

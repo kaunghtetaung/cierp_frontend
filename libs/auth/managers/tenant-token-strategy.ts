@@ -2,6 +2,7 @@
 import { CacheKeys } from '@repo/cache';
 import { getClientCredentialsToken } from '../core/oidc';
 import { getTokenConfig, shouldRefreshToken } from '../config/token-config';
+import { configClient } from '@repo/config';
 import type {
   TokenStrategy,
   TokenCache,
@@ -64,9 +65,9 @@ export class TenantTokenStrategy implements TokenStrategy {
   }
 
   async refreshToken(tenantId: string, userId?: string): Promise<string | null> {
-    // For tenant tokens, get from environment or use defaults
-    const clientId = process.env.TENANT_CLIENT_ID || 'default-tenant-client';
-    const clientSecret = process.env.TENANT_CLIENT_SECRET || 'default-tenant-secret';
+    // For tenant tokens, get from config service with fallback to environment
+    const clientId = await configClient.get('oidc.tenant.clientId', process.env.TENANT_CLIENT_ID || 'default-tenant-client');
+    const clientSecret = await configClient.get('oidc.tenant.clientSecret', process.env.TENANT_CLIENT_SECRET || 'default-tenant-secret');
     return this.createTenantToken(tenantId, clientId, clientSecret);
   }
 

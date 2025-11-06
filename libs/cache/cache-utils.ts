@@ -1,12 +1,31 @@
 // Cache configuration and utilities
 import { UnifiedCache } from './unified-cache';
+import { configClient } from '@repo/config';
 import type { CacheConfig, CacheInstance } from './types';
 
-// Default cache configuration following management panel pattern
+// Get default cache configuration from config service with fallback to env vars
+async function getDefaultCacheConfig(): Promise<CacheConfig> {
+  return {
+    host: await configClient.get('redis.host', process.env.REDIS_HOST || 'localhost'),
+    port: await configClient.get('redis.port', parseInt(process.env.REDIS_PORT || '6379', 10)),
+    username: await configClient.get('redis.username', process.env.REDIS_USERNAME),
+    password: await configClient.get('redis.password', process.env.REDIS_PASSWORD),
+    db: await configClient.get('redis.db', parseInt(process.env.REDIS_DB || '0', 10)),
+    keyPrefix: '',
+    lazyConnect: true,
+    enableLogging: process.env.NODE_ENV !== 'production',
+    maxRetriesPerRequest: 3,
+    retryDelayOnFailover: 100,
+    connectTimeout: 10000,
+    commandTimeout: 5000
+  };
+}
+
+// Synchronous fallback for backwards compatibility (uses only env vars)
 const DEFAULT_CACHE_CONFIG: CacheConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  username: process.env.REDIS_USERNAME, // Add username for Redis ACL
+  username: process.env.REDIS_USERNAME,
   password: process.env.REDIS_PASSWORD,
   db: parseInt(process.env.REDIS_DB || '0', 10),
   keyPrefix: '',
@@ -19,7 +38,17 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
 };
 
 /**
- * Get or create cache instance using singleton pattern
+ * Get or create cache instance using singleton pattern (async version with config service)
+ */
+export async function getCacheInstanceAsync(config?: Partial<CacheConfig>): Promise<UnifiedCache> {
+  const defaultConfig = await getDefaultCacheConfig();
+  const finalConfig = { ...defaultConfig, ...config };
+  return UnifiedCache.getInstance(finalConfig);
+}
+
+/**
+ * Get or create cache instance using singleton pattern (sync version, uses env vars only)
+ * @deprecated Use getCacheInstanceAsync for config service support
  */
 export function getCacheInstance(config?: Partial<CacheConfig>): UnifiedCache {
   const finalConfig = { ...DEFAULT_CACHE_CONFIG, ...config };

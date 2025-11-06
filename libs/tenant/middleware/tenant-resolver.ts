@@ -1,6 +1,7 @@
 // libs/tenant/middleware/tenant-resolver.ts
 import { NextRequest } from "next/server";
 import { buildTenantApiUrl } from "@repo/utils/common/url";
+import { configClient } from "@repo/config";
 import { MiddlewareConfig } from "./types";
 
 /**
@@ -22,12 +23,13 @@ export async function resolveTenantByDomain(
 
     let apiUrl: string;
     if (isLocalhost) {
-      // For localhost, API_GATEWAY_URL must be set in environment
-      if (!process.env.API_GATEWAY_URL) {
-        console.error("❌ API_GATEWAY_URL not set for localhost development");
+      // For localhost, get API Gateway URL from config service with fallback to environment
+      const apiGatewayUrl = await configClient.get('api.gatewayUrl', process.env.API_GATEWAY_URL);
+      if (!apiGatewayUrl) {
+        console.error("❌ API_GATEWAY_URL not found in config service or environment");
         throw new Error("Invalid organization");
       }
-      apiUrl = buildTenantApiUrl(hostname, protocol, { baseUrl: process.env.API_GATEWAY_URL });
+      apiUrl = buildTenantApiUrl(hostname, protocol, { baseUrl: apiGatewayUrl });
     } else {
       // For multi-tenant domains, use dynamic URL construction
       apiUrl = buildTenantApiUrl(hostname, protocol);

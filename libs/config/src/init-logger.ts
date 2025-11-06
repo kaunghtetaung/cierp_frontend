@@ -15,22 +15,23 @@ export async function initializeConfigWithLogging(): Promise<void> {
   const environment = process.env.CONFIG_SERVICE_ENVIRONMENT || process.env.NODE_ENV || 'development';
   const hotReloadEnabled = process.env.ENABLE_CONFIG_HOT_RELOAD === 'true';
 
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🔧 Config Service Initialization');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`📦 App: ${appName}`);
-  console.log(`🌍 Environment: ${environment}`);
-  console.log(`🔄 Hot-reload: ${hotReloadEnabled ? 'ENABLED' : 'DISABLED'}`);
+  // Use console.error to ensure output is visible in dev server logs
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error('🔧 Config Service Initialization');
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error(`📦 App: ${appName}`);
+  console.error(`🌍 Environment: ${environment}`);
+  console.error(`🔄 Hot-reload: ${hotReloadEnabled ? 'ENABLED' : 'DISABLED'}`);
 
   if (!hotReloadEnabled) {
-    console.log('📝 Using local environment variables only');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('📝 Using local environment variables only');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     return;
   }
 
   const serviceUrl = process.env.CONFIG_SERVICE_URL || 'http://config:3330';
-  console.log(`📍 Config Service: ${serviceUrl}`);
-  console.log('');
+  console.error(`📍 Config Service: ${serviceUrl}`);
+  console.error('');
 
   try {
     // Initialize the config client
@@ -41,36 +42,36 @@ export async function initializeConfigWithLogging(): Promise<void> {
       const allConfig = await configClient.getAll();
       const configKeys = allConfig ? Object.keys(allConfig) : [];
 
-      console.log('✅ Config loaded successfully from config service');
-      console.log(`📊 Loaded ${configKeys.length} config sections: ${configKeys.join(', ')}`);
-      console.log(`🕒 Fetched at: ${lastFetch}`);
-      console.log(`🔄 Next refresh: 5 minutes`);
+      console.error('✅ Config loaded successfully from config service');
+      console.error(`📊 Loaded ${configKeys.length} config sections: ${configKeys.join(', ')}`);
+      console.error(`🕒 Fetched at: ${lastFetch}`);
+      console.error(`🔄 Next refresh: 5 minutes`);
 
       // Log sample values (without sensitive data)
       if (allConfig) {
-        console.log('');
-        console.log('📝 Sample Config Values:');
+        console.error('');
+        console.error('📝 Sample Config Values:');
         if (allConfig.redis) {
-          console.log(`   Redis: ${allConfig.redis.host}:${allConfig.redis.port}`);
+          console.error(`   Redis: ${allConfig.redis.host}:${allConfig.redis.port}`);
         }
         if (allConfig.minio?.internal) {
-          console.log(`   MinIO: ${allConfig.minio.internal.endpoint}:${allConfig.minio.internal.port}`);
+          console.error(`   MinIO: ${allConfig.minio.internal.endpoint}:${allConfig.minio.internal.port}`);
         }
         if (allConfig.server) {
-          console.log(`   Server Port: ${allConfig.server.port}`);
+          console.error(`   Server Port: ${allConfig.server.port}`);
         }
       }
     } else {
-      console.log('⚠️  Config service unavailable, using fallback values');
-      console.log('📝 Using environment variables from .env file');
+      console.error('⚠️  Config service unavailable, using fallback values');
+      console.error('📝 Using environment variables from .env file');
     }
   } catch (error) {
     console.error('❌ Config service initialization error:', error instanceof Error ? error.message : error);
-    console.log('📝 Falling back to environment variables');
+    console.error('📝 Falling back to environment variables');
   }
 
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('');
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error('');
 }
 
 /**

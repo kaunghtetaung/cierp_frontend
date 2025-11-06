@@ -30,8 +30,8 @@ export class S3Client {
   private client: AWSS3Client;
   private config: S3Config;
 
-  constructor(config?: S3Config) {
-    this.config = config || getS3Config();
+  constructor(config: S3Config) {
+    this.config = config;
     validateS3Config(this.config);
 
     const endpoint = this.config.port
@@ -47,6 +47,15 @@ export class S3Client {
       },
       forcePathStyle: true, // Required for MinIO
     });
+  }
+
+  /**
+   * Create S3Client instance from config service
+   * This static factory method loads config asynchronously
+   */
+  static async create(config?: S3Config): Promise<S3Client> {
+    const finalConfig = config || await getS3Config();
+    return new S3Client(finalConfig);
   }
 
   /**

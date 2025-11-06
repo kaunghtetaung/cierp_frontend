@@ -3,6 +3,7 @@ import { CacheKeys, CacheTTL } from '@repo/cache';
 import { getClientCredentialsToken } from '../core/oidc';
 import { getAuthDomain } from '@repo/utils/server';
 import { getTokenConfig, shouldRefreshToken } from '../config/token-config';
+import { configClient } from '@repo/config';
 import type {
   TokenStrategy,
   TokenCache,
@@ -72,12 +73,13 @@ export class InitializerTokenStrategy implements TokenStrategy {
   }
 
   async refreshToken(): Promise<string | null> {
-    const clientId = process.env.TENANT_API_CLIENT_ID;
-    const clientSecret = process.env.TENANT_API_CLIENT_SECRET;
+    // Try to get credentials from config service first, fallback to env vars
+    const clientId = await configClient.get('oidc.clientId', process.env.TENANT_API_CLIENT_ID);
+    const clientSecret = await configClient.get('oidc.clientSecret', process.env.TENANT_API_CLIENT_SECRET);
 
     if (!clientId || !clientSecret) {
       console.error(
-        "❌ InitializerToken: Missing credentials - TENANT_API_CLIENT_ID and TENANT_API_CLIENT_SECRET must be configured"
+        "❌ InitializerToken: Missing TENANT_API_CLIENT_ID or TENANT_API_CLIENT_SECRET"
       );
       return null;
     }

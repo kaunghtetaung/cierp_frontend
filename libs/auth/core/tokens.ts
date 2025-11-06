@@ -1,6 +1,7 @@
 // Simplified Token Management - Following your established patterns
 import { getCacheInstance, CacheKeys, CacheTTL } from "@repo/cache";
 import { getTenantSecrets } from "@repo/tenant/wrapper";
+import { configClient } from "@repo/config";
 
 // Simple types (much cleaner than before)
 export interface TokenData {
@@ -46,16 +47,16 @@ export async function getInitializerToken(): Promise<string | null> {
   }
   
   try {
-    const clientId = process.env.TENANT_API_CLIENT_ID;
-    const clientSecret = process.env.TENANT_API_CLIENT_SECRET;
-    
+    const clientId = await configClient.get('oidc.clientId', process.env.TENANT_API_CLIENT_ID);
+    const clientSecret = await configClient.get('oidc.clientSecret', process.env.TENANT_API_CLIENT_SECRET);
+
     if (!clientId || !clientSecret) {
-      console.error("❌ InitializerToken: Missing TENANT_API_CLIENT_ID or TENANT_API_CLIENT_SECRET");
+      console.error("❌ InitializerToken: Missing OIDC credentials - not found in config service or environment");
       return null;
     }
-    
+
     console.log(`🔄 InitializerToken: Using client ID: ${clientId.substring(0, 10)}...`);
-    
+
     // Get new token from OIDC
     const { getClientCredentialsToken } = await import('./oidc');
     const tokenData = await getClientCredentialsToken(

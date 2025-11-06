@@ -9,7 +9,8 @@
     "./types": "./types.ts"
   },
   "dependencies": {
-    "ioredis": "^5.6.1"
+    "ioredis": "^5.6.1",
+    "@repo/config": "workspace:*"
   },
   "devDependencies": {
     "@types/ioredis": "^4.28.10",

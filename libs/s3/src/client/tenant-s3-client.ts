@@ -20,23 +20,33 @@ export class TenantS3Client {
   private context: TenantS3Context;
   private initializationPromise: Promise<void> | null = null;
 
-  constructor(context: TenantS3Context, client?: S3Client) {
+  constructor(context: TenantS3Context, client: S3Client) {
     this.context = context;
+    this.client = client;
 
-    // Create S3Client with tenant-specific bucket name
+    // Initialize bucket in background (only runs once per bucket)
+    this.initializationPromise = this.ensureBucketInitialized();
+  }
+
+  /**
+   * Create TenantS3Client instance from config service
+   * This static factory method loads config asynchronously
+   */
+  static async create(context: TenantS3Context, client?: S3Client): Promise<TenantS3Client> {
+    let finalClient: S3Client;
+
     if (client) {
-      this.client = client;
+      finalClient = client;
     } else {
-      const baseConfig = getS3Config();
+      const baseConfig = await getS3Config();
       const tenantConfig: S3Config = {
         ...baseConfig,
         bucketName: context.tenantSlug, // Use tenant slug as bucket name
       };
-      this.client = new S3Client(tenantConfig);
+      finalClient = new S3Client(tenantConfig);
     }
 
-    // Initialize bucket in background (only runs once per bucket)
-    this.initializationPromise = this.ensureBucketInitialized();
+    return new TenantS3Client(context, finalClient);
   }
 
   /**

@@ -23,7 +23,8 @@
     "@aws-sdk/client-s3": "^3.709.0",
     "@aws-sdk/s3-request-presigner": "^3.709.0",
     "@repo/types": "workspace:*",
-    "@repo/cache": "workspace:*"
+    "@repo/cache": "workspace:*",
+    "@repo/config": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
