@@ -420,6 +420,13 @@ curl -X POST http://localhost:3338/cache/clear
 **Git Commits**:
 - Backup: `4495dad` - Before integration
 - Complete: `cf9ace9` - Integration complete
+- TypeScript paths (root): `205f15f` - Added @repo/pdf and @repo/config to root tsconfig
+- TypeScript paths (publicWeb): `bf61d35` - Added @repo/pdf to publicWeb tsconfig (required for Next.js)
+
+**Module Resolution Fix**:
+App-level tsconfig paths override root paths in Next.js. Both tsconfig files needed updates:
+1. Root `tsconfig.json` - Added `@repo/pdf` and `@repo/config` paths
+2. `apps/publicWeb/tsconfig.json` - Added `@repo/pdf` paths (critical for Next.js webpack resolution)
 
 **Issues**:
 - PDF service not starting → Check port 3338

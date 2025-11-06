@@ -1,28 +1,29 @@
 /**
  * PDF Proxy API Route for publicWeb app
- * Streams private PDF files from S3 with page-by-page watermark overlay
+ * Proxy for PDF watermark service with session validation
  *
- * How it works:
- * 1. Validate session and permissions
- * 2. For page requests: Call PDF watermark service
- * 3. For metadata requests: Fetch full PDF from S3 (cached 24h)
+ * Flow:
+ * 1. Browser → Next.js API Route (validate session)
+ * 2. Next.js → PDF Service (with S3 path + user info)
+ * 3. PDF Service → S3 (fetch PDF with caching)
+ * 4. PDF Service → Watermark + Cache
+ * 5. PDF Service → Next.js → Browser
  *
  * The PDF watermark service handles:
- * - Fetching from S3
- * - Redis caching (3min TTL)
+ * - S3 file fetching
+ * - Redis caching (input PDFs and output pages)
  * - Page extraction
  * - Watermark application (diagonal grid pattern)
  *
  * Query parameters:
- * - file: S3 file path (required)
+ * - file: S3 file path from backend (e.g., /private/common/ebooks/xxx.pdf)
  * - app: App name for S3 bucket (default: 'publicWeb')
  * - watermark: Watermark text (optional)
- * - page: Page number to fetch (1-indexed, optional - if not provided, sends full PDF)
+ * - page: Page number to fetch (1-indexed, required)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createTenantS3Client } from '@repo/s3/client';
 import { validateRequest } from '@repo/auth/core';
 import { COOKIE_NAMES } from '@repo/utils/common/constants';
 import { getCacheInstance, CacheKeys } from '@repo/cache';
@@ -30,9 +31,6 @@ import { createPdfServiceClient } from '@repo/pdf';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-// Cache TTL for PDFs in Redis (24 hours)
-const PDF_CACHE_TTL = 24 * 60 * 60;
 
 /**
  * GET handler for PDF proxy with watermark
@@ -42,13 +40,20 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const filePath = searchParams.get('file');
-    const app = searchParams.get('app') || 'publicWeb';
+    const app = searchParams.get('app') || 'library';
     const watermarkText = searchParams.get('watermark');
-    const pageNum = searchParams.get('page'); // Optional: page number (1-indexed)
+    const pageNum = searchParams.get('page'); // Required: page number (1-indexed)
 
     if (!filePath) {
       return NextResponse.json(
         { error: 'Missing file parameter' },
+        { status: 400 }
+      );
+    }
+
+    if (!pageNum) {
+      return NextResponse.json(
+        { error: 'Missing page parameter' },
         { status: 400 }
       );
     }
@@ -83,13 +88,6 @@ export async function GET(request: NextRequest) {
       tenantId,
     });
 
-    console.log('[PDF_PROXY] Request:', {
-      filePath,
-      app,
-      pageNum,
-      hasWatermark: !!watermarkText,
-    });
-
     // Get tenant slug from cache
     const tenantSlug = await getTenantSlugFromCache(tenantId);
 
@@ -98,111 +96,58 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to resolve tenant' }, { status: 500 });
     }
 
-    // Extract root domain from host header
-    const host = request.headers.get('host');
-    const tenantRootDomain = host ? extractRootDomain(host) : undefined;
-
-    // Extract relative path (remove app prefix and leading slash if present)
+    // Extract relative path (remove leading slash if present)
     let relativePath = filePath;
     if (relativePath.startsWith('/')) {
       relativePath = relativePath.substring(1);
     }
-    if (relativePath.startsWith(`${app}/`)) {
-      relativePath = relativePath.substring(`${app}/`.length);
+
+    // Build S3 path: {tenantSlug}/{app}/{relativePath}
+    // Example: um1/library/private/common/ebooks/68d14ff9125447a7a4f8161c.pdf
+    const s3Path = `${tenantSlug}/${app}/${relativePath}`;
+
+    const page = parseInt(pageNum, 10);
+    if (isNaN(page) || page < 1) {
+      return NextResponse.json(
+        { error: 'Invalid page number' },
+        { status: 400 }
+      );
     }
 
-    // Create cache key for this PDF
-    const cache = getCacheInstance();
-    const pdfCacheKey = `pdf:${tenantId}:${app}:${relativePath}`;
+    console.log('[PDF_PROXY] Requesting page', page, 'from PDF service. S3 path:', s3Path);
 
-    console.log('[PDF_PROXY] Cache key:', pdfCacheKey);
+    try {
+      const pdfServiceClient = createPdfServiceClient();
 
-    // Try to get PDF from Redis cache
-    let pdfBuffer: Buffer;
-    const cachedPdf = await cache.get(pdfCacheKey);
-
-    if (cachedPdf && Buffer.isBuffer(cachedPdf)) {
-      console.log('[PDF_PROXY] PDF found in cache');
-      pdfBuffer = cachedPdf;
-    } else {
-      // Not in cache - fetch from S3
-      console.log('[PDF_PROXY] PDF not in cache, fetching from S3...');
-
-      const s3Client = createTenantS3Client({
-        tenantId,
-        tenantSlug,
-        tenantRootDomain,
-        app,
-        basePath: '',
+      const watermarkedPage = await pdfServiceClient.getWatermarkedPage({
+        filePath: s3Path, // Full S3 path: bucket/app/file
+        pageNumber: page,
+        userName: userEmail || userId,
+        userId: userId,
+        watermarkText: watermarkText || 'CONFIDENTIAL',
+        tenantId: tenantId,
+        tenantName: tenantSlug,
+        outputFormat: 'pdf', // PDF format for viewer compatibility
       });
 
-      pdfBuffer = await s3Client.getObject(relativePath);
-      console.log('[PDF_PROXY] PDF fetched from S3, size:', pdfBuffer.length, 'bytes');
+      console.log('[PDF_PROXY] Watermarked page received from PDF service');
 
-      // Cache the PDF in Redis for 24 hours
-      await cache.set(pdfCacheKey, pdfBuffer, PDF_CACHE_TTL);
-      console.log('[PDF_PROXY] PDF cached in Redis');
+      return new NextResponse(watermarkedPage, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Length': watermarkedPage.length.toString(),
+          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+          'Content-Disposition': 'inline',
+        },
+      });
+    } catch (pdfServiceError) {
+      console.error('[PDF_PROXY] PDF service error:', pdfServiceError);
+      return NextResponse.json(
+        { error: 'Failed to watermark PDF page', details: pdfServiceError instanceof Error ? pdfServiceError.message : 'Unknown error' },
+        { status: 500 }
+      );
     }
-
-    // If page number is specified, use PDF watermark service
-    if (pageNum) {
-      const page = parseInt(pageNum, 10);
-      if (isNaN(page) || page < 1) {
-        return NextResponse.json(
-          { error: 'Invalid page number' },
-          { status: 400 }
-        );
-      }
-
-      console.log('[PDF_PROXY] Requesting watermarked page from PDF service:', page);
-
-      try {
-        const pdfServiceClient = createPdfServiceClient();
-
-        const watermarkedPage = await pdfServiceClient.getWatermarkedPage({
-          filePath: relativePath,
-          pageNumber: page,
-          userName: userEmail || userId,
-          userId: userId,
-          watermarkText: watermarkText || 'CONFIDENTIAL',
-          tenantId: tenantId,
-          tenantName: tenantSlug,
-          outputFormat: 'pdf', // Use PDF format for viewer compatibility
-        });
-
-        console.log('[PDF_PROXY] Watermarked page received from PDF service');
-
-        return new NextResponse(watermarkedPage, {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Length': watermarkedPage.length.toString(),
-            'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-            'Content-Disposition': 'inline',
-          },
-        });
-      } catch (pdfServiceError) {
-        console.error('[PDF_PROXY] PDF service error:', pdfServiceError);
-        return NextResponse.json(
-          { error: 'Failed to watermark PDF page', details: pdfServiceError instanceof Error ? pdfServiceError.message : 'Unknown error' },
-          { status: 500 }
-        );
-      }
-    }
-
-    // No page specified - return full PDF (for initial metadata/page count)
-    // Don't watermark the full PDF, let the viewer request pages individually
-    console.log('[PDF_PROXY] Returning full PDF (no watermark)');
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Length': pdfBuffer.length.toString(),
-        'Accept-Ranges': 'bytes',
-        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-        'Content-Disposition': 'inline',
-      },
-    });
   } catch (error) {
     console.error('[PDF_PROXY] Error:', error);
     return NextResponse.json(
