@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
+  transpilePackages: ['@repo/nrc-hooks'],
   // Configure Server Actions
   experimental: {
     serverActions: {

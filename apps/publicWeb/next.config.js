@@ -9,6 +9,7 @@ const nextConfig = {
     // Disable canvas in pdfjs-dist
     PDFJS_PREBUILT_DIR: '',
   },
+  transpilePackages: ['@repo/nrc-hooks'],
   experimental: {
     optimizePackageImports: ['@repo/ui', '@repo/utils', '@repo/language'],
   },

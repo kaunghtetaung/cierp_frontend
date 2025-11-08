@@ -434,7 +434,8 @@ export class TenantS3Client {
 
 /**
  * Factory function to create tenant-scoped S3 client
+ * Asynchronously creates the S3 client with proper configuration
  */
-export function createTenantS3Client(context: TenantS3Context): TenantS3Client {
-  return new TenantS3Client(context);
+export async function createTenantS3Client(context: TenantS3Context): Promise<TenantS3Client> {
+  return await TenantS3Client.create(context);
 }

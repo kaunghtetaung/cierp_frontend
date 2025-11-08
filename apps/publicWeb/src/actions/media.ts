@@ -193,7 +193,7 @@ export async function listMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -325,7 +325,7 @@ export async function uploadMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -486,7 +486,7 @@ export async function deleteMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -552,7 +552,7 @@ export async function createFolderAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -611,7 +611,7 @@ export async function renameMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -673,7 +673,7 @@ export async function moveMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context (NO basePath - we'll build full keys manually)
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,

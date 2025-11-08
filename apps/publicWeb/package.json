@@ -19,6 +19,7 @@
     "@repo/auth": "workspace:*",
     "@repo/cache": "workspace:*",
     "@repo/language": "workspace:*",
+    "@repo/nrc-hooks": "workspace:*",
     "@repo/page": "workspace:*",
     "@repo/schema-forms": "workspace:*",
     "@repo/schema-utils": "workspace:*",

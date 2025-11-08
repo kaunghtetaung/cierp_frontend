@@ -36,6 +36,7 @@
     "@repo/base-dashboard": "workspace:*",
     "@repo/hooks": "workspace:*",
     "@repo/language": "workspace:*",
+    "@repo/nrc-hooks": "workspace:*",
     "@repo/schema-forms": "workspace:*",
     "@repo/schema-hooks": "workspace:*",
     "@repo/schema-tables": "workspace:*",

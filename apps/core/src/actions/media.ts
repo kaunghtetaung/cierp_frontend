@@ -192,7 +192,7 @@ export async function listMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -334,7 +334,7 @@ export async function uploadMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -355,18 +355,24 @@ export async function uploadMediaAction(params: {
       expiresIn: 3600,
     });
 
+    // Build full database key with tenant slug prefix
+    // Format: {tenantSlug}/{key}
+    // Example: um1/cpms/private/common/students/photos/file.jpg
+    const fullKey = `${tenantInfo.tenantSlug}/${key}`;
+
     logger.info('[uploadMediaAction] Generated URL for uploaded file', {
       component: 'media-actions',
       operation: 'upload',
       fileName: file.name,
-      key,
+      s3Key: key,
+      fullKey: fullKey,
       url,
       isPublicPath: key.includes('/public/') || key.startsWith('public/'),
       tenantRootDomain: tenantInfo.tenantRootDomain,
     });
 
     const result = {
-      key,
+      key: fullKey, // Store full key with tenant slug prefix for database
       name: file.name,
       size: file.size,
       type: file.type,
@@ -494,7 +500,7 @@ export async function deleteMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -560,7 +566,7 @@ export async function createFolderAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -619,7 +625,7 @@ export async function renameMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -681,7 +687,7 @@ export async function moveMediaAction(params: {
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client with tenant context (NO basePath - we'll build full keys manually)
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -761,7 +767,7 @@ export async function uploadPdfThumbnailAction({
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
     // Create S3 client
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantSlug: tenantInfo.tenantSlug,
       subdomain: tenantInfo.subdomain,
     });
