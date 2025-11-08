@@ -1,0 +1,246 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 243,
+            "DNRC_Code": "1",
+            "NRC_Code": "ကပတ",
+            "Township_Name": "ကန်ပိုက်တီး(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 239,
+            "DNRC_Code": "1",
+            "NRC_Code": "ကမတ",
+            "Township_Name": "ကာမိုင်း(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 223,
+            "DNRC_Code": "1",
+            "NRC_Code": "ကမန",
+            "Township_Name": "ဖားကန့်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 222,
+            "DNRC_Code": "1",
+            "NRC_Code": "ခဖန",
+            "Township_Name": "ချီဖွေ",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 225,
+            "DNRC_Code": "1",
+            "NRC_Code": "ခဘဒ",
+            "Township_Name": "ခေါင်လန်ဖူး",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 240,
+            "DNRC_Code": "1",
+            "NRC_Code": "ခဘဒ",
+            "Township_Name": "ခေါ်ဘူဒဲ",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 242,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဆဒန",
+            "Township_Name": "ဆဒုံး(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 235,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဆပဘ",
+            "Township_Name": "ဆွမ်ပရာဘွမ်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 241,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဆဘတ",
+            "Township_Name": "ဆင်ဘို(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 237,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဆလန",
+            "Township_Name": "ဆော့လော်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 236,
+            "DNRC_Code": "1",
+            "NRC_Code": "တနန",
+            "Township_Name": "တနိုင်း",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 250,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဒဖယ",
+            "Township_Name": "ဒေါ့ဖုန်းယန်(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 232,
+            "DNRC_Code": "1",
+            "NRC_Code": "နမန",
+            "Township_Name": "နောင်မွန်း",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 233,
+            "DNRC_Code": "1",
+            "NRC_Code": "ပတအ",
+            "Township_Name": "ပူတာအို",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 249,
+            "DNRC_Code": "1",
+            "NRC_Code": "ပနဒ",
+            "Township_Name": "ပန်နန်းဒင်(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 245,
+            "DNRC_Code": "1",
+            "NRC_Code": "ပဝန",
+            "Township_Name": "ပန်းဝါ(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 221,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဗမန",
+            "Township_Name": "ဗန်းမော်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 228,
+            "DNRC_Code": "1",
+            "NRC_Code": "မကတ",
+            "Township_Name": "မိုးကောင်း",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 231,
+            "DNRC_Code": "1",
+            "NRC_Code": "မကန",
+            "Township_Name": "မြစ်ကြီးနား",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 226,
+            "DNRC_Code": "1",
+            "NRC_Code": "မခဘ",
+            "Township_Name": "မချမ်းဘော",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 227,
+            "DNRC_Code": "1",
+            "NRC_Code": "မစန",
+            "Township_Name": "မန်စီ",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 229,
+            "DNRC_Code": "1",
+            "NRC_Code": "မညန",
+            "Township_Name": "မိုးညှင်း",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 230,
+            "DNRC_Code": "1",
+            "NRC_Code": "မမန",
+            "Township_Name": "မိုးမောက်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 247,
+            "DNRC_Code": "1",
+            "NRC_Code": "မလန",
+            "Township_Name": "မြို့လှ(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 234,
+            "DNRC_Code": "1",
+            "NRC_Code": "ရကန",
+            "Township_Name": "​ရွေကူ",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 244,
+            "DNRC_Code": "1",
+            "NRC_Code": "ရဗယ",
+            "Township_Name": "ရှင်ဗွေယန်(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 248,
+            "DNRC_Code": "1",
+            "NRC_Code": "လဂန",
+            "Township_Name": "လွယ်ဂျယ်(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 238,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဝမန",
+            "Township_Name": "ဝိုင်းမော်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 246,
+            "DNRC_Code": "1",
+            "NRC_Code": "ဟပန",
+            "Township_Name": "ဟိုပင်(ခွဲ)",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 224,
+            "DNRC_Code": "1",
+            "NRC_Code": "အဂယ",
+            "Township_Name": "အင်ဂျန်းယန်",
+            "DNRC_Code_MM": "၁",
+            "Township_Code": null
+        }
+    ]
+}

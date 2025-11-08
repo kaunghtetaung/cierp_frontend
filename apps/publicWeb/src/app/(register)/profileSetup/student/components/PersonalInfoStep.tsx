@@ -507,7 +507,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
             <span className="text-red-500 ml-1">*</span>
           </Label>
           <Controller
-            name="phone"
+            name="phoneNumber"
             control={control}
             render={({ field }) => (
               <div className="relative">
@@ -518,7 +518,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                   value={field.value || ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  error={!!errors.phone}
+                  error={!!errors.phoneNumber}
                   config={{
                     defaultCountry: 'MM',
                     preferredCountries: ['MM', 'US', 'GB'],
@@ -534,8 +534,8 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
               </div>
             )}
           />
-          {errors.phone && (
-            <p className="text-sm text-red-600">{errors.phone.message as string}</p>
+          {errors.phoneNumber && (
+            <p className="text-sm text-red-600">{errors.phoneNumber.message as string}</p>
           )}
         </div>
 

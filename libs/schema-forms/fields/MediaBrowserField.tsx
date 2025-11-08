@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@repo/ui';
 import {
   X,
@@ -50,10 +50,85 @@ export function MediaBrowserField({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [displayValue, setDisplayValue] = useState<any>(null);
+  const [isTransformingUrl, setIsTransformingUrl] = useState(false);
   const { tenantId, appId, username, isLoading, error: contextError } = useAppContext();
 
-  // Parse current value to display
-  const displayFiles = parseValue(value, config.returnFormat);
+  // Transform S3 keys to signed URLs for display
+  useEffect(() => {
+    const transformS3KeyToUrl = async () => {
+      // Check if value looks like an S3 key (contains path structure but not a URL)
+      if (value && typeof value === 'string' && value.includes('/') && !value.startsWith('http') && !value.startsWith('blob:')) {
+        console.log(`[MediaBrowserField] Detected S3 key for ${fieldName}, fetching signed URL:`, value);
+        setIsTransformingUrl(true);
+
+        try {
+          // Import the action to get signed URL
+          const { getPrivateFileUrl } = await import('@/actions/media-url');
+
+          // Extract tenant root domain from current hostname
+          const hostname = window.location.hostname;
+          const tenantRootDomain = hostname.split('.').slice(1).join('.');
+          const tenantSlug = value.split('/')[0]; // Extract slug from S3 key
+
+          // Extract app from URL path (e.g., /cpms/students -> cpms)
+          const pathParts = window.location.pathname.split('/').filter(Boolean);
+          const appFromPath = pathParts[0] || 'cpms';
+
+          // Use fallback values if context is not available
+          const contextTenantId = tenantId || tenantSlug;
+          const contextAppId = appId || appFromPath;
+
+          console.log(`[MediaBrowserField] Fetching signed URL with context:`, {
+            tenantId: contextTenantId,
+            tenantSlug,
+            tenantRootDomain,
+            appId: contextAppId,
+            extractedFromUrl: !tenantId || !appId
+          });
+
+          const result = await getPrivateFileUrl({
+            s3Key: value,
+            tenantId: contextTenantId,
+            tenantSlug: tenantSlug,
+            tenantRootDomain: tenantRootDomain,
+            app: contextAppId,
+            includeThumbnails: true, // Request thumbnails for preview
+          });
+
+          if (result.success && result.signedUrl) {
+            console.log(`[MediaBrowserField] Successfully transformed S3 key to signed URL for ${fieldName}`, {
+              hasThumbnails: !!result.thumbnails,
+            });
+            // Create display object with signed URL and thumbnails
+            setDisplayValue({
+              name: value.split('/').pop() || value,
+              url: result.signedUrl,
+              key: value,
+              type: guessFileType(value),
+              thumbnails: result.thumbnails, // Add thumbnails for preview
+            });
+          } else {
+            console.error(`[MediaBrowserField] Failed to get signed URL for ${fieldName}:`, result);
+            setDisplayValue(parseValue(value, config.returnFormat));
+          }
+        } catch (err) {
+          console.error(`[MediaBrowserField] Error fetching signed URL for ${fieldName}:`, err);
+          setDisplayValue(parseValue(value, config.returnFormat));
+        } finally {
+          setIsTransformingUrl(false);
+        }
+      } else {
+        // Value is already a URL or object, use as-is
+        setDisplayValue(parseValue(value, config.returnFormat));
+      }
+    };
+
+    transformS3KeyToUrl();
+  }, [value, fieldName, config.returnFormat, tenantId, appId]);
+
+  // Use displayValue instead of parsing value directly
+  const displayFiles = displayValue;
 
   const handleSelect = (files: MediaFile[]) => {
     // Format value based on returnFormat
@@ -457,11 +532,19 @@ function parseValue(value: any, returnFormat?: string): any {
   // If string (URL or key), convert to object
   if (typeof value === 'string') {
     const isUrl = value.startsWith('http');
+
+    // Extract filename from URL or path
+    // For URLs with query params (signed URLs), extract filename before '?'
+    let filename = value.split('/').pop() || value;
+    if (filename.includes('?')) {
+      filename = filename.split('?')[0];
+    }
+
     return {
-      name: value.split('/').pop() || value,
+      name: filename,
       url: isUrl ? value : value,
       key: isUrl ? value : value,
-      type: guessFileType(value),
+      type: guessFileType(filename),
     };
   }
 

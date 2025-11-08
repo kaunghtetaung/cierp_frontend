@@ -165,21 +165,24 @@ export async function getMyProfile() {
  * @param tenantId - The tenant ID
  * @param tenantSlug - The organization slug (bucket name)
  * @param tenantRootDomain - The root domain
+ * @param includeThumbnails - Whether to include thumbnail URLs (default: false)
  */
 export async function getProfilePhotoUrl(params: {
   s3Key: string;
   tenantId: string;
   tenantSlug: string;
   tenantRootDomain: string;
+  includeThumbnails?: boolean;
 }) {
   return withServerActionErrorHandler(async () => {
-    const { s3Key, tenantId, tenantSlug, tenantRootDomain } = params;
+    const { s3Key, tenantId, tenantSlug, tenantRootDomain, includeThumbnails = false } = params;
 
     logger.info('Getting profile photo URL', {
       component: 'profile-student-actions',
       operation: 'getProfilePhotoUrl',
       s3Key,
       tenantSlug,
+      includeThumbnails,
     });
 
     // Extract the actual S3 key (remove organization slug prefix)
@@ -189,7 +192,7 @@ export async function getProfilePhotoUrl(params: {
     const actualKey = keyParts.slice(1).join('/'); // Remove first part (organization slug)
 
     // Create S3 client
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId,
       tenantSlug, // Bucket name
       tenantRootDomain,
@@ -212,9 +215,50 @@ export async function getProfilePhotoUrl(params: {
       signedUrlGenerated: !!signedUrl,
     });
 
+    // Generate thumbnail URLs if requested
+    let thumbnails: { small?: string; medium?: string; large?: string } | undefined;
+
+    if (includeThumbnails) {
+      try {
+        const { getThumbnailKey, THUMBNAIL_SIZES } = await import('@repo/s3/services/thumbnail-generator');
+
+        const thumbnailUrls: { small?: string; medium?: string; large?: string } = {};
+
+        for (const sizeName of Object.keys(THUMBNAIL_SIZES)) {
+          const thumbnailKey = getThumbnailKey(actualKey, sizeName as keyof typeof THUMBNAIL_SIZES);
+
+          const thumbnailUrl = await s3Client.getPreSignedUrl(
+            thumbnailKey,
+            {
+              expiresIn: 604800, // 7 days
+            },
+            true // skipPathResolution
+          );
+
+          thumbnailUrls[sizeName as 'small' | 'medium' | 'large'] = thumbnailUrl;
+        }
+
+        thumbnails = thumbnailUrls;
+
+        logger.info('Generated thumbnail URLs for profile photo', {
+          component: 'profile-student-actions',
+          operation: 'getProfilePhotoUrl',
+          thumbnailCount: Object.keys(thumbnailUrls).length,
+        });
+      } catch (error) {
+        logger.error('Failed to generate thumbnail URLs for profile photo', {
+          component: 'profile-student-actions',
+          operation: 'getProfilePhotoUrl',
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Continue without thumbnails
+      }
+    }
+
     return {
       success: true,
       signedUrl,
+      thumbnails,
     };
   }, {
     operation: 'get-profile-photo-url',

@@ -6,6 +6,8 @@ import { getModuleList } from "@repo/app-modules";
 import { ModuleDataTableWrapper } from "@/components/modules/ModuleDataTableWrapper";
 import { ModuleDataTableWithTimeout } from "@/components/modules/ModuleDataTableWithTimeout";
 import type { ClientModule, ModulePermissions } from "@/types/layout";
+import { existsSync } from "fs";
+import path from "path";
 
 interface ModulePageProps {
   params: Promise<{
@@ -39,6 +41,38 @@ export default async function ModulePage({
     resolvedParams.appId,
     resolvedParams.module
   );
+
+  // ⭐ CHECK: If static module exists for this appId/module combination
+  const staticModulePath = path.join(
+    process.cwd(),
+    "src",
+    "staticModules",
+    resolvedParams.appId,
+    resolvedParams.module,
+    "page.tsx"
+  );
+
+  if (existsSync(staticModulePath)) {
+    // Dynamic import of static module
+    try {
+      const StaticModule = await import(
+        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/page`
+      );
+      return (
+        <StaticModule.default
+          module={fullModule}
+          user={user}
+          appId={resolvedParams.appId}
+        />
+      );
+    } catch (error) {
+      console.error(
+        `Failed to load static module: ${resolvedParams.appId}/${resolvedParams.module}`,
+        error
+      );
+      // Fall through to generic module if import fails
+    }
+  }
 
   // Get filtered layout data (this will only include modules user has access to)
   const { appSchemaData } = await fetchLayoutData();

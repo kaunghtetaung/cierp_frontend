@@ -129,18 +129,27 @@ export function PersonalInfoStep() {
 
       {/* Mobile Row 4: Ethnicity/Race, Religion | Desktop Row 3: Ethnicity/Race, Religion, NRC Number */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-        {/* Ethnicity */}
+        {/* Race */}
         <div className="col-span-1 md:col-span-1">
-          <label htmlFor="ethnicity" className={labelClass}>
-            Ethnicity/Race
+          <label htmlFor="race" className={labelClass}>
+            Race
           </label>
-          <input
-            {...register("ethnicity")}
-            id="ethnicity"
-            type="text"
+          <select
+            {...register("race")}
+            id="race"
             className={inputClass}
-            placeholder="e.g., Bamar, Shan"
-          />
+          >
+            <option value="">Select Race</option>
+            <option value="bamar">Bamar</option>
+            <option value="shan">Shan</option>
+            <option value="karen">Karen</option>
+            <option value="rakhine">Rakhine</option>
+            <option value="chin">Chin</option>
+            <option value="kachin">Kachin</option>
+            <option value="kayah">Kayah</option>
+            <option value="mon">Mon</option>
+            <option value="other">Other</option>
+          </select>
         </div>
 
         {/* Religion */}
@@ -148,13 +157,18 @@ export function PersonalInfoStep() {
           <label htmlFor="religion" className={labelClass}>
             Religion
           </label>
-          <input
+          <select
             {...register("religion")}
             id="religion"
-            type="text"
             className={inputClass}
-            placeholder="e.g., Buddhism"
-          />
+          >
+            <option value="">Select Religion</option>
+            <option value="buddhism">Buddhism</option>
+            <option value="christianity">Christianity</option>
+            <option value="islam">Islam</option>
+            <option value="hinduism">Hinduism</option>
+            <option value="other">Other</option>
+          </select>
         </div>
 
         {/* NRC Number - Mobile: Full width Row 5, Desktop: Row 3 */}

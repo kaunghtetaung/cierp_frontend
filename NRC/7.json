@@ -1,0 +1,230 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 84,
+            "DNRC_Code": "7",
+            "NRC_Code": "ကကန",
+            "Township_Name": "ကျောက်ကြီး",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0251"
+        },
+        {
+            "ID": 85,
+            "DNRC_Code": "7",
+            "NRC_Code": "ကတခ",
+            "Township_Name": "ကျောက်တံခါး",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0252"
+        },
+        {
+            "ID": 414,
+            "DNRC_Code": "7",
+            "NRC_Code": "ကပက",
+            "Township_Name": "ကြို့ပင်ကောက်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 83,
+            "DNRC_Code": "7",
+            "NRC_Code": "ကဝန",
+            "Township_Name": "ကဝ",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0250"
+        },
+        {
+            "ID": 427,
+            "DNRC_Code": "7",
+            "NRC_Code": "ဇကန",
+            "Township_Name": "ဇီးကုန်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 86,
+            "DNRC_Code": "7",
+            "NRC_Code": "ညလပ",
+            "Township_Name": "ညောင်လေးပင်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0253"
+        },
+        {
+            "ID": 91,
+            "DNRC_Code": "7",
+            "NRC_Code": "တငန",
+            "Township_Name": "တောင်ငူ",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0258"
+        },
+        {
+            "ID": 90,
+            "DNRC_Code": "7",
+            "NRC_Code": "ထတပ",
+            "Township_Name": "ထန်းတပင်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0257"
+        },
+        {
+            "ID": 82,
+            "DNRC_Code": "7",
+            "NRC_Code": "ဒဥန",
+            "Township_Name": "ဒိုက်ဦး",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0249"
+        },
+        {
+            "ID": 418,
+            "DNRC_Code": "7",
+            "NRC_Code": "နတလ",
+            "Township_Name": "နတ်တလင်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 421,
+            "DNRC_Code": "7",
+            "NRC_Code": "ပခတ",
+            "Township_Name": "ပေါက်ခေါင်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 81,
+            "DNRC_Code": "7",
+            "NRC_Code": "ပခန",
+            "Township_Name": "ပဲခူး",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0248"
+        },
+        {
+            "ID": 422,
+            "DNRC_Code": "7",
+            "NRC_Code": "ပတတ",
+            "Township_Name": "ပေါင်းတည်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 420,
+            "DNRC_Code": "7",
+            "NRC_Code": "ပတန",
+            "Township_Name": "ပန်းတောင်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 423,
+            "DNRC_Code": "7",
+            "NRC_Code": "ပမန",
+            "Township_Name": "ပြည်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 88,
+            "DNRC_Code": "7",
+            "NRC_Code": "ဖမန",
+            "Township_Name": "ဖြူး",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0255"
+        },
+        {
+            "ID": 417,
+            "DNRC_Code": "7",
+            "NRC_Code": "မညန",
+            "Township_Name": "မိုးညို",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 416,
+            "DNRC_Code": "7",
+            "NRC_Code": "မလန",
+            "Township_Name": "မင်းလှ",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 89,
+            "DNRC_Code": "7",
+            "NRC_Code": "ရကန",
+            "Township_Name": "ရွှေကျင်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0256"
+        },
+        {
+            "ID": 424,
+            "DNRC_Code": "7",
+            "NRC_Code": "ရတန",
+            "Township_Name": "ရွှေတောင်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 94,
+            "DNRC_Code": "7",
+            "NRC_Code": "ရတရ",
+            "Township_Name": "ရေတာရှည်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0261"
+        },
+        {
+            "ID": 415,
+            "DNRC_Code": "7",
+            "NRC_Code": "လပတ",
+            "Township_Name": "လက်ပံတန်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 93,
+            "DNRC_Code": "7",
+            "NRC_Code": "ဝမန",
+            "Township_Name": "ဝေါ",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0260"
+        },
+        {
+            "ID": 426,
+            "DNRC_Code": "7",
+            "NRC_Code": "သကန",
+            "Township_Name": "သဲကုန်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 92,
+            "DNRC_Code": "7",
+            "NRC_Code": "သနပ",
+            "Township_Name": "သနပ်ပင်",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0259"
+        },
+        {
+            "ID": 425,
+            "DNRC_Code": "7",
+            "NRC_Code": "သဝတ",
+            "Township_Name": "သာယာဝတီ",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        },
+        {
+            "ID": 87,
+            "DNRC_Code": "7",
+            "NRC_Code": "အတန",
+            "Township_Name": "အုတ်တွင်း",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": "ts0254"
+        },
+        {
+            "ID": 419,
+            "DNRC_Code": "7",
+            "NRC_Code": "အဖန",
+            "Township_Name": "အုတ်ဖို",
+            "DNRC_Code_MM": "၇",
+            "Township_Code": null
+        }
+    ]
+}

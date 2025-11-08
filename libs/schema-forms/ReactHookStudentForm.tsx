@@ -47,7 +47,7 @@ interface ReactHookStudentFormProps {
 const STUDENT_FORM_SECTIONS = {
   personal: {
     title: { en: "Personal Information", mm: "ကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
-    fields: ["nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth"],
+    fields: ["profilePhoto", "nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth"],
     icon: "User",
     required: true
   },

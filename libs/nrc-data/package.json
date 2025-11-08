@@ -1,0 +1,20 @@
+{
+  "name": "@repo/nrc-data",
+  "version": "1.0.0",
+  "description": "Myanmar NRC (National Registration Card) data - split for lazy loading",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    "./types": "./nrc-types.json",
+    "./states": "./nrc-states.json",
+    "./townships/*": "./townships/*.json"
+  },
+  "keywords": [
+    "nrc",
+    "myanmar",
+    "national-registration",
+    "data"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,222 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 201,
+            "DNRC_Code": "8",
+            "NRC_Code": "ကထန",
+            "Township_Name": "ကျောက်ထု(ခွဲ)",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 179,
+            "DNRC_Code": "8",
+            "NRC_Code": "ကမန",
+            "Township_Name": "ကံမ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 177,
+            "DNRC_Code": "8",
+            "NRC_Code": "ခမန",
+            "Township_Name": "ချောက်",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 178,
+            "DNRC_Code": "8",
+            "NRC_Code": "ဂဂန",
+            "Township_Name": "ဂန့်ဂေါ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 187,
+            "DNRC_Code": "8",
+            "NRC_Code": "ငဖန",
+            "Township_Name": "ငဖဲ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 194,
+            "DNRC_Code": "8",
+            "NRC_Code": "စတရ",
+            "Township_Name": "​စေတုတ္တရာ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 191,
+            "DNRC_Code": "8",
+            "NRC_Code": "စလန",
+            "Township_Name": "စလင်း",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 195,
+            "DNRC_Code": "8",
+            "NRC_Code": "ဆပဝ",
+            "Township_Name": "ဆင်ပေါင်ဝဲ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 193,
+            "DNRC_Code": "8",
+            "NRC_Code": "ဆဖန",
+            "Township_Name": "ဆိပ်ဖြူ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 192,
+            "DNRC_Code": "8",
+            "NRC_Code": "ဆမန",
+            "Township_Name": "ဆော",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 196,
+            "DNRC_Code": "8",
+            "NRC_Code": "တတက",
+            "Township_Name": "တောင်တွင်းကြီး",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 198,
+            "DNRC_Code": "8",
+            "NRC_Code": "ထလန",
+            "Township_Name": "ထီးလင်း",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 186,
+            "DNRC_Code": "8",
+            "NRC_Code": "နမန",
+            "Township_Name": "နတ်မောက်",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 188,
+            "DNRC_Code": "8",
+            "NRC_Code": "ပခက",
+            "Township_Name": "ပခုက္ကူ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 190,
+            "DNRC_Code": "8",
+            "NRC_Code": "ပဖန",
+            "Township_Name": "ပွင့်ဖြူ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 189,
+            "DNRC_Code": "8",
+            "NRC_Code": "ပမန",
+            "Township_Name": "ပေါက်",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 180,
+            "DNRC_Code": "8",
+            "NRC_Code": "မကန",
+            "Township_Name": "မကွေး",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 182,
+            "DNRC_Code": "8",
+            "NRC_Code": "မတန",
+            "Township_Name": "မင်းတုန်း",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 202,
+            "DNRC_Code": "8",
+            "NRC_Code": "မထန",
+            "Township_Name": "မြေထဲ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 181,
+            "DNRC_Code": "8",
+            "NRC_Code": "မဘန",
+            "Township_Name": "မင်းဘူး(စကု)",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 184,
+            "DNRC_Code": "8",
+            "NRC_Code": "မမန",
+            "Township_Name": "မြိုင်",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 183,
+            "DNRC_Code": "8",
+            "NRC_Code": "မလန",
+            "Township_Name": "မင်းလှ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 185,
+            "DNRC_Code": "8",
+            "NRC_Code": "မသန",
+            "Township_Name": "မြို့သစ်",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 200,
+            "DNRC_Code": "8",
+            "NRC_Code": "ရစက",
+            "Township_Name": "ရေစကြို",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 199,
+            "DNRC_Code": "8",
+            "NRC_Code": "ရနခ",
+            "Township_Name": "ရေနံချောင်း",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 197,
+            "DNRC_Code": "8",
+            "NRC_Code": "သရန",
+            "Township_Name": "သရက်",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        },
+        {
+            "ID": 176,
+            "DNRC_Code": "8",
+            "NRC_Code": "အလန",
+            "Township_Name": "အောင်လံ",
+            "DNRC_Code_MM": "၈",
+            "Township_Code": null
+        }
+    ]
+}

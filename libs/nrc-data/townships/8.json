@@ -1,0 +1,380 @@
+[
+  {
+    "id": "8-001",
+    "stateId": "8",
+    "name": {
+      "en": "ကျောက်ထု(ခွဲ)",
+      "mm": "ကျောက်ထု(ခွဲ)"
+    },
+    "short": {
+      "en": "ကထန",
+      "mm": "ကထန"
+    },
+    "townshipCode": null,
+    "originalId": 201
+  },
+  {
+    "id": "8-002",
+    "stateId": "8",
+    "name": {
+      "en": "ကံမ",
+      "mm": "ကံမ"
+    },
+    "short": {
+      "en": "ကမန",
+      "mm": "ကမန"
+    },
+    "townshipCode": null,
+    "originalId": 179
+  },
+  {
+    "id": "8-003",
+    "stateId": "8",
+    "name": {
+      "en": "ချောက်",
+      "mm": "ချောက်"
+    },
+    "short": {
+      "en": "ခမန",
+      "mm": "ခမန"
+    },
+    "townshipCode": null,
+    "originalId": 177
+  },
+  {
+    "id": "8-004",
+    "stateId": "8",
+    "name": {
+      "en": "ဂန့်ဂေါ",
+      "mm": "ဂန့်ဂေါ"
+    },
+    "short": {
+      "en": "ဂဂန",
+      "mm": "ဂဂန"
+    },
+    "townshipCode": null,
+    "originalId": 178
+  },
+  {
+    "id": "8-005",
+    "stateId": "8",
+    "name": {
+      "en": "ငဖဲ",
+      "mm": "ငဖဲ"
+    },
+    "short": {
+      "en": "ငဖန",
+      "mm": "ငဖန"
+    },
+    "townshipCode": null,
+    "originalId": 187
+  },
+  {
+    "id": "8-006",
+    "stateId": "8",
+    "name": {
+      "en": "​စေတုတ္တရာ",
+      "mm": "​စေတုတ္တရာ"
+    },
+    "short": {
+      "en": "စတရ",
+      "mm": "စတရ"
+    },
+    "townshipCode": null,
+    "originalId": 194
+  },
+  {
+    "id": "8-007",
+    "stateId": "8",
+    "name": {
+      "en": "စလင်း",
+      "mm": "စလင်း"
+    },
+    "short": {
+      "en": "စလန",
+      "mm": "စလန"
+    },
+    "townshipCode": null,
+    "originalId": 191
+  },
+  {
+    "id": "8-008",
+    "stateId": "8",
+    "name": {
+      "en": "ဆင်ပေါင်ဝဲ",
+      "mm": "ဆင်ပေါင်ဝဲ"
+    },
+    "short": {
+      "en": "ဆပဝ",
+      "mm": "ဆပဝ"
+    },
+    "townshipCode": null,
+    "originalId": 195
+  },
+  {
+    "id": "8-009",
+    "stateId": "8",
+    "name": {
+      "en": "ဆိပ်ဖြူ",
+      "mm": "ဆိပ်ဖြူ"
+    },
+    "short": {
+      "en": "ဆဖန",
+      "mm": "ဆဖန"
+    },
+    "townshipCode": null,
+    "originalId": 193
+  },
+  {
+    "id": "8-010",
+    "stateId": "8",
+    "name": {
+      "en": "ဆော",
+      "mm": "ဆော"
+    },
+    "short": {
+      "en": "ဆမန",
+      "mm": "ဆမန"
+    },
+    "townshipCode": null,
+    "originalId": 192
+  },
+  {
+    "id": "8-011",
+    "stateId": "8",
+    "name": {
+      "en": "တောင်တွင်းကြီး",
+      "mm": "တောင်တွင်းကြီး"
+    },
+    "short": {
+      "en": "တတက",
+      "mm": "တတက"
+    },
+    "townshipCode": null,
+    "originalId": 196
+  },
+  {
+    "id": "8-012",
+    "stateId": "8",
+    "name": {
+      "en": "ထီးလင်း",
+      "mm": "ထီးလင်း"
+    },
+    "short": {
+      "en": "ထလန",
+      "mm": "ထလန"
+    },
+    "townshipCode": null,
+    "originalId": 198
+  },
+  {
+    "id": "8-013",
+    "stateId": "8",
+    "name": {
+      "en": "နတ်မောက်",
+      "mm": "နတ်မောက်"
+    },
+    "short": {
+      "en": "နမန",
+      "mm": "နမန"
+    },
+    "townshipCode": null,
+    "originalId": 186
+  },
+  {
+    "id": "8-014",
+    "stateId": "8",
+    "name": {
+      "en": "ပခုက္ကူ",
+      "mm": "ပခုက္ကူ"
+    },
+    "short": {
+      "en": "ပခက",
+      "mm": "ပခက"
+    },
+    "townshipCode": null,
+    "originalId": 188
+  },
+  {
+    "id": "8-015",
+    "stateId": "8",
+    "name": {
+      "en": "ပွင့်ဖြူ",
+      "mm": "ပွင့်ဖြူ"
+    },
+    "short": {
+      "en": "ပဖန",
+      "mm": "ပဖန"
+    },
+    "townshipCode": null,
+    "originalId": 190
+  },
+  {
+    "id": "8-016",
+    "stateId": "8",
+    "name": {
+      "en": "ပေါက်",
+      "mm": "ပေါက်"
+    },
+    "short": {
+      "en": "ပမန",
+      "mm": "ပမန"
+    },
+    "townshipCode": null,
+    "originalId": 189
+  },
+  {
+    "id": "8-017",
+    "stateId": "8",
+    "name": {
+      "en": "မကွေး",
+      "mm": "မကွေး"
+    },
+    "short": {
+      "en": "မကန",
+      "mm": "မကန"
+    },
+    "townshipCode": null,
+    "originalId": 180
+  },
+  {
+    "id": "8-018",
+    "stateId": "8",
+    "name": {
+      "en": "မင်းတုန်း",
+      "mm": "မင်းတုန်း"
+    },
+    "short": {
+      "en": "မတန",
+      "mm": "မတန"
+    },
+    "townshipCode": null,
+    "originalId": 182
+  },
+  {
+    "id": "8-019",
+    "stateId": "8",
+    "name": {
+      "en": "မြေထဲ",
+      "mm": "မြေထဲ"
+    },
+    "short": {
+      "en": "မထန",
+      "mm": "မထန"
+    },
+    "townshipCode": null,
+    "originalId": 202
+  },
+  {
+    "id": "8-020",
+    "stateId": "8",
+    "name": {
+      "en": "မင်းဘူး(စကု)",
+      "mm": "မင်းဘူး(စကု)"
+    },
+    "short": {
+      "en": "မဘန",
+      "mm": "မဘန"
+    },
+    "townshipCode": null,
+    "originalId": 181
+  },
+  {
+    "id": "8-021",
+    "stateId": "8",
+    "name": {
+      "en": "မြိုင်",
+      "mm": "မြိုင်"
+    },
+    "short": {
+      "en": "မမန",
+      "mm": "မမန"
+    },
+    "townshipCode": null,
+    "originalId": 184
+  },
+  {
+    "id": "8-022",
+    "stateId": "8",
+    "name": {
+      "en": "မင်းလှ",
+      "mm": "မင်းလှ"
+    },
+    "short": {
+      "en": "မလန",
+      "mm": "မလန"
+    },
+    "townshipCode": null,
+    "originalId": 183
+  },
+  {
+    "id": "8-023",
+    "stateId": "8",
+    "name": {
+      "en": "မြို့သစ်",
+      "mm": "မြို့သစ်"
+    },
+    "short": {
+      "en": "မသန",
+      "mm": "မသန"
+    },
+    "townshipCode": null,
+    "originalId": 185
+  },
+  {
+    "id": "8-024",
+    "stateId": "8",
+    "name": {
+      "en": "ရေစကြို",
+      "mm": "ရေစကြို"
+    },
+    "short": {
+      "en": "ရစက",
+      "mm": "ရစက"
+    },
+    "townshipCode": null,
+    "originalId": 200
+  },
+  {
+    "id": "8-025",
+    "stateId": "8",
+    "name": {
+      "en": "ရေနံချောင်း",
+      "mm": "ရေနံချောင်း"
+    },
+    "short": {
+      "en": "ရနခ",
+      "mm": "ရနခ"
+    },
+    "townshipCode": null,
+    "originalId": 199
+  },
+  {
+    "id": "8-026",
+    "stateId": "8",
+    "name": {
+      "en": "သရက်",
+      "mm": "သရက်"
+    },
+    "short": {
+      "en": "သရန",
+      "mm": "သရန"
+    },
+    "townshipCode": null,
+    "originalId": 197
+  },
+  {
+    "id": "8-027",
+    "stateId": "8",
+    "name": {
+      "en": "အောင်လံ",
+      "mm": "အောင်လံ"
+    },
+    "short": {
+      "en": "အလန",
+      "mm": "အလန"
+    },
+    "townshipCode": null,
+    "originalId": 176
+  }
+]

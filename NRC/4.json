@@ -1,0 +1,110 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 286,
+            "DNRC_Code": "4",
+            "NRC_Code": "ကခန",
+            "Township_Name": "ကျီးခါး(ခွဲ)",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 279,
+            "DNRC_Code": "4",
+            "NRC_Code": "ကပလ",
+            "Township_Name": "ကန်ပက်လက်",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 288,
+            "DNRC_Code": "4",
+            "NRC_Code": "ဆမန",
+            "Township_Name": "ဆမီး(ခွဲ)",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 284,
+            "DNRC_Code": "4",
+            "NRC_Code": "တဇန",
+            "Township_Name": "တွန်းဇံ",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 283,
+            "DNRC_Code": "4",
+            "NRC_Code": "တတန",
+            "Township_Name": "တီးတိန်",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 278,
+            "DNRC_Code": "4",
+            "NRC_Code": "ထတလ",
+            "Township_Name": "ထန်တလန်",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 282,
+            "DNRC_Code": "4",
+            "NRC_Code": "ပလဝ",
+            "Township_Name": "ပလက်ဝ",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 276,
+            "DNRC_Code": "4",
+            "NRC_Code": "ဖလန",
+            "Township_Name": "ဖလမ်း",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 281,
+            "DNRC_Code": "4",
+            "NRC_Code": "မတန",
+            "Township_Name": "မင်းတပ်",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 280,
+            "DNRC_Code": "4",
+            "NRC_Code": "မတပ",
+            "Township_Name": "မတူပီ",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 285,
+            "DNRC_Code": "4",
+            "NRC_Code": "ရခဒ",
+            "Township_Name": "ရိဒ်ခေါဒါရ်(ခွဲ)",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 287,
+            "DNRC_Code": "4",
+            "NRC_Code": "ရဇန",
+            "Township_Name": "​ရေဇွာ(ခွဲ)",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        },
+        {
+            "ID": 277,
+            "DNRC_Code": "4",
+            "NRC_Code": "ဟခန",
+            "Township_Name": "ဟားခါး",
+            "DNRC_Code_MM": "၄",
+            "Township_Code": null
+        }
+    ]
+}

@@ -9,6 +9,8 @@
       "@types/*": ["../../libs/types/*"],
       "@repo/language": ["../../libs/language"],
       "@repo/language/*": ["../../libs/language/*"],
+      "@repo/nrc-hooks": ["../../libs/nrc-hooks/src"],
+      "@repo/nrc-hooks/*": ["../../libs/nrc-hooks/src/*"],
       "@repo/s3": ["../../libs/s3/src"],
       "@repo/s3/*": ["../../libs/s3/src/*"],
       "@repo/auth": ["../../libs/auth"],

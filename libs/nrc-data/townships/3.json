@@ -1,0 +1,240 @@
+[
+  {
+    "id": "3-001",
+    "stateId": "3",
+    "name": {
+      "en": "ကော့ကရိတ်",
+      "mm": "ကော့ကရိတ်"
+    },
+    "short": {
+      "en": "ကကရ",
+      "mm": "ကကရ"
+    },
+    "townshipCode": null,
+    "originalId": 262
+  },
+  {
+    "id": "3-002",
+    "stateId": "3",
+    "name": {
+      "en": "ကြာအင်းဆိပ်ကြီး",
+      "mm": "ကြာအင်းဆိပ်ကြီး"
+    },
+    "short": {
+      "en": "ကဆက",
+      "mm": "ကဆက"
+    },
+    "townshipCode": null,
+    "originalId": 263
+  },
+  {
+    "id": "3-003",
+    "stateId": "3",
+    "name": {
+      "en": "ကျိုက်ဒုံ(ခွဲ)",
+      "mm": "ကျိုက်ဒုံ(ခွဲ)"
+    },
+    "short": {
+      "en": "ကဒန",
+      "mm": "ကဒန"
+    },
+    "townshipCode": null,
+    "originalId": 271
+  },
+  {
+    "id": "3-004",
+    "stateId": "3",
+    "name": {
+      "en": "ကမမောင်း(ခွဲ)",
+      "mm": "ကမမောင်း(ခွဲ)"
+    },
+    "short": {
+      "en": "ကမမ",
+      "mm": "ကမမ"
+    },
+    "townshipCode": null,
+    "originalId": 270
+  },
+  {
+    "id": "3-005",
+    "stateId": "3",
+    "name": {
+      "en": "စုကလိ(ခွဲ)",
+      "mm": "စုကလိ(ခွဲ)"
+    },
+    "short": {
+      "en": "စကလ",
+      "mm": "စကလ"
+    },
+    "townshipCode": null,
+    "originalId": 273
+  },
+  {
+    "id": "3-006",
+    "stateId": "3",
+    "name": {
+      "en": "ပိုက်ကျုံ(ခွဲ)",
+      "mm": "ပိုက်ကျုံ(ခွဲ)"
+    },
+    "short": {
+      "en": "ပကန",
+      "mm": "ပကန"
+    },
+    "townshipCode": null,
+    "originalId": 266
+  },
+  {
+    "id": "3-007",
+    "stateId": "3",
+    "name": {
+      "en": "ဖာပွန်",
+      "mm": "ဖာပွန်"
+    },
+    "short": {
+      "en": "ဖပန",
+      "mm": "ဖပန"
+    },
+    "townshipCode": null,
+    "originalId": 261
+  },
+  {
+    "id": "3-008",
+    "stateId": "3",
+    "name": {
+      "en": "ဘောဂလိ(ခွဲ)",
+      "mm": "ဘောဂလိ(ခွဲ)"
+    },
+    "short": {
+      "en": "ဘဂလ",
+      "mm": "ဘဂလ"
+    },
+    "townshipCode": null,
+    "originalId": 269
+  },
+  {
+    "id": "3-009",
+    "stateId": "3",
+    "name": {
+      "en": "ဘုရားသုံးဆူ(ခွဲ)",
+      "mm": "ဘုရားသုံးဆူ(ခွဲ)"
+    },
+    "short": {
+      "en": "ဘသဆ",
+      "mm": "ဘသဆ"
+    },
+    "townshipCode": null,
+    "originalId": 272
+  },
+  {
+    "id": "3-010",
+    "stateId": "3",
+    "name": {
+      "en": "ဘားအံ",
+      "mm": "ဘားအံ"
+    },
+    "short": {
+      "en": "ဘအန",
+      "mm": "ဘအန"
+    },
+    "townshipCode": null,
+    "originalId": 260
+  },
+  {
+    "id": "3-011",
+    "stateId": "3",
+    "name": {
+      "en": "မြဝတီ",
+      "mm": "မြဝတီ"
+    },
+    "short": {
+      "en": "မဝတ",
+      "mm": "မဝတ"
+    },
+    "townshipCode": null,
+    "originalId": 264
+  },
+  {
+    "id": "3-012",
+    "stateId": "3",
+    "name": {
+      "en": "ရှမ်းရွာသစ်(ခွဲ)",
+      "mm": "ရှမ်းရွာသစ်(ခွဲ)"
+    },
+    "short": {
+      "en": "ရရသ",
+      "mm": "ရရသ"
+    },
+    "townshipCode": null,
+    "originalId": 267
+  },
+  {
+    "id": "3-013",
+    "stateId": "3",
+    "name": {
+      "en": "လှိုင်းဘွဲ့",
+      "mm": "လှိုင်းဘွဲ့"
+    },
+    "short": {
+      "en": "လဘန",
+      "mm": "လဘန"
+    },
+    "townshipCode": null,
+    "originalId": 259
+  },
+  {
+    "id": "3-014",
+    "stateId": "3",
+    "name": {
+      "en": "လိပ်သို(ခွဲ)",
+      "mm": "လိပ်သို(ခွဲ)"
+    },
+    "short": {
+      "en": "လသန",
+      "mm": "လသန"
+    },
+    "townshipCode": null,
+    "originalId": 268
+  },
+  {
+    "id": "3-015",
+    "stateId": "3",
+    "name": {
+      "en": "​ဝေါလေမြို့(ခွဲ)",
+      "mm": "​ဝေါလေမြို့(ခွဲ)"
+    },
+    "short": {
+      "en": "ဝလမ",
+      "mm": "ဝလမ"
+    },
+    "townshipCode": null,
+    "originalId": 274
+  },
+  {
+    "id": "3-016",
+    "stateId": "3",
+    "name": {
+      "en": "သံတောင်ကြီး",
+      "mm": "သံတောင်ကြီး"
+    },
+    "short": {
+      "en": "သတက",
+      "mm": "သတက"
+    },
+    "townshipCode": null,
+    "originalId": 265
+  },
+  {
+    "id": "3-017",
+    "stateId": "3",
+    "name": {
+      "en": "သံတောင်",
+      "mm": "သံတောင်"
+    },
+    "short": {
+      "en": "သတန",
+      "mm": "သတန"
+    },
+    "townshipCode": null,
+    "originalId": 275
+  }
+]

@@ -7,6 +7,8 @@ import { FormWithLanguage } from '@repo/schema-forms'
 import { generateZodSchema } from '@repo/schema-utils'
 import { enableCommonMultilangFields } from '@/lib/enable-multilang'
 import type { ModuleSchema } from '@repo/types'
+import { existsSync } from 'fs'
+import path from 'path'
 
 interface ModuleDetailPageProps {
   params: Promise<{
@@ -26,6 +28,41 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
     resolvedParams.appId,
     resolvedParams.module
   )
+
+  // ⭐ CHECK: If static module exists for this appId/module combination
+  const staticModulePath = path.join(
+    process.cwd(),
+    "src",
+    "staticModules",
+    resolvedParams.appId,
+    resolvedParams.module,
+    "detail.tsx"
+  );
+
+  if (existsSync(staticModulePath)) {
+    // Dynamic import of static module
+    try {
+      const StaticModule = await import(
+        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/detail`
+      );
+      return (
+        <StaticModule.default
+          module={fullModule}
+          user={user}
+          tenant={tenant}
+          appId={resolvedParams.appId}
+          itemId={resolvedParams.id}
+          searchParams={resolvedSearchParams}
+        />
+      );
+    } catch (error) {
+      console.error(
+        `Failed to load static module detail page: ${resolvedParams.appId}/${resolvedParams.module}`,
+        error
+      );
+      // Fall through to generic module if import fails
+    }
+  }
 
   // Get filtered layout data (this will only include modules user has access to)
   const { appSchemaData } = await fetchLayoutData()

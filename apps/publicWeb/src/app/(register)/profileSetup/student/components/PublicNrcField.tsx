@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label } from "@repo/ui";
 import { cn } from "@repo/utils";
-import nrcData from "@/../../NRC_Data.json";
+import { useNrcStates, useNrcTownships, useNrcTypes } from "@repo/nrc-hooks";
 
 interface NrcFieldProps {
   value?: string;
@@ -52,7 +52,11 @@ function formatNrc(parts: NrcParts): string {
 
 export function PublicNrcField({ value = "", onChange, error, disabled = false }: NrcFieldProps) {
   const [parts, setParts] = useState<NrcParts>(() => parseNrc(value));
-  const [availableTownships, setAvailableTownships] = useState<any[]>([]);
+
+  // Lazy load NRC data with hooks
+  const { states } = useNrcStates();
+  const { townships } = useNrcTownships(parts.stateNumber);
+  const { types } = useNrcTypes();
 
   // Update parts when external value changes
   useEffect(() => {
@@ -61,24 +65,6 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
       setParts(newParts);
     }
   }, [value]);
-
-  // Update available townships when state changes
-  useEffect(() => {
-    if (parts.stateNumber) {
-      const townships = nrcData.nrcTownships.filter(
-        (t: any) => t.stateId === getStateIdByNumber(parts.stateNumber)
-      );
-      setAvailableTownships(townships);
-    } else {
-      setAvailableTownships([]);
-    }
-  }, [parts.stateNumber]);
-
-  // Get state ID by number
-  function getStateIdByNumber(number: string): string | undefined {
-    const state = nrcData.nrcStates.find((s: any) => s.number.en === number);
-    return state?.id;
-  }
 
   // Handle part changes
   const handlePartChange = (field: keyof NrcParts, newValue: string) => {
@@ -129,7 +115,7 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-300 max-h-[300px] max-w-[300px] z-[100]">
-              {nrcData.nrcStates.map((state: any) => (
+              {states?.map((state) => (
                 <SelectItem key={state.id} value={state.number.en} className="truncate">
                   {state.number.en} - {state.name.en}
                 </SelectItem>
@@ -160,7 +146,7 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-300 max-h-[300px] overflow-y-auto max-w-[400px] z-[100]">
-              {availableTownships.map((township: any) => (
+              {townships?.map((township) => (
                 <SelectItem key={township.id} value={township.short.en} className="truncate">
                   {township.short.en} - {township.name.en}
                 </SelectItem>
@@ -185,7 +171,7 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-300 z-[100]">
-              {nrcData.nrcTypes.map((type: any) => (
+              {types?.map((type) => (
                 <SelectItem key={type.id} value={type.name.en}>
                   {type.name.en}
                 </SelectItem>

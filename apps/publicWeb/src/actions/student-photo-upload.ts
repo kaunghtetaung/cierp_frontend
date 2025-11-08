@@ -110,7 +110,7 @@ export async function uploadStudentPhotoAction(params: {
     });
 
     // Create S3 client with organizationSlug as bucket name
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.organizationSlug, // Bucket name in MinIO
       tenantRootDomain: tenantInfo.tenantRootDomain,
@@ -139,6 +139,70 @@ export async function uploadStudentPhotoAction(params: {
       s3Key,
     });
 
+    // Generate thumbnails for images
+    const {
+      isImageFile,
+      generateImageThumbnails,
+    } = await import('@repo/s3/services/thumbnail-generator');
+    const mimeType = file.type || getMimeType(filename);
+
+    let thumbnailUrls: { small?: string; medium?: string; large?: string } | undefined;
+
+    if (isImageFile(mimeType)) {
+      try {
+        logger.info('Generating image thumbnails for student photo', {
+          component: 'student-photo-upload',
+          operation: 'thumbnail-generation',
+          filename,
+          fileType: mimeType,
+        });
+
+        const thumbnails = await generateImageThumbnails(buffer, s3Key);
+
+        // Upload thumbnails to S3
+        const tempThumbnailUrls: { small?: string; medium?: string; large?: string } = {};
+
+        for (const thumbnail of thumbnails) {
+          await s3Client.putObject(
+            thumbnail.key,
+            thumbnail.buffer,
+            {
+              contentType: 'image/webp',
+            },
+            true // skipPathResolution
+          );
+
+          // Generate signed URL for thumbnail (1 day expiry)
+          const thumbnailUrl = await s3Client.getPreSignedUrl(
+            thumbnail.key,
+            {
+              expiresIn: 86400, // 1 day
+            },
+            true // skipPathResolution
+          );
+
+          tempThumbnailUrls[thumbnail.size as 'small' | 'medium' | 'large'] = thumbnailUrl;
+        }
+
+        thumbnailUrls = tempThumbnailUrls;
+
+        logger.info('Thumbnails generated successfully for student photo', {
+          component: 'student-photo-upload',
+          operation: 'thumbnail-generation',
+          filename,
+          thumbnailCount: thumbnails.length,
+        });
+      } catch (thumbnailError) {
+        // Don't fail the upload if thumbnail generation fails
+        logger.error('Thumbnail generation failed for student photo, but upload succeeded', {
+          component: 'student-photo-upload',
+          operation: 'thumbnail-generation',
+          filename,
+          error: thumbnailError instanceof Error ? thumbnailError.message : String(thumbnailError),
+        });
+      }
+    }
+
     // Generate signed URL for preview (1 day expiry)
     // URL format: storage.um1ygn.edu.mm/cpms/private/common/students/photos/{filename}
     const signedUrl = await s3Client.getPreSignedUrl(
@@ -153,6 +217,7 @@ export async function uploadStudentPhotoAction(params: {
       component: 'student-photo-upload',
       filename,
       signedUrlGenerated: !!signedUrl,
+      hasThumbnails: !!thumbnailUrls,
       expiresIn: '1 day',
     });
 
@@ -160,6 +225,7 @@ export async function uploadStudentPhotoAction(params: {
       s3Key: dbPath, // Database value: um1/cpms/private/common/students/photos/{filename}
       signedUrl, // Preview URL with 1 day expiry
       filename,
+      thumbnails: thumbnailUrls, // Thumbnail URLs for preview
     };
 
     logger.info('Upload student photo successful', {

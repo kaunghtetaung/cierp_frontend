@@ -49,7 +49,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Create S3 client with tenant context and basePath
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,

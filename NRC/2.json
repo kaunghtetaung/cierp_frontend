@@ -1,0 +1,70 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 252,
+            "DNRC_Code": "2",
+            "NRC_Code": "ဒမဆ",
+            "Township_Name": "ဒီမောဆို",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 253,
+            "DNRC_Code": "2",
+            "NRC_Code": "ဖဆန",
+            "Township_Name": "ဖားဆောင်း",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 254,
+            "DNRC_Code": "2",
+            "NRC_Code": "ဖရဆ",
+            "Township_Name": "ဖရူးဆို",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 251,
+            "DNRC_Code": "2",
+            "NRC_Code": "ဘလခ",
+            "Township_Name": "ဘောလခဲ",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 256,
+            "DNRC_Code": "2",
+            "NRC_Code": "မစန",
+            "Township_Name": "မယ်စဲ့",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 257,
+            "DNRC_Code": "2",
+            "NRC_Code": "ရတန",
+            "Township_Name": "ရှားတော",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 258,
+            "DNRC_Code": "2",
+            "NRC_Code": "ရသန",
+            "Township_Name": "ရွာသစ်(ခွဲ)",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        },
+        {
+            "ID": 255,
+            "DNRC_Code": "2",
+            "NRC_Code": "လကန",
+            "Township_Name": "လွိုင်ကော်",
+            "DNRC_Code_MM": "၂",
+            "Township_Code": null
+        }
+    ]
+}

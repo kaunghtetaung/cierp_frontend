@@ -1,0 +1,142 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 262,
+            "DNRC_Code": "3",
+            "NRC_Code": "ကကရ",
+            "Township_Name": "ကော့ကရိတ်",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 263,
+            "DNRC_Code": "3",
+            "NRC_Code": "ကဆက",
+            "Township_Name": "ကြာအင်းဆိပ်ကြီး",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 271,
+            "DNRC_Code": "3",
+            "NRC_Code": "ကဒန",
+            "Township_Name": "ကျိုက်ဒုံ(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 270,
+            "DNRC_Code": "3",
+            "NRC_Code": "ကမမ",
+            "Township_Name": "ကမမောင်း(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 273,
+            "DNRC_Code": "3",
+            "NRC_Code": "စကလ",
+            "Township_Name": "စုကလိ(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 266,
+            "DNRC_Code": "3",
+            "NRC_Code": "ပကန",
+            "Township_Name": "ပိုက်ကျုံ(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 261,
+            "DNRC_Code": "3",
+            "NRC_Code": "ဖပန",
+            "Township_Name": "ဖာပွန်",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 269,
+            "DNRC_Code": "3",
+            "NRC_Code": "ဘဂလ",
+            "Township_Name": "ဘောဂလိ(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 272,
+            "DNRC_Code": "3",
+            "NRC_Code": "ဘသဆ",
+            "Township_Name": "ဘုရားသုံးဆူ(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 260,
+            "DNRC_Code": "3",
+            "NRC_Code": "ဘအန",
+            "Township_Name": "ဘားအံ",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 264,
+            "DNRC_Code": "3",
+            "NRC_Code": "မဝတ",
+            "Township_Name": "မြဝတီ",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 267,
+            "DNRC_Code": "3",
+            "NRC_Code": "ရရသ",
+            "Township_Name": "ရှမ်းရွာသစ်(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 259,
+            "DNRC_Code": "3",
+            "NRC_Code": "လဘန",
+            "Township_Name": "လှိုင်းဘွဲ့",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 268,
+            "DNRC_Code": "3",
+            "NRC_Code": "လသန",
+            "Township_Name": "လိပ်သို(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 274,
+            "DNRC_Code": "3",
+            "NRC_Code": "ဝလမ",
+            "Township_Name": "​ဝေါလေမြို့(ခွဲ)",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 265,
+            "DNRC_Code": "3",
+            "NRC_Code": "သတက",
+            "Township_Name": "သံတောင်ကြီး",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        },
+        {
+            "ID": 275,
+            "DNRC_Code": "3",
+            "NRC_Code": "သတန",
+            "Township_Name": "သံတောင်",
+            "DNRC_Code_MM": "၃",
+            "Township_Code": null
+        }
+    ]
+}

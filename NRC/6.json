@@ -1,0 +1,150 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 206,
+            "DNRC_Code": "6",
+            "NRC_Code": "ကစန",
+            "Township_Name": "ကျွန်းစု",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 219,
+            "DNRC_Code": "6",
+            "NRC_Code": "ကရရ",
+            "Township_Name": "ကရသူရိ(ခွဲ)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 215,
+            "DNRC_Code": "6",
+            "NRC_Code": "ကလအ",
+            "Township_Name": "ကလိန်အောင်(ခွဲ)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 205,
+            "DNRC_Code": "6",
+            "NRC_Code": "ကသန",
+            "Township_Name": "ကော့သောင်း",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 217,
+            "DNRC_Code": "6",
+            "NRC_Code": "ခမက",
+            "Township_Name": "ခမောက်ကြီး(ခွဲ)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 211,
+            "DNRC_Code": "6",
+            "NRC_Code": "တသရ",
+            "Township_Name": "တနင်္သာရီ",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 204,
+            "DNRC_Code": "6",
+            "NRC_Code": "ထဝန",
+            "Township_Name": "ထားဝယ်",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 218,
+            "DNRC_Code": "6",
+            "NRC_Code": "ပကမ",
+            "Township_Name": "ပြည်ကြီးမဏ္ဍိုင်",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 216,
+            "DNRC_Code": "6",
+            "NRC_Code": "ပလတ",
+            "Township_Name": "ပလောက်(ခွဲ)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 210,
+            "DNRC_Code": "6",
+            "NRC_Code": "ပလန",
+            "Township_Name": "ပုလော",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 203,
+            "DNRC_Code": "6",
+            "NRC_Code": "ဘပန",
+            "Township_Name": "ဘုတ်ပြင်း",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 214,
+            "DNRC_Code": "6",
+            "NRC_Code": "မတန",
+            "Township_Name": "​မေတ္တာ(ခွဲ)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 220,
+            "DNRC_Code": "6",
+            "NRC_Code": "မမန",
+            "Township_Name": "မြိတ်",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 209,
+            "DNRC_Code": "6",
+            "NRC_Code": "မအန",
+            "Township_Name": "မြိတ် (အနောက်)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 208,
+            "DNRC_Code": "6",
+            "NRC_Code": "မအရ",
+            "Township_Name": "မြိတ် (အရှေ့)",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 213,
+            "DNRC_Code": "6",
+            "NRC_Code": "ရဖန",
+            "Township_Name": "ရေဖြူ",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 207,
+            "DNRC_Code": "6",
+            "NRC_Code": "လလန",
+            "Township_Name": "လောင်းလုံ",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        },
+        {
+            "ID": 212,
+            "DNRC_Code": "6",
+            "NRC_Code": "သရခ",
+            "Township_Name": "သရက်ချောင်း",
+            "DNRC_Code_MM": "၆",
+            "Township_Code": null
+        }
+    ]
+}

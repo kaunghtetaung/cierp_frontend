@@ -1,0 +1,166 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 305,
+            "DNRC_Code": "11",
+            "NRC_Code": "ကတန",
+            "Township_Name": "ကျောက်တော်",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 320,
+            "DNRC_Code": "11",
+            "NRC_Code": "ကတလ",
+            "Township_Name": "ကျိန္တလီ(ခွဲ)",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 304,
+            "DNRC_Code": "11",
+            "NRC_Code": "ကဖန",
+            "Township_Name": "ကျောက်ဖြူ",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 303,
+            "DNRC_Code": "11",
+            "NRC_Code": "ဂမန",
+            "Township_Name": "ဂွ",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 315,
+            "DNRC_Code": "11",
+            "NRC_Code": "စတန",
+            "Township_Name": "စစ်တွေ",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 317,
+            "DNRC_Code": "11",
+            "NRC_Code": "တကန",
+            "Township_Name": "တောင်ကုတ်",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 318,
+            "DNRC_Code": "11",
+            "NRC_Code": "တပဝ",
+            "Township_Name": "​တောင်ပြိုလက်ဝဲ(ခွဲ)",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 312,
+            "DNRC_Code": "11",
+            "NRC_Code": "ပဏတ",
+            "Township_Name": "ပုဏ္ဏားကျွန်း",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 311,
+            "DNRC_Code": "11",
+            "NRC_Code": "ပတန",
+            "Township_Name": "ပေါက်တော",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 302,
+            "DNRC_Code": "11",
+            "NRC_Code": "ဘသတ",
+            "Township_Name": "ဘူသီးတောင်",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 306,
+            "DNRC_Code": "11",
+            "NRC_Code": "မတန",
+            "Township_Name": "မောင်တော",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 310,
+            "DNRC_Code": "11",
+            "NRC_Code": "မပတ",
+            "Township_Name": "မြေပုံ",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 307,
+            "DNRC_Code": "11",
+            "NRC_Code": "မပန",
+            "Township_Name": "မင်းပြား",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 319,
+            "DNRC_Code": "11",
+            "NRC_Code": "မအတ",
+            "Township_Name": "မအီ(ခွဲ)",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 309,
+            "DNRC_Code": "11",
+            "NRC_Code": "မအန",
+            "Township_Name": "မာန်အောင်",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 308,
+            "DNRC_Code": "11",
+            "NRC_Code": "မဥန",
+            "Township_Name": "​မြောက်ဦး(မြို့ဟောင်း)",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 313,
+            "DNRC_Code": "11",
+            "NRC_Code": "ရဗန",
+            "Township_Name": "ရမ်းဗြဲ",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 314,
+            "DNRC_Code": "11",
+            "NRC_Code": "ရသတ",
+            "Township_Name": "ရသေ့တောင်",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 316,
+            "DNRC_Code": "11",
+            "NRC_Code": "သတန",
+            "Township_Name": "သံတွဲ",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        },
+        {
+            "ID": 301,
+            "DNRC_Code": "11",
+            "NRC_Code": "အမန",
+            "Township_Name": "အမ်း",
+            "DNRC_Code_MM": "၁၁",
+            "Township_Code": null
+        }
+    ]
+}

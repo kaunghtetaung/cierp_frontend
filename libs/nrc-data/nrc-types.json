@@ -1,0 +1,68 @@
+[
+  {
+    "id": "N",
+    "name": {
+      "en": "N",
+      "mm": "နိုင်"
+    },
+    "description": {
+      "en": "Citizen",
+      "mm": "နိုင်ငံသား"
+    }
+  },
+  {
+    "id": "E",
+    "name": {
+      "en": "E",
+      "mm": "ဧည့်"
+    },
+    "description": {
+      "en": "Associate Citizen",
+      "mm": "ဧည့်နိုင်ငံသား"
+    }
+  },
+  {
+    "id": "P",
+    "name": {
+      "en": "P",
+      "mm": "ပြု"
+    },
+    "description": {
+      "en": "Naturalized Citizen",
+      "mm": "နိုင်ငံသားပြု"
+    }
+  },
+  {
+    "id": "T",
+    "name": {
+      "en": "T",
+      "mm": "သာသနာ"
+    },
+    "description": {
+      "en": "Temporary",
+      "mm": "သာသနာ"
+    }
+  },
+  {
+    "id": "Y",
+    "name": {
+      "en": "Y",
+      "mm": "ယာယီ"
+    },
+    "description": {
+      "en": "Provisional",
+      "mm": "ယာယီ"
+    }
+  },
+  {
+    "id": "S",
+    "name": {
+      "en": "S",
+      "mm": "စ"
+    },
+    "description": {
+      "en": "Special",
+      "mm": "စ"
+    }
+  }
+]

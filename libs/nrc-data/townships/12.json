@@ -1,0 +1,646 @@
+[
+  {
+    "id": "12-001",
+    "stateId": "12",
+    "name": {
+      "en": "ကိုကိုးကျွန်း",
+      "mm": "ကိုကိုးကျွန်း"
+    },
+    "short": {
+      "en": "ကကက",
+      "mm": "ကကက"
+    },
+    "townshipCode": "ts0004",
+    "originalId": 4
+  },
+  {
+    "id": "12-002",
+    "stateId": "12",
+    "name": {
+      "en": "ကွမ်းခြံကုန်း",
+      "mm": "ကွမ်းခြံကုန်း"
+    },
+    "short": {
+      "en": "ကခက",
+      "mm": "ကခက"
+    },
+    "townshipCode": "ts0021",
+    "originalId": 21
+  },
+  {
+    "id": "12-003",
+    "stateId": "12",
+    "name": {
+      "en": "ကျောက်တံတား",
+      "mm": "ကျောက်တံတား"
+    },
+    "short": {
+      "en": "ကတတ",
+      "mm": "ကတတ"
+    },
+    "townshipCode": "ts0022",
+    "originalId": 22
+  },
+  {
+    "id": "12-004",
+    "stateId": "12",
+    "name": {
+      "en": "ကျောက်တန်း",
+      "mm": "ကျောက်တန်း"
+    },
+    "short": {
+      "en": "ကတန",
+      "mm": "ကတန"
+    },
+    "townshipCode": "ts0023",
+    "originalId": 23
+  },
+  {
+    "id": "12-005",
+    "stateId": "12",
+    "name": {
+      "en": "ကြည့်မြင်တိုင်",
+      "mm": "ကြည့်မြင်တိုင်"
+    },
+    "short": {
+      "en": "ကမတ",
+      "mm": "ကမတ"
+    },
+    "townshipCode": "ts0024",
+    "originalId": 24
+  },
+  {
+    "id": "12-006",
+    "stateId": "12",
+    "name": {
+      "en": "ကော့မှူး",
+      "mm": "ကော့မှူး"
+    },
+    "short": {
+      "en": "ကမန",
+      "mm": "ကမန"
+    },
+    "townshipCode": "ts0019",
+    "originalId": 19
+  },
+  {
+    "id": "12-007",
+    "stateId": "12",
+    "name": {
+      "en": "ကမာရွတ်",
+      "mm": "ကမာရွတ်"
+    },
+    "short": {
+      "en": "ကမရ",
+      "mm": "ကမရ"
+    },
+    "townshipCode": "ts0018",
+    "originalId": 18
+  },
+  {
+    "id": "12-008",
+    "stateId": "12",
+    "name": {
+      "en": "ခရမ်း",
+      "mm": "ခရမ်း"
+    },
+    "short": {
+      "en": "ခရန",
+      "mm": "ခရန"
+    },
+    "townshipCode": "ts0020",
+    "originalId": 20
+  },
+  {
+    "id": "12-009",
+    "stateId": "12",
+    "name": {
+      "en": "စမ်းချောင်း",
+      "mm": "စမ်းချောင်း"
+    },
+    "short": {
+      "en": "စခန",
+      "mm": "စခန"
+    },
+    "townshipCode": "ts0033",
+    "originalId": 33
+  },
+  {
+    "id": "12-010",
+    "stateId": "12",
+    "name": {
+      "en": "ဆိတ်ကြီးခနောင်တို",
+      "mm": "ဆိတ်ကြီးခနောင်တို"
+    },
+    "short": {
+      "en": "ဆကခ",
+      "mm": "ဆကခ"
+    },
+    "townshipCode": "ts0034",
+    "originalId": 34
+  },
+  {
+    "id": "12-011",
+    "stateId": "12",
+    "name": {
+      "en": "ဆိပ်ကမ်း",
+      "mm": "ဆိပ်ကမ်း"
+    },
+    "short": {
+      "en": "ဆကန",
+      "mm": "ဆကန"
+    },
+    "townshipCode": "ts0035",
+    "originalId": 35
+  },
+  {
+    "id": "12-012",
+    "stateId": "12",
+    "name": {
+      "en": "တိုက်ကြီး",
+      "mm": "တိုက်ကြီး"
+    },
+    "short": {
+      "en": "တကန",
+      "mm": "တကန"
+    },
+    "townshipCode": "ts0038",
+    "originalId": 38
+  },
+  {
+    "id": "12-013",
+    "stateId": "12",
+    "name": {
+      "en": "တံတား(ခွဲ)",
+      "mm": "တံတား(ခွဲ)"
+    },
+    "short": {
+      "en": "တတတ",
+      "mm": "တတတ"
+    },
+    "townshipCode": "ts0396",
+    "originalId": 46
+  },
+  {
+    "id": "12-014",
+    "stateId": "12",
+    "name": {
+      "en": "တွံတေး",
+      "mm": "တွံတေး"
+    },
+    "short": {
+      "en": "တတန",
+      "mm": "တတန"
+    },
+    "townshipCode": "ts0044",
+    "originalId": 44
+  },
+  {
+    "id": "12-015",
+    "stateId": "12",
+    "name": {
+      "en": "တာမွေ",
+      "mm": "တာမွေ"
+    },
+    "short": {
+      "en": "တမန",
+      "mm": "တမန"
+    },
+    "townshipCode": "ts0039",
+    "originalId": 39
+  },
+  {
+    "id": "12-016",
+    "stateId": "12",
+    "name": {
+      "en": "ထန်းတပင်",
+      "mm": "ထန်းတပင်"
+    },
+    "short": {
+      "en": "ထတပ",
+      "mm": "ထတပ"
+    },
+    "townshipCode": "ts0016",
+    "originalId": 16
+  },
+  {
+    "id": "12-017",
+    "stateId": "12",
+    "name": {
+      "en": "ဒဂုံမြို့သစ်(ဆိပ်ကမ်း)",
+      "mm": "ဒဂုံမြို့သစ်(ဆိပ်ကမ်း)"
+    },
+    "short": {
+      "en": "ဒဂဆ",
+      "mm": "ဒဂဆ"
+    },
+    "townshipCode": "ts0008",
+    "originalId": 8
+  },
+  {
+    "id": "12-018",
+    "stateId": "12",
+    "name": {
+      "en": "ဒဂုံမြို့သစ်(တောင်)",
+      "mm": "ဒဂုံမြို့သစ်(တောင်)"
+    },
+    "short": {
+      "en": "ဒဂတ",
+      "mm": "ဒဂတ"
+    },
+    "townshipCode": "ts0009",
+    "originalId": 9
+  },
+  {
+    "id": "12-019",
+    "stateId": "12",
+    "name": {
+      "en": "ဒဂုံ",
+      "mm": "ဒဂုံ"
+    },
+    "short": {
+      "en": "ဒဂန",
+      "mm": "ဒဂန"
+    },
+    "townshipCode": "ts0005",
+    "originalId": 5
+  },
+  {
+    "id": "12-020",
+    "stateId": "12",
+    "name": {
+      "en": "ဒဂုံမြို့သစ်(မြောက်)",
+      "mm": "ဒဂုံမြို့သစ်(မြောက်)"
+    },
+    "short": {
+      "en": "ဒဂမ",
+      "mm": "ဒဂမ"
+    },
+    "townshipCode": "ts0007",
+    "originalId": 7
+  },
+  {
+    "id": "12-021",
+    "stateId": "12",
+    "name": {
+      "en": "ဒဂုံမြို့သစ်(အရှေ့)",
+      "mm": "ဒဂုံမြို့သစ်(အရှေ့)"
+    },
+    "short": {
+      "en": "ဒဂရ",
+      "mm": "ဒဂရ"
+    },
+    "townshipCode": "ts0006",
+    "originalId": 6
+  },
+  {
+    "id": "12-022",
+    "stateId": "12",
+    "name": {
+      "en": "ဒေါပုံ",
+      "mm": "ဒေါပုံ"
+    },
+    "short": {
+      "en": "ဒပန",
+      "mm": "ဒပန"
+    },
+    "townshipCode": "ts0011",
+    "originalId": 11
+  },
+  {
+    "id": "12-023",
+    "stateId": "12",
+    "name": {
+      "en": "ဒလ",
+      "mm": "ဒလ"
+    },
+    "short": {
+      "en": "ဒလန",
+      "mm": "ဒလန"
+    },
+    "townshipCode": "ts0010",
+    "originalId": 10
+  },
+  {
+    "id": "12-024",
+    "stateId": "12",
+    "name": {
+      "en": "ပုဇွန်တောင်",
+      "mm": "ပုဇွန်တောင်"
+    },
+    "short": {
+      "en": "ပဇတ",
+      "mm": "ပဇတ"
+    },
+    "townshipCode": "ts0032",
+    "originalId": 32
+  },
+  {
+    "id": "12-025",
+    "stateId": "12",
+    "name": {
+      "en": "ပန်းဘဲတန်း",
+      "mm": "ပန်းဘဲတန်း"
+    },
+    "short": {
+      "en": "ပဘတ",
+      "mm": "ပဘတ"
+    },
+    "townshipCode": "ts0031",
+    "originalId": 31
+  },
+  {
+    "id": "12-026",
+    "stateId": "12",
+    "name": {
+      "en": "ဗိုလ်တထောင်",
+      "mm": "ဗိုလ်တထောင်"
+    },
+    "short": {
+      "en": "ဗတထ",
+      "mm": "ဗတထ"
+    },
+    "townshipCode": "ts0003",
+    "originalId": 3
+  },
+  {
+    "id": "12-027",
+    "stateId": "12",
+    "name": {
+      "en": "ဗဟန်း",
+      "mm": "ဗဟန်း"
+    },
+    "short": {
+      "en": "ဗဟန",
+      "mm": "ဗဟန"
+    },
+    "townshipCode": "ts0002",
+    "originalId": 2
+  },
+  {
+    "id": "12-028",
+    "stateId": "12",
+    "name": {
+      "en": "မင်္ဂလာတောင်ညွန့်",
+      "mm": "မင်္ဂလာတောင်ညွန့်"
+    },
+    "short": {
+      "en": "မဂတ",
+      "mm": "မဂတ"
+    },
+    "townshipCode": "ts0029",
+    "originalId": 29
+  },
+  {
+    "id": "12-029",
+    "stateId": "12",
+    "name": {
+      "en": "မင်္ဂလာဒုံ",
+      "mm": "မင်္ဂလာဒုံ"
+    },
+    "short": {
+      "en": "မဂဒ",
+      "mm": "မဂဒ"
+    },
+    "townshipCode": "ts0028",
+    "originalId": 28
+  },
+  {
+    "id": "12-030",
+    "stateId": "12",
+    "name": {
+      "en": "မှော်ဘီ",
+      "mm": "မှော်ဘီ"
+    },
+    "short": {
+      "en": "မဘန",
+      "mm": "မဘန"
+    },
+    "townshipCode": "ts0015",
+    "originalId": 15
+  },
+  {
+    "id": "12-031",
+    "stateId": "12",
+    "name": {
+      "en": "မရမ်းကုန်း",
+      "mm": "မရမ်းကုန်း"
+    },
+    "short": {
+      "en": "မရက",
+      "mm": "မရက"
+    },
+    "townshipCode": "ts0027",
+    "originalId": 27
+  },
+  {
+    "id": "12-032",
+    "stateId": "12",
+    "name": {
+      "en": "ရန်ကင်း",
+      "mm": "ရန်ကင်း"
+    },
+    "short": {
+      "en": "ရကန",
+      "mm": "ရကန"
+    },
+    "townshipCode": "ts0045",
+    "originalId": 45
+  },
+  {
+    "id": "12-033",
+    "stateId": "12",
+    "name": {
+      "en": "ရွှေပြည်သာ",
+      "mm": "ရွှေပြည်သာ"
+    },
+    "short": {
+      "en": "ရပသ",
+      "mm": "ရပသ"
+    },
+    "townshipCode": "ts0036",
+    "originalId": 36
+  },
+  {
+    "id": "12-034",
+    "stateId": "12",
+    "name": {
+      "en": "လှည်းကူး",
+      "mm": "လှည်းကူး"
+    },
+    "short": {
+      "en": "လကန",
+      "mm": "လကန"
+    },
+    "townshipCode": "ts0014",
+    "originalId": 14
+  },
+  {
+    "id": "12-035",
+    "stateId": "12",
+    "name": {
+      "en": "လမ်းမတော်",
+      "mm": "လမ်းမတော်"
+    },
+    "short": {
+      "en": "လမတ",
+      "mm": "လမတ"
+    },
+    "townshipCode": "ts0025",
+    "originalId": 25
+  },
+  {
+    "id": "12-036",
+    "stateId": "12",
+    "name": {
+      "en": "လှိုင်",
+      "mm": "လှိုင်"
+    },
+    "short": {
+      "en": "လမန",
+      "mm": "လမန"
+    },
+    "townshipCode": "ts0012",
+    "originalId": 12
+  },
+  {
+    "id": "12-037",
+    "stateId": "12",
+    "name": {
+      "en": "လသာ",
+      "mm": "လသာ"
+    },
+    "short": {
+      "en": "လသန",
+      "mm": "လသန"
+    },
+    "townshipCode": "ts0026",
+    "originalId": 26
+  },
+  {
+    "id": "12-038",
+    "stateId": "12",
+    "name": {
+      "en": "လှိုင်သာယာ",
+      "mm": "လှိုင်သာယာ"
+    },
+    "short": {
+      "en": "လသယ",
+      "mm": "လသယ"
+    },
+    "townshipCode": "ts0013",
+    "originalId": 13
+  },
+  {
+    "id": "12-039",
+    "stateId": "12",
+    "name": {
+      "en": "သာကေတ",
+      "mm": "သာကေတ"
+    },
+    "short": {
+      "en": "သကတ",
+      "mm": "သကတ"
+    },
+    "townshipCode": "ts0040",
+    "originalId": 40
+  },
+  {
+    "id": "12-040",
+    "stateId": "12",
+    "name": {
+      "en": "သုံးခွ",
+      "mm": "သုံးခွ"
+    },
+    "short": {
+      "en": "သခန",
+      "mm": "သခန"
+    },
+    "townshipCode": "ts0043",
+    "originalId": 43
+  },
+  {
+    "id": "12-041",
+    "stateId": "12",
+    "name": {
+      "en": "သင်္ကန်းကျွန်း",
+      "mm": "သင်္ကန်းကျွန်း"
+    },
+    "short": {
+      "en": "သဃက",
+      "mm": "သဃက"
+    },
+    "townshipCode": "ts0042",
+    "originalId": 42
+  },
+  {
+    "id": "12-042",
+    "stateId": "12",
+    "name": {
+      "en": "​သန်လျင်",
+      "mm": "​သန်လျင်"
+    },
+    "short": {
+      "en": "သလန",
+      "mm": "သလန"
+    },
+    "townshipCode": "ts0041",
+    "originalId": 41
+  },
+  {
+    "id": "12-043",
+    "stateId": "12",
+    "name": {
+      "en": "အင်းစိန်",
+      "mm": "အင်းစိန်"
+    },
+    "short": {
+      "en": "အစန",
+      "mm": "အစန"
+    },
+    "townshipCode": "ts0017",
+    "originalId": 17
+  },
+  {
+    "id": "12-044",
+    "stateId": "12",
+    "name": {
+      "en": "အလုံ",
+      "mm": "အလုံ"
+    },
+    "short": {
+      "en": "အလန",
+      "mm": "အလန"
+    },
+    "townshipCode": "ts0001",
+    "originalId": 1
+  },
+  {
+    "id": "12-045",
+    "stateId": "12",
+    "name": {
+      "en": "တောင်ဥက္ကလာပ",
+      "mm": "တောင်ဥက္ကလာပ"
+    },
+    "short": {
+      "en": "ဥကတ",
+      "mm": "ဥကတ"
+    },
+    "townshipCode": "ts0037",
+    "originalId": 37
+  },
+  {
+    "id": "12-046",
+    "stateId": "12",
+    "name": {
+      "en": "မြောက်ဥက္ကလာပ",
+      "mm": "မြောက်ဥက္ကလာပ"
+    },
+    "short": {
+      "en": "ဥကမ",
+      "mm": "ဥကမ"
+    },
+    "townshipCode": "ts0030",
+    "originalId": 30
+  }
+]

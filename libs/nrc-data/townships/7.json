@@ -1,0 +1,394 @@
+[
+  {
+    "id": "7-001",
+    "stateId": "7",
+    "name": {
+      "en": "ကျောက်ကြီး",
+      "mm": "ကျောက်ကြီး"
+    },
+    "short": {
+      "en": "ကကန",
+      "mm": "ကကန"
+    },
+    "townshipCode": "ts0251",
+    "originalId": 84
+  },
+  {
+    "id": "7-002",
+    "stateId": "7",
+    "name": {
+      "en": "ကျောက်တံခါး",
+      "mm": "ကျောက်တံခါး"
+    },
+    "short": {
+      "en": "ကတခ",
+      "mm": "ကတခ"
+    },
+    "townshipCode": "ts0252",
+    "originalId": 85
+  },
+  {
+    "id": "7-003",
+    "stateId": "7",
+    "name": {
+      "en": "ကြို့ပင်ကောက်",
+      "mm": "ကြို့ပင်ကောက်"
+    },
+    "short": {
+      "en": "ကပက",
+      "mm": "ကပက"
+    },
+    "townshipCode": null,
+    "originalId": 414
+  },
+  {
+    "id": "7-004",
+    "stateId": "7",
+    "name": {
+      "en": "ကဝ",
+      "mm": "ကဝ"
+    },
+    "short": {
+      "en": "ကဝန",
+      "mm": "ကဝန"
+    },
+    "townshipCode": "ts0250",
+    "originalId": 83
+  },
+  {
+    "id": "7-005",
+    "stateId": "7",
+    "name": {
+      "en": "ဇီးကုန်း",
+      "mm": "ဇီးကုန်း"
+    },
+    "short": {
+      "en": "ဇကန",
+      "mm": "ဇကန"
+    },
+    "townshipCode": null,
+    "originalId": 427
+  },
+  {
+    "id": "7-006",
+    "stateId": "7",
+    "name": {
+      "en": "ညောင်လေးပင်",
+      "mm": "ညောင်လေးပင်"
+    },
+    "short": {
+      "en": "ညလပ",
+      "mm": "ညလပ"
+    },
+    "townshipCode": "ts0253",
+    "originalId": 86
+  },
+  {
+    "id": "7-007",
+    "stateId": "7",
+    "name": {
+      "en": "တောင်ငူ",
+      "mm": "တောင်ငူ"
+    },
+    "short": {
+      "en": "တငန",
+      "mm": "တငန"
+    },
+    "townshipCode": "ts0258",
+    "originalId": 91
+  },
+  {
+    "id": "7-008",
+    "stateId": "7",
+    "name": {
+      "en": "ထန်းတပင်",
+      "mm": "ထန်းတပင်"
+    },
+    "short": {
+      "en": "ထတပ",
+      "mm": "ထတပ"
+    },
+    "townshipCode": "ts0257",
+    "originalId": 90
+  },
+  {
+    "id": "7-009",
+    "stateId": "7",
+    "name": {
+      "en": "ဒိုက်ဦး",
+      "mm": "ဒိုက်ဦး"
+    },
+    "short": {
+      "en": "ဒဥန",
+      "mm": "ဒဥန"
+    },
+    "townshipCode": "ts0249",
+    "originalId": 82
+  },
+  {
+    "id": "7-010",
+    "stateId": "7",
+    "name": {
+      "en": "နတ်တလင်း",
+      "mm": "နတ်တလင်း"
+    },
+    "short": {
+      "en": "နတလ",
+      "mm": "နတလ"
+    },
+    "townshipCode": null,
+    "originalId": 418
+  },
+  {
+    "id": "7-011",
+    "stateId": "7",
+    "name": {
+      "en": "ပေါက်ခေါင်း",
+      "mm": "ပေါက်ခေါင်း"
+    },
+    "short": {
+      "en": "ပခတ",
+      "mm": "ပခတ"
+    },
+    "townshipCode": null,
+    "originalId": 421
+  },
+  {
+    "id": "7-012",
+    "stateId": "7",
+    "name": {
+      "en": "ပဲခူး",
+      "mm": "ပဲခူး"
+    },
+    "short": {
+      "en": "ပခန",
+      "mm": "ပခန"
+    },
+    "townshipCode": "ts0248",
+    "originalId": 81
+  },
+  {
+    "id": "7-013",
+    "stateId": "7",
+    "name": {
+      "en": "ပေါင်းတည်",
+      "mm": "ပေါင်းတည်"
+    },
+    "short": {
+      "en": "ပတတ",
+      "mm": "ပတတ"
+    },
+    "townshipCode": null,
+    "originalId": 422
+  },
+  {
+    "id": "7-014",
+    "stateId": "7",
+    "name": {
+      "en": "ပန်းတောင်း",
+      "mm": "ပန်းတောင်း"
+    },
+    "short": {
+      "en": "ပတန",
+      "mm": "ပတန"
+    },
+    "townshipCode": null,
+    "originalId": 420
+  },
+  {
+    "id": "7-015",
+    "stateId": "7",
+    "name": {
+      "en": "ပြည်",
+      "mm": "ပြည်"
+    },
+    "short": {
+      "en": "ပမန",
+      "mm": "ပမန"
+    },
+    "townshipCode": null,
+    "originalId": 423
+  },
+  {
+    "id": "7-016",
+    "stateId": "7",
+    "name": {
+      "en": "ဖြူး",
+      "mm": "ဖြူး"
+    },
+    "short": {
+      "en": "ဖမန",
+      "mm": "ဖမန"
+    },
+    "townshipCode": "ts0255",
+    "originalId": 88
+  },
+  {
+    "id": "7-017",
+    "stateId": "7",
+    "name": {
+      "en": "မိုးညို",
+      "mm": "မိုးညို"
+    },
+    "short": {
+      "en": "မညန",
+      "mm": "မညန"
+    },
+    "townshipCode": null,
+    "originalId": 417
+  },
+  {
+    "id": "7-018",
+    "stateId": "7",
+    "name": {
+      "en": "မင်းလှ",
+      "mm": "မင်းလှ"
+    },
+    "short": {
+      "en": "မလန",
+      "mm": "မလန"
+    },
+    "townshipCode": null,
+    "originalId": 416
+  },
+  {
+    "id": "7-019",
+    "stateId": "7",
+    "name": {
+      "en": "ရွှေကျင်",
+      "mm": "ရွှေကျင်"
+    },
+    "short": {
+      "en": "ရကန",
+      "mm": "ရကန"
+    },
+    "townshipCode": "ts0256",
+    "originalId": 89
+  },
+  {
+    "id": "7-020",
+    "stateId": "7",
+    "name": {
+      "en": "ရွှေတောင်",
+      "mm": "ရွှေတောင်"
+    },
+    "short": {
+      "en": "ရတန",
+      "mm": "ရတန"
+    },
+    "townshipCode": null,
+    "originalId": 424
+  },
+  {
+    "id": "7-021",
+    "stateId": "7",
+    "name": {
+      "en": "ရေတာရှည်",
+      "mm": "ရေတာရှည်"
+    },
+    "short": {
+      "en": "ရတရ",
+      "mm": "ရတရ"
+    },
+    "townshipCode": "ts0261",
+    "originalId": 94
+  },
+  {
+    "id": "7-022",
+    "stateId": "7",
+    "name": {
+      "en": "လက်ပံတန်း",
+      "mm": "လက်ပံတန်း"
+    },
+    "short": {
+      "en": "လပတ",
+      "mm": "လပတ"
+    },
+    "townshipCode": null,
+    "originalId": 415
+  },
+  {
+    "id": "7-023",
+    "stateId": "7",
+    "name": {
+      "en": "ဝေါ",
+      "mm": "ဝေါ"
+    },
+    "short": {
+      "en": "ဝမန",
+      "mm": "ဝမန"
+    },
+    "townshipCode": "ts0260",
+    "originalId": 93
+  },
+  {
+    "id": "7-024",
+    "stateId": "7",
+    "name": {
+      "en": "သဲကုန်း",
+      "mm": "သဲကုန်း"
+    },
+    "short": {
+      "en": "သကန",
+      "mm": "သကန"
+    },
+    "townshipCode": null,
+    "originalId": 426
+  },
+  {
+    "id": "7-025",
+    "stateId": "7",
+    "name": {
+      "en": "သနပ်ပင်",
+      "mm": "သနပ်ပင်"
+    },
+    "short": {
+      "en": "သနပ",
+      "mm": "သနပ"
+    },
+    "townshipCode": "ts0259",
+    "originalId": 92
+  },
+  {
+    "id": "7-026",
+    "stateId": "7",
+    "name": {
+      "en": "သာယာဝတီ",
+      "mm": "သာယာဝတီ"
+    },
+    "short": {
+      "en": "သဝတ",
+      "mm": "သဝတ"
+    },
+    "townshipCode": null,
+    "originalId": 425
+  },
+  {
+    "id": "7-027",
+    "stateId": "7",
+    "name": {
+      "en": "အုတ်တွင်း",
+      "mm": "အုတ်တွင်း"
+    },
+    "short": {
+      "en": "အတန",
+      "mm": "အတန"
+    },
+    "townshipCode": "ts0254",
+    "originalId": 87
+  },
+  {
+    "id": "7-028",
+    "stateId": "7",
+    "name": {
+      "en": "အုတ်ဖို",
+      "mm": "အုတ်ဖို"
+    },
+    "short": {
+      "en": "အဖန",
+      "mm": "အဖန"
+    },
+    "townshipCode": null,
+    "originalId": 419
+  }
+]

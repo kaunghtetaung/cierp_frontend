@@ -1,0 +1,282 @@
+[
+  {
+    "id": "11-001",
+    "stateId": "11",
+    "name": {
+      "en": "ကျောက်တော်",
+      "mm": "ကျောက်တော်"
+    },
+    "short": {
+      "en": "ကတန",
+      "mm": "ကတန"
+    },
+    "townshipCode": null,
+    "originalId": 305
+  },
+  {
+    "id": "11-002",
+    "stateId": "11",
+    "name": {
+      "en": "ကျိန္တလီ(ခွဲ)",
+      "mm": "ကျိန္တလီ(ခွဲ)"
+    },
+    "short": {
+      "en": "ကတလ",
+      "mm": "ကတလ"
+    },
+    "townshipCode": null,
+    "originalId": 320
+  },
+  {
+    "id": "11-003",
+    "stateId": "11",
+    "name": {
+      "en": "ကျောက်ဖြူ",
+      "mm": "ကျောက်ဖြူ"
+    },
+    "short": {
+      "en": "ကဖန",
+      "mm": "ကဖန"
+    },
+    "townshipCode": null,
+    "originalId": 304
+  },
+  {
+    "id": "11-004",
+    "stateId": "11",
+    "name": {
+      "en": "ဂွ",
+      "mm": "ဂွ"
+    },
+    "short": {
+      "en": "ဂမန",
+      "mm": "ဂမန"
+    },
+    "townshipCode": null,
+    "originalId": 303
+  },
+  {
+    "id": "11-005",
+    "stateId": "11",
+    "name": {
+      "en": "စစ်တွေ",
+      "mm": "စစ်တွေ"
+    },
+    "short": {
+      "en": "စတန",
+      "mm": "စတန"
+    },
+    "townshipCode": null,
+    "originalId": 315
+  },
+  {
+    "id": "11-006",
+    "stateId": "11",
+    "name": {
+      "en": "တောင်ကုတ်",
+      "mm": "တောင်ကုတ်"
+    },
+    "short": {
+      "en": "တကန",
+      "mm": "တကန"
+    },
+    "townshipCode": null,
+    "originalId": 317
+  },
+  {
+    "id": "11-007",
+    "stateId": "11",
+    "name": {
+      "en": "​တောင်ပြိုလက်ဝဲ(ခွဲ)",
+      "mm": "​တောင်ပြိုလက်ဝဲ(ခွဲ)"
+    },
+    "short": {
+      "en": "တပဝ",
+      "mm": "တပဝ"
+    },
+    "townshipCode": null,
+    "originalId": 318
+  },
+  {
+    "id": "11-008",
+    "stateId": "11",
+    "name": {
+      "en": "ပုဏ္ဏားကျွန်း",
+      "mm": "ပုဏ္ဏားကျွန်း"
+    },
+    "short": {
+      "en": "ပဏတ",
+      "mm": "ပဏတ"
+    },
+    "townshipCode": null,
+    "originalId": 312
+  },
+  {
+    "id": "11-009",
+    "stateId": "11",
+    "name": {
+      "en": "ပေါက်တော",
+      "mm": "ပေါက်တော"
+    },
+    "short": {
+      "en": "ပတန",
+      "mm": "ပတန"
+    },
+    "townshipCode": null,
+    "originalId": 311
+  },
+  {
+    "id": "11-010",
+    "stateId": "11",
+    "name": {
+      "en": "ဘူသီးတောင်",
+      "mm": "ဘူသီးတောင်"
+    },
+    "short": {
+      "en": "ဘသတ",
+      "mm": "ဘသတ"
+    },
+    "townshipCode": null,
+    "originalId": 302
+  },
+  {
+    "id": "11-011",
+    "stateId": "11",
+    "name": {
+      "en": "မောင်တော",
+      "mm": "မောင်တော"
+    },
+    "short": {
+      "en": "မတန",
+      "mm": "မတန"
+    },
+    "townshipCode": null,
+    "originalId": 306
+  },
+  {
+    "id": "11-012",
+    "stateId": "11",
+    "name": {
+      "en": "မြေပုံ",
+      "mm": "မြေပုံ"
+    },
+    "short": {
+      "en": "မပတ",
+      "mm": "မပတ"
+    },
+    "townshipCode": null,
+    "originalId": 310
+  },
+  {
+    "id": "11-013",
+    "stateId": "11",
+    "name": {
+      "en": "မင်းပြား",
+      "mm": "မင်းပြား"
+    },
+    "short": {
+      "en": "မပန",
+      "mm": "မပန"
+    },
+    "townshipCode": null,
+    "originalId": 307
+  },
+  {
+    "id": "11-014",
+    "stateId": "11",
+    "name": {
+      "en": "မအီ(ခွဲ)",
+      "mm": "မအီ(ခွဲ)"
+    },
+    "short": {
+      "en": "မအတ",
+      "mm": "မအတ"
+    },
+    "townshipCode": null,
+    "originalId": 319
+  },
+  {
+    "id": "11-015",
+    "stateId": "11",
+    "name": {
+      "en": "မာန်အောင်",
+      "mm": "မာန်အောင်"
+    },
+    "short": {
+      "en": "မအန",
+      "mm": "မအန"
+    },
+    "townshipCode": null,
+    "originalId": 309
+  },
+  {
+    "id": "11-016",
+    "stateId": "11",
+    "name": {
+      "en": "​မြောက်ဦး(မြို့ဟောင်း)",
+      "mm": "​မြောက်ဦး(မြို့ဟောင်း)"
+    },
+    "short": {
+      "en": "မဥန",
+      "mm": "မဥန"
+    },
+    "townshipCode": null,
+    "originalId": 308
+  },
+  {
+    "id": "11-017",
+    "stateId": "11",
+    "name": {
+      "en": "ရမ်းဗြဲ",
+      "mm": "ရမ်းဗြဲ"
+    },
+    "short": {
+      "en": "ရဗန",
+      "mm": "ရဗန"
+    },
+    "townshipCode": null,
+    "originalId": 313
+  },
+  {
+    "id": "11-018",
+    "stateId": "11",
+    "name": {
+      "en": "ရသေ့တောင်",
+      "mm": "ရသေ့တောင်"
+    },
+    "short": {
+      "en": "ရသတ",
+      "mm": "ရသတ"
+    },
+    "townshipCode": null,
+    "originalId": 314
+  },
+  {
+    "id": "11-019",
+    "stateId": "11",
+    "name": {
+      "en": "သံတွဲ",
+      "mm": "သံတွဲ"
+    },
+    "short": {
+      "en": "သတန",
+      "mm": "သတန"
+    },
+    "townshipCode": null,
+    "originalId": 316
+  },
+  {
+    "id": "11-020",
+    "stateId": "11",
+    "name": {
+      "en": "အမ်း",
+      "mm": "အမ်း"
+    },
+    "short": {
+      "en": "အမန",
+      "mm": "အမန"
+    },
+    "townshipCode": null,
+    "originalId": 301
+  }
+]

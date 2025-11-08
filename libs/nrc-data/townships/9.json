@@ -1,0 +1,604 @@
+[
+  {
+    "id": "9-001",
+    "stateId": "9",
+    "name": {
+      "en": "​ကျောက်ဆည်",
+      "mm": "​ကျောက်ဆည်"
+    },
+    "short": {
+      "en": "ကဆန",
+      "mm": "ကဆန"
+    },
+    "townshipCode": "ts0088",
+    "originalId": 100
+  },
+  {
+    "id": "9-002",
+    "stateId": "9",
+    "name": {
+      "en": "ကျောက်ပန်းတောင်း",
+      "mm": "ကျောက်ပန်းတောင်း"
+    },
+    "short": {
+      "en": "ကပတ",
+      "mm": "ကပတ"
+    },
+    "townshipCode": "ts0087",
+    "originalId": 99
+  },
+  {
+    "id": "9-003",
+    "stateId": "9",
+    "name": {
+      "en": "ချမ်းမြသာစည်",
+      "mm": "ချမ်းမြသာစည်"
+    },
+    "short": {
+      "en": "ခမစ",
+      "mm": "ခမစ"
+    },
+    "townshipCode": "ts0086",
+    "originalId": 98
+  },
+  {
+    "id": "9-004",
+    "stateId": "9",
+    "name": {
+      "en": "ချမ်းအေးသာစံ",
+      "mm": "ချမ်းအေးသာစံ"
+    },
+    "short": {
+      "en": "ခအဇ",
+      "mm": "ခအဇ"
+    },
+    "townshipCode": "ts0085",
+    "originalId": 97
+  },
+  {
+    "id": "9-005",
+    "stateId": "9",
+    "name": {
+      "en": "ငါန်းဇွန်",
+      "mm": "ငါန်းဇွန်"
+    },
+    "short": {
+      "en": "ငဇန",
+      "mm": "ငဇန"
+    },
+    "townshipCode": "ts0098",
+    "originalId": 109
+  },
+  {
+    "id": "9-006",
+    "stateId": "9",
+    "name": {
+      "en": "ငါ့သရောက်(ခွဲ)",
+      "mm": "ငါ့သရောက်(ခွဲ)"
+    },
+    "short": {
+      "en": "ငသရ",
+      "mm": "ငသရ"
+    },
+    "townshipCode": "ts0380",
+    "originalId": 124
+  },
+  {
+    "id": "9-007",
+    "stateId": "9",
+    "name": {
+      "en": "စဉ့်ကိုင်",
+      "mm": "စဉ့်ကိုင်"
+    },
+    "short": {
+      "en": "စကတ",
+      "mm": "စကတ"
+    },
+    "townshipCode": "ts0106",
+    "originalId": 116
+  },
+  {
+    "id": "9-008",
+    "stateId": "9",
+    "name": {
+      "en": "​စဉ့်ကူး",
+      "mm": "​စဉ့်ကူး"
+    },
+    "short": {
+      "en": "စကန",
+      "mm": "စကန"
+    },
+    "townshipCode": "ts0105",
+    "originalId": 115
+  },
+  {
+    "id": "9-009",
+    "stateId": "9",
+    "name": {
+      "en": "ဇဗ္ဗူသီရိ",
+      "mm": "ဇဗ္ဗူသီရိ"
+    },
+    "short": {
+      "en": "ဇဗသ",
+      "mm": "ဇဗသ"
+    },
+    "townshipCode": null,
+    "originalId": 346
+  },
+  {
+    "id": "9-010",
+    "stateId": "9",
+    "name": {
+      "en": "​ဇေယျာသီရိ",
+      "mm": "​ဇေယျာသီရိ"
+    },
+    "short": {
+      "en": "ဇယသ",
+      "mm": "ဇယသ"
+    },
+    "townshipCode": null,
+    "originalId": 343
+  },
+  {
+    "id": "9-011",
+    "stateId": "9",
+    "name": {
+      "en": "​ညောင်ဦး(ပုဂံ)",
+      "mm": "​ညောင်ဦး(ပုဂံ)"
+    },
+    "short": {
+      "en": "ညဥန",
+      "mm": "ညဥန"
+    },
+    "townshipCode": "ts0099",
+    "originalId": 110
+  },
+  {
+    "id": "9-012",
+    "stateId": "9",
+    "name": {
+      "en": "တကောင်း(ခွဲ)",
+      "mm": "တကောင်း(ခွဲ)"
+    },
+    "short": {
+      "en": "တကတ",
+      "mm": "တကတ"
+    },
+    "townshipCode": "ts0379",
+    "originalId": 123
+  },
+  {
+    "id": "9-013",
+    "stateId": "9",
+    "name": {
+      "en": "တပ်ကုန်း",
+      "mm": "တပ်ကုန်း"
+    },
+    "short": {
+      "en": "တကန",
+      "mm": "တကန"
+    },
+    "townshipCode": null,
+    "originalId": 342
+  },
+  {
+    "id": "9-014",
+    "stateId": "9",
+    "name": {
+      "en": "တံတားဦး",
+      "mm": "တံတားဦး"
+    },
+    "short": {
+      "en": "တတဥ",
+      "mm": "တတဥ"
+    },
+    "townshipCode": "ts0107",
+    "originalId": 117
+  },
+  {
+    "id": "9-015",
+    "stateId": "9",
+    "name": {
+      "en": "တောင်သာ",
+      "mm": "တောင်သာ"
+    },
+    "short": {
+      "en": "တသန",
+      "mm": "တသန"
+    },
+    "townshipCode": "ts0109",
+    "originalId": 118
+  },
+  {
+    "id": "9-016",
+    "stateId": "9",
+    "name": {
+      "en": "ဒက္ခိဏသီရိ",
+      "mm": "ဒက္ခိဏသီရိ"
+    },
+    "short": {
+      "en": "ဒခသ",
+      "mm": "ဒခသ"
+    },
+    "townshipCode": null,
+    "originalId": 347
+  },
+  {
+    "id": "9-017",
+    "stateId": "9",
+    "name": {
+      "en": "နွားထိုးကြီး",
+      "mm": "နွားထိုးကြီး"
+    },
+    "short": {
+      "en": "နထက",
+      "mm": "နထက"
+    },
+    "townshipCode": "ts0097",
+    "originalId": 108
+  },
+  {
+    "id": "9-018",
+    "stateId": "9",
+    "name": {
+      "en": "ပြည်ကြီးတံခွန်",
+      "mm": "ပြည်ကြီးတံခွန်"
+    },
+    "short": {
+      "en": "ပကခ",
+      "mm": "ပကခ"
+    },
+    "townshipCode": "ts0102",
+    "originalId": 113
+  },
+  {
+    "id": "9-019",
+    "stateId": "9",
+    "name": {
+      "en": "ပုဗ္ပသီရိ",
+      "mm": "ပုဗ္ပသီရိ"
+    },
+    "short": {
+      "en": "ပဗသ",
+      "mm": "ပဗသ"
+    },
+    "townshipCode": null,
+    "originalId": 344
+  },
+  {
+    "id": "9-020",
+    "stateId": "9",
+    "name": {
+      "en": "ပျော်ဘွယ်",
+      "mm": "ပျော်ဘွယ်"
+    },
+    "short": {
+      "en": "ပဘန",
+      "mm": "ပဘန"
+    },
+    "townshipCode": "ts0101",
+    "originalId": 112
+  },
+  {
+    "id": "9-021",
+    "stateId": "9",
+    "name": {
+      "en": "ပျဉ်းမနား",
+      "mm": "ပျဉ်းမနား"
+    },
+    "short": {
+      "en": "ပမန",
+      "mm": "ပမန"
+    },
+    "townshipCode": null,
+    "originalId": 341
+  },
+  {
+    "id": "9-022",
+    "stateId": "9",
+    "name": {
+      "en": "ပုသိမ်ကြီး",
+      "mm": "ပုသိမ်ကြီး"
+    },
+    "short": {
+      "en": "ပသက",
+      "mm": "ပသက"
+    },
+    "townshipCode": "ts0100",
+    "originalId": 111
+  },
+  {
+    "id": "9-023",
+    "stateId": "9",
+    "name": {
+      "en": "​ပြင်ဦးလွင်(မေမြို့)",
+      "mm": "​ပြင်ဦးလွင်(မေမြို့)"
+    },
+    "short": {
+      "en": "ပဥလ",
+      "mm": "ပဥလ"
+    },
+    "townshipCode": "ts0104",
+    "originalId": 114
+  },
+  {
+    "id": "9-024",
+    "stateId": "9",
+    "name": {
+      "en": "မိုးကုတ်",
+      "mm": "မိုးကုတ်"
+    },
+    "short": {
+      "en": "မကန",
+      "mm": "မကန"
+    },
+    "townshipCode": "ts0094",
+    "originalId": 105
+  },
+  {
+    "id": "9-025",
+    "stateId": "9",
+    "name": {
+      "en": "မြင်းခြံ",
+      "mm": "မြင်းခြံ"
+    },
+    "short": {
+      "en": "မခန",
+      "mm": "မခန"
+    },
+    "townshipCode": "ts0095",
+    "originalId": 106
+  },
+  {
+    "id": "9-026",
+    "stateId": "9",
+    "name": {
+      "en": "မတ္တရာ",
+      "mm": "မတ္တရာ"
+    },
+    "short": {
+      "en": "မတရ",
+      "mm": "မတရ"
+    },
+    "townshipCode": "ts0090",
+    "originalId": 101
+  },
+  {
+    "id": "9-027",
+    "stateId": "9",
+    "name": {
+      "en": "မိတ္ထီလာ",
+      "mm": "မိတ္ထီလာ"
+    },
+    "short": {
+      "en": "မထလ",
+      "mm": "မထလ"
+    },
+    "townshipCode": "ts0093",
+    "originalId": 104
+  },
+  {
+    "id": "9-028",
+    "stateId": "9",
+    "name": {
+      "en": "ချမ်းမြသာစည်",
+      "mm": "ချမ်းမြသာစည်"
+    },
+    "short": {
+      "en": "မနတ",
+      "mm": "မနတ"
+    },
+    "townshipCode": null,
+    "originalId": 127
+  },
+  {
+    "id": "9-029",
+    "stateId": "9",
+    "name": {
+      "en": "အောင်မြေသာစံ",
+      "mm": "အောင်မြေသာစံ"
+    },
+    "short": {
+      "en": "မနမ",
+      "mm": "မနမ"
+    },
+    "townshipCode": "ts0998",
+    "originalId": 125
+  },
+  {
+    "id": "9-030",
+    "stateId": "9",
+    "name": {
+      "en": "​ပြင်ဦးလွင်(မေမြို့)",
+      "mm": "​ပြင်ဦးလွင်(မေမြို့)"
+    },
+    "short": {
+      "en": "မမန",
+      "mm": "မမန"
+    },
+    "townshipCode": null,
+    "originalId": 129
+  },
+  {
+    "id": "9-031",
+    "stateId": "9",
+    "name": {
+      "en": "မဟာအောင်မြေ",
+      "mm": "မဟာအောင်မြေ"
+    },
+    "short": {
+      "en": "မရတ",
+      "mm": "မရတ"
+    },
+    "townshipCode": null,
+    "originalId": 128
+  },
+  {
+    "id": "9-032",
+    "stateId": "9",
+    "name": {
+      "en": "ချမ်းအေးသာစံ",
+      "mm": "ချမ်းအေးသာစံ"
+    },
+    "short": {
+      "en": "မရမ",
+      "mm": "မရမ"
+    },
+    "townshipCode": "ts0997",
+    "originalId": 126
+  },
+  {
+    "id": "9-033",
+    "stateId": "9",
+    "name": {
+      "en": "မလှိုင်",
+      "mm": "မလှိုင်"
+    },
+    "short": {
+      "en": "မလန",
+      "mm": "မလန"
+    },
+    "townshipCode": "ts0092",
+    "originalId": 103
+  },
+  {
+    "id": "9-034",
+    "stateId": "9",
+    "name": {
+      "en": "မြစ်သား",
+      "mm": "မြစ်သား"
+    },
+    "short": {
+      "en": "မသန",
+      "mm": "မသန"
+    },
+    "townshipCode": "ts0096",
+    "originalId": 107
+  },
+  {
+    "id": "9-035",
+    "stateId": "9",
+    "name": {
+      "en": "မဟာအောင်မြေ",
+      "mm": "မဟာအောင်မြေ"
+    },
+    "short": {
+      "en": "မဟမ",
+      "mm": "မဟမ"
+    },
+    "townshipCode": "ts0091",
+    "originalId": 102
+  },
+  {
+    "id": "9-036",
+    "stateId": "9",
+    "name": {
+      "en": "ရမည်းသင်း",
+      "mm": "ရမည်းသင်း"
+    },
+    "short": {
+      "en": "ရမသ",
+      "mm": "ရမသ"
+    },
+    "townshipCode": "ts0113",
+    "originalId": 122
+  },
+  {
+    "id": "9-037",
+    "stateId": "9",
+    "name": {
+      "en": "လယ်ဝေး",
+      "mm": "လယ်ဝေး"
+    },
+    "short": {
+      "en": "လဝန",
+      "mm": "လဝန"
+    },
+    "townshipCode": null,
+    "originalId": 340
+  },
+  {
+    "id": "9-038",
+    "stateId": "9",
+    "name": {
+      "en": "ဝမ်းတွင်း",
+      "mm": "ဝမ်းတွင်း"
+    },
+    "short": {
+      "en": "ဝတန",
+      "mm": "ဝတန"
+    },
+    "townshipCode": "ts0112",
+    "originalId": 121
+  },
+  {
+    "id": "9-039",
+    "stateId": "9",
+    "name": {
+      "en": "သာစည်",
+      "mm": "သာစည်"
+    },
+    "short": {
+      "en": "သစန",
+      "mm": "သစန"
+    },
+    "townshipCode": "ts0111",
+    "originalId": 120
+  },
+  {
+    "id": "9-040",
+    "stateId": "9",
+    "name": {
+      "en": "သပိတ်ကျင်း",
+      "mm": "သပိတ်ကျင်း"
+    },
+    "short": {
+      "en": "သပက",
+      "mm": "သပက"
+    },
+    "townshipCode": "ts0110",
+    "originalId": 119
+  },
+  {
+    "id": "9-041",
+    "stateId": "9",
+    "name": {
+      "en": "အောင်မြေသာစံ",
+      "mm": "အောင်မြေသာစံ"
+    },
+    "short": {
+      "en": "အမဇ",
+      "mm": "အမဇ"
+    },
+    "townshipCode": "ts0084",
+    "originalId": 96
+  },
+  {
+    "id": "9-042",
+    "stateId": "9",
+    "name": {
+      "en": "အမရပူရ",
+      "mm": "အမရပူရ"
+    },
+    "short": {
+      "en": "အမရ",
+      "mm": "အမရ"
+    },
+    "townshipCode": "ts0083",
+    "originalId": 95
+  },
+  {
+    "id": "9-043",
+    "stateId": "9",
+    "name": {
+      "en": "ဥတ္တရသီရိ",
+      "mm": "ဥတ္တရသီရိ"
+    },
+    "short": {
+      "en": "ဥတသ",
+      "mm": "ဥတသ"
+    },
+    "townshipCode": null,
+    "originalId": 345
+  }
+]

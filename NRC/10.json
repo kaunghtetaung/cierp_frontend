@@ -1,0 +1,102 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 292,
+            "DNRC_Code": "10",
+            "NRC_Code": "ကထန",
+            "Township_Name": "ကျိုက်ထို",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 291,
+            "DNRC_Code": "10",
+            "NRC_Code": "ကမရ",
+            "Township_Name": "ကျိုက်မရော",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 290,
+            "DNRC_Code": "10",
+            "NRC_Code": "ခဆန",
+            "Township_Name": "ချောင်းဆုံ",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 300,
+            "DNRC_Code": "10",
+            "NRC_Code": "ခဇန",
+            "Township_Name": "​ခေါဇာ(ခွဲ)",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 295,
+            "DNRC_Code": "10",
+            "NRC_Code": "ပမန",
+            "Township_Name": "ပေါင်",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 289,
+            "DNRC_Code": "10",
+            "NRC_Code": "ဘလန",
+            "Township_Name": "ဘီးလင်း",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 294,
+            "DNRC_Code": "10",
+            "NRC_Code": "မဒန",
+            "Township_Name": "မုဒုံ",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 293,
+            "DNRC_Code": "10",
+            "NRC_Code": "မလမ",
+            "Township_Name": "မော်လမြိုင်",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 298,
+            "DNRC_Code": "10",
+            "NRC_Code": "ရမန",
+            "Township_Name": "ရေး",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 299,
+            "DNRC_Code": "10",
+            "NRC_Code": "လမန",
+            "Township_Name": "လမိုင်း(ခွဲ)",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 297,
+            "DNRC_Code": "10",
+            "NRC_Code": "သထန",
+            "Township_Name": "သထုံ",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        },
+        {
+            "ID": 296,
+            "DNRC_Code": "10",
+            "NRC_Code": "သဖရ",
+            "Township_Name": "သံဖြူဇရပ်",
+            "DNRC_Code_MM": "၁၀",
+            "Township_Code": null
+        }
+    ]
+}

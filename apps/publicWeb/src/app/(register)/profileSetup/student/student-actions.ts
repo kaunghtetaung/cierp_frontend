@@ -19,7 +19,7 @@ export interface StudentSelfRegistrationData {
   religion?: string;
 
   // Contact & Address
-  phone: string;
+  phoneNumber: string;
   email?: string;
   stateRegionName?: string;
   districtName?: string;
@@ -145,7 +145,7 @@ export async function submitStudentSelfRegistration(
       religion: cleanValue(data.religion),
 
       // Contact & Address
-      phone: data.phone,
+      phoneNumber: data.phoneNumber,
       email: cleanValue(data.email),
       stateRegionName: cleanValue(data.stateRegionName),
       districtName: cleanValue(data.districtName),

@@ -1,0 +1,170 @@
+[
+  {
+    "id": "10-001",
+    "stateId": "10",
+    "name": {
+      "en": "ကျိုက်ထို",
+      "mm": "ကျိုက်ထို"
+    },
+    "short": {
+      "en": "ကထန",
+      "mm": "ကထန"
+    },
+    "townshipCode": null,
+    "originalId": 292
+  },
+  {
+    "id": "10-002",
+    "stateId": "10",
+    "name": {
+      "en": "ကျိုက်မရော",
+      "mm": "ကျိုက်မရော"
+    },
+    "short": {
+      "en": "ကမရ",
+      "mm": "ကမရ"
+    },
+    "townshipCode": null,
+    "originalId": 291
+  },
+  {
+    "id": "10-003",
+    "stateId": "10",
+    "name": {
+      "en": "ချောင်းဆုံ",
+      "mm": "ချောင်းဆုံ"
+    },
+    "short": {
+      "en": "ခဆန",
+      "mm": "ခဆန"
+    },
+    "townshipCode": null,
+    "originalId": 290
+  },
+  {
+    "id": "10-004",
+    "stateId": "10",
+    "name": {
+      "en": "​ခေါဇာ(ခွဲ)",
+      "mm": "​ခေါဇာ(ခွဲ)"
+    },
+    "short": {
+      "en": "ခဇန",
+      "mm": "ခဇန"
+    },
+    "townshipCode": null,
+    "originalId": 300
+  },
+  {
+    "id": "10-005",
+    "stateId": "10",
+    "name": {
+      "en": "ပေါင်",
+      "mm": "ပေါင်"
+    },
+    "short": {
+      "en": "ပမန",
+      "mm": "ပမန"
+    },
+    "townshipCode": null,
+    "originalId": 295
+  },
+  {
+    "id": "10-006",
+    "stateId": "10",
+    "name": {
+      "en": "ဘီးလင်း",
+      "mm": "ဘီးလင်း"
+    },
+    "short": {
+      "en": "ဘလန",
+      "mm": "ဘလန"
+    },
+    "townshipCode": null,
+    "originalId": 289
+  },
+  {
+    "id": "10-007",
+    "stateId": "10",
+    "name": {
+      "en": "မုဒုံ",
+      "mm": "မုဒုံ"
+    },
+    "short": {
+      "en": "မဒန",
+      "mm": "မဒန"
+    },
+    "townshipCode": null,
+    "originalId": 294
+  },
+  {
+    "id": "10-008",
+    "stateId": "10",
+    "name": {
+      "en": "မော်လမြိုင်",
+      "mm": "မော်လမြိုင်"
+    },
+    "short": {
+      "en": "မလမ",
+      "mm": "မလမ"
+    },
+    "townshipCode": null,
+    "originalId": 293
+  },
+  {
+    "id": "10-009",
+    "stateId": "10",
+    "name": {
+      "en": "ရေး",
+      "mm": "ရေး"
+    },
+    "short": {
+      "en": "ရမန",
+      "mm": "ရမန"
+    },
+    "townshipCode": null,
+    "originalId": 298
+  },
+  {
+    "id": "10-010",
+    "stateId": "10",
+    "name": {
+      "en": "လမိုင်း(ခွဲ)",
+      "mm": "လမိုင်း(ခွဲ)"
+    },
+    "short": {
+      "en": "လမန",
+      "mm": "လမန"
+    },
+    "townshipCode": null,
+    "originalId": 299
+  },
+  {
+    "id": "10-011",
+    "stateId": "10",
+    "name": {
+      "en": "သထုံ",
+      "mm": "သထုံ"
+    },
+    "short": {
+      "en": "သထန",
+      "mm": "သထန"
+    },
+    "townshipCode": null,
+    "originalId": 297
+  },
+  {
+    "id": "10-012",
+    "stateId": "10",
+    "name": {
+      "en": "သံဖြူဇရပ်",
+      "mm": "သံဖြူဇရပ်"
+    },
+    "short": {
+      "en": "သဖရ",
+      "mm": "သဖရ"
+    },
+    "townshipCode": null,
+    "originalId": 296
+  }
+]

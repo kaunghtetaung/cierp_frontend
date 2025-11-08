@@ -1,0 +1,254 @@
+[
+  {
+    "id": "6-001",
+    "stateId": "6",
+    "name": {
+      "en": "ကျွန်းစု",
+      "mm": "ကျွန်းစု"
+    },
+    "short": {
+      "en": "ကစန",
+      "mm": "ကစန"
+    },
+    "townshipCode": null,
+    "originalId": 206
+  },
+  {
+    "id": "6-002",
+    "stateId": "6",
+    "name": {
+      "en": "ကရသူရိ(ခွဲ)",
+      "mm": "ကရသူရိ(ခွဲ)"
+    },
+    "short": {
+      "en": "ကရရ",
+      "mm": "ကရရ"
+    },
+    "townshipCode": null,
+    "originalId": 219
+  },
+  {
+    "id": "6-003",
+    "stateId": "6",
+    "name": {
+      "en": "ကလိန်အောင်(ခွဲ)",
+      "mm": "ကလိန်အောင်(ခွဲ)"
+    },
+    "short": {
+      "en": "ကလအ",
+      "mm": "ကလအ"
+    },
+    "townshipCode": null,
+    "originalId": 215
+  },
+  {
+    "id": "6-004",
+    "stateId": "6",
+    "name": {
+      "en": "ကော့သောင်း",
+      "mm": "ကော့သောင်း"
+    },
+    "short": {
+      "en": "ကသန",
+      "mm": "ကသန"
+    },
+    "townshipCode": null,
+    "originalId": 205
+  },
+  {
+    "id": "6-005",
+    "stateId": "6",
+    "name": {
+      "en": "ခမောက်ကြီး(ခွဲ)",
+      "mm": "ခမောက်ကြီး(ခွဲ)"
+    },
+    "short": {
+      "en": "ခမက",
+      "mm": "ခမက"
+    },
+    "townshipCode": null,
+    "originalId": 217
+  },
+  {
+    "id": "6-006",
+    "stateId": "6",
+    "name": {
+      "en": "တနင်္သာရီ",
+      "mm": "တနင်္သာရီ"
+    },
+    "short": {
+      "en": "တသရ",
+      "mm": "တသရ"
+    },
+    "townshipCode": null,
+    "originalId": 211
+  },
+  {
+    "id": "6-007",
+    "stateId": "6",
+    "name": {
+      "en": "ထားဝယ်",
+      "mm": "ထားဝယ်"
+    },
+    "short": {
+      "en": "ထဝန",
+      "mm": "ထဝန"
+    },
+    "townshipCode": null,
+    "originalId": 204
+  },
+  {
+    "id": "6-008",
+    "stateId": "6",
+    "name": {
+      "en": "ပြည်ကြီးမဏ္ဍိုင်",
+      "mm": "ပြည်ကြီးမဏ္ဍိုင်"
+    },
+    "short": {
+      "en": "ပကမ",
+      "mm": "ပကမ"
+    },
+    "townshipCode": null,
+    "originalId": 218
+  },
+  {
+    "id": "6-009",
+    "stateId": "6",
+    "name": {
+      "en": "ပလောက်(ခွဲ)",
+      "mm": "ပလောက်(ခွဲ)"
+    },
+    "short": {
+      "en": "ပလတ",
+      "mm": "ပလတ"
+    },
+    "townshipCode": null,
+    "originalId": 216
+  },
+  {
+    "id": "6-010",
+    "stateId": "6",
+    "name": {
+      "en": "ပုလော",
+      "mm": "ပုလော"
+    },
+    "short": {
+      "en": "ပလန",
+      "mm": "ပလန"
+    },
+    "townshipCode": null,
+    "originalId": 210
+  },
+  {
+    "id": "6-011",
+    "stateId": "6",
+    "name": {
+      "en": "ဘုတ်ပြင်း",
+      "mm": "ဘုတ်ပြင်း"
+    },
+    "short": {
+      "en": "ဘပန",
+      "mm": "ဘပန"
+    },
+    "townshipCode": null,
+    "originalId": 203
+  },
+  {
+    "id": "6-012",
+    "stateId": "6",
+    "name": {
+      "en": "​မေတ္တာ(ခွဲ)",
+      "mm": "​မေတ္တာ(ခွဲ)"
+    },
+    "short": {
+      "en": "မတန",
+      "mm": "မတန"
+    },
+    "townshipCode": null,
+    "originalId": 214
+  },
+  {
+    "id": "6-013",
+    "stateId": "6",
+    "name": {
+      "en": "မြိတ်",
+      "mm": "မြိတ်"
+    },
+    "short": {
+      "en": "မမန",
+      "mm": "မမန"
+    },
+    "townshipCode": null,
+    "originalId": 220
+  },
+  {
+    "id": "6-014",
+    "stateId": "6",
+    "name": {
+      "en": "မြိတ် (အနောက်)",
+      "mm": "မြိတ် (အနောက်)"
+    },
+    "short": {
+      "en": "မအန",
+      "mm": "မအန"
+    },
+    "townshipCode": null,
+    "originalId": 209
+  },
+  {
+    "id": "6-015",
+    "stateId": "6",
+    "name": {
+      "en": "မြိတ် (အရှေ့)",
+      "mm": "မြိတ် (အရှေ့)"
+    },
+    "short": {
+      "en": "မအရ",
+      "mm": "မအရ"
+    },
+    "townshipCode": null,
+    "originalId": 208
+  },
+  {
+    "id": "6-016",
+    "stateId": "6",
+    "name": {
+      "en": "ရေဖြူ",
+      "mm": "ရေဖြူ"
+    },
+    "short": {
+      "en": "ရဖန",
+      "mm": "ရဖန"
+    },
+    "townshipCode": null,
+    "originalId": 213
+  },
+  {
+    "id": "6-017",
+    "stateId": "6",
+    "name": {
+      "en": "လောင်းလုံ",
+      "mm": "လောင်းလုံ"
+    },
+    "short": {
+      "en": "လလန",
+      "mm": "လလန"
+    },
+    "townshipCode": null,
+    "originalId": 207
+  },
+  {
+    "id": "6-018",
+    "stateId": "6",
+    "name": {
+      "en": "သရက်ချောင်း",
+      "mm": "သရက်ချောင်း"
+    },
+    "short": {
+      "en": "သရခ",
+      "mm": "သရခ"
+    },
+    "townshipCode": null,
+    "originalId": 212
+  }
+]

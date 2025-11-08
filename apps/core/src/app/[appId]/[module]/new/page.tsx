@@ -4,6 +4,8 @@ import { requireModuleOperationAccess } from "@/lib/auth-utils";
 import { FormWithLanguage } from "@repo/schema-forms";
 import { enableCommonMultilangFields } from "@/lib/enable-multilang";
 import type { ModuleSchema } from "@repo/types";
+import { existsSync } from "fs";
+import path from "path";
 
 interface ModuleNewPageProps {
   params: Promise<{
@@ -22,6 +24,39 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
     resolvedParams.module,
     'create'
   );
+
+  // ⭐ CHECK: If static module exists for this appId/module combination
+  const staticModulePath = path.join(
+    process.cwd(),
+    "src",
+    "staticModules",
+    resolvedParams.appId,
+    resolvedParams.module,
+    "new.tsx"
+  );
+
+  if (existsSync(staticModulePath)) {
+    // Dynamic import of static module
+    try {
+      const StaticModule = await import(
+        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/new`
+      );
+      return (
+        <StaticModule.default
+          module={fullModule}
+          user={user}
+          tenant={tenant}
+          appId={resolvedParams.appId}
+        />
+      );
+    } catch (error) {
+      console.error(
+        `Failed to load static module new page: ${resolvedParams.appId}/${resolvedParams.module}`,
+        error
+      );
+      // Fall through to generic module if import fails
+    }
+  }
 
   // Get filtered layout data (this will only include modules user has access to)
   const { appSchemaData } = await fetchLayoutData();

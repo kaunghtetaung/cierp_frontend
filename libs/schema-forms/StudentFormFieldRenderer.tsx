@@ -20,6 +20,7 @@ import { PhoneInput } from './PhoneInput'
 import { NrcField } from './NrcField'
 import { IconComponent, IconSelector } from '@repo/ui'
 import { DatePicker } from './components/DatePicker'
+import { MediaBrowserField } from './fields/MediaBrowserField'
 import type { FormField as SchemaFormField } from '@repo/types'
 
 // Auto-configure dropdownConfig - NO HARDCODING
@@ -352,9 +353,9 @@ export function StudentFormFieldRenderer({
 
   // Student form layout configuration
   // Row 1 fields (2 columns layout)
-  const row1Fields = ['nameMyanmar', 'nameEnglish', 'gender', 'ethnicity', 'religion'];
-  // Row 2 fields (4 columns layout - bloodGroup, dateOfBirth, nrcNumber)
-  const row2Fields = ['bloodGroup', 'dateOfBirth', 'nrcNumber'];
+  const row1Fields = ['nameMyanmar', 'nameEnglish', 'gender', 'race', 'religion'];
+  // Row 2 fields (4 columns layout - bloodType, dateOfBirth, nrcNumber)
+  const row2Fields = ['bloodType', 'dateOfBirth', 'nrcNumber'];
   // Full width fields (span entire row)
   const fullWidthFields = ['dateOfBirth', 'nrcField', 'nrcNumber'];
 
@@ -667,6 +668,34 @@ function StudentFormFieldInput({
               error={!!errors[field.fieldName]}
               currentLanguage={currentLanguage}
               placeholder={field.placeHolder}
+            />
+          )}
+        />
+      )
+
+    case 'mediaBrowser':
+    case 'mediaGallery':
+    case 'mediaUploader':
+      return (
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: formField }) => (
+            <MediaBrowserField
+              value={formField.value}
+              onChange={formField.onChange}
+              config={{
+                ...field.mediaBrowserConfig,
+                selectionMode: field.fieldType === 'mediaGallery' ? 'multiple' :
+                              field.mediaBrowserConfig?.selectionMode || 'single',
+                allowUpload: field.fieldType === 'mediaUploader' ? true : field.mediaBrowserConfig?.allowUpload,
+              }}
+              label={field.label}
+              fieldName={field.fieldName}
+              error={errors[field.fieldName]?.message as string}
+              disabled={field.readonly || field.disabled}
+              currentLanguage={currentLanguage}
+              showUploadButton={field.fieldType === 'mediaUploader'}
             />
           )}
         />

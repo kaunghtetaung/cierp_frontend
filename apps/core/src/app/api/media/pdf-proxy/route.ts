@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       // Not in cache - fetch from S3
       console.log('[PDF_PROXY] PDF not in cache, fetching from S3...');
 
-      const s3Client = createTenantS3Client({
+      const s3Client = await createTenantS3Client({
         tenantId,
         tenantSlug,
         tenantRootDomain,

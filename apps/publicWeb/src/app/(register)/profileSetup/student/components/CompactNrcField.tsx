@@ -5,36 +5,7 @@ import { Input } from "@repo/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { Label } from "@repo/ui";
 import { cn } from "@repo/utils";
-
-// Enhanced Myanmar State/Region codes with comprehensive township data
-const MYANMAR_STATES = [
-  { code: 1, nameEn: "Kachin State", nameMm: "ကချင်ပြည်နယ်", townships: ["မမန", "အလန", "ဗမန", "ဗရန", "တနန", "တပန", "ကမန", "မကန", "မနန", "နမန", "နရတ", "နယန", "ပကန", "ပတန", "ရမန", "သကန", "တဝန", "တဇန", "ဝလန"] },
-  { code: 2, nameEn: "Kayah State", nameMm: "ကယားပြည်နယ်", townships: ["ဒမဆ", "ဒရန", "လကန", "လမန", "မဆန", "ပစန", "ရရန"] },
-  { code: 3, nameEn: "Kayin State", nameMm: "ကရင်ပြည်နယ်", townships: ["တနတ", "ကမမ", "ကဝန", "မအန", "မလန", "ရကန", "သကန"] },
-  { code: 4, nameEn: "Chin State", nameMm: "ချင်းပြည်နယ်", townships: ["ဖလန", "ဖရန", "ဟခန", "ကလန", "လနန", "မတန", "မနန", "မရန", "ပလန", "ထလန", "တးန", "တဇန"] },
-  { code: 5, nameEn: "Sagaing Region", nameMm: "စစ်ကိုင်းတိုင်းဒေသကြီး", townships: ["အမန", "အတန", "ဗဒန", "ဗလန", "စကန", "စလန", "ကလန", "ကနန", "ကသန", "ကဝန", "ခမန", "ခဝန", "လရန", "မဂန", "မညန", "မကန", "မမန", "မဇန", "နမန", "နရန", "နတန", "နယန", "ပလန", "စကန", "တလန", "တမန", "တကန", "ဝလန", "ယငန", "ယမန"] },
-  { code: 6, nameEn: "Tanintharyi Region", nameMm: "တနင်္သာရီတိုင်းဒေသကြီး", townships: ["ဗခန", "ဒရန", "ကသန", "ကတန", "လမန", "မတန", "ပလန", "တစန", "တမန"] },
-  { code: 7, nameEn: "Bago Region", nameMm: "ပဲခူးတိုင်းဒေသကြီး", townships: ["ပဂန", "ဒစန", "ကခန", "ကရန", "လပန", "မဒန", "ညတန", "အကန", "ပရန", "ပမန", "ရမန", "ရညန", "ရကန", "သနန", "သကန", "သကတ", "သညန", "တကန", "သဇန", "ထရန", "ဝန", "ယကန"] },
-  { code: 8, nameEn: "Magway Region", nameMm: "မကွေးတိုင်းဒေသကြီး", townships: ["အလန", "စကန", "စမန", "ဂငန", "ကရန", "ခရန", "လကန", "မကန", "မခန", "မနန", "မရန", "မသန", "မးန", "နရန", "နထန", "ပခန", "ပတန", "ပဝန", "စသန", "ပပန", "ပတန", "စလန", "စလန", "သကန", "သလန", "သနန", "တစန", "တမန", "ရတန", "ယစန", "ယငန"] },
-  { code: 9, nameEn: "Mandalay Region", nameMm: "မန္တလေးတိုင်းဒေသကြီး", townships: ["အမန", "အမရ", "ခန", "ကမန", "ကယန", "ကလန", "မမန", "မညန", "မတန", "မရန", "နမန", "နခန", "နညန", "နတန", "နပန", "ပခန", "ပတန", "ပလန", "စငန", "စဝန", "တစန", "တလန", "တမန", "တရန", "ရကန", "ယမန"] },
-  { code: 10, nameEn: "Mon State", nameMm: "မွန်ပြည်နယ်", townships: ["ဗငန", "စငန", "ကကန", "မတန", "မလန", "ရငန", "သထန", "ပအန", "ယတန", "ယခန"] },
-  { code: 11, nameEn: "Rakhine State", nameMm: "ရခိုင်ပြည်နယ်", townships: ["အခန", "အနန", "ဗတန", "စနန", "ကပန", "ကတန", "ခဝန", "ကမန", "မကန", "မတန", "မရန", "မခန", "ပလန", "ပနန", "ရငန", "စတန", "တကန", "တမန", "တရန", "ရကန", "ရခန"] },
-  { code: 12, nameEn: "Yangon Region", nameMm: "ရန်ကုန်တိုင်းဒေသကြီး", townships: ["အမန", "ဗဟန", "ဗတန", "စပန", "ဒဂန", "ဒလန", "ကမန", "ကမရ", "ကမင", "ကတန", "ခမန", "လန", "လမန", "လမတ", "မဂတ", "မအပ", "မခန", "မသန", "မးပ", "ပဇတ", "ရမန", "စခန", "သကက", "သမန", "တခက", "တလန", "တမန", "ထလန", "ဝမန", "ရမင", "ယမန"] },
-  { code: 13, nameEn: "Shan State", nameMm: "ရှမ်းပြည်နယ်", townships: ["အမန", "ကလန", "ကတန", "ကဆန", "ကဟန", "ကရန", "လငန", "လမန", "မငန", "မရန", "မင", "မတန", "မစန", "မလန", "မပန", "နကန", "နငန", "နမန", "နပန", "နသန", "ပငန", "ပလန", "စကန", "တစန", "တလန", "တမန", "တနန", "ကမန", "တငန", "ရမန"] },
-  { code: 14, nameEn: "Ayeyarwady Region", nameMm: "ဧရာဝတီတိုင်းဒေသကြီး", townships: ["ဗငန", "ဒနန", "ဟံသန", "အငန", "ကညန", "ကပန", "ကရန", "ကမန", "ကမင", "လမန", "မအန", "မပန", "မမန", "မဇန", "နရန", "နတန", "ပတန", "ပမန", "ပနန", "ပမင", "စလန", "သပန", "တကန", "တရန", "ဝမန", "ရကန", "ယငန"] }
-];
-
-const CITIZENSHIP_TYPES = [
-  { code: "N", nameEn: "Citizen", nameMm: "နိုင်ငံသား" },
-  { code: "E", nameEn: "Associate Citizen", nameMm: "ဧည့်နိုင်ငံသား" },
-  { code: "A", nameEn: "Naturalized Citizen", nameMm: "နိုင်ငံသားပြု" },
-  { code: "P", nameEn: "Provisional ID", nameMm: "ယာယီကတ်" }
-];
-
-const getTownshipsForState = (stateCode: string): string[] => {
-  const state = MYANMAR_STATES.find(s => s.code.toString() === stateCode);
-  return state ? state.townships : [];
-};
+import { useNrcStates, useNrcTownships, useNrcTypes } from "@repo/nrc-hooks";
 
 interface NrcParts {
   state: string;
@@ -91,7 +62,11 @@ export function CompactNrcField({
   const [parts, setParts] = useState<NrcParts>(() => parseNrc(value));
   const [isFreeForm, setIsFreeForm] = useState(false);
   const [freeFormValue, setFreeFormValue] = useState(value);
-  const [availableTownships, setAvailableTownships] = useState<string[]>([]);
+
+  // Lazy load NRC data with hooks
+  const { states } = useNrcStates();
+  const { townships } = useNrcTownships(parts.state);
+  const { types } = useNrcTypes();
 
   useEffect(() => {
     if (value) {
@@ -101,24 +76,9 @@ export function CompactNrcField({
         setIsFreeForm(true);
       } else {
         setParts(newParts);
-        if (newParts.state) {
-          setAvailableTownships(getTownshipsForState(newParts.state));
-        }
       }
     }
   }, [value]);
-
-  useEffect(() => {
-    if (parts.state) {
-      const townships = getTownshipsForState(parts.state);
-      setAvailableTownships(townships);
-      if (parts.township && !townships.includes(parts.township)) {
-        handlePartChange("township", "");
-      }
-    } else {
-      setAvailableTownships([]);
-    }
-  }, [parts.state]);
 
   const handlePartChange = useCallback((field: keyof NrcParts, newValue: string) => {
     const updatedParts = { ...parts, [field]: newValue };
@@ -199,9 +159,9 @@ export function CompactNrcField({
               <SelectValue placeholder="xx">{parts.state}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border-gray-300">
-              {MYANMAR_STATES.map((state) => (
-                <SelectItem key={state.code} value={state.code.toString()}>
-                  <span className="font-mono text-xs">{state.code} - {state.nameEn}</span>
+              {states?.map((state) => (
+                <SelectItem key={state.id} value={state.number.en}>
+                  <span className="font-mono text-xs">{state.number.en} - {state.name.en}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -214,9 +174,9 @@ export function CompactNrcField({
               <SelectValue placeholder="xxx">{parts.township}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border-gray-300 max-h-60 overflow-y-auto">
-              {availableTownships.map((township) => (
-                <SelectItem key={township} value={township}>
-                  <span className="font-mono text-xs">{township}</span>
+              {townships?.map((township) => (
+                <SelectItem key={township.id} value={township.short.en}>
+                  <span className="font-mono text-xs">{township.short.en}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -229,9 +189,9 @@ export function CompactNrcField({
               <SelectValue placeholder="x">{parts.citizenship}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border-gray-300">
-              {CITIZENSHIP_TYPES.map((type) => (
-                <SelectItem key={type.code} value={type.code}>
-                  <span className="font-mono text-xs">{type.code} - {type.nameEn}</span>
+              {types?.map((type) => (
+                <SelectItem key={type.id} value={type.name.en}>
+                  <span className="font-mono text-xs">{type.name.en}</span>
                 </SelectItem>
               ))}
             </SelectContent>

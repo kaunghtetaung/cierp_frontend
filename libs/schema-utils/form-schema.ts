@@ -9,29 +9,38 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
   const schemaFields: Record<string, z.ZodTypeAny> = {}
 
   formFields.forEach((field) => {
+    // Create default validationRule if missing (for backwards compatibility)
+    const validationRule = field.validationRule || {
+      required: false,
+      errorMessage: {
+        en: `${field.fieldName} is invalid`,
+        mm: `${field.fieldName} သည် မမှန်ကန်ပါ`
+      }
+    }
+
     let fieldSchema: z.ZodTypeAny
 
     // Base schema based on field type
     switch (field.fieldType) {
       case 'email':
-        fieldSchema = z.string().email(field.validationRule.errorMessage.en)
+        fieldSchema = z.string().email(validationRule.errorMessage?.en || 'Invalid email')
         break
       case 'password':
-        fieldSchema = z.string().min(8, field.validationRule.errorMessage.en)
+        fieldSchema = z.string().min(8, validationRule.errorMessage?.en || 'Password must be at least 8 characters')
         break
       case 'phone':
         fieldSchema = z.string().refine((val) => {
           if (!val) return true // Let required validation handle empty values
-          
+
           const validation = validatePhoneNumber(val, {
-            defaultCountry: field.validationRule?.phoneCountry,
-            requireE164: field.validationRule?.e164 || false,
-            allowInternational: field.validationRule?.allowInternational !== false
+            defaultCountry: validationRule?.phoneCountry,
+            requireE164: validationRule?.e164 || false,
+            allowInternational: validationRule?.allowInternational !== false
           })
-          
+
           return validation.isValid
         }, {
-          message: field.validationRule?.errorMessage?.en || 'Invalid phone number format'
+          message: validationRule?.errorMessage?.en || 'Invalid phone number format'
         })
         break
       case 'number':
@@ -42,16 +51,16 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
           }
           return val
         })
-        if (field.validationRule?.min !== undefined) {
+        if (validationRule?.min !== undefined) {
           fieldSchema = (fieldSchema as z.ZodEffects<any, any>).refine(
-            (val) => val >= (field.validationRule?.min || 0),
-            { message: field.validationRule?.errorMessage?.en || `Must be at least ${field.validationRule?.min}` }
+            (val) => val >= (validationRule?.min || 0),
+            { message: validationRule?.errorMessage?.en || `Must be at least ${validationRule?.min}` }
           )
         }
-        if (field.validationRule?.max !== undefined) {
+        if (validationRule?.max !== undefined) {
           fieldSchema = (fieldSchema as z.ZodEffects<any, any>).refine(
-            (val) => val <= (field.validationRule?.max || 0),
-            { message: field.validationRule?.errorMessage?.en || `Must be at most ${field.validationRule?.max}` }
+            (val) => val <= (validationRule?.max || 0),
+            { message: validationRule?.errorMessage?.en || `Must be at most ${validationRule?.max}` }
           )
         }
         break
@@ -61,7 +70,7 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
         break
       case 'date':
         fieldSchema = z.string().refine((val) => !isNaN(Date.parse(val)), {
-          message: field.validationRule.errorMessage.en
+          message: validationRule.errorMessage?.en || 'Invalid date'
         })
         break
       case 'select':
@@ -297,9 +306,9 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
           fieldSchema = z.array(z.object(childSchemaFields))
 
           // Add minimum length validation for required array fields
-          if (field.validationRule?.required) {
+          if (validationRule?.required) {
             fieldSchema = (fieldSchema as z.ZodArray<any>).min(1,
-              field.validationRule?.errorMessage?.en || `At least one ${field.fieldName} is required`
+              validationRule?.errorMessage?.en || `At least one ${field.fieldName} is required`
             )
           }
         } else {
@@ -313,33 +322,33 @@ export function generateZodSchema(formFields: FormField[]): z.ZodSchema {
 
     // Apply validation rules (exclude phone fields as they have custom validation)
     if (field.fieldType === 'text' || field.fieldType === 'textArea' || field.fieldType === 'email' || field.fieldType === 'password') {
-      if (field.validationRule.minLength) {
+      if (validationRule?.minLength) {
         fieldSchema = (fieldSchema as z.ZodString).min(
-          field.validationRule.minLength,
-          field.validationRule.errorMessage.en
+          validationRule.minLength,
+          validationRule.errorMessage?.en || 'Too short'
         )
       }
-      if (field.validationRule.maxLength) {
+      if (validationRule?.maxLength) {
         fieldSchema = (fieldSchema as z.ZodString).max(
-          field.validationRule.maxLength,
-          field.validationRule.errorMessage.en
+          validationRule.maxLength,
+          validationRule.errorMessage?.en || 'Too long'
         )
       }
-      if (field.validationRule.pattern) {
+      if (validationRule?.pattern) {
         fieldSchema = (fieldSchema as z.ZodString).regex(
-          new RegExp(field.validationRule.pattern),
-          field.validationRule.errorMessage.en
+          new RegExp(validationRule.pattern),
+          validationRule.errorMessage?.en || 'Invalid format'
         )
       }
     }
 
     // Handle required/optional
-    if (!field.validationRule.required) {
+    if (!validationRule?.required) {
       fieldSchema = fieldSchema.optional()
     } else {
       // For required text/email/password fields, ensure they are not empty strings
       if (field.fieldType === 'text' || field.fieldType === 'textArea' || field.fieldType === 'email' || field.fieldType === 'password') {
-        fieldSchema = (fieldSchema as z.ZodString).min(1, field.validationRule.errorMessage?.en || `${field.fieldName} is required`)
+        fieldSchema = (fieldSchema as z.ZodString).min(1, validationRule.errorMessage?.en || `${field.fieldName} is required`)
       }
     }
 
@@ -385,7 +394,7 @@ export function generateDefaultValues(formFields: FormField[]): Record<string, a
         defaultValue = false
         break
       case 'number':
-        defaultValue = field.validationRule?.min || 0
+        defaultValue = field.validationRule?.min ?? 0
         break
       case 'multiSelect':
         defaultValue = []

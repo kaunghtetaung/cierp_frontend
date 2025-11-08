@@ -1,0 +1,170 @@
+[
+  {
+    "id": "1",
+    "code": "KACHIN",
+    "number": {
+      "en": "1",
+      "mm": "၁"
+    },
+    "name": {
+      "en": "KACHIN",
+      "mm": "ကချင်"
+    }
+  },
+  {
+    "id": "2",
+    "code": "KAYAH",
+    "number": {
+      "en": "2",
+      "mm": "၂"
+    },
+    "name": {
+      "en": "KAYAH",
+      "mm": "ကယား"
+    }
+  },
+  {
+    "id": "3",
+    "code": "KAYIN",
+    "number": {
+      "en": "3",
+      "mm": "၃"
+    },
+    "name": {
+      "en": "KAYIN",
+      "mm": "ကရင်"
+    }
+  },
+  {
+    "id": "4",
+    "code": "CHIN",
+    "number": {
+      "en": "4",
+      "mm": "၄"
+    },
+    "name": {
+      "en": "CHIN",
+      "mm": "ချင်း"
+    }
+  },
+  {
+    "id": "5",
+    "code": "SAGAING",
+    "number": {
+      "en": "5",
+      "mm": "၅"
+    },
+    "name": {
+      "en": "SAGAING",
+      "mm": "စစ်ကိုင်း"
+    }
+  },
+  {
+    "id": "6",
+    "code": "TANINTHARYI",
+    "number": {
+      "en": "6",
+      "mm": "၆"
+    },
+    "name": {
+      "en": "TANINTHARYI",
+      "mm": "တနသာရီ"
+    }
+  },
+  {
+    "id": "7",
+    "code": "BAGO",
+    "number": {
+      "en": "7",
+      "mm": "၇"
+    },
+    "name": {
+      "en": "BAGO",
+      "mm": "ပဲခူး"
+    }
+  },
+  {
+    "id": "8",
+    "code": "MAGWAY",
+    "number": {
+      "en": "8",
+      "mm": "၈"
+    },
+    "name": {
+      "en": "MAGWAY",
+      "mm": "မကွေး"
+    }
+  },
+  {
+    "id": "9",
+    "code": "MANDALAY",
+    "number": {
+      "en": "9",
+      "mm": "၉"
+    },
+    "name": {
+      "en": "MANDALAY",
+      "mm": "မန္တလေး"
+    }
+  },
+  {
+    "id": "10",
+    "code": "MON",
+    "number": {
+      "en": "10",
+      "mm": "၁၀"
+    },
+    "name": {
+      "en": "MON",
+      "mm": "မွန်"
+    }
+  },
+  {
+    "id": "11",
+    "code": "RAKHINE",
+    "number": {
+      "en": "11",
+      "mm": "၁၁"
+    },
+    "name": {
+      "en": "RAKHINE",
+      "mm": "ရခိုင်"
+    }
+  },
+  {
+    "id": "12",
+    "code": "YANGON",
+    "number": {
+      "en": "12",
+      "mm": "၁၂"
+    },
+    "name": {
+      "en": "YANGON",
+      "mm": "ရန်ကုန်"
+    }
+  },
+  {
+    "id": "13",
+    "code": "SHAN",
+    "number": {
+      "en": "13",
+      "mm": "၁၃"
+    },
+    "name": {
+      "en": "SHAN",
+      "mm": "ရှမ်း"
+    }
+  },
+  {
+    "id": "14",
+    "code": "AYEYARWADY",
+    "number": {
+      "en": "14",
+      "mm": "၁၄"
+    },
+    "name": {
+      "en": "AYEYARWADY",
+      "mm": "ဧရာဝတီ"
+    }
+  }
+]

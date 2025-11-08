@@ -1,0 +1,350 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 100,
+            "DNRC_Code": "9",
+            "NRC_Code": "ကဆန",
+            "Township_Name": "​ကျောက်ဆည်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0088"
+        },
+        {
+            "ID": 99,
+            "DNRC_Code": "9",
+            "NRC_Code": "ကပတ",
+            "Township_Name": "ကျောက်ပန်းတောင်း",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0087"
+        },
+        {
+            "ID": 98,
+            "DNRC_Code": "9",
+            "NRC_Code": "ခမစ",
+            "Township_Name": "ချမ်းမြသာစည်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0086"
+        },
+        {
+            "ID": 97,
+            "DNRC_Code": "9",
+            "NRC_Code": "ခအဇ",
+            "Township_Name": "ချမ်းအေးသာစံ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0085"
+        },
+        {
+            "ID": 109,
+            "DNRC_Code": "9",
+            "NRC_Code": "ငဇန",
+            "Township_Name": "ငါန်းဇွန်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0098"
+        },
+        {
+            "ID": 124,
+            "DNRC_Code": "9",
+            "NRC_Code": "ငသရ",
+            "Township_Name": "ငါ့သရောက်(ခွဲ)",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0380"
+        },
+        {
+            "ID": 116,
+            "DNRC_Code": "9",
+            "NRC_Code": "စကတ",
+            "Township_Name": "စဉ့်ကိုင်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0106"
+        },
+        {
+            "ID": 115,
+            "DNRC_Code": "9",
+            "NRC_Code": "စကန",
+            "Township_Name": "​စဉ့်ကူး",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0105"
+        },
+        {
+            "ID": 346,
+            "DNRC_Code": "9",
+            "NRC_Code": "ဇဗသ",
+            "Township_Name": "ဇဗ္ဗူသီရိ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 343,
+            "DNRC_Code": "9",
+            "NRC_Code": "ဇယသ",
+            "Township_Name": "​ဇေယျာသီရိ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 110,
+            "DNRC_Code": "9",
+            "NRC_Code": "ညဥန",
+            "Township_Name": "​ညောင်ဦး(ပုဂံ)",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0099"
+        },
+        {
+            "ID": 123,
+            "DNRC_Code": "9",
+            "NRC_Code": "တကတ",
+            "Township_Name": "တကောင်း(ခွဲ)",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0379"
+        },
+        {
+            "ID": 342,
+            "DNRC_Code": "9",
+            "NRC_Code": "တကန",
+            "Township_Name": "တပ်ကုန်း",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 117,
+            "DNRC_Code": "9",
+            "NRC_Code": "တတဥ",
+            "Township_Name": "တံတားဦး",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0107"
+        },
+        {
+            "ID": 118,
+            "DNRC_Code": "9",
+            "NRC_Code": "တသန",
+            "Township_Name": "တောင်သာ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0109"
+        },
+        {
+            "ID": 347,
+            "DNRC_Code": "9",
+            "NRC_Code": "ဒခသ",
+            "Township_Name": "ဒက္ခိဏသီရိ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 108,
+            "DNRC_Code": "9",
+            "NRC_Code": "နထက",
+            "Township_Name": "နွားထိုးကြီး",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0097"
+        },
+        {
+            "ID": 113,
+            "DNRC_Code": "9",
+            "NRC_Code": "ပကခ",
+            "Township_Name": "ပြည်ကြီးတံခွန်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0102"
+        },
+        {
+            "ID": 344,
+            "DNRC_Code": "9",
+            "NRC_Code": "ပဗသ",
+            "Township_Name": "ပုဗ္ပသီရိ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 112,
+            "DNRC_Code": "9",
+            "NRC_Code": "ပဘန",
+            "Township_Name": "ပျော်ဘွယ်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0101"
+        },
+        {
+            "ID": 341,
+            "DNRC_Code": "9",
+            "NRC_Code": "ပမန",
+            "Township_Name": "ပျဉ်းမနား",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 111,
+            "DNRC_Code": "9",
+            "NRC_Code": "ပသက",
+            "Township_Name": "ပုသိမ်ကြီး",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0100"
+        },
+        {
+            "ID": 114,
+            "DNRC_Code": "9",
+            "NRC_Code": "ပဥလ",
+            "Township_Name": "​ပြင်ဦးလွင်(မေမြို့)",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0104"
+        },
+        {
+            "ID": 105,
+            "DNRC_Code": "9",
+            "NRC_Code": "မကန",
+            "Township_Name": "မိုးကုတ်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0094"
+        },
+        {
+            "ID": 106,
+            "DNRC_Code": "9",
+            "NRC_Code": "မခန",
+            "Township_Name": "မြင်းခြံ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0095"
+        },
+        {
+            "ID": 101,
+            "DNRC_Code": "9",
+            "NRC_Code": "မတရ",
+            "Township_Name": "မတ္တရာ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0090"
+        },
+        {
+            "ID": 104,
+            "DNRC_Code": "9",
+            "NRC_Code": "မထလ",
+            "Township_Name": "မိတ္ထီလာ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0093"
+        },
+        {
+            "ID": 127,
+            "DNRC_Code": "9",
+            "NRC_Code": "မနတ",
+            "Township_Name": "ချမ်းမြသာစည်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 125,
+            "DNRC_Code": "9",
+            "NRC_Code": "မနမ",
+            "Township_Name": "အောင်မြေသာစံ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0998"
+        },
+        {
+            "ID": 129,
+            "DNRC_Code": "9",
+            "NRC_Code": "မမန",
+            "Township_Name": "​ပြင်ဦးလွင်(မေမြို့)",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 128,
+            "DNRC_Code": "9",
+            "NRC_Code": "မရတ",
+            "Township_Name": "မဟာအောင်မြေ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 126,
+            "DNRC_Code": "9",
+            "NRC_Code": "မရမ",
+            "Township_Name": "ချမ်းအေးသာစံ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0997"
+        },
+        {
+            "ID": 103,
+            "DNRC_Code": "9",
+            "NRC_Code": "မလန",
+            "Township_Name": "မလှိုင်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0092"
+        },
+        {
+            "ID": 107,
+            "DNRC_Code": "9",
+            "NRC_Code": "မသန",
+            "Township_Name": "မြစ်သား",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0096"
+        },
+        {
+            "ID": 102,
+            "DNRC_Code": "9",
+            "NRC_Code": "မဟမ",
+            "Township_Name": "မဟာအောင်မြေ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0091"
+        },
+        {
+            "ID": 122,
+            "DNRC_Code": "9",
+            "NRC_Code": "ရမသ",
+            "Township_Name": "ရမည်းသင်း",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0113"
+        },
+        {
+            "ID": 340,
+            "DNRC_Code": "9",
+            "NRC_Code": "လဝန",
+            "Township_Name": "လယ်ဝေး",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        },
+        {
+            "ID": 121,
+            "DNRC_Code": "9",
+            "NRC_Code": "ဝတန",
+            "Township_Name": "ဝမ်းတွင်း",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0112"
+        },
+        {
+            "ID": 120,
+            "DNRC_Code": "9",
+            "NRC_Code": "သစန",
+            "Township_Name": "သာစည်",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0111"
+        },
+        {
+            "ID": 119,
+            "DNRC_Code": "9",
+            "NRC_Code": "သပက",
+            "Township_Name": "သပိတ်ကျင်း",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0110"
+        },
+        {
+            "ID": 96,
+            "DNRC_Code": "9",
+            "NRC_Code": "အမဇ",
+            "Township_Name": "အောင်မြေသာစံ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0084"
+        },
+        {
+            "ID": 95,
+            "DNRC_Code": "9",
+            "NRC_Code": "အမရ",
+            "Township_Name": "အမရပူရ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": "ts0083"
+        },
+        {
+            "ID": 345,
+            "DNRC_Code": "9",
+            "NRC_Code": "ဥတသ",
+            "Township_Name": "ဥတ္တရသီရိ",
+            "DNRC_Code_MM": "၉",
+            "Township_Code": null
+        }
+    ]
+}

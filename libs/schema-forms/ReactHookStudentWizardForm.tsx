@@ -45,14 +45,14 @@ const WIZARD_STEPS = {
   personal: {
     title: { en: "Personal Information", mm: "ကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
     description: { en: "Basic personal details", mm: "အခြေခံကိုယ်ရေးကိုယ်တာအချက်အလက်များ" },
-    fields: ["nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth"],
+    fields: ["profilePhoto", "nameMyanmar", "nameEnglish", "gender", "race", "religion", "bloodType", "nrcNumber", "dateOfBirth"],
     icon: "User",
     required: true
   },
   contact: {
     title: { en: "Contact Information", mm: "ဆက်သွယ်ရေးအချက်အလက်များ" },
     description: { en: "Contact details", mm: "ဆက်သွယ်ရေးအချက်အလက်များ" },
-    fields: ["phone", "email", "permanentAddress", "currentAddress"],
+    fields: ["phoneNumber", "email", "permanentAddress", "currentAddress"],
     icon: "Phone",
     required: true
   },
@@ -1214,7 +1214,7 @@ export function ReactHookStudentWizardForm({
                     <div className="space-y-6">
                       {/* Row 1: Email and Phone */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {['email', 'phone'].map(fieldName => {
+                        {['email', 'phoneNumber'].map(fieldName => {
                           const field = stepFields.find(f => f.fieldName === fieldName)
                           return field ? (
                             <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
@@ -1286,7 +1286,7 @@ export function ReactHookStudentWizardForm({
 
                       {/* Any remaining contact fields */}
                       {stepFields.filter(field =>
-                        !['phone', 'email', 'permanentAddress', 'currentAddress', 'stateRegionName', 'districtName', 'townshipName', 'townName', 'wardVillageName'].includes(field.fieldName)
+                        !['phoneNumber', 'email', 'permanentAddress', 'currentAddress', 'stateRegionName', 'districtName', 'townshipName', 'townName', 'wardVillageName'].includes(field.fieldName)
                       ).map((field) => (
                         <div key={field.fieldName} className="animate-in slide-in-from-bottom-2">
                           <StudentFormFieldRenderer
@@ -1302,7 +1302,7 @@ export function ReactHookStudentWizardForm({
                   ) : stepKey === 'personal' ? (
                     // Personal Information with specific layout
                     <div className="space-y-6">
-                      {/* Row 1: NameMyanmar (3 col), NameEnglish (3 col), Gender (2 col), Ethnicity (2 col), Religion (2 col) = 12 total */}
+                      {/* Row 1: NameMyanmar (3 col), NameEnglish (3 col), Gender (2 col), Race (2 col), Religion (2 col) = 12 total */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                         {/* NameMyanmar - 3 columns */}
                         {(() => {
@@ -1352,22 +1352,6 @@ export function ReactHookStudentWizardForm({
                           ) : null
                         })()}
 
-                        {/* Religion - 2 columns */}
-                        {(() => {
-                          const field = stepFields.find(f => f.fieldName === 'religion')
-                          return field ? (
-                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
-                              <StudentFormFieldRenderer
-                                field={field}
-                                currentLanguage={currentLanguage}
-                                isVerticalLayout={false}
-                                errors={errors}
-                                watch={watch}
-                              />
-                            </div>
-                          ) : null
-                        })()}
-
                         {/* Race - 2 columns */}
                         {(() => {
                           const field = stepFields.find(f => f.fieldName === 'race')
@@ -1384,6 +1368,21 @@ export function ReactHookStudentWizardForm({
                           ) : null
                         })()}
 
+                        {/* Religion - 2 columns */}
+                        {(() => {
+                          const field = stepFields.find(f => f.fieldName === 'religion')
+                          return field ? (
+                            <div key={field.fieldName} className="md:col-span-2 animate-in slide-in-from-bottom-2">
+                              <StudentFormFieldRenderer
+                                field={field}
+                                currentLanguage={currentLanguage}
+                                isVerticalLayout={false}
+                                errors={errors}
+                                watch={watch}
+                              />
+                            </div>
+                          ) : null
+                        })()}
                       </div>
 
                       {/* Row 2: BloodType (3 col), DateOfBirth (3 col), NRC (6 col) = 12 total */}
@@ -1435,7 +1434,6 @@ export function ReactHookStudentWizardForm({
                             </div>
                           ) : null
                         })()}
-
                       </div>
 
                       {/* Any remaining personal fields */}

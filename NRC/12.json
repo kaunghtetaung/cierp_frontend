@@ -1,0 +1,374 @@
+{
+    "status_code": 200,
+    "error": false,
+    "nrc_code": [
+        {
+            "ID": 4,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကကက",
+            "Township_Name": "ကိုကိုးကျွန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0004"
+        },
+        {
+            "ID": 21,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကခက",
+            "Township_Name": "ကွမ်းခြံကုန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0021"
+        },
+        {
+            "ID": 22,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကတတ",
+            "Township_Name": "ကျောက်တံတား",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0022"
+        },
+        {
+            "ID": 23,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကတန",
+            "Township_Name": "ကျောက်တန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0023"
+        },
+        {
+            "ID": 24,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကမတ",
+            "Township_Name": "ကြည့်မြင်တိုင်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0024"
+        },
+        {
+            "ID": 19,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကမန",
+            "Township_Name": "ကော့မှူး",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0019"
+        },
+        {
+            "ID": 18,
+            "DNRC_Code": "12",
+            "NRC_Code": "ကမရ",
+            "Township_Name": "ကမာရွတ်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0018"
+        },
+        {
+            "ID": 20,
+            "DNRC_Code": "12",
+            "NRC_Code": "ခရန",
+            "Township_Name": "ခရမ်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0020"
+        },
+        {
+            "ID": 33,
+            "DNRC_Code": "12",
+            "NRC_Code": "စခန",
+            "Township_Name": "စမ်းချောင်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0033"
+        },
+        {
+            "ID": 34,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဆကခ",
+            "Township_Name": "ဆိတ်ကြီးခနောင်တို",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0034"
+        },
+        {
+            "ID": 35,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဆကန",
+            "Township_Name": "ဆိပ်ကမ်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0035"
+        },
+        {
+            "ID": 38,
+            "DNRC_Code": "12",
+            "NRC_Code": "တကန",
+            "Township_Name": "တိုက်ကြီး",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0038"
+        },
+        {
+            "ID": 46,
+            "DNRC_Code": "12",
+            "NRC_Code": "တတတ",
+            "Township_Name": "တံတား(ခွဲ)",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0396"
+        },
+        {
+            "ID": 44,
+            "DNRC_Code": "12",
+            "NRC_Code": "တတန",
+            "Township_Name": "တွံတေး",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0044"
+        },
+        {
+            "ID": 39,
+            "DNRC_Code": "12",
+            "NRC_Code": "တမန",
+            "Township_Name": "တာမွေ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0039"
+        },
+        {
+            "ID": 16,
+            "DNRC_Code": "12",
+            "NRC_Code": "ထတပ",
+            "Township_Name": "ထန်းတပင်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0016"
+        },
+        {
+            "ID": 8,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒဂဆ",
+            "Township_Name": "ဒဂုံမြို့သစ်(ဆိပ်ကမ်း)",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0008"
+        },
+        {
+            "ID": 9,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒဂတ",
+            "Township_Name": "ဒဂုံမြို့သစ်(တောင်)",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0009"
+        },
+        {
+            "ID": 5,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒဂန",
+            "Township_Name": "ဒဂုံ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0005"
+        },
+        {
+            "ID": 7,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒဂမ",
+            "Township_Name": "ဒဂုံမြို့သစ်(မြောက်)",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0007"
+        },
+        {
+            "ID": 6,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒဂရ",
+            "Township_Name": "ဒဂုံမြို့သစ်(အရှေ့)",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0006"
+        },
+        {
+            "ID": 11,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒပန",
+            "Township_Name": "ဒေါပုံ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0011"
+        },
+        {
+            "ID": 10,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဒလန",
+            "Township_Name": "ဒလ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0010"
+        },
+        {
+            "ID": 32,
+            "DNRC_Code": "12",
+            "NRC_Code": "ပဇတ",
+            "Township_Name": "ပုဇွန်တောင်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0032"
+        },
+        {
+            "ID": 31,
+            "DNRC_Code": "12",
+            "NRC_Code": "ပဘတ",
+            "Township_Name": "ပန်းဘဲတန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0031"
+        },
+        {
+            "ID": 3,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဗတထ",
+            "Township_Name": "ဗိုလ်တထောင်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0003"
+        },
+        {
+            "ID": 2,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဗဟန",
+            "Township_Name": "ဗဟန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0002"
+        },
+        {
+            "ID": 29,
+            "DNRC_Code": "12",
+            "NRC_Code": "မဂတ",
+            "Township_Name": "မင်္ဂလာတောင်ညွန့်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0029"
+        },
+        {
+            "ID": 28,
+            "DNRC_Code": "12",
+            "NRC_Code": "မဂဒ",
+            "Township_Name": "မင်္ဂလာဒုံ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0028"
+        },
+        {
+            "ID": 15,
+            "DNRC_Code": "12",
+            "NRC_Code": "မဘန",
+            "Township_Name": "မှော်ဘီ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0015"
+        },
+        {
+            "ID": 27,
+            "DNRC_Code": "12",
+            "NRC_Code": "မရက",
+            "Township_Name": "မရမ်းကုန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0027"
+        },
+        {
+            "ID": 45,
+            "DNRC_Code": "12",
+            "NRC_Code": "ရကန",
+            "Township_Name": "ရန်ကင်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0045"
+        },
+        {
+            "ID": 36,
+            "DNRC_Code": "12",
+            "NRC_Code": "ရပသ",
+            "Township_Name": "ရွှေပြည်သာ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0036"
+        },
+        {
+            "ID": 14,
+            "DNRC_Code": "12",
+            "NRC_Code": "လကန",
+            "Township_Name": "လှည်းကူး",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0014"
+        },
+        {
+            "ID": 25,
+            "DNRC_Code": "12",
+            "NRC_Code": "လမတ",
+            "Township_Name": "လမ်းမတော်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0025"
+        },
+        {
+            "ID": 12,
+            "DNRC_Code": "12",
+            "NRC_Code": "လမန",
+            "Township_Name": "လှိုင်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0012"
+        },
+        {
+            "ID": 26,
+            "DNRC_Code": "12",
+            "NRC_Code": "လသန",
+            "Township_Name": "လသာ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0026"
+        },
+        {
+            "ID": 13,
+            "DNRC_Code": "12",
+            "NRC_Code": "လသယ",
+            "Township_Name": "လှိုင်သာယာ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0013"
+        },
+        {
+            "ID": 40,
+            "DNRC_Code": "12",
+            "NRC_Code": "သကတ",
+            "Township_Name": "သာကေတ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0040"
+        },
+        {
+            "ID": 43,
+            "DNRC_Code": "12",
+            "NRC_Code": "သခန",
+            "Township_Name": "သုံးခွ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0043"
+        },
+        {
+            "ID": 42,
+            "DNRC_Code": "12",
+            "NRC_Code": "သဃက",
+            "Township_Name": "သင်္ကန်းကျွန်း",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0042"
+        },
+        {
+            "ID": 41,
+            "DNRC_Code": "12",
+            "NRC_Code": "သလန",
+            "Township_Name": "​သန်လျင်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0041"
+        },
+        {
+            "ID": 17,
+            "DNRC_Code": "12",
+            "NRC_Code": "အစန",
+            "Township_Name": "အင်းစိန်",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0017"
+        },
+        {
+            "ID": 1,
+            "DNRC_Code": "12",
+            "NRC_Code": "အလန",
+            "Township_Name": "အလုံ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0001"
+        },
+        {
+            "ID": 37,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဥကတ",
+            "Township_Name": "တောင်ဥက္ကလာပ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0037"
+        },
+        {
+            "ID": 30,
+            "DNRC_Code": "12",
+            "NRC_Code": "ဥကမ",
+            "Township_Name": "မြောက်ဥက္ကလာပ",
+            "DNRC_Code_MM": "၁၂",
+            "Township_Code": "ts0030"
+        }
+    ]
+}

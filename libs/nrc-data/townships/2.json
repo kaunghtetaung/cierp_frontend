@@ -1,0 +1,114 @@
+[
+  {
+    "id": "2-001",
+    "stateId": "2",
+    "name": {
+      "en": "ဒီမောဆို",
+      "mm": "ဒီမောဆို"
+    },
+    "short": {
+      "en": "ဒမဆ",
+      "mm": "ဒမဆ"
+    },
+    "townshipCode": null,
+    "originalId": 252
+  },
+  {
+    "id": "2-002",
+    "stateId": "2",
+    "name": {
+      "en": "ဖားဆောင်း",
+      "mm": "ဖားဆောင်း"
+    },
+    "short": {
+      "en": "ဖဆန",
+      "mm": "ဖဆန"
+    },
+    "townshipCode": null,
+    "originalId": 253
+  },
+  {
+    "id": "2-003",
+    "stateId": "2",
+    "name": {
+      "en": "ဖရူးဆို",
+      "mm": "ဖရူးဆို"
+    },
+    "short": {
+      "en": "ဖရဆ",
+      "mm": "ဖရဆ"
+    },
+    "townshipCode": null,
+    "originalId": 254
+  },
+  {
+    "id": "2-004",
+    "stateId": "2",
+    "name": {
+      "en": "ဘောလခဲ",
+      "mm": "ဘောလခဲ"
+    },
+    "short": {
+      "en": "ဘလခ",
+      "mm": "ဘလခ"
+    },
+    "townshipCode": null,
+    "originalId": 251
+  },
+  {
+    "id": "2-005",
+    "stateId": "2",
+    "name": {
+      "en": "မယ်စဲ့",
+      "mm": "မယ်စဲ့"
+    },
+    "short": {
+      "en": "မစန",
+      "mm": "မစန"
+    },
+    "townshipCode": null,
+    "originalId": 256
+  },
+  {
+    "id": "2-006",
+    "stateId": "2",
+    "name": {
+      "en": "ရှားတော",
+      "mm": "ရှားတော"
+    },
+    "short": {
+      "en": "ရတန",
+      "mm": "ရတန"
+    },
+    "townshipCode": null,
+    "originalId": 257
+  },
+  {
+    "id": "2-007",
+    "stateId": "2",
+    "name": {
+      "en": "ရွာသစ်(ခွဲ)",
+      "mm": "ရွာသစ်(ခွဲ)"
+    },
+    "short": {
+      "en": "ရသန",
+      "mm": "ရသန"
+    },
+    "townshipCode": null,
+    "originalId": 258
+  },
+  {
+    "id": "2-008",
+    "stateId": "2",
+    "name": {
+      "en": "လွိုင်ကော်",
+      "mm": "လွိုင်ကော်"
+    },
+    "short": {
+      "en": "လကန",
+      "mm": "လကန"
+    },
+    "townshipCode": null,
+    "originalId": 255
+  }
+]

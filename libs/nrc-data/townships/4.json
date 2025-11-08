@@ -1,0 +1,184 @@
+[
+  {
+    "id": "4-001",
+    "stateId": "4",
+    "name": {
+      "en": "ကျီးခါး(ခွဲ)",
+      "mm": "ကျီးခါး(ခွဲ)"
+    },
+    "short": {
+      "en": "ကခန",
+      "mm": "ကခန"
+    },
+    "townshipCode": null,
+    "originalId": 286
+  },
+  {
+    "id": "4-002",
+    "stateId": "4",
+    "name": {
+      "en": "ကန်ပက်လက်",
+      "mm": "ကန်ပက်လက်"
+    },
+    "short": {
+      "en": "ကပလ",
+      "mm": "ကပလ"
+    },
+    "townshipCode": null,
+    "originalId": 279
+  },
+  {
+    "id": "4-003",
+    "stateId": "4",
+    "name": {
+      "en": "ဆမီး(ခွဲ)",
+      "mm": "ဆမီး(ခွဲ)"
+    },
+    "short": {
+      "en": "ဆမန",
+      "mm": "ဆမန"
+    },
+    "townshipCode": null,
+    "originalId": 288
+  },
+  {
+    "id": "4-004",
+    "stateId": "4",
+    "name": {
+      "en": "တွန်းဇံ",
+      "mm": "တွန်းဇံ"
+    },
+    "short": {
+      "en": "တဇန",
+      "mm": "တဇန"
+    },
+    "townshipCode": null,
+    "originalId": 284
+  },
+  {
+    "id": "4-005",
+    "stateId": "4",
+    "name": {
+      "en": "တီးတိန်",
+      "mm": "တီးတိန်"
+    },
+    "short": {
+      "en": "တတန",
+      "mm": "တတန"
+    },
+    "townshipCode": null,
+    "originalId": 283
+  },
+  {
+    "id": "4-006",
+    "stateId": "4",
+    "name": {
+      "en": "ထန်တလန်",
+      "mm": "ထန်တလန်"
+    },
+    "short": {
+      "en": "ထတလ",
+      "mm": "ထတလ"
+    },
+    "townshipCode": null,
+    "originalId": 278
+  },
+  {
+    "id": "4-007",
+    "stateId": "4",
+    "name": {
+      "en": "ပလက်ဝ",
+      "mm": "ပလက်ဝ"
+    },
+    "short": {
+      "en": "ပလဝ",
+      "mm": "ပလဝ"
+    },
+    "townshipCode": null,
+    "originalId": 282
+  },
+  {
+    "id": "4-008",
+    "stateId": "4",
+    "name": {
+      "en": "ဖလမ်း",
+      "mm": "ဖလမ်း"
+    },
+    "short": {
+      "en": "ဖလန",
+      "mm": "ဖလန"
+    },
+    "townshipCode": null,
+    "originalId": 276
+  },
+  {
+    "id": "4-009",
+    "stateId": "4",
+    "name": {
+      "en": "မင်းတပ်",
+      "mm": "မင်းတပ်"
+    },
+    "short": {
+      "en": "မတန",
+      "mm": "မတန"
+    },
+    "townshipCode": null,
+    "originalId": 281
+  },
+  {
+    "id": "4-010",
+    "stateId": "4",
+    "name": {
+      "en": "မတူပီ",
+      "mm": "မတူပီ"
+    },
+    "short": {
+      "en": "မတပ",
+      "mm": "မတပ"
+    },
+    "townshipCode": null,
+    "originalId": 280
+  },
+  {
+    "id": "4-011",
+    "stateId": "4",
+    "name": {
+      "en": "ရိဒ်ခေါဒါရ်(ခွဲ)",
+      "mm": "ရိဒ်ခေါဒါရ်(ခွဲ)"
+    },
+    "short": {
+      "en": "ရခဒ",
+      "mm": "ရခဒ"
+    },
+    "townshipCode": null,
+    "originalId": 285
+  },
+  {
+    "id": "4-012",
+    "stateId": "4",
+    "name": {
+      "en": "​ရေဇွာ(ခွဲ)",
+      "mm": "​ရေဇွာ(ခွဲ)"
+    },
+    "short": {
+      "en": "ရဇန",
+      "mm": "ရဇန"
+    },
+    "townshipCode": null,
+    "originalId": 287
+  },
+  {
+    "id": "4-013",
+    "stateId": "4",
+    "name": {
+      "en": "ဟားခါး",
+      "mm": "ဟားခါး"
+    },
+    "short": {
+      "en": "ဟခန",
+      "mm": "ဟခန"
+    },
+    "townshipCode": null,
+    "originalId": 277
+  }
+]

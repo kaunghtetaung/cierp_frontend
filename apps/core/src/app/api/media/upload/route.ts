@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const app = request.headers.get('x-app-id') || 'core';
 
     // Create S3 client with tenant context
-    const s3Client = createTenantS3Client({
+    const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
       tenantSlug: tenantInfo.tenantSlug,
       tenantRootDomain: tenantInfo.tenantRootDomain,
