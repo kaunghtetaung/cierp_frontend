@@ -6,6 +6,10 @@ export { UserPasswordChangeForm } from './UserPasswordChangeForm';
 // Role assignment form
 export { RoleAssignForm } from './RoleAssignForm';
 
+// Student management forms
+export { ApproveStudentForm } from './ApproveStudentForm';
+export { BulkApproveStudentForm } from './BulkApproveStudentForm';
+
 // Note: AccessionNumberManagementForm now uses schema-driven approach from backend
 
 export const GroupAssignForm = () => null;

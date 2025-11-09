@@ -932,14 +932,35 @@ export function ModuleDataTable({
                     </DropdownMenuItem>
                   )}
 
-                  {/* Extra Actions */}
-                  {module.dataTableSchema.actions.extraActions?.map((action) =>
-                    action.type === "page" ? (
-                      <DropdownMenuItem key={action.actionKey} asChild>
-                        <Link
-                          href={`/${params.appId}/${module.slug}/${
-                            item._id || item.id
-                          }/actions/${action.actionKey}`}
+                  {/* Extra Actions - Only show actions that don't require selection (single-row actions) */}
+                  {module.dataTableSchema.actions.extraActions
+                    ?.filter((action) => {
+                      // Filter out bulk actions (requiresSelection: true)
+                      const actionForm = module.extraActionForms?.find(
+                        (form) => form.actionKey === action.actionKey
+                      );
+                      return !actionForm?.requiresSelection;
+                    })
+                    .map((action) =>
+                      action.type === "page" ? (
+                        <DropdownMenuItem key={action.actionKey} asChild>
+                          <Link
+                            href={`/${params.appId}/${module.slug}/${
+                              item._id || item.id
+                            }/actions/${action.actionKey}`}
+                            className="cursor-pointer"
+                          >
+                            <IconComponent
+                              name={action.icon}
+                              className="mr-2 h-4 w-4"
+                            />
+                            {getLocalizedText(action.label, currentLanguage)}
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          key={action.actionKey}
+                          onClick={() => handleExtraActionForRow(action, item)}
                           className="cursor-pointer"
                         >
                           <IconComponent
@@ -947,22 +968,9 @@ export function ModuleDataTable({
                             className="mr-2 h-4 w-4"
                           />
                           {getLocalizedText(action.label, currentLanguage)}
-                        </Link>
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        key={action.actionKey}
-                        onClick={() => handleExtraActionForRow(action, item)}
-                        className="cursor-pointer"
-                      >
-                        <IconComponent
-                          name={action.icon}
-                          className="mr-2 h-4 w-4"
-                        />
-                        {getLocalizedText(action.label, currentLanguage)}
-                      </DropdownMenuItem>
-                    )
-                  )}
+                        </DropdownMenuItem>
+                      )
+                    )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

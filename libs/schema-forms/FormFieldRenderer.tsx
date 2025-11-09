@@ -482,8 +482,21 @@ function FormFieldInput({
       }
 
       // Fallback to regular select
+      // 🔍 DEBUG: Log select field rendering
+      if (field.fieldName === 'status') {
+        console.log('🔍 Select field render:', {
+          fieldName: field.fieldName,
+          hasOptions: !!field.options,
+          optionsCount: field.options?.length,
+          options: field.options,
+          value: formField.value,
+          isReadonly,
+          disabled: isReadonly
+        });
+      }
+
       return (
-        <Select 
+        <Select
           value={formField.value || ''}
           onValueChange={(value) => {
             formField.onChange(value);

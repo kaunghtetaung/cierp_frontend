@@ -6,6 +6,9 @@ import { reportError, ApplicationError } from '@repo/utils/common';
 import { getClientRequestContext } from '@repo/utils/client/error-context';
 import "./globals.css";
 
+// Prevent static generation for global error boundary
+export const dynamic = 'force-dynamic';
+
 interface GlobalErrorProps {
   error: Error & { digest?: string };
   reset: () => void;

@@ -42,7 +42,7 @@ export function LibraryHome({
     params.set('q', query);
     params.set('searchType', searchType);
     if (catalogTypeName) {
-      params.set('catalogType', catalogTypeName);
+      params.set('catalogType.name', catalogTypeName);
     }
     params.set('sortBy', sortBy);
     params.set('sortOrder', sortOrder);

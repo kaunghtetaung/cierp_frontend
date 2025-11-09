@@ -204,7 +204,18 @@ export function ExtraActionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleModalClose}>
-      <DialogContent className={`w-full ${getModalWidth()} max-h-[90vh] overflow-y-auto`}>
+      <DialogContent
+        className={`w-full ${getModalWidth()} max-h-[90vh] overflow-y-auto`}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          // Prevent closing on outside click if there are unsaved changes
+          if (isDataChanged) {
+            e.preventDefault();
+            handleModalClose(false);
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{modalTitle}</DialogTitle>
           {modalDescription && (

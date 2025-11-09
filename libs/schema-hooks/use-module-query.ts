@@ -21,17 +21,20 @@ export const moduleKeys = {
   list: (module: string, params?: ModuleListParams) => {
     // Normalize parameters for consistent cache keys
     const normalizedParams = normalizeModuleParams(params || {});
-    const cacheKey = [...moduleKeys.lists(), module, JSON.stringify(normalizedParams)] as const;
-    
+
+    // Create a more detailed cache key that includes stringified params
+    // This ensures that any changes in filter values create a new cache entry
+    const paramsString = JSON.stringify(normalizedParams);
+    const cacheKey = [...moduleKeys.lists(), module, paramsString] as const;
+
     // Debug cache key generation in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔑 [CACHE-KEY] Module: ${module}`, {
-        originalParams: params,
-        normalizedParams,
-        cacheKey: JSON.stringify(cacheKey)
-      });
-    }
-    
+    console.log(`🔑 [CACHE-KEY] Module: ${module}`, {
+      originalParams: params,
+      normalizedParams,
+      paramsString,
+      cacheKey: cacheKey
+    });
+
     return cacheKey;
   },
   details: () => [...moduleKeys.all, "detail"] as const,

@@ -343,7 +343,7 @@ export class ModuleService {
     // Map operations to correct endpoints
     let endpoint: string;
     let method: string = "POST";
-    
+
     switch (params.operation) {
       case 'delete':
         endpoint = `/${this.appName}/${module}/bulk/soft-delete`;
@@ -361,12 +361,31 @@ export class ModuleService {
         throw new Error(`Unsupported bulk operation: ${params.operation}`);
     }
 
+    const requestBody = {
+      ids: params.ids,
+      ...(params.data && { data: params.data }),
+    };
+
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🗑️  [BULK DELETE] API REQUEST");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔗 Full API URL:", endpoint);
+    console.log("📝 HTTP Method:", method);
+    console.log("📦 Request Body:", JSON.stringify(requestBody, null, 2));
+    console.log("🔧 Operation Type:", params.operation);
+    console.log("📊 Item Count:", params.ids.length);
+    console.log("🆔 Item IDs:", params.ids);
+    console.log("🔑 Auth Context:", {
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      appName: this.appName
+    });
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     const response = await this.httpClient.request<T>(endpoint, {
       method,
-      body: {
-        ids: params.ids,
-        ...(params.data && { data: params.data }),
-      },
+      body: requestBody,
       tenantId: this.tenantId,
       userSessionId: this.userSessionId,
       userId: this.userId,
@@ -374,7 +393,15 @@ export class ModuleService {
       tokenStrategy: 'auto', // Use cached token for bulk operations
     });
 
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("✅ [BULK DELETE] API RESPONSE");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📈 Success:", response.success);
+    console.log("📦 Response Data:", JSON.stringify(response.data, null, 2));
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     if (!response.success) {
+      console.error("❌ [BULK DELETE] ERROR:", response.error);
       throw new Error(
         response.error || `Failed to perform bulk ${params.operation}`
       );

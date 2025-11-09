@@ -34,10 +34,17 @@ const PreBuiltFormComponents: Record<string, React.ComponentType<any>> = {
   
   // Department management forms
   DepartmentUserManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.DepartmentUserManageForm }))),
-  
+
+  // Student management forms - support multiple naming conventions
+  approveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.ApproveStudentForm }))),
+  ApproveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.ApproveStudentForm }))),
+  bulkApproveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkApproveStudentForm }))),
+  BulkApproveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkApproveStudentForm }))),
+  bulkApproveStudentsForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkApproveStudentForm }))),
+
   // Note: AccessionNumberManagementForm and variants now use schema-driven approach
   // The backend provides the complete form schema via API
-  
+
   // Add more pre-built form components as needed
 };
 

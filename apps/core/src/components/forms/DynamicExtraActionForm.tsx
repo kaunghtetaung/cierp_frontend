@@ -21,7 +21,6 @@ interface DynamicExtraActionFormProps {
   hideHeader?: boolean; // Hide the form header to prevent duplication in modals
 }
 
-
 export function DynamicExtraActionForm({
   action,
   selectedItems,
@@ -32,16 +31,21 @@ export function DynamicExtraActionForm({
 }: DynamicExtraActionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  console.log(`🏗️ DynamicExtraActionForm: Rendering form for action "${action.actionKey}"`, {
-    actionKey: action.actionKey,
-    formFieldsCount: action.formFields?.length,
-    formFields: action.formFields,
-    selectedItemsCount: selectedItems?.length,
-  });
+  console.log(
+    `🏗️ DynamicExtraActionForm: Rendering form for action "${action.actionKey}"`,
+    {
+      actionKey: action.actionKey,
+      formFieldsCount: action.formFields?.length,
+      formFields: action.formFields,
+      selectedItemsCount: selectedItems?.length,
+    }
+  );
 
   // Ensure we have form fields for schema-driven approach
   if (!action.formFields || action.formFields.length === 0) {
-    console.error(`❌ DynamicExtraActionForm: No form fields for action "${action.actionKey}"`);
+    console.error(
+      `❌ DynamicExtraActionForm: No form fields for action "${action.actionKey}"`
+    );
     return (
       <div className="p-4 text-center">
         <p className="text-muted-foreground">
@@ -69,7 +73,8 @@ export function DynamicExtraActionForm({
     formState: { errors },
   } = form;
 
-  const isVerticalLayout = action.formLayout === "vertical" || action.formLayout === "wizard-vertical";
+  const isVerticalLayout =
+    action.formLayout === "vertical" || action.formLayout === "wizard-vertical";
 
   const handleFormSubmit = async (data: FieldValues) => {
     try {
@@ -118,7 +123,8 @@ export function DynamicExtraActionForm({
               <IconComponent
                 name={action.iconName}
                 className="w-5 h-5 text-primary"
-              />
+              />{" "}
+              test
             </div>
           )}
           <div>
@@ -137,21 +143,25 @@ export function DynamicExtraActionForm({
       )}
 
       {/* Selection Info */}
-      {action.requiresSelection && selectedItems && selectedItems.length > 0 && (
-        <div className="bg-muted/30 rounded-lg p-3">
-          <p className="text-sm text-muted-foreground">
-            {currentLanguage === "mm"
-              ? `ရွေးချယ်ထားသော အရာ ${selectedItems.length} ခု`
-              : `${selectedItems.length} item${selectedItems.length > 1 ? "s" : ""} selected`}
-          </p>
-        </div>
-      )}
+      {action.requiresSelection &&
+        selectedItems &&
+        selectedItems.length > 0 && (
+          <div className="bg-muted/30 rounded-lg p-3">
+            <p className="text-sm text-muted-foreground">
+              {currentLanguage === "mm"
+                ? `ရွေးချယ်ထားသော အရာ ${selectedItems.length} ခု`
+                : `${selectedItems.length} item${
+                    selectedItems.length > 1 ? "s" : ""
+                  } selected`}
+            </p>
+          </div>
+        )}
 
       {/* Form Fields */}
       <Form {...form}>
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className={isVerticalLayout ? "space-y-4" : "space-y-4"}>
-            {action.formFields.map((field) =>
+            {action.formFields.map((field) => (
               <FormFieldRenderer
                 key={field.fieldName}
                 field={field}
@@ -160,48 +170,51 @@ export function DynamicExtraActionForm({
                 errors={errors}
                 watch={watch}
               />
-            )}
+            ))}
           </div>
 
-        {/* Form Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            {action.cancelButtonText
-              ? getLocalizedText(action.cancelButtonText, currentLanguage)
-              : currentLanguage === "mm"
-              ? "မလုပ်တော့ပါ"
-              : "Cancel"}
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            variant={
-              action.buttonStyle === "secondary" 
-                ? "secondary"
-                : action.buttonStyle === "warning"
-                ? "destructive" 
-                : "default"
-            }
-            className={
-              action.buttonStyle === "warning"
-                ? "bg-orange-500 text-white hover:bg-orange-600"
-                : ""
-            }
-          >
-            {isSubmitting && action.showProgress && (
-              <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
-            )}
-            {action.submitButtonText
-              ? getLocalizedText(action.submitButtonText, currentLanguage)
-              : currentLanguage === "mm"
-              ? "သိမ်းမည်"
-              : "Submit"}
-          </Button>
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              {action.cancelButtonText
+                ? getLocalizedText(action.cancelButtonText, currentLanguage)
+                : currentLanguage === "mm"
+                ? "မလုပ်တော့ပါ"
+                : "Cancel"}
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              variant={
+                action.buttonStyle === "secondary"
+                  ? "secondary"
+                  : action.buttonStyle === "warning"
+                  ? "destructive"
+                  : "default"
+              }
+              className={
+                action.buttonStyle === "warning"
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : ""
+              }
+            >
+              {isSubmitting && action.showProgress && (
+                <IconComponent
+                  name="Loader2"
+                  className="w-4 h-4 mr-2 animate-spin"
+                />
+              )}
+              {action.submitButtonText
+                ? getLocalizedText(action.submitButtonText, currentLanguage)
+                : currentLanguage === "mm"
+                ? "သိမ်းမည်"
+                : "Submit"}
+            </Button>
           </div>
         </form>
       </Form>

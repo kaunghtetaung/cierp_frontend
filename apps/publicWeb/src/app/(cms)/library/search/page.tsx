@@ -1,5 +1,6 @@
 import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { LibrarySearchClient } from '@/themes/default/library/LibrarySearchClient';
+import { getCurrentUser } from '@repo/auth/server';
 
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -9,9 +10,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const query = typeof params.q === 'string' ? params.q : undefined;
   const searchType = typeof params.searchType === 'string' ? params.searchType : 'contains';
-  const catalogType = typeof params.catalogType === 'string' ? params.catalogType : '';
+  const catalogType = typeof params['catalogType.name'] === 'string' ? params['catalogType.name'] : '';
   const sortBy = typeof params.sortBy === 'string' ? params.sortBy : 'year';
   const sortOrder = typeof params.sortOrder === 'string' ? params.sortOrder : 'desc';
+
+  // Get current user for eBook access control
+  const user = await getCurrentUser();
+  const canAccessEbooks = user && user.role !== 'guest';
 
   return (
     <QueryProvider>
@@ -21,6 +26,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         initialCatalogType={catalogType}
         initialSortBy={sortBy as 'title' | 'year' | 'author' | 'publisher'}
         initialSortOrder={sortOrder as 'asc' | 'desc'}
+        canAccessEbooks={canAccessEbooks}
       />
     </QueryProvider>
   );

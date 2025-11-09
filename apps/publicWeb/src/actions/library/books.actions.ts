@@ -111,8 +111,9 @@ export async function searchBooks(
       order: sortOrder
     };
 
-    // Build filters object
-    const filters: Record<string, any> = {};
+    // Build filters as direct string values (not nested objects)
+    // This will generate flat query params: search=value&searchType=contains&catalogType.name=Book
+    const filters: Record<string, string> = {};
 
     // Add general search parameter (searches across title, note, isbn, issn, callNo, year)
     if (query && query.trim()) {
@@ -120,11 +121,9 @@ export async function searchBooks(
       filters.searchType = searchType; // Use selected search type: 'exact' or 'contains'
     }
 
-    // Add catalog type filter by name (e.g., catalogType.name=Thesis)
+    // Add catalog type filter by name as a flat parameter (e.g., catalogType.name=Thesis)
     if (catalogTypeName && catalogTypeName.trim()) {
-      filters['catalogType.name'] = {
-        eq: catalogTypeName.trim()
-      };
+      filters['catalogType.name'] = catalogTypeName.trim();
     }
 
     // Only add filters if we have any

@@ -32,12 +32,10 @@ export {
 
 // Error handling utilities (excluding ERROR_CODES to avoid conflict with constants.ts)
 export type {
-  ErrorSeverity,
-  ErrorCategory,
   ErrorReporter,
 } from "./error-types";
 
-export { ERROR_CONSTANTS } from "./error-types";
+export { ErrorSeverity, ErrorCategory, ERROR_CONSTANTS } from "./error-types";
 
 // Export ApplicationError class (not type) from error-factory
 export { ApplicationError, ErrorFactory } from "./error-factory";

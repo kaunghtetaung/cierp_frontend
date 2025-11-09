@@ -336,24 +336,35 @@ export async function submitExtraActionForm(
     
     if (actionEndpoint) {
       // Use backend-supplied endpoint pattern
+      // Backend endpoints should be complete paths (e.g., "/students/:id/approve")
       endpoint = actionEndpoint.replace(':id', itemId);
-      
-      // Handle CRUD operations for table sections
-      if (operation === 'update' && itemIdentifier) {
-        endpoint = `${endpoint}/${itemIdentifier}`;
-        method = 'PATCH';
-      } else if (operation === 'delete' && itemIdentifier) {
-        endpoint = `${endpoint}/${itemIdentifier}`;
-        method = 'DELETE';
-      } else if (operation === 'add') {
-        // For add operations, append /add to the endpoint
-        endpoint = `${endpoint}/add`;
-        method = actionMethod || 'POST';
+
+      // Determine if this is a table section CRUD operation or a direct action
+      const isTableSectionCrud = processedData.action !== undefined; // Table sections explicitly set 'action' field
+
+      if (isTableSectionCrud) {
+        // Handle CRUD operations for table sections (like accession management)
+        if (operation === 'update' && itemIdentifier) {
+          endpoint = `${endpoint}/${itemIdentifier}`;
+          method = 'PATCH';
+        } else if (operation === 'delete' && itemIdentifier) {
+          endpoint = `${endpoint}/${itemIdentifier}`;
+          method = 'DELETE';
+        } else if (operation === 'add') {
+          // For add operations, append /add to the endpoint
+          endpoint = `${endpoint}/add`;
+          method = actionMethod || 'POST';
+        } else {
+          method = actionMethod || 'POST';
+        }
       } else {
+        // Direct action (like approve, reject) - use endpoint as-is
         method = actionMethod || 'POST';
       }
-      
-      // Add app context and module
+
+      // Add app context and module slug
+      // Transform endpoint from "/:id/accessions" to "/{appName}/{moduleSlug}/{itemId}/accessions"
+      // The backend endpoint pattern uses :id, which we've already replaced with actual itemId
       endpoint = `/${context.appName}/${moduleSlug}${endpoint}`;
     } else {
       // Fallback to legacy pattern for backward compatibility

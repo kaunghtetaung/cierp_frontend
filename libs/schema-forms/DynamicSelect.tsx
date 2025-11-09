@@ -256,7 +256,14 @@ export function DynamicSelect({
       return;
     }
 
-    
+    // 🔍 DEBUG: Log fetch start
+    if (field.fieldName === 'accessionGroup') {
+      console.log('📥 DynamicSelect fetchOptions called:', {
+        fieldName: field.fieldName,
+        refPath: dropdownConfig.refPath
+      });
+    }
+
     // Mark as fetching to prevent concurrent calls
     isFetching.current = true;
     setLoading(true);
@@ -301,11 +308,31 @@ export function DynamicSelect({
 
       // Extract serviceName from dataSource or dropdownConfig
       const serviceName = field.dataSource?.serviceName || dropdownConfig?.serviceName;
-      
-      
+
+      // 🔍 DEBUG: Log API call
+      if (field.fieldName === 'accessionGroup') {
+        console.log('🌐 DynamicSelect calling API:', {
+          fieldName: field.fieldName,
+          module,
+          queryParams,
+          serviceName
+        });
+      }
+
       // Use server action instead of direct fetch
       const result = await getModuleReferenceAction<ApiOption>(module, queryParams, serviceName || undefined);
-      
+
+      // 🔍 DEBUG: Log API result
+      if (field.fieldName === 'accessionGroup') {
+        console.log('✅ DynamicSelect API result:', {
+          fieldName: field.fieldName,
+          success: result.success,
+          error: result.error,
+          dataLength: Array.isArray(result.data) ? result.data.length : 'not array',
+          sampleData: Array.isArray(result.data) && result.data.length > 0 ? result.data[0] : null
+        });
+      }
+
       if (!result.success) {
         const errorMsg = result.error || getLocalizedErrorMessage('DATA_LOAD_FAILED', currentLanguage as 'en' | 'mm');
         setError(errorMsg);
@@ -377,6 +404,16 @@ export function DynamicSelect({
       setError(null);
       lastFetchedDependencyKey.current = dependencyKey;
 
+      // 🔍 DEBUG: Log transformed options
+      if (field.fieldName === 'accessionGroup') {
+        console.log('🎉 DynamicSelect options set successfully:', {
+          fieldName: field.fieldName,
+          optionsCount: uniqueOptions.length,
+          sampleOption: uniqueOptions[0],
+          allOptions: uniqueOptions
+        });
+      }
+
       // Debug logging for catalogType field
       if (field.fieldName === 'catalogType') {
         console.log('📋 [catalogType] Options loaded:', {
@@ -400,6 +437,21 @@ export function DynamicSelect({
 
   // Single useEffect to handle all option loading logic
   useEffect(() => {
+    // 🔍 DEBUG: Log entry to useEffect
+    if (field.fieldName === 'accessionGroup') {
+      console.log('🔄 DynamicSelect useEffect triggered:', {
+        fieldName: field.fieldName,
+        type: dropdownConfig.type,
+        refPath: dropdownConfig.refPath,
+        hasInitialized: hasInitialized.current,
+        isFetching: isFetching.current,
+        loading,
+        hasDependencies: !!dropdownConfig.dependsOn,
+        dependenciesSatisfied,
+        validationError: !!validationError
+      });
+    }
+
     // Handle static options
     if (dropdownConfig.type === "static") {
       if (!hasInitialized.current) {
@@ -442,7 +494,7 @@ export function DynamicSelect({
     const shouldFetch = (
       // First time initialization with no dependencies
       (!hasInitialized.current && !dropdownConfig.dependsOn) ||
-      // First time initialization with satisfied dependencies  
+      // First time initialization with satisfied dependencies
       (!hasInitialized.current && dependenciesSatisfied) ||
       // Dependencies have changed (e.g., organization changed for department dropdown)
       (hasInitialized.current && lastFetchedDependencyKey.current !== dependencyKey && dependenciesSatisfied)
@@ -450,6 +502,25 @@ export function DynamicSelect({
 
     // Don't auto-retry if there's an error and we're trying the same dependency key
     const hasErrorForCurrentKey = error && lastFetchedDependencyKey.current === dependencyKey;
+
+    // 🔍 DEBUG: Log fetch decision
+    if (field.fieldName === 'accessionGroup') {
+      console.log('🎯 DynamicSelect fetch decision:', {
+        fieldName: field.fieldName,
+        shouldFetch,
+        reasons: {
+          firstTimeNoDeps: !hasInitialized.current && !dropdownConfig.dependsOn,
+          firstTimeWithDeps: !hasInitialized.current && dependenciesSatisfied,
+          depsChanged: hasInitialized.current && lastFetchedDependencyKey.current !== dependencyKey && dependenciesSatisfied
+        },
+        checks: {
+          isFetching: isFetching.current,
+          loading,
+          hasErrorForCurrentKey
+        },
+        willFetch: shouldFetch && !isFetching.current && !loading && !hasErrorForCurrentKey
+      });
+    }
 
     if (shouldFetch && !isFetching.current && !loading && !hasErrorForCurrentKey) {
       
@@ -713,9 +784,25 @@ export function DynamicSelect({
     );
   }
 
+  // 🔍 DEBUG: Log render state
+  if (field.fieldName === 'accessionGroup') {
+    console.log('🎨 DynamicSelect render state:', {
+      fieldName: field.fieldName,
+      optionsCount: options.length,
+      filteredOptionsCount: filteredOptions.length,
+      loading,
+      error: !!error,
+      open,
+      value: normalizedValue,
+      displayText: getDisplayText(),
+      disabled: field.readonly || loading,
+      dependenciesSatisfied
+    });
+  }
+
   return (
     <div className="w-full">
-      
+
       {/* Search input for searchable dropdowns */}
       {dropdownConfig.searchable && open && (
         <div className="mb-2">

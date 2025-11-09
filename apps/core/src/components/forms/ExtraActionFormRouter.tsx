@@ -25,20 +25,27 @@ const PreBuiltFormComponents: Record<string, React.ComponentType<any>> = {
   GroupAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.GroupAssignForm }))),
   BulkRoleAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkRoleAssignForm }))),
   BulkGroupAssignForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkGroupAssignForm }))),
-  
+
   // Organization management forms
   ManageApplicationsForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.ManageApplicationsForm }))),
   ApplicationManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.ManageApplicationsForm }))),
-  
+
   // Department management forms
   DepartmentUserManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.DepartmentUserManageForm }))),
-  
+
+  // Student management forms - support multiple naming conventions
+  approveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.ApproveStudentForm }))),
+  ApproveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.ApproveStudentForm }))),
+  bulkApproveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkApproveStudentForm }))),
+  BulkApproveStudentForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkApproveStudentForm }))),
+  bulkApproveStudentsForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.BulkApproveStudentForm }))),
+
   // Bibliography management forms - multiple naming conventions for compatibility
   AccessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
   AccessionManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
   accessionManageForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
   accessionNumberManagementForm: React.lazy(() => import("./pre-built").then(m => ({ default: m.AccessionNumberManagementForm }))),
-  
+
   // Add more pre-built form components as needed
 };
 

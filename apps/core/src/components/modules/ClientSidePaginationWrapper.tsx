@@ -305,11 +305,69 @@ export function ClientSidePaginationWrapper({
     });
   }
 
-  // Apply client-side filtering if needed
-  // TODO: Implement client-side filtering based on URL filters
-  
+  // Apply client-side filtering based on URL prefilter params
+  let filteredData = sortedData;
+
+  // Build filter object from URL params
+  const activeFilters: Record<string, any> = {};
+  if (module.dataTableSchema?.prefilters?.fields) {
+    module.dataTableSchema.prefilters.fields.forEach((field: any) => {
+      if (field.type === 'text') {
+        // Check for operator-based params
+        const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+        for (const op of operators) {
+          const paramValue = searchParams.get(`${field.fieldName}[${op.value}]`);
+          if (paramValue) {
+            activeFilters[field.fieldName] = { value: paramValue, operator: op.value };
+            break;
+          }
+        }
+      } else {
+        // For select, dynamicSelect, and other fields
+        const paramValue = searchParams.get(field.fieldName);
+        if (paramValue) {
+          activeFilters[field.fieldName] = { value: paramValue, operator: '$eq' };
+        }
+      }
+    });
+  }
+
+  // Apply filters to data
+  if (Object.keys(activeFilters).length > 0) {
+    filteredData = sortedData.filter((item: any) => {
+      return Object.entries(activeFilters).every(([fieldName, filterConfig]) => {
+        const itemValue = item[fieldName];
+        const filterValue = filterConfig.value;
+        const operator = filterConfig.operator;
+
+        // Handle null/undefined
+        if (itemValue === null || itemValue === undefined) return false;
+
+        // Apply operator
+        if (operator === '$regex') {
+          // Case-insensitive partial match
+          return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
+        } else if (operator === '$eq') {
+          // Exact match (case-insensitive for strings)
+          if (typeof itemValue === 'string' && typeof filterValue === 'string') {
+            return itemValue.toLowerCase() === filterValue.toLowerCase();
+          }
+          return String(itemValue) === String(filterValue);
+        }
+
+        return true;
+      });
+    });
+
+    console.log("📱 [CLIENT-SIDE] Filtering applied:", {
+      originalCount: sortedData.length,
+      filteredCount: filteredData.length,
+      activeFilters
+    });
+  }
+
   // Client-side pagination calculation
-  const totalItems = sortedData.length;
+  const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / currentPageSize);
   
   // Calculate slice boundaries for current page
@@ -317,10 +375,11 @@ export function ClientSidePaginationWrapper({
   const endIndex = startIndex + currentPageSize;
   
   // Slice data to show only current page
-  const moduleData = sortedData.slice(startIndex, endIndex);
+  const moduleData = filteredData.slice(startIndex, endIndex);
 
   console.log("📱 [CLIENT-SIDE] Rendering:", {
     totalRecords: fullModuleData.length,
+    filteredRecords: filteredData.length,
     currentPage,
     pageSize: currentPageSize,
     startIndex,
@@ -328,7 +387,8 @@ export function ClientSidePaginationWrapper({
     displayingRecords: moduleData.length,
     totalPages,
     sortBy: currentSortBy,
-    sortOrder: currentSortOrder
+    sortOrder: currentSortOrder,
+    hasActiveFilters: Object.keys(activeFilters).length > 0
   });
 
   return (

@@ -158,7 +158,7 @@ export function SimpleSearch({
                 <option disabled>{texts.loading}</option>
               ) : (
                 Array.isArray(catalogTypes) && catalogTypes.map((type) => (
-                  <option key={type._id} value={type.label}>
+                  <option key={type._id} value={type.name}>
                     {type.label}
                   </option>
                 ))

@@ -42,6 +42,7 @@ export function ServerSidePaginationWrapper({
   const refreshTrigger = searchParams.get('_refresh');
 
   // Build query parameters for server-side pagination
+  // Create a stable query params object that changes when searchParams change
   const queryParams = React.useMemo(() => {
     const params: Record<string, any> = {};
 
@@ -146,6 +147,8 @@ export function ServerSidePaginationWrapper({
   console.log("🖥️ [SERVER-SIDE] Pagination Debug:", {
     module: module.slug,
     queryParams,
+    searchParamsString: searchParams.toString(),
+    filters: queryParams.filters,
     mode: "SERVER_SIDE_PAGINATION",
   });
 

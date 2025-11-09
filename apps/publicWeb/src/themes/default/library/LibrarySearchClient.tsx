@@ -16,6 +16,7 @@ interface LibrarySearchClientProps {
   initialCatalogType?: string;
   initialSortBy?: SortBy;
   initialSortOrder?: SortOrder;
+  canAccessEbooks?: boolean;
 }
 
 export function LibrarySearchClient({
@@ -23,7 +24,8 @@ export function LibrarySearchClient({
   initialSearchType = 'contains',
   initialCatalogType = '',
   initialSortBy = 'year',
-  initialSortOrder = 'desc'
+  initialSortOrder = 'desc',
+  canAccessEbooks = false
 }: LibrarySearchClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -97,7 +99,7 @@ export function LibrarySearchClient({
     params.set('q', newQuery);
     params.set('searchType', newSearchType);
     if (newCatalogTypeName) {
-      params.set('catalogType', newCatalogTypeName);
+      params.set('catalogType.name', newCatalogTypeName);
     }
     params.set('sortBy', newSortBy);
     params.set('sortOrder', newSortOrder);
@@ -188,6 +190,7 @@ export function LibrarySearchClient({
                 currentPage={currentPage}
                 totalPages={data.pagination?.totalPages}
                 onPageChange={handlePageChange}
+                canAccessEbooks={canAccessEbooks}
               />
 
               {data.pagination && data.pagination.totalPages && data.pagination.totalPages > 1 && (

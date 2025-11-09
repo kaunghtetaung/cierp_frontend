@@ -315,6 +315,19 @@ export function DynamicExtraActionFormWithSections({
               
               <Form {...form}>
                 <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+                  {/* 🔍 DEBUG: Log form state */}
+                  {(() => {
+                    console.log('🎨 Form render state:', {
+                      isSubmitting,
+                      viewMode,
+                      editingItem: !!editingItem,
+                      fieldsCount: formSection.fields.length,
+                      formDisabled: isSubmitting,
+                      hasErrors: Object.keys(errors).length > 0,
+                      errors
+                    });
+                    return null;
+                  })()}
                   <div className="grid md:grid-cols-2 gap-4">
                     {formSection.fields.map((field: any) =>
                       <div key={field.fieldName} className="min-w-0">
