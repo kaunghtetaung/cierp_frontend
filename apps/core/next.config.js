@@ -2,12 +2,18 @@
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
+  skipTrailingSlashRedirect: true,
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
   transpilePackages: ['@repo/nrc-hooks'],
   // Configure Server Actions
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb', // Allow up to 50MB file uploads
     },
+    // Workaround for Next.js 15.4.3 Html context issue
+    ppr: false,
   },
   env: {
     // Expose subdomain configuration to client-side
