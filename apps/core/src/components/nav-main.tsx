@@ -47,21 +47,41 @@ export function NavMain({
     if (pathname === itemUrl) {
       return true;
     }
-    
+
     // For path-based routing, check if current path starts with the item URL
     // e.g., /core/users should be active when on /core/users/new or /core/users/123
     if (itemUrl !== "/" && !itemUrl.endsWith("/") && pathname.startsWith(itemUrl + "/")) {
       return true;
     }
-    
+
     // Check sub-items
     if (subItems) {
-      return subItems.some(subItem => 
+      return subItems.some(subItem =>
         pathname === subItem.url || pathname.startsWith(subItem.url + "/")
       );
     }
-    
+
     return false;
+  };
+
+  // Check if parent menu item should be highlighted (NOT highlighted if sub-item is active)
+  const isParentActive = (itemUrl: string, subItems?: any[]) => {
+    // If there are no sub-items, use normal active check
+    if (!subItems || subItems.length === 0) {
+      return isPathActive(itemUrl);
+    }
+
+    // If any sub-item is active, parent should NOT be highlighted
+    const isSubItemActive = subItems.some(subItem =>
+      pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+    );
+
+    if (isSubItemActive) {
+      return false; // Don't highlight parent when sub-item is active
+    }
+
+    // Only highlight parent on exact match or direct children (not sub-routes)
+    return pathname === itemUrl;
   };
 
   // Get current app from path for dashboard link
@@ -100,11 +120,12 @@ export function NavMain({
         
         {items.map((item) => {
           const isActive = isPathActive(item.url, item.items);
-          
+          const isParentHighlighted = isParentActive(item.url, item.items);
+
           return (
             <Collapsible key={item.title} asChild defaultOpen={isActive}>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
+                <SidebarMenuButton asChild tooltip={item.title} isActive={isParentHighlighted}>
                   <Link href={item.url}>
                     <item.icon />
                     <span>{item.title}</span>
