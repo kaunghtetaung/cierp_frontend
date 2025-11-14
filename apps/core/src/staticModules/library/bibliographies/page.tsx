@@ -5,7 +5,11 @@ import { ModuleDataTableWrapper } from "@/components/modules/ModuleDataTableWrap
 import { ModuleDataTableWithTimeout } from "@/components/modules/ModuleDataTableWithTimeout";
 import { notFound } from "next/navigation";
 
-export default async function BibliographiesListPage({ module, user, appId }: any) {
+export default async function BibliographiesListPage({
+  module,
+  user,
+  appId,
+}: any) {
   // Get filtered layout data
   const { appSchemaData } = await fetchLayoutData();
 
@@ -33,6 +37,7 @@ export default async function BibliographiesListPage({ module, user, appId }: an
   if (isServerSidePaging) {
     return (
       <div className="w-full min-w-0 overflow-hidden">
+        "FROM Static"
         <ModuleDataTableWrapper
           module={clientModule}
           initialData={[]}

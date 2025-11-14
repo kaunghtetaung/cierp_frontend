@@ -33,6 +33,7 @@ export default async function StudentsListPage({ module, user, appId }: any) {
   if (isServerSidePaging) {
     return (
       <div className="w-full min-w-0 overflow-hidden">
+        "FROM Static"
         <ModuleDataTableWrapper
           module={clientModule}
           initialData={[]}
@@ -60,7 +61,6 @@ export default async function StudentsListPage({ module, user, appId }: any) {
 
   return (
     <div className="space-y-6">
-      "FROM Static"
       {serverError || !moduleData ? (
         <ModuleDataTableWithTimeout
           module={clientModule}
