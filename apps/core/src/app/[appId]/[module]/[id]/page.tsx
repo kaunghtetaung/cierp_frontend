@@ -29,7 +29,48 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
     resolvedParams.module
   )
 
-  // ⭐ CHECK: If static module exists for this appId/module combination
+  // ⭐ PRIORITY CHECK: First check if this is a custom route (not an ID)
+  // This handles cases like /library/bibliographies/barcode where "barcode" is a route name, not an ID
+  const customRoutePath = path.join(
+    process.cwd(),
+    "src",
+    "staticModules",
+    resolvedParams.appId,
+    resolvedParams.module,
+    resolvedParams.id,
+    "page.tsx"
+  );
+
+  if (existsSync(customRoutePath)) {
+    // This is a custom route, not a detail page - redirect to catch-all handler
+    try {
+      const CustomRoute = await import(
+        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/${resolvedParams.id}/page`
+      );
+
+      console.log('✅ Custom route found (via [id] route):', resolvedParams.id);
+
+      return (
+        <CustomRoute.default
+          module={fullModule}
+          user={user}
+          tenant={tenant}
+          appId={resolvedParams.appId}
+          slug={[resolvedParams.id]}
+          slugPath={resolvedParams.id}
+          searchParams={resolvedSearchParams}
+        />
+      );
+    } catch (error) {
+      console.error(
+        `Failed to load custom route: ${resolvedParams.appId}/${resolvedParams.module}/${resolvedParams.id}`,
+        error
+      );
+      // Fall through to detail handling
+    }
+  }
+
+  // ⭐ CHECK: If static module detail page exists for this appId/module combination
   const staticModulePath = path.join(
     process.cwd(),
     "src",
