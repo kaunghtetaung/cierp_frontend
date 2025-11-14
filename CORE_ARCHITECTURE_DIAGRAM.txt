@@ -1,0 +1,281 @@
+================================================================================
+CORE APPLICATION ARCHITECTURE - VISUAL FLOW DIAGRAM
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            USER REQUESTS FLOW                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                            http://app.um1ygn.edu.mm/cpms/students
+                                           │
+                                           ▼
+                          ┌─────────────────────────────┐
+                          │   Next.js App Router        │
+                          │  [appId]/[module]/page.tsx  │
+                          └─────────────────────────────┘
+                                           │
+                        ┌──────────────────┴──────────────────┐
+                        │                                     │
+                        ▼                                     ▼
+            ┌──────────────────────┐      ┌──────────────────────────┐
+            │ Check for Static     │      │ Security Check           │
+            │ Module Exists        │      │ (requireModuleAccess)    │
+            │                      │      │ ├─ App Access           │
+            │ staticModules/       │      │ ├─ Module Access        │
+            │ cpms/students/       │      │ └─ Auth validation      │
+            │ page.tsx?            │      │                          │
+            └──────────────────────┘      └──────────────────────────┘
+                        │                              │
+            ┌───────────┴───────────┐                  │
+            │                       │                  │
+         EXISTS                  NOT FOUND             │
+            │                       │                  │
+            ▼                       ▼                  │
+    ┌──────────────────┐  ┌──────────────────────┐    │
+    │ Load Static      │  │ Use Generic          │    │
+    │ Module           │  │ List Page Handler    │    │
+    │ (students-       │  │ (ModuleListPage)     │    │
+    │  specific UI)    │  │                      │    │
+    └──────────────────┘  └──────────────────────┘    │
+            │                      │                  │
+            └──────────────┬───────┘                  │
+                           │                          │
+                           └──────────────────────────┘
+                                           │
+                        ┌──────────────────┴──────────────────┐
+                        │                                     │
+                        ▼                                     ▼
+                ┌────────────────────┐        ┌───────────────────────┐
+                │ Fetch Layout Data  │        │ Check Pagination Type │
+                │ (fetchLayoutData)  │        │                       │
+                │ - Tenant           │        │ Client vs Server      │
+                │ - Auth             │        │ Paging?               │
+                │ - App Schema       │        │                       │
+                │ - Modules          │        │                       │
+                └────────────────────┘        └───────────────────────┘
+                        │                             │
+                        │                      ┌──────┴────────┐
+                        │                      │               │
+                        │              SERVER-SIDE         CLIENT-SIDE
+                        │              PAGING              PAGING
+                        │              │                   │
+                        │              ▼                   ▼
+                        │    ┌─────────────────┐    ┌──────────────────┐
+                        │    │ Lazy-load data  │    │ Fetch all data   │
+                        │    │ per page        │    │ with timeout     │
+                        │    │ (10 sec timeout)│    │ (10 sec timeout) │
+                        │    │                 │    │                  │
+                        │    │ initialData=[]  │    │ initialData=[..] │
+                        │    └─────────────────┘    └──────────────────┘
+                        │              │                   │
+                        └──────────────┬───────────────────┘
+                                       │
+                        ┌──────────────┴──────────────────┐
+                        │                                 │
+                        ▼                                 ▼
+        ┌──────────────────────────────┐   ┌──────────────────────────────┐
+        │ ModuleDataTableWrapper       │   │ ModuleDataTableWithTimeout   │
+        │ (Smart Pagination Router)    │   │ (Client-side fetch fallback) │
+        │                              │   │                              │
+        │ Routes to:                   │   │ - 15-20 sec timeout          │
+        │ ├─ ClientSidePagination     │   │ - Auto-retry 2x              │
+        │ │  (if CLIENT-SIDE)         │   │ - Manual refresh button      │
+        │ └─ ServerSidePagination     │   │ - Detailed error handling    │
+        │    (if SERVER-SIDE)         │   │                              │
+        └──────────────────────────────┘   └──────────────────────────────┘
+                        │                                 │
+                        │                                 │
+                        └────────────────┬────────────────┘
+                                         │
+                                         ▼
+                        ┌────────────────────────────────┐
+                        │   Display Data Table           │
+                        │ ├─ Columns (from schema)       │
+                        │ ├─ Search/Filter/Sort          │
+                        │ ├─ Actions (View/Edit/Delete)  │
+                        │ ├─ User Permissions            │
+                        │ └─ Pagination Controls         │
+                        └────────────────────────────────┘
+
+
+================================================================================
+                          STATIC MODULE PATTERN
+================================================================================
+
+Parent Dynamic Route (in app/)
+            │
+            ▼ Checks for static module
+            
+┌──────────────────────────────────────┐
+│  Does staticModules path exist?       │
+│  /cpms/students/page.tsx              │
+└──────────────────────────────────────┘
+            │
+      ┌─────┴──────┐
+      │            │
+     YES           NO
+      │            │
+      ▼            ▼
+  ┌────────┐   ┌──────────┐
+  │ Use    │   │ Fall     │
+  │ Static │   │ Back to  │
+  │ Module │   │ Generic  │
+  │ Code   │   │ Handler  │
+  └────────┘   └──────────┘
+
+
+================================================================================
+                        AUTHORIZATION FLOW
+================================================================================
+
+Request → Middleware (Session Validation)
+             │
+             ▼
+    ┌──────────────────────────┐
+    │  requireModuleAccess()   │
+    │  (lib/auth-utils.ts)     │
+    └──────────────────────────┘
+             │
+    ┌────────┼────────┐
+    │        │        │
+    ▼        ▼        ▼
+  ┌──────┐ ┌──────┐ ┌──────┐
+  │ App  │ │Module│ │Perm. │
+  │Check │ │Check │ │Check │
+  └──────┘ └──────┘ └──────┘
+    │        │        │
+    ├─────┬──┴────┬───┘
+    │     │       │
+ FAIL    FAIL    ├─ Create/Read/Update/Delete
+         │       │
+         ▼       ▼
+      Redirect  Grant/Deny
+
+
+================================================================================
+                      MODULE SCHEMA STRUCTURE
+================================================================================
+
+ModuleSchema {
+  id: string
+  name: { en: string, mm: string }           ← Multilingual
+  slug: "students"
+  serviceName: "cpms"
+  
+  formLayout: "studentWizardForm"            ← Controls form display
+  formFields: [...]                          ← Form field definitions
+  
+  dataTableSchema: {                         ← List view config
+    columns: [...]
+    pagination: {
+      isClientSidePaging: true|false        ← Determines fetch strategy
+      pageSize: 10
+    }
+  }
+  
+  moduleAccessPolicy: {                      ← Access control (server-only)
+    accessPolicy: {
+      systemAdmin: { operation: { read: true, create: true } },
+      user: { operation: { read: true, create: false } }
+    }
+  }
+}
+
+
+================================================================================
+                      STATIC MODULE FILE TREE
+================================================================================
+
+staticModules/cpms/students/
+│
+├── page.tsx                    ← List/Dashboard (Server Component)
+│   ├─ Fetch layout data
+│   ├─ Check pagination type
+│   ├─ Fetch module data (10s timeout)
+│   └─ Return wrapper with data
+│
+├── new.tsx                     ← Create Form (Client Component)
+│   ├─ Use client directive
+│   └─ Render FormWithLanguage
+│
+├── detail.tsx                  ← Edit/View (Server Component)
+│   ├─ Check create vs edit mode
+│   ├─ Fetch item data if edit
+│   ├─ Fetch navigation (prev/next)
+│   ├─ Transform S3 URLs
+│   ├─ Enable multilang fields
+│   └─ Return FormWithLanguage
+│
+├── actions/                    ← Custom server actions (reserved)
+├── batch/                      ← Batch operations (reserved)
+├── wizard/                     ← Multi-step forms (reserved)
+├── detail/                     ← Detail view components (reserved)
+└── shared/                     ← Shared utilities (reserved)
+
+
+================================================================================
+                        DATA FETCH STRATEGIES
+================================================================================
+
+STRATEGY 1: CLIENT-SIDE PAGINATION (isClientSidePaging: true)
+─────────────────────────────────────────────────────────────
+
+Server (page.tsx):
+  getModuleList() ──(10s timeout)──> API
+       │
+       ▼
+  All data loaded + timeout fallback
+
+Client (ModuleDataTableWrapper):
+  - Receive full dataset in initialData
+  - Handle pagination in browser
+  - Filter, sort, search locally
+
+
+STRATEGY 2: SERVER-SIDE PAGINATION (isClientSidePaging: false)
+──────────────────────────────────────────────────────────────
+
+Server (page.tsx):
+  Return empty initialData
+
+Client (ModuleDataTableWrapper):
+  Routes to ServerSidePaginationWrapper
+       │
+       ▼
+  On page change:
+    Fetch from /api/modules/[slug]?page=N
+       │
+       ▼
+  With timeout handling & retry
+
+
+================================================================================
+                      FORM SUBMISSION FLOW
+================================================================================
+
+FormWithLanguage (Client)
+       │
+       ├─ Validate with Zod schema
+       ▼
+       ├─ NO: Show field errors
+       └─ YES: Continue
+           │
+           ▼
+       submitModuleForm (Server Action)
+       │   - module: students
+       │   - action: create|update
+       │   - data: { ... }
+       │
+       ▼
+  Backend API
+       │
+       ├─ ERROR
+       │   └─ Show toast error
+       │
+       └─ SUCCESS
+           ├─ Show toast success
+           ├─ Redirect or refresh
+           └─ Update UI
+
+
+================================================================================
