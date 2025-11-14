@@ -16,7 +16,6 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from "@repo/ui";
-import { getStaticModuleRoutes } from "@/lib/static-module-utils";
 
 // Multilingual secondary navigation items
 const getSecondaryNavItems = (
@@ -101,8 +100,8 @@ function modulesToNavItems(
   const appPrefix = getAppPrefix();
 
   return modules.map((module) => {
-    // Get static module custom routes if they exist
-    const staticRoutes = getStaticModuleRoutes(currentAppId || 'core', module.slug);
+    // Use static routes from server-provided module data
+    const staticRoutes = module.staticRoutes || [];
 
     // Build sub-items array
     const subItems = staticRoutes.length > 0

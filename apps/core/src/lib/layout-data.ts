@@ -148,8 +148,15 @@ const filterUserApplications = cache(async (
 
 /**
  * Convert module to clean client module (removing sensitive access policies)
+ * Also detects and includes static module routes for navigation
  */
-function createClientModule(module: any): ClientModule {
+function createClientModule(module: any, appId: string): ClientModule {
+  // Import static module utils here (server-side only)
+  const { getStaticModuleRoutes } = require('@/lib/static-module-utils')
+
+  // Detect static module routes for this module
+  const staticRoutes = getStaticModuleRoutes(appId, module.slug)
+
   return {
     id: module.id,
     name: module.name,
@@ -164,7 +171,10 @@ function createClientModule(module: any): ClientModule {
     dataTableSchema: module.dataTableSchema,
     detailViewSchema: module.detailViewSchema,
     extraActionForms: module.extraActionForms,
-    wizardConfig: module.wizardConfig
+    wizardConfig: module.wizardConfig,
+
+    // Include static module routes for navigation
+    staticRoutes: staticRoutes
 
     // moduleAccessPolicy is intentionally excluded for security
   }
@@ -195,8 +205,8 @@ const fetchAppSchemaData = cache(async (
     // Filter modules based on user's role permissions (SERVER-SIDE SECURITY)
     const accessibleModules = filterModulesByUserAccess(rawAppSchemaData.modules, user)
 
-    // Convert to clean client modules (remove sensitive access policies)
-    const cleanModules = accessibleModules.map(createClientModule)
+    // Convert to clean client modules (remove sensitive access policies and add static routes)
+    const cleanModules = accessibleModules.map(module => createClientModule(module, appId))
 
     // Create clean client app schema data
     const clientAppSchemaData: ClientAppSchemaData = {

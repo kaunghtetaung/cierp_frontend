@@ -18,6 +18,15 @@ export interface MiddlewareData {
 }
 
 /**
+ * Static module route information
+ */
+export interface StaticModuleRoute {
+  name: string
+  path: string
+  title: string
+}
+
+/**
  * Clean module data for client-side (without sensitive access policies)
  */
 export interface ClientModule {
@@ -47,6 +56,9 @@ export interface ClientModule {
   detailViewSchema?: any
   extraActionForms?: any[]
   wizardConfig?: any
+
+  // Static module routes for navigation
+  staticRoutes?: StaticModuleRoute[]
 
   // Sensitive moduleAccessPolicy is excluded for security
 }
