@@ -16,6 +16,7 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from "@repo/ui";
+import { getStaticModuleRoutes } from "@/lib/static-module-utils";
 
 // Multilingual secondary navigation items
 const getSecondaryNavItems = (
@@ -99,19 +100,41 @@ function modulesToNavItems(
 
   const appPrefix = getAppPrefix();
 
-  return modules.map((module) => ({
-    title: getLocalizedText(module.name, language) || module.slug,
-    url: `${appPrefix}/${module.slug}`,
-    icon: ({ className, ...props }: any) => (
-      <IconComponent
-        name={module.iconName || "SquareTerminal"}
-        fallback="SquareTerminal"
-        className={className}
-        {...props}
-      />
-    ),
-    items: [], // Module submodules not currently supported
-  }));
+  return modules.map((module) => {
+    // Get static module custom routes if they exist
+    const staticRoutes = getStaticModuleRoutes(currentAppId || 'core', module.slug);
+
+    // Build sub-items array
+    const subItems = staticRoutes.length > 0
+      ? [
+          // Add main list view as first item
+          {
+            title: getLocalizedText({ en: "List", mm: "စာရင်း" }, language),
+            url: `${appPrefix}/${module.slug}`,
+          },
+          // Add custom static routes
+          ...staticRoutes.map(route => ({
+            title: route.title,
+            url: `${appPrefix}/${module.slug}/${route.path}`,
+          }))
+        ]
+      : []; // No sub-items if no static routes
+
+    return {
+      title: getLocalizedText(module.name, language) || module.slug,
+      url: `${appPrefix}/${module.slug}`,
+      icon: ({ className, ...props }: any) => (
+        <IconComponent
+          name={module.iconName || "SquareTerminal"}
+          fallback="SquareTerminal"
+          className={className}
+          {...props}
+        />
+      ),
+      items: subItems,
+      isActive: staticRoutes.length > 0, // Make collapsible if has sub-items
+    };
+  });
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
