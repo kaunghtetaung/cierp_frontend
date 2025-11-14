@@ -64,6 +64,22 @@ export function NavMain({
     return false;
   };
 
+  // Check if a sub-item (not parent) is active - EXACT match only
+  const isSubItemActive = (subItemUrl: string, parentUrl: string) => {
+    // Exact match
+    if (pathname === subItemUrl) {
+      return true;
+    }
+
+    // For sub-items, also check if we're on a child route of this sub-item
+    // BUT make sure we're not just on the parent URL
+    if (pathname !== parentUrl && pathname.startsWith(subItemUrl + "/")) {
+      return true;
+    }
+
+    return false;
+  };
+
   // Check if parent menu item should be highlighted (NOT highlighted if sub-item is active)
   const isParentActive = (itemUrl: string, subItems?: any[]) => {
     // If there are no sub-items, use normal active check
@@ -72,15 +88,15 @@ export function NavMain({
     }
 
     // If any sub-item is active, parent should NOT be highlighted
-    const isSubItemActive = subItems.some(subItem =>
-      pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+    const hasActiveSubItem = subItems.some(subItem =>
+      isSubItemActive(subItem.url, itemUrl)
     );
 
-    if (isSubItemActive) {
+    if (hasActiveSubItem) {
       return false; // Don't highlight parent when sub-item is active
     }
 
-    // Only highlight parent on exact match or direct children (not sub-routes)
+    // Only highlight parent on exact match
     return pathname === itemUrl;
   };
 
@@ -142,8 +158,8 @@ export function NavMain({
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => {
-                        const isSubActive = isPathActive(subItem.url);
-                        
+                        const isSubActive = isSubItemActive(subItem.url, item.url);
+
                         return (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={isSubActive}>
