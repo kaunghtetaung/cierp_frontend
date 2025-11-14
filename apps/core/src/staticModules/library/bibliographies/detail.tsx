@@ -4,10 +4,10 @@ import { FormWithLanguage } from '@repo/schema-forms';
 import { enableCommonMultilangFields } from '@/lib/enable-multilang';
 import { transformS3KeysToUrls } from '@/actions/media-url';
 
-export default async function LibraryDetailPage({ module, user, tenant, appId, itemId, searchParams }: any) {
+export default async function BibliographiesDetailPage({ module, user, tenant, appId, itemId, searchParams }: any) {
   const isCreateMode = itemId === 'new';
 
-  console.log("🎯 Static Library Detail Page Called:", {
+  console.log("🎯 Static Bibliographies Detail Page Called:", {
     isCreateMode,
     itemId,
     hasTenant: !!tenant,
@@ -27,7 +27,7 @@ export default async function LibraryDetailPage({ module, user, tenant, appId, i
       const sortOrder = (searchParams.sortOrder as 'asc' | 'desc') || 'desc';
 
       const itemResponse = await getModuleItemWithNavigation(
-        'library',
+        'bibliographies',
         itemId,
         {
           includeNavigation: true,
@@ -39,20 +39,20 @@ export default async function LibraryDetailPage({ module, user, tenant, appId, i
       initialData = itemResponse.data;
       navigation = itemResponse.navigation;
 
-      console.log("📊 Library Edit Page - Navigation data fetched:", {
+      console.log("📊 Bibliographies Edit Page - Navigation data fetched:", {
         hasNavigation: !!navigation,
         navigation,
         itemId
       });
 
       // Transform S3 keys to signed URLs for media fields
-      // Add media field names specific to library module here
+      // Add media field names specific to bibliographies module here
       if (initialData && tenant.rootDomain) {
         const tenantSlug = tenant.slug || tenant.id;
-        const mediaFields: string[] = []; // Example: ['coverImage', 'thumbnail']
+        const mediaFields: string[] = []; // Example: ['coverImage', 'thumbnail', 'attachments']
 
         if (mediaFields.length > 0) {
-          console.log("📸 Library Edit Page - Tenant context for transformation:", {
+          console.log("📸 Bibliographies Edit Page - Tenant context for transformation:", {
             tenantId: tenant.id,
             tenantSlug: tenantSlug,
             rootDomain: tenant.rootDomain,
@@ -71,13 +71,13 @@ export default async function LibraryDetailPage({ module, user, tenant, appId, i
             }
           );
 
-          console.log("📸 Library Edit Page - Transformed media URLs:", {
+          console.log("📸 Bibliographies Edit Page - Transformed media URLs:", {
             transformedFields: mediaFields,
           });
         }
       }
     } catch (error) {
-      console.error('Failed to fetch library item:', error);
+      console.error('Failed to fetch bibliographies item:', error);
       notFound();
     }
   }
@@ -91,7 +91,7 @@ export default async function LibraryDetailPage({ module, user, tenant, appId, i
         module={moduleWithMultilang}
         action={isCreateMode ? 'create' : 'update'}
         initialData={initialData}
-        moduleSlug="library"
+        moduleSlug="bibliographies"
         itemId={isCreateMode ? undefined : itemId}
         navigation={navigation}
         appId={appId}

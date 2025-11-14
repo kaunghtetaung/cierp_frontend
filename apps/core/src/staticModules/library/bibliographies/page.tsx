@@ -5,7 +5,7 @@ import { ModuleDataTableWrapper } from "@/components/modules/ModuleDataTableWrap
 import { ModuleDataTableWithTimeout } from "@/components/modules/ModuleDataTableWithTimeout";
 import { notFound } from "next/navigation";
 
-export default async function LibraryListPage({ module, user, appId }: any) {
+export default async function BibliographiesListPage({ module, user, appId }: any) {
   // Get filtered layout data
   const { appSchemaData } = await fetchLayoutData();
 
@@ -15,7 +15,7 @@ export default async function LibraryListPage({ module, user, appId }: any) {
 
   // Find the module by slug
   const clientModule = appSchemaData.modules.find(
-    (mod: any) => mod.slug === "library"
+    (mod: any) => mod.slug === "bibliographies"
   );
 
   if (!clientModule) {
@@ -51,10 +51,10 @@ export default async function LibraryListPage({ module, user, appId }: any) {
       setTimeout(() => reject(new Error("Server timeout")), 10000);
     });
 
-    const dataPromise = getModuleList("library", {});
+    const dataPromise = getModuleList("bibliographies", {});
     moduleData = (await Promise.race([dataPromise, timeoutPromise])) as any[];
   } catch (error) {
-    console.error("Server-side data fetch failed for library:", error);
+    console.error("Server-side data fetch failed for bibliographies:", error);
     serverError = true;
   }
 
