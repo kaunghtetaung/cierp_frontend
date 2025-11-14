@@ -71,9 +71,9 @@ export function NavMain({
       return true;
     }
 
-    // For sub-items, also check if we're on a child route of this sub-item
-    // BUT make sure we're not just on the parent URL
-    if (pathname !== parentUrl && pathname.startsWith(subItemUrl + "/")) {
+    // For sub-items that are NOT the same as parent URL
+    // Check if we're on a child route of this specific sub-item
+    if (subItemUrl !== parentUrl && pathname.startsWith(subItemUrl + "/")) {
       return true;
     }
 
