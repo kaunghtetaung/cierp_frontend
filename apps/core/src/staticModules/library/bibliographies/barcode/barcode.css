@@ -1,0 +1,145 @@
+@font-face {
+  font-family: 'IDAutomationC39S';
+  src: local('IDAutomationC39S'),
+    url('/fonts/IDAutomationC39S.woff') format('woff'),
+    url('/fonts/IDAutomationC39S.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.barcode-font {
+  font-family: 'IDAutomationC39S', monospace;
+  font-size: 6pt;
+  letter-spacing: 0;
+  color: black !important; /* Always black for barcode */
+}
+
+/* Barcode label container - 3.6cm width for 5 labels per A4 row */
+.barcode-label {
+  width: 3.6cm;
+  height: 1.65cm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 14px;
+  padding: 1px 0; /* Reduced horizontal padding */
+  position: relative;
+  box-sizing: border-box;
+  color: black !important; /* Always black text for barcodes */
+}
+
+/* Cutting line indicators - corner marks */
+.barcode-label::before,
+.barcode-label::after {
+  content: '';
+  position: absolute;
+  width: 3mm;
+  height: 3mm;
+  border-style: dashed;
+  border-color: #ccc;
+  border-width: 0;
+}
+
+/* Top-left and bottom-left corner marks */
+.barcode-label::before {
+  top: -0.5mm;
+  left: -0.5mm;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+/* Top-right and bottom-right corner marks */
+.barcode-label::after {
+  top: -0.5mm;
+  right: -0.5mm;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+/* Class number and accession number text */
+.barcode-text {
+  font-family: 'Times New Roman', serif;
+  font-size: 13px;
+  color: black !important; /* Always black text */
+}
+
+/* Barcode preview grid - dynamic columns based on paper size */
+.barcode-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--labels-per-row, 5), 3.6cm);
+  gap: 1mm; /* Narrow gap for cutting lines */
+  padding: 5mm; /* Page margins */
+  justify-content: center; /* Center align the grid */
+}
+
+/* Preview page container wrapper to handle overflow */
+.barcode-page-wrapper {
+  overflow: hidden;
+  display: inline-flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Remove borders in preview */
+.barcode-label {
+  border: none !important;
+}
+
+/* Print styles for barcode labels */
+@media print {
+  @page {
+    size: A4;
+    margin: 5mm;
+  }
+
+  /* Reset body and html to remove all spacing */
+  body,
+  html {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide header */
+  header,
+  nav,
+  aside,
+  footer {
+    display: none !important;
+  }
+
+  /* Hide all divs by default */
+  div {
+    display: none;
+  }
+
+  /* Show only print pages and their children */
+  div:has(.printPage),
+  .printPage,
+  .printPage * {
+    display: grid !important;
+  }
+
+  /* Preserve grid layout for grid elements */
+  .printPage div[style*="grid"] {
+    display: grid !important;
+    justify-content: center !important;
+  }
+
+  /* Preserve flex layout for flex elements */
+  .printPage div[style*="flex"] {
+    display: flex !important;
+  }
+
+  /* Hide all paragraphs */
+  p {
+    display: none;
+  }
+
+  /* Remove p-6 padding */
+  .p-6 {
+    padding: 0 !important;
+  }
+}

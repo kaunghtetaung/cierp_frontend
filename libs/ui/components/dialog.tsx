@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { XIcon } from "lucide-react"
+import { X } from "lucide-react"
 
 import { cn } from "../lib/utils"
 import { Z_INDEX } from "../lib/utils"
@@ -77,10 +77,14 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute rounded-full p-2 bg-gradient-to-r from-[#4C67E1] to-[#3154A1] text-white hover:opacity-90 transition-all duration-200 focus:ring-2 focus:ring-white focus:ring-offset-0 focus:outline-none disabled:pointer-events-none shadow-lg"
-            style={{ zIndex: 10, top: '1.5rem', right: '1.5rem' }}
+            className="absolute rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 focus:ring-2 focus:ring-ring focus:ring-offset-0 focus:outline-none disabled:pointer-events-none"
+            style={{
+              zIndex: 10,
+              top: '0.5rem',
+              right: '0.5rem'
+            }}
           >
-            <XIcon className="h-5 w-5" />
+            <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
