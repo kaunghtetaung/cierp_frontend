@@ -1,0 +1,124 @@
+# Multi-stage build for Next.js application with npm cache optimization
+FROM node:22-alpine AS deps
+
+# Version arguments
+ARG APP_VERSION=1.0.0
+ARG BASE_VERSION=1.0.0
+ARG GIT_BRANCH=main
+ARG BUILD_DATE
+ARG VCS_REF
+ARG PIPELINE_ID=local
+
+WORKDIR /app
+
+# Use Thailand Alpine mirror (Myanmar ISP blocks default CDN)
+RUN echo "https://mirror.kku.ac.th/alpine/v3.22/main" > /etc/apk/repositories && \
+    echo "https://mirror.kku.ac.th/alpine/v3.22/community" >> /etc/apk/repositories && \
+    apk update
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ libc6-compat
+
+# Copy package files
+COPY package.json package-lock.json* ./
+COPY pnpm-lock.yaml* ./
+
+# Install dependencies with npm cache mounting for faster rebuilds
+# Cache persists between builds even if build fails
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.pnpm-store \
+    if [ -f pnpm-lock.yaml ]; then \
+      corepack enable && \
+      pnpm config set store-dir /root/.pnpm-store && \
+      pnpm install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then \
+      npm ci; \
+    else \
+      echo "No lockfile found, using npm install" && \
+      npm install; \
+    fi
+
+# ============================================
+# Build Stage
+# ============================================
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Use Thailand Alpine mirror
+RUN sed -i 's|https://dl-cdn.alpinelinux.org|https://mirror.kku.ac.th|g' /etc/apk/repositories
+
+# Install build tools
+RUN apk add --no-cache libc6-compat
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Build the application
+# Disable static optimization for dynamic routes
+ENV NEXT_BUILD_MODE=standalone
+
+RUN npx next build
+
+# ============================================
+# Runtime Stage
+# ============================================
+FROM node:22-alpine AS runner
+
+# Version information
+ARG APP_VERSION=1.0.0
+ARG BASE_VERSION=1.0.0
+ARG GIT_BRANCH=main
+ARG BUILD_DATE
+ARG VCS_REF
+ARG PIPELINE_ID=local
+
+ENV APP_VERSION=${APP_VERSION}
+ENV BASE_VERSION=${BASE_VERSION}
+ENV GIT_BRANCH=${GIT_BRANCH}
+ENV BUILD_DATE=${BUILD_DATE}
+ENV VCS_REF=${VCS_REF}
+ENV PIPELINE_ID=${PIPELINE_ID}
+
+WORKDIR /app
+
+# Use Thailand Alpine mirror
+RUN sed -i 's|https://dl-cdn.alpinelinux.org|https://mirror.kku.ac.th|g' /etc/apk/repositories
+
+# Install runtime dependencies
+RUN apk add --no-cache curl tini libc6-compat
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV SERVICE_NAME=core
+ENV PORT=3000
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy built application
+# For standalone build
+COPY --from=builder --chown=nodejs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nodejs:nodejs /app/public ./public
+
+# Copy package.json for version info
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+
+USER nodejs
+
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Use tini for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "server.js"]

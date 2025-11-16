@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ciapp-frontend
+  labels:
+    name: ciapp-frontend
+    app.kubernetes.io/name: ciapp-frontend
+    app.kubernetes.io/part-of: ciapp
