@@ -4,6 +4,9 @@
 # =================================================================
 # Development Commands
 # =================================================================
+# Gitlab Server
+gitlab:
+	ssh -i ~/.ssh/ciservers ciadmin@git.crystal-image.net
 
 # Run core application (ERP)
 core:
@@ -134,8 +137,9 @@ pushCi:
 	@echo "  2. Navigate to frontend directory:"
 	@echo "     cd ~/ciapp_frontend"
 	@echo ""
-	@echo "  3. Install dependencies:"
-	@echo "     npm install"
+	@echo "  3. Install dependencies (with React 19 compatibility):"
+	@echo "     make install-production"
+	@echo "     # OR manually: npm install --legacy-peer-deps"
 	@echo ""
 	@echo "  4. Build Docker images:"
 	@echo "     make build-frontend"
@@ -227,10 +231,14 @@ clean-cache:
 # =================================================================
 
 install:
-	npm install
+	npm install --legacy-peer-deps
 
 install-ci:
-	npm ci
+	npm ci --legacy-peer-deps
+
+install-production:
+	@echo "Running production installation script..."
+	./.aProduction/scripts/install-production.sh
 
 # =================================================================
 # Docker Commands (Local Development)
