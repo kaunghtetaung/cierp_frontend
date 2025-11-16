@@ -43,34 +43,104 @@ spec:
           value: "production"
         - name: PORT
           value: "3000"
-        - name: NEXT_PUBLIC_API_URL
-          value: "https://api.mmhub.info"
-        - name: NEXT_PUBLIC_APP_URL
-          value: "https://www.mmhub.info"
-        - name: NEXT_PUBLIC_OIDC_ISSUER
-          value: "https://auth.mmhub.info"
-        - name: NEXT_PUBLIC_OIDC_CLIENT_ID
-          value: "publicweb-client"
+        # Config Service
+        - name: ENABLE_CONFIG_HOT_RELOAD
+          value: "true"
+        - name: CONFIG_SERVICE_URL
+          value: "http://config.ciapp-backend.svc.cluster.local:3330"
+        - name: CONFIG_SERVICE_APP_NAME
+          value: "publicWeb"
+        - name: CONFIG_SERVICE_ENVIRONMENT
+          value: "production"
+        - name: CONFIG_REFRESH_INTERVAL
+          value: "300000"
+        - name: CONFIG_DEBUG
+          value: "false"
+        # OIDC Configuration
+        - name: TENANT_API_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets
+              key: tenant-api-client-id
+        - name: TENANT_API_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets
+              key: tenant-api-client-secret
+        # Redis
         - name: REDIS_HOST
           value: "192.168.200.32"
         - name: REDIS_PORT
           value: "6379"
         - name: REDIS_PASSWORD
-          value: "redis_password_here"
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets
+              key: redis-password
+        - name: REDIS_USERNAME
+          value: "cidbaccess"
         - name: REDIS_DB
-          value: "1"
-        - name: SESSION_SECRET
-          value: "your-session-secret-here"
+          value: "0"
+        # Cache TTL
+        - name: CACHE_TTL_DEFAULT
+          value: "3600"
+        - name: CACHE_TTL_TENANT_SETTINGS
+          value: "1800"
+        - name: CACHE_TTL_USER_SESSION
+          value: "7200"
+        - name: CACHE_TTL_AUTH_TOKEN
+          value: "900"
+        - name: CACHE_TTL_CONTENT
+          value: "600"
+        # PDF Service
+        - name: PDF_SERVICE_URL
+          value: "http://pdf-service.ciapp-backend.svc.cluster.local:3338"
+        - name: PDF_SERVICE_TIMEOUT
+          value: "30000"
+        # Logging
+        - name: LOG_FORMAT
+          value: "json"
+        - name: NEXT_PUBLIC_ENABLE_CONSOLE_LOGGER
+          value: "false"
+        # MinIO/S3
         - name: MINIO_ENDPOINT
           value: "192.168.200.33"
         - name: MINIO_PORT
           value: "9000"
-        - name: MINIO_ACCESS_KEY
-          value: "minio_access_key"
-        - name: MINIO_SECRET_KEY
-          value: "minio_secret_key"
-        - name: LOG_LEVEL
-          value: "info"
+        - name: MINIO_USE_SSL
+          value: "false"
+        - name: MINIO_REGION
+          value: "us-east-1"
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets
+              key: minio-root-user
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets
+              key: minio-root-password
+        - name: MINIO_BUCKET_STRATEGY
+          value: "per-tenant"
+        - name: MINIO_PUBLIC_ENDPOINT_TEMPLATE
+          value: "storage.{tenantRootDomain}"
+        - name: MINIO_PUBLIC_PORT
+          value: "443"
+        - name: MINIO_PUBLIC_USE_SSL
+          value: "true"
+        # API Subdomains
+        - name: API_SUBDOMAIN
+          value: "api"
+        - name: AUTH_SUBDOMAIN
+          value: "auth"
+        - name: NEXT_PUBLIC_API_SUBDOMAIN
+          value: "api"
+        - name: NEXT_PUBLIC_AUTH_SUBDOMAIN
+          value: "auth"
+        # Next.js
+        - name: NEXT_PUBLIC_APP_URL
+          value: "https://www.um1ygn.edu.mm"
         resources:
           requests:
             memory: "512Mi"

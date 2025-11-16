@@ -58,12 +58,20 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
   const { townships } = useNrcTownships(parts.stateNumber);
   const { types } = useNrcTypes();
 
-  // Update parts when external value changes
+  // Initialize parts from value on mount and when value changes from external source
   useEffect(() => {
-    if (value) {
-      const newParts = parseNrc(value);
+    const newParts = parseNrc(value);
+    const currentFormattedNrc = formatNrc(parts);
+
+    // Only update if the external value is actually different from our current state
+    // This prevents unnecessary re-renders when typing in serial number field
+    if (value && value !== currentFormattedNrc) {
       setParts(newParts);
+    } else if (!value && (parts.stateNumber || parts.townshipCode || parts.type || parts.serial)) {
+      // Clear the parts if external value is empty but we have parts
+      setParts({ stateNumber: "", townshipCode: "", type: "", serial: "" });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   // Handle part changes
@@ -78,10 +86,15 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
     setParts(updatedParts);
 
     const formattedNrc = formatNrc(updatedParts);
-    if (formattedNrc) {
-      onChange(formattedNrc);
-    } else if (!newValue && !updatedParts.townshipCode && !updatedParts.type && !updatedParts.serial) {
-      onChange("");
+    const currentFormattedNrc = formatNrc(parts);
+
+    // Only call onChange if the formatted value actually changed
+    if (formattedNrc !== currentFormattedNrc) {
+      if (formattedNrc) {
+        onChange(formattedNrc);
+      } else if (!newValue && !updatedParts.townshipCode && !updatedParts.type && !updatedParts.serial) {
+        onChange("");
+      }
     }
   };
 
