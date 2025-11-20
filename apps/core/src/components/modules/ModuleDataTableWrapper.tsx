@@ -1,11 +1,9 @@
 "use client";
 
 import React from "react";
-import { useLanguage } from "@repo/language";
 import type { ModuleSchema } from "@repo/types";
 import type { ModulePermissions } from "@/types/layout";
 import { ServerSidePaginationWrapper } from "./ServerSidePaginationWrapper";
-import { ClientSidePaginationWrapper } from "./ClientSidePaginationWrapper";
 
 interface ModuleDataTableWrapperProps {
   module: ModuleSchema;
@@ -14,81 +12,29 @@ interface ModuleDataTableWrapperProps {
 }
 
 /**
- * Smart Pagination Router
- * 
- * Determines the appropriate pagination strategy based on module schema configuration
- * and routes to the specialized pagination component.
- * 
- * Schema-Based Detection Logic:
- * 1. Check module.dataTableSchema.pagination.isClientSidePaging hint
- * 2. Fallback: Use initialData presence to determine strategy
- * 3. Route to appropriate pagination wrapper immediately (no API detection call)
- * 
+ * Module Data Table Wrapper
+ *
+ * Always uses server-side pagination for all modules.
+ * Client-side pagination has been removed for consistency and simplicity.
+ *
  * Benefits:
- * - Eliminates duplicate API calls during detection
- * - Faster loading (no detection delay) 
- * - Explicit configuration through schema
+ * - Consistent pagination behavior across all modules
+ * - Better performance for large datasets
+ * - Reduced memory usage on client
+ * - Simplified codebase
  */
 export function ModuleDataTableWrapper({
   module,
   initialData = [],
   userPermissions,
 }: ModuleDataTableWrapperProps) {
-  const { currentLanguage } = useLanguage();
+  console.log("🧠 [ROUTER] Using SERVER-SIDE pagination for module:", module.slug);
 
-  // Determine pagination type from schema configuration (no API call needed)
-  const paginationType = React.useMemo(() => {
-    const paginationConfig = module.dataTableSchema.pagination;
-    
-    // If schema explicitly defines pagination strategy, use it
-    if (paginationConfig?.isClientSidePaging === true) {
-      console.log("🧠 [ROUTER] Pagination type from schema: CLIENT-SIDE (isClientSidePaging: true)");
-      return 'client-side';
-    }
-    
-    if (paginationConfig?.isClientSidePaging === false) {
-      console.log("🧠 [ROUTER] Pagination type from schema: SERVER-SIDE (isClientSidePaging: false)");
-      return 'server-side';
-    }
-    
-    // Fallback: Use initialData presence as hint
-    if (initialData && initialData.length > 0) {
-      console.log("🧠 [ROUTER] Pagination type from initialData: CLIENT-SIDE (has initial data)");
-      return 'client-side';
-    }
-    
-    // Default to server-side pagination if no explicit configuration
-    console.log("🧠 [ROUTER] Pagination type default: SERVER-SIDE (no schema hint, no initial data)");
-    return 'server-side';
-  }, [module.dataTableSchema.pagination, initialData]);
-
-  // Route to appropriate pagination component
-  if (paginationType === 'server-side') {
-    return (
-      <ServerSidePaginationWrapper
-        module={module}
-        initialData={initialData}
-        userPermissions={userPermissions}
-      />
-    );
-  }
-
-  if (paginationType === 'client-side') {
-    return (
-      <ClientSidePaginationWrapper
-        module={module}
-        initialData={initialData}
-        userPermissions={userPermissions}
-      />
-    );
-  }
-
-  // Fallback (should not reach here)
   return (
-    <div className="flex items-center justify-center p-8">
-      <span className="text-muted-foreground">
-        {currentLanguage === "mm" ? "စနစ်ကို ပြင်ဆင်နေပါသည်..." : "Initializing..."}
-      </span>
-    </div>
+    <ServerSidePaginationWrapper
+      module={module}
+      initialData={initialData}
+      userPermissions={userPermissions}
+    />
   );
 }
