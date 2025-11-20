@@ -78,6 +78,17 @@ import {
   TableRow,
 } from "./table";
 import { Skeleton } from "./skeleton";
+import {
+  loadColumnOrder,
+  saveColumnOrder,
+  moveColumn,
+  moveColumnToFirst,
+  moveColumnToLast,
+  enforceFixedColumnPositions,
+  getDefaultColumnOrder,
+  isFixedColumn,
+  FIXED_COLUMNS,
+} from "@repo/schema-tables";
 import ModuleLoading from "../../../apps/core/src/app/[appId]/[module]/loading";
 
 interface DataTableProps<TData, TValue> {
@@ -222,52 +233,32 @@ export function DataTable<TData, TValue>({
 
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Column Order state - loaded from localStorage
+  // Column Order state - using new columnOrderUtils
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
     if (typeof window === "undefined") return [];
 
-    try {
-      const stored = localStorage.getItem(storageKeys.columnOrder);
-      if (stored) {
-        const order = JSON.parse(stored);
-        // Ensure Sr. column is always first if it exists
-        const srIndex = order.indexOf("sr");
-        if (srIndex > 0) {
-          order.splice(srIndex, 1);
-          order.unshift("sr");
-        }
-        return order;
-      }
-    } catch (error) {
-      console.warn("Failed to load column order from localStorage:", error);
-    }
-
-    // Default column order with Sr. first
+    // Get default column order
     const defaultOrder = columns
       .map((col) => ("id" in col ? col.id : ""))
-      .filter(Boolean);
-    const srIndex = defaultOrder.indexOf("sr");
-    if (srIndex > 0) {
-      defaultOrder.splice(srIndex, 1);
-      defaultOrder.unshift("sr");
+      .filter(Boolean) as string[];
+
+    // Load from localStorage if moduleId is provided
+    if (moduleId) {
+      return loadColumnOrder(moduleId, defaultOrder);
     }
-    return defaultOrder as string[];
+
+    // Fallback to default order with fixed columns enforced
+    return getDefaultColumnOrder(defaultOrder);
   });
 
   // Save column order to localStorage when it changes
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     if (columnOrder.length === 0) return;
+    if (!moduleId) return; // Only save if we have a moduleId
 
-    try {
-      localStorage.setItem(
-        storageKeys.columnOrder,
-        JSON.stringify(columnOrder)
-      );
-    } catch (error) {
-      console.warn("Failed to save column order to localStorage:", error);
-    }
-  }, [columnOrder, storageKeys.columnOrder]);
+    saveColumnOrder(moduleId, columnOrder);
+  }, [columnOrder, moduleId]);
 
   // Column Sizing state - loaded from localStorage with smart defaults
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(
@@ -593,9 +584,21 @@ export function DataTable<TData, TValue>({
     if (!printWindow) return;
 
     // Get visible columns (excluding actions and select columns, but including sr column)
-    const visibleColumns = table
+    const allVisibleColumns = table
       .getVisibleFlatColumns()
       .filter((col) => col.id !== "actions" && col.id !== "select");
+
+    // Sort columns according to user's column order
+    const visibleColumns = allVisibleColumns.sort((a, b) => {
+      const indexA = columnOrder.indexOf(a.id);
+      const indexB = columnOrder.indexOf(b.id);
+
+      // If column not found in columnOrder, put it at the end
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+
+      return indexA - indexB;
+    });
 
     // Generate table HTML
     const tableHtml = `
@@ -729,9 +732,24 @@ export function DataTable<TData, TValue>({
                       } else {
                         // Get the raw data value first
                         const rowData = row.original as any;
-                        const rawValue = column.accessorFn
-                          ? column.accessorFn(rowData, row.index)
-                          : rowData[column.id];
+
+                        // Get column metadata if available
+                        const columnMeta = column.columnDef.meta as any;
+
+                        // For boolean and array columns, always get raw data directly (not through accessorFn)
+                        // because accessorFn might extract nested values like displayName
+                        let rawValue;
+                        if (columnMeta?.columnType === "boolean" ||
+                            columnMeta?.renderAs === "array" ||
+                            columnMeta?.renderAs === "list" ||
+                            columnMeta?.arrayFormat) {
+                          // Get raw data to preserve object structure for proper formatting
+                          rawValue = rowData[column.id];
+                        } else {
+                          rawValue = column.accessorFn
+                            ? column.accessorFn(rowData, row.index)
+                            : rowData[column.id];
+                        }
 
                         // Convert different data types to readable text
                         if (rawValue === null || rawValue === undefined) {
@@ -742,6 +760,47 @@ export function DataTable<TData, TValue>({
                           textValue = rawValue.toLocaleString();
                         } else if (rawValue instanceof Date) {
                           textValue = rawValue.toLocaleDateString();
+                        } else if (columnMeta?.columnType === "boolean" && typeof rawValue === "object") {
+                          // Handle boolean columns that have populated object data (e.g., userId with user details)
+                          // Show Yes/No based on whether the object exists, not the object details
+                          textValue = (rawValue._id || rawValue.id) ? "Yes" : "No";
+                        } else if ((columnMeta?.renderAs === "array" || columnMeta?.renderAs === "list" || columnMeta?.arrayFormat) && Array.isArray(rawValue)) {
+                          // Handle array columns with arrayFormat configuration
+                          if (columnMeta.arrayFormat?.fields) {
+                            const { fields, separator = " | " } = columnMeta.arrayFormat;
+
+                            // Helper to get nested value
+                            const getNestedValue = (obj: any, path: string) => {
+                              if (!path) return obj;
+                              return path.split('.').reduce((current, key) => {
+                                return (current && typeof current === 'object' && key in current) ? current[key] : undefined;
+                              }, obj);
+                            };
+
+                            // Format each array item
+                            textValue = rawValue.map((item: any) => {
+                              return fields.map((field: string) => {
+                                const value = getNestedValue(item, field);
+                                if (value === null || value === undefined) return '-';
+                                if (typeof value === 'boolean') {
+                                  return field === 'isActive' ? (value ? 'Active' : 'Inactive') : (value ? 'Yes' : 'No');
+                                }
+                                return String(value);
+                              }).join(separator);
+                            }).join('\n');
+                          } else {
+                            // Fallback array handling
+                            textValue = rawValue
+                              .map((item: any) => {
+                                if (typeof item === "string") return item;
+                                if (item?.accessionNo) {
+                                  return `${item.accessionNo}${item.status ? ` - ${item.status}` : ""}`;
+                                }
+                                return item?.name || item?.title || item?.displayName || "";
+                              })
+                              .filter(Boolean)
+                              .join(", ");
+                          }
                         } else if (typeof rawValue === "object") {
                           // Handle multilingual objects and complex nested objects
                           if (rawValue.en || rawValue.mm) {
@@ -856,14 +915,26 @@ export function DataTable<TData, TValue>({
         printWindow.close();
       }, 250);
     };
-  }, [table, selectedTitle]);
+  }, [table, selectedTitle, columnOrder]);
 
   // Excel export functionality
   const handleExportToExcel = React.useCallback(() => {
     // Get visible columns (excluding actions and select columns, but including sr column)
-    const visibleColumns = table
+    const allVisibleColumns = table
       .getVisibleFlatColumns()
       .filter((col) => col.id !== "actions" && col.id !== "select");
+
+    // Sort columns according to user's column order
+    const visibleColumns = allVisibleColumns.sort((a, b) => {
+      const indexA = columnOrder.indexOf(a.id);
+      const indexB = columnOrder.indexOf(b.id);
+
+      // If column not found in columnOrder, put it at the end
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+
+      return indexA - indexB;
+    });
 
     // Prepare header row
     const headers = visibleColumns.map((column) => {
@@ -963,7 +1034,7 @@ export function DataTable<TData, TValue>({
 
     // Save file
     XLSX.writeFile(workbook, filename);
-  }, [table, selectedTitle]);
+  }, [table, selectedTitle, columnOrder]);
 
   // Show ModuleLoading component during pagination loading
   if (isPaginationLoading) {
@@ -1524,7 +1595,7 @@ export function DataTable<TData, TValue>({
                           key={header.id}
                           className={cn(
                             "relative group",
-                            isDraggable && "hover:bg-muted/30"
+                            isDraggable && "hover:bg-muted/30 select-none"
                           )}
                           style={{
                             width: header.getSize(),
@@ -1532,33 +1603,53 @@ export function DataTable<TData, TValue>({
                             maxWidth: header.getSize(),
                             position: "relative",
                             cursor: isDraggable ? "grab" : "auto",
+                            userSelect: isDraggable ? "none" : "auto",
                           }}
                           draggable={isDraggable}
+                          onMouseDown={(e) => {
+                            if (!isDraggable) return;
+                            // Prevent text selection when clicking on draggable columns
+                            if (e.detail > 1) {
+                              e.preventDefault();
+                            }
+                          }}
                           onDragStart={(e) => {
                             if (!isDraggable) {
                               e.preventDefault();
                               return;
                             }
+                            // Prevent text selection during drag
                             e.dataTransfer.setData("text/plain", columnId);
                             e.dataTransfer.effectAllowed = "move";
+                            // Clear any existing selection
+                            window.getSelection()?.removeAllRanges();
                             (e.currentTarget as HTMLElement).style.opacity =
                               "0.5";
                             (e.currentTarget as HTMLElement).style.cursor =
                               "grabbing";
+                            // Add dragging class to identify which column is being dragged
+                            (e.currentTarget as HTMLElement).setAttribute('data-dragging', 'true');
                           }}
                           onDragEnd={(e) => {
                             if (!isDraggable) return;
+                            // Clear any text selection that may have occurred
+                            window.getSelection()?.removeAllRanges();
                             (e.currentTarget as HTMLElement).style.opacity =
                               "1";
                             (e.currentTarget as HTMLElement).style.cursor =
                               "grab";
+                            // Remove dragging attribute
+                            (e.currentTarget as HTMLElement).removeAttribute('data-dragging');
                           }}
                           onDragOver={(e) => {
-                            if (!isDraggable) return;
+                            // Allow dragging over any column (both draggable and fixed)
+                            // The drop handler will validate if the drop is allowed
                             e.preventDefault();
                             e.dataTransfer.dropEffect = "move";
-                            (e.currentTarget as HTMLElement).style.borderLeft =
-                              "2px solid #3b82f6";
+                            if (isDraggable) {
+                              (e.currentTarget as HTMLElement).style.borderLeft =
+                                "2px solid #3b82f6";
+                            }
                           }}
                           onDragLeave={(e) => {
                             if (!isDraggable) return;
@@ -1578,73 +1669,26 @@ export function DataTable<TData, TValue>({
                             if (draggedColumnId === targetColumnId) return;
 
                             // Don't allow dropping on or moving fixed columns
-                            if (
-                              targetColumnId === "sr" ||
-                              targetColumnId === "select" ||
-                              targetColumnId === "actions"
-                            )
+                            if (isFixedColumn(targetColumnId) || isFixedColumn(draggedColumnId)) {
                               return;
-                            if (
-                              draggedColumnId === "sr" ||
-                              draggedColumnId === "select" ||
-                              draggedColumnId === "actions"
-                            )
-                              return;
+                            }
 
-                            const newColumnOrder = [...columnOrder];
-                            const draggedIndex =
-                              newColumnOrder.indexOf(draggedColumnId);
-                            const targetIndex =
-                              newColumnOrder.indexOf(targetColumnId);
-
-                            if (draggedIndex !== -1 && targetIndex !== -1) {
-                              newColumnOrder.splice(draggedIndex, 1);
-                              newColumnOrder.splice(
-                                targetIndex,
-                                0,
-                                draggedColumnId
+                            const targetIndex = columnOrder.indexOf(targetColumnId);
+                            if (targetIndex !== -1) {
+                              const newColumnOrder = moveColumn(
+                                columnOrder,
+                                draggedColumnId,
+                                targetIndex
                               );
-
-                              // Ensure Sr. column stays first
-                              const srIndex = newColumnOrder.indexOf("sr");
-                              if (srIndex > 0) {
-                                newColumnOrder.splice(srIndex, 1);
-                                newColumnOrder.unshift("sr");
-                              }
-
                               setColumnOrder(newColumnOrder);
                             }
                           }}
                         >
                           {header.isPlaceholder ? null : (
-                            <div className="relative flex items-center justify-center h-full px-2">
-                              {/* Left move button - move column to first position */}
-                              {isDraggable && (
-                                <button
-                                  className="absolute left-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newColumnOrder = [...columnOrder];
-                                    const currentIndex =
-                                      newColumnOrder.indexOf(columnId);
-                                    if (currentIndex > 1) {
-                                      // Don't move before Sr. column
-                                      newColumnOrder.splice(currentIndex, 1);
-                                      newColumnOrder.splice(1, 0, columnId); // Insert after Sr. column
-                                      setColumnOrder(newColumnOrder);
-                                    }
-                                  }}
-                                  title="Move to first"
-                                >
-                                  <ChevronFirst className="h-3 w-3" />
-                                </button>
-                              )}
-
-                              {/* Center content with title and sort indicator */}
+                            <div className="flex items-center justify-center gap-1 text-center whitespace-nowrap overflow-hidden text-ellipsis min-w-0 h-full px-2">
                               <div
                                 className={cn(
-                                  "flex items-center justify-center gap-1 text-center",
-                                  "whitespace-nowrap overflow-hidden text-ellipsis min-w-0", // Single line with ellipsis for overflow
+                                  "flex items-center justify-center gap-1",
                                   header.column.getCanSort() &&
                                     !isDraggable &&
                                     "cursor-pointer select-none",
@@ -1676,35 +1720,6 @@ export function DataTable<TData, TValue>({
                                   </span>
                                 )}
                               </div>
-
-                              {/* Right move button - move column to last position */}
-                              {isDraggable && (
-                                <button
-                                  className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newColumnOrder = [...columnOrder];
-                                    const currentIndex =
-                                      newColumnOrder.indexOf(columnId);
-                                    const lastMovableIndex =
-                                      newColumnOrder.indexOf("actions") > -1
-                                        ? newColumnOrder.indexOf("actions") - 1
-                                        : newColumnOrder.length - 1;
-                                    if (currentIndex < lastMovableIndex) {
-                                      newColumnOrder.splice(currentIndex, 1);
-                                      newColumnOrder.splice(
-                                        lastMovableIndex,
-                                        0,
-                                        columnId
-                                      );
-                                      setColumnOrder(newColumnOrder);
-                                    }
-                                  }}
-                                  title="Move to last"
-                                >
-                                  <ChevronLast className="h-3 w-3" />
-                                </button>
-                              )}
                             </div>
                           )}
                           {/* Column resize handle */}

@@ -73,7 +73,7 @@ interface BarcodeItem {
 
 export default function BarcodePage({ module, user, tenant, appId }: any) {
   const [paperSize, setPaperSize] = useState<keyof typeof PAPER_SIZES>("A4");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [accessionNo, setAccessionNo] = useState("");
   const [searchResults, setSearchResults] = useState<BibliographySearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -96,17 +96,17 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
     };
   };
 
-  // Search for bibliographies by title or accession number
+  // Search for bibliographies by accession number
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setSearchError("Please enter a search term");
+    if (!accessionNo.trim()) {
+      setSearchError("Please enter an accession number");
       return;
     }
 
     setIsSearching(true);
     setSearchError(null);
     try {
-      const result = await searchBibliographiesAction(searchQuery);
+      const result = await searchBibliographiesAction(accessionNo);
 
       if (result.success && result.data) {
         setSearchResults(result.data);
@@ -208,9 +208,9 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
               {/* Search Input */}
               <div className="flex gap-2 mb-4">
                 <Input
-                  placeholder="Search by book title or accession number..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Enter accession number (e.g., MG0000022401)..."
+                  value={accessionNo}
+                  onChange={(e) => setAccessionNo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
                 <Button onClick={handleSearch} disabled={isSearching}>
@@ -251,7 +251,7 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
                       size="sm"
                       onClick={() => {
                         setSearchError(null);
-                        setSearchQuery("");
+                        setAccessionNo("");
                       }}
                       className="mt-4"
                     >
@@ -264,9 +264,9 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
                       <Search className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <p className="text-muted-foreground text-center">
-                      {searchQuery
-                        ? "No books found matching your search"
-                        : "Enter a book title or accession number to search"}
+                      {accessionNo
+                        ? "No books found with this accession number"
+                        : "Enter an accession number to search"}
                     </p>
                   </div>
                 ) : (

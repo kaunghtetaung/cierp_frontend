@@ -25,32 +25,45 @@ interface SearchResult {
 }
 
 /**
- * Server action to search bibliographies
+ * Server action to search bibliographies by accession number
  * Uses the same authentication pattern as the module list page
  */
 export async function searchBibliographiesAction(
-  searchQuery: string
+  accessionNo: string
 ): Promise<SearchResult> {
   try {
     // Validate input
-    if (!searchQuery || !searchQuery.trim()) {
-      console.warn("[BARCODE_SEARCH] Empty search query provided");
+    if (!accessionNo || !accessionNo.trim()) {
+      console.warn("[BARCODE_SEARCH] Empty accession number provided");
       return {
         success: false,
-        error: "Please enter a search term",
+        error: "Please enter an accession number",
       };
     }
 
-    console.log(`[BARCODE_SEARCH] Searching for: "${searchQuery}"`);
+    console.log(`[BARCODE_SEARCH] Searching for accession number: "${accessionNo}"`);
+
+    // Build query params
+    // Put the accessionNo filter inside the 'filters' object so it gets processed correctly
+    const queryParams = {
+      filters: {
+        "accessionNumbers.accessionNo": accessionNo,
+      },
+      limit: 50,
+    };
+
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔍 [BARCODE_SEARCH] Query Parameters:");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(JSON.stringify(queryParams, null, 2));
+    console.log("Expected API format: bibliographies?accessionNumbers.accessionNo=" + accessionNo);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     // Use getModuleList which handles authentication automatically
-    // It will use the user's session token and tenant context from headers
+    // Search specifically by accessionNumbers.accessionNo
     const result = await getModuleList<BibliographySearchResult>(
       "bibliographies",
-      {
-        search: searchQuery,
-        limit: 50,
-      }
+      queryParams
     );
 
     // Handle both array response and object with data property
@@ -73,7 +86,7 @@ export async function searchBibliographiesAction(
   } catch (error) {
     // Enhanced error logging
     console.error("[BARCODE_SEARCH] Error searching bibliographies:", {
-      query: searchQuery,
+      accessionNo: accessionNo,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

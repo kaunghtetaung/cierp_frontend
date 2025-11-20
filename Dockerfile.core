@@ -15,8 +15,11 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/core/package.json ./apps/core/
 COPY libs ./libs
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies with cache mount for faster rebuilds
+# Using --no-frozen-lockfile due to react-pdf version mismatch
+RUN --mount=type=cache,target=/root/.pnpm-store \
+    pnpm config set store-dir /root/.pnpm-store && \
+    pnpm install --no-frozen-lockfile
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -34,9 +37,10 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the core app
+# Build the core app with cache mount for Next.js
 WORKDIR /app/apps/core
-RUN pnpm build
+RUN --mount=type=cache,target=/app/apps/core/.next/cache \
+    pnpm build
 
 # Stage 3: Production
 FROM node:20-alpine AS runner
@@ -55,9 +59,8 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 COPY --from=builder --chown=nextjs:nodejs /app/apps/core/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/core/.next/static ./apps/core/.next/static
 
-# Create public directory (core app doesn't have static files)
-RUN mkdir -p ./apps/core/public
-RUN chown nextjs:nodejs ./apps/core/public
+# Copy public directory (includes fonts for barcode printing)
+COPY --from=builder --chown=nextjs:nodejs /app/apps/core/public ./apps/core/public
 
 # Set production environment variables
 ENV NODE_ENV=production

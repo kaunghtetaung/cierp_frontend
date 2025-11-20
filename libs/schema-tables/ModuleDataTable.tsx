@@ -21,13 +21,15 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
+import { CheckCircle, XCircle } from "lucide-react";
 import {
   useDeleteModuleItem,
   useHardDeleteModuleItem,
   useBulkModuleOperation,
 } from "@repo/schema-hooks";
 import { Pagination } from "@repo/ui";
-import { ExtraActionModal } from "@repo/schema-forms";
+// Import from apps/core since ExtraActionModal is app-specific (uses ExtraActionFormRouter)
+import { ExtraActionModal } from "../../apps/core/src/components/extraAction";
 import { generateZodSchema } from "@repo/schema-utils";
 import { ConfirmationDialog } from "@repo/ui";
 import { PrefilterSelect } from "./PrefilterSelect";
@@ -411,6 +413,24 @@ export function ModuleDataTable({
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [extraActionConfirmOpen, setExtraActionConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // Debug state
+  const [debugLogs, setDebugLogs] = useState<Array<{
+    timestamp: string;
+    type: 'FETCH' | 'DELETE' | 'BULK_OP' | 'DATA_RECEIVED';
+    url?: string;
+    method?: string;
+    params?: any;
+    response?: any;
+    dataCount?: number;
+  }>>([]);
+  const [showDebug, setShowDebug] = useState(true);
+
+  // Helper to add debug log
+  const addDebugLog = (type: 'FETCH' | 'DELETE' | 'BULK_OP' | 'DATA_RECEIVED', logData: any) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs(prev => [...prev, { timestamp, type, ...logData }]);
+  };
   const [pendingDeleteType, setPendingDeleteType] = useState<"soft" | "hard">(
     "soft"
   );
@@ -570,6 +590,29 @@ export function ModuleDataTable({
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
+  // Debug: Log when data is received
+  useEffect(() => {
+    addDebugLog('DATA_RECEIVED', {
+      dataCount: data?.length || 0,
+      totalItems,
+      totalPages,
+      currentPage: queryParams.page,
+      pageSize: queryParams.limit,
+      params: {
+        page: queryParams.page,
+        limit: queryParams.limit,
+        sortBy: queryParams.sortBy,
+        sortOrder: queryParams.sortOrder,
+        filters: queryParams.filters,
+      },
+      response: {
+        data: data || [],
+        totalItems,
+        totalPages,
+      }
+    });
+  }, [data, totalItems, totalPages, queryParams]);
+
   // Helper function to get nested field values
   const getNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
@@ -723,8 +766,14 @@ export function ModuleDataTable({
     if (!pendingDeleteId) return;
 
     try {
+      addDebugLog('DELETE', {
+        method: 'DELETE',
+        url: `/api/${module.slug}/${pendingDeleteId}`,
+        itemId: pendingDeleteId,
+      });
+
       const result = await deleteItemMutation.mutateAsync(pendingDeleteId);
-      
+
       // Check if the mutation actually succeeded
       if (!result || deleteItemMutation.isError) {
         throw new Error(
@@ -733,6 +782,12 @@ export function ModuleDataTable({
             : "Delete failed - Unable to connect to server"
         );
       }
+
+      addDebugLog('DELETE', {
+        method: 'DELETE',
+        url: `/api/${module.slug}/${pendingDeleteId}`,
+        response: { success: true, result },
+      });
 
       // Only show success toast if operation truly succeeded
       const successMessage =
@@ -747,7 +802,7 @@ export function ModuleDataTable({
             )} deleted successfully!`;
 
       toastSuccess(successMessage);
-      
+
       // React Query mutations already invalidate queries which triggers automatic refetch
       // The onSuccess handler in the mutation hook handles query invalidation
     } catch (error) {
@@ -784,11 +839,18 @@ export function ModuleDataTable({
   const executeBulkDelete = async () => {
     try {
       const ids = selectedItems.map((item) => item._id || item.id);
+
+      addDebugLog('BULK_OP', {
+        method: 'POST',
+        url: `/api/${module.slug}/bulk`,
+        params: { operation: 'delete', ids, count: ids.length },
+      });
+
       const result = await bulkOperationMutation.mutateAsync({
         operation: "delete",
         ids: ids,
       });
-      
+
       // Check if the mutation actually succeeded
       if (!result || bulkOperationMutation.isError) {
         throw new Error(
@@ -797,6 +859,12 @@ export function ModuleDataTable({
             : "Bulk delete failed - Unable to connect to server"
         );
       }
+
+      addDebugLog('BULK_OP', {
+        method: 'POST',
+        url: `/api/${module.slug}/bulk`,
+        response: { success: true, deletedCount: ids.length, result },
+      });
 
       // Only show success if operation truly succeeded
       // Clear selection and show success toast
@@ -810,7 +878,7 @@ export function ModuleDataTable({
             } deleted successfully!`;
 
       toastSuccess(successMessage);
-      
+
       // React Query mutations already invalidate queries which triggers automatic refetch
       // The onSuccess handler in the mutation hook handles query invalidation
     } catch (error) {
@@ -860,6 +928,7 @@ export function ModuleDataTable({
       ),
       enableSorting: false,
       enableHiding: false,
+      enableResizing: false, // Prevent resizing
     });
 
     // Actions column - Always second if present
@@ -869,6 +938,7 @@ export function ModuleDataTable({
         size: 80, // Fixed width for actions column
         minSize: 80,
         maxSize: 80,
+        enableResizing: false, // Prevent resizing
         header: () => (
           <div className="text-center">
             <IconComponent name="Settings" className="h-4 w-4 mx-auto" />
@@ -1009,6 +1079,7 @@ export function ModuleDataTable({
         ),
         enableSorting: false,
         enableHiding: false,
+        enableResizing: false, // Prevent resizing
       });
     }
 
@@ -1058,6 +1129,35 @@ export function ModuleDataTable({
           if (column.type === "date" && fieldValue) {
             return new Date(fieldValue).toLocaleDateString();
           } else if (column.type === "boolean") {
+            // Special handling for userId field (Portal Access)
+            // Check both rawValue (may be populated object) and fieldValue
+            if (column.fieldName === "userId") {
+              // userId might be populated as an object or just an ObjectId
+              const hasAccess = !!(rawValue?._id || rawValue?.id || fieldValue);
+              return (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium print:inline-block print:mr-1 ${
+                    hasAccess
+                      ? "bg-green-100 text-green-800 border border-green-300 print:bg-green-100 print:text-green-800"
+                      : "bg-red-100 text-red-800 border border-red-300 print:bg-red-100 print:text-red-800"
+                  }`}
+                >
+                  {hasAccess ? (
+                    <>
+                      <CheckCircle className="h-3 w-3 print:hidden" />
+                      <span className="print:inline">{currentLanguage === "mm" ? "ရှိ" : "Yes"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-3 w-3 print:hidden" />
+                      <span className="print:inline">{currentLanguage === "mm" ? "မရှိ" : "No"}</span>
+                    </>
+                  )}
+                </span>
+              );
+            }
+
+            // Default boolean rendering
             return (
               <span
                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -1076,15 +1176,17 @@ export function ModuleDataTable({
               </span>
             );
           } else if (column.type === "status") {
+            // Case-insensitive comparison for status values
+            const isActive = typeof fieldValue === 'string' && fieldValue.toLowerCase() === 'active';
             return (
               <span
                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  fieldValue === "Active"
+                  isActive
                     ? "bg-success/20 text-success border border-success/30"
                     : "bg-muted text-muted-foreground border border-border"
                 }`}
               >
-                {fieldValue === "Active"
+                {isActive
                   ? currentLanguage === "mm"
                     ? "အသုံးပြုနေသည်"
                     : "Active"
@@ -1155,13 +1257,13 @@ export function ModuleDataTable({
                 {fieldValue}
               </div>
             );
-          } else if (column.renderAs === "array" || column.isArray) {
+          } else if (column.renderAs === "array" || column.renderAs === "list" || column.isArray) {
             // Handle array rendering - check both rawValue and fieldValue
             const arrayData = Array.isArray(rawValue) ? rawValue : (Array.isArray(fieldValue) ? fieldValue : []);
 
             if (!arrayData || arrayData.length === 0) {
               return (
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-xs print:inline">
                   {currentLanguage === "mm" ? "မရှိပါ" : "-"}
                 </span>
               );
@@ -1205,7 +1307,151 @@ export function ModuleDataTable({
 
             // Handle arrayFormat configuration (legacy format) - could be empty object or have fields
             if (column.arrayFormat && Object.keys(column.arrayFormat).length > 0) {
-              const { fields, separator = " - ", displayFormat = "concatenated" } = column.arrayFormat;
+              const { fields, separator = " - ", displayFormat = "concatenated", fieldStyles = {} } = column.arrayFormat;
+
+              // Special handling for batches column with advanced field styling
+              if (column.fieldName === "batches" && fieldStyles && Object.keys(fieldStyles).length > 0) {
+                // Helper to get color classes for badges
+                const getColorClass = (color: string): { bg: string; text: string } => {
+                  const colorMap: Record<string, { bg: string; text: string }> = {
+                    green: { bg: 'bg-green-100', text: 'text-green-800' },
+                    red: { bg: 'bg-red-100', text: 'text-red-800' },
+                    blue: { bg: 'bg-blue-100', text: 'text-blue-800' },
+                    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+                    gray: { bg: 'bg-gray-100', text: 'text-gray-600' },
+                  };
+                  return colorMap[color] || colorMap.gray;
+                };
+
+                // Helper to render individual field with styling
+                const renderStyledField = (fieldName: string, rawValue: any, formattedValue: string, fieldIndex: number) => {
+                  const style = (fieldStyles as any)[fieldName];
+
+                  if (!style) {
+                    // No styling, render as plain text
+                    return <span key={fieldIndex}>{formattedValue}</span>;
+                  }
+
+                  // Apply field styling based on type
+                  if (style.type === 'badge') {
+                    // Render as badge with color mapping
+                    const color = style.colorMap?.[String(rawValue)] || 'gray';
+                    const colorClass = getColorClass(color);
+
+                    return (
+                      <span
+                        key={fieldIndex}
+                        className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${colorClass.bg} ${colorClass.text} print:inline-block print:mr-1`}
+                      >
+                        {formattedValue}
+                      </span>
+                    );
+                  } else if (style.type === 'highlight') {
+                    // Render as highlighted text
+                    const fontWeightClass = style.fontWeight === 'bold' ? 'font-bold' :
+                                          style.fontWeight === 'semibold' ? 'font-semibold' : '';
+
+                    return (
+                      <span
+                        key={fieldIndex}
+                        className={`${fontWeightClass} ${style.className || ''}`}
+                      >
+                        {formattedValue}
+                      </span>
+                    );
+                  } else {
+                    // Default to plain text with optional className
+                    return (
+                      <span key={fieldIndex} className={style.className || ''}>
+                        {formattedValue}
+                      </span>
+                    );
+                  }
+                };
+
+                // Render batches with field-level styling
+                return (
+                  <div className="flex flex-col gap-1 print:block">
+                    {arrayData.map((batch: any, batchIdx: number) => (
+                      <div key={batchIdx} className="flex items-center gap-2 text-sm flex-wrap print:block print:mb-1">
+                        {fields?.map((field: string, fieldIdx: number) => {
+                          const rawValue = getNestedArrayValue(batch, field);
+
+                          // Format value based on type
+                          let formattedValue = '-';
+                          if (rawValue !== null && rawValue !== undefined) {
+                            if (typeof rawValue === 'boolean') {
+                              formattedValue = field === 'isActive'
+                                ? (rawValue ? 'Active' : 'Inactive')
+                                : (rawValue ? 'Yes' : 'No');
+                            } else {
+                              formattedValue = String(rawValue);
+                            }
+                          }
+
+                          return (
+                            <React.Fragment key={fieldIdx}>
+                              {renderStyledField(field, rawValue, formattedValue, fieldIdx)}
+                              {fieldIdx < (fields?.length || 0) - 1 && (
+                                <span className="text-gray-400 print:inline">{separator}</span>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // Original simple batches rendering (fallback if no fieldStyles)
+              if (column.fieldName === "batches") {
+                // Format each batch according to arrayFormat configuration
+                const formattedBatches = arrayData.map((batch: any, idx: number) => {
+                  const values: string[] = [];
+
+                  // Extract each field value
+                  fields?.forEach((field: string) => {
+                    const value = getNestedArrayValue(batch, field);
+
+                    // Format value based on type
+                    if (value === null || value === undefined) {
+                      values.push('-');
+                    } else if (typeof value === 'boolean') {
+                      // Handle isActive field
+                      if (field === 'isActive') {
+                        values.push(value ? 'Active' : 'Inactive');
+                      } else {
+                        values.push(value ? 'Yes' : 'No');
+                      }
+                    } else {
+                      values.push(String(value));
+                    }
+                  });
+
+                  return {
+                    text: values.join(separator),
+                    isActive: batch.isActive
+                  };
+                });
+
+                return (
+                  <div className="flex flex-col gap-1 print:block">
+                    {formattedBatches.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`text-sm print:block print:mb-1 ${
+                          item.isActive
+                            ? "font-medium text-gray-900"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {item.text}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
 
               const formattedItems = arrayData.map((item: any) => {
                 if (typeof item === 'object' && item !== null) {
@@ -1427,6 +1673,14 @@ export function ModuleDataTable({
         },
         enableSorting: column.sortable,
         enableHiding: true,
+        meta: {
+          // Store column schema information for print/export functionality
+          columnType: column.type,
+          renderAs: (column as any).renderAs,
+          arrayFormat: (column as any).arrayFormat,
+          arrayDisplay: column.arrayDisplay,
+          populate: column.populate,
+        },
       });
     });
 
@@ -2252,6 +2506,7 @@ export function ModuleDataTable({
             <DataTable
               columns={columns}
               data={data}
+              moduleId={module.slug}
               searchKey={
                 module.dataTableSchema.filtering?.searchFields?.[0] ||
                 module.dataTableSchema.columns[0]?.fieldName
@@ -2359,7 +2614,7 @@ export function ModuleDataTable({
           module={module}
           selectedItems={
             rowActionItem
-              ? [rowActionItem._id || rowActionItem.id]
+              ? [rowActionItem]
               : selectedItems
           }
           isOpen={isExtraActionModalOpen}
@@ -2428,6 +2683,148 @@ export function ModuleDataTable({
           icon={pendingExtraAction.icon}
         />
       )}
+
+      {/* Debug Panel */}
+      <div className="mt-6 border rounded-lg overflow-hidden">
+        <div className="bg-muted/50 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <IconComponent name="Bug" className="w-5 h-5 text-muted-foreground" />
+            <h3 className="font-semibold text-sm">Debug Information</h3>
+            <Badge variant="outline" className="text-xs">
+              {debugLogs.length} {currentLanguage === "mm" ? "မှတ်တမ်း" : "logs"}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDebugLogs([])}
+              disabled={debugLogs.length === 0}
+            >
+              <IconComponent name="Trash2" className="w-4 h-4 mr-1" />
+              {currentLanguage === "mm" ? "ရှင်းမည်" : "Clear Logs"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDebug(!showDebug)}
+            >
+              <IconComponent
+                name={showDebug ? "ChevronUp" : "ChevronDown"}
+                className="w-4 h-4"
+              />
+            </Button>
+          </div>
+        </div>
+
+        {showDebug && (
+          <div className="p-4 space-y-4 bg-background max-h-[500px] overflow-y-auto">
+            {/* Table Schema Info */}
+            <div className="border rounded-lg p-3 bg-muted/20">
+              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <IconComponent name="Table" className="w-4 h-4" />
+                Table Layout Schema
+              </h4>
+              <div className="text-xs space-y-1 font-mono">
+                <div><strong>Module:</strong> {module.slug}</div>
+                <div><strong>Layout:</strong> {module.dataTableSchema?.layout || 'default'}</div>
+                <div><strong>Columns:</strong> {module.dataTableSchema?.columns?.length || 0}</div>
+                <div><strong>Pagination:</strong> {module.dataTableSchema?.pagination?.defaultLimit || 10} per page</div>
+                <div><strong>Sorting:</strong> {module.dataTableSchema?.sorting?.defaultSort?.field || 'none'} ({module.dataTableSchema?.sorting?.defaultSort?.direction || 'asc'})</div>
+                <div><strong>Has Prefilters:</strong> {(module.dataTableSchema as any)?.prefilters?.fields?.length > 0 ? 'Yes' : 'No'}</div>
+                {(module.dataTableSchema as any)?.prefilters?.fields?.length > 0 && (
+                  <div className="mt-2">
+                    <strong>Prefilter Fields:</strong>
+                    <ul className="ml-4 mt-1">
+                      {(module.dataTableSchema as any).prefilters.fields.map((field: any) => (
+                        <li key={field.fieldName}>
+                          {field.fieldName} ({field.type})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Debug Logs */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <IconComponent name="Activity" className="w-4 h-4" />
+                Activity Logs
+              </h4>
+              {debugLogs.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  {currentLanguage === "mm" ? "မှတ်တမ်းမရှိသေးပါ" : "No logs yet"}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {debugLogs.slice().reverse().map((log, idx) => (
+                    <div
+                      key={debugLogs.length - idx}
+                      className={`border rounded p-2 text-xs font-mono ${
+                        log.type === 'DELETE' ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' :
+                        log.type === 'BULK_OP' ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800' :
+                        log.type === 'DATA_RECEIVED' ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800' :
+                        'bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge
+                          variant={
+                            log.type === 'DELETE' ? 'destructive' :
+                            log.type === 'BULK_OP' ? 'default' :
+                            log.type === 'DATA_RECEIVED' ? 'secondary' :
+                            'outline'
+                          }
+                          className="text-xs"
+                        >
+                          {log.type}
+                        </Badge>
+                        <span className="text-muted-foreground">{log.timestamp}</span>
+                      </div>
+
+                      {log.url && (
+                        <div className="mt-1">
+                          <strong className="text-blue-600 dark:text-blue-400">{log.method}:</strong> {log.url}
+                        </div>
+                      )}
+
+                      {log.dataCount !== undefined && (
+                        <div className="mt-1">
+                          <strong>Data Received:</strong> {log.dataCount} items (Total: {log.response?.totalItems || totalItems})
+                        </div>
+                      )}
+
+                      {log.params && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                            Parameters
+                          </summary>
+                          <pre className="mt-1 p-2 bg-background rounded text-xs overflow-x-auto">
+                            {JSON.stringify(log.params, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+
+                      {log.response && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                            Response
+                          </summary>
+                          <pre className="mt-1 p-2 bg-background rounded text-xs overflow-x-auto">
+                            {JSON.stringify(log.response, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

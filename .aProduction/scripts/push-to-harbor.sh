@@ -7,9 +7,9 @@ set -e  # Exit on error
 
 # Configuration
 HARBOR_REGISTRY="192.168.200.41"
-HARBOR_PROJECT="ciapp-frontend"
+HARBOR_PROJECT="ciappfrontend"
 HARBOR_USER="${HARBOR_USER:-admin}"
-HARBOR_PASS="${HARBOR_PASS:-Harbor12345}"
+HARBOR_PASS="${HARBOR_PASS:-Cryst@l123!}"
 
 # Load version
 export BASE_VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")

@@ -1,0 +1,69 @@
+# Dependencies
+node_modules
+*/node_modules
+**/.pnpm-store
+.pnpm-store
+
+# Build outputs - exclude cache but keep standalone
+.next/cache
+**/.next/cache
+apps/*/. next/cache
+dist
+build
+*.tsbuildinfo
+
+# Development
+.git
+.github
+.vscode
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+**/__tests__
+**/__mocks__
+
+# Environment files (will be provided by K8s)
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!README.md
+
+# Build scripts (not needed in container)
+*.sh
+!scripts/*.sh
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*
+
+# CI/CD
+.aProduction
+k8s
+
+# Development databases
+*.db
+*.sqlite
+*.sqlite3

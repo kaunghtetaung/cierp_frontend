@@ -10,12 +10,33 @@ interface ExtraActionResult {
   success: boolean;
   message: string;
   data?: any;
+  debugInfo?: {
+    url?: string;
+    method?: string;
+    requestBody?: any;
+    response?: any;
+    error?: string;
+    timestamp?: string;
+  };
+}
+
+// Helper to infer appName from module slug
+function inferAppNameFromModule(moduleSlug: string): string {
+  // Library-related modules
+  const libraryModules = ['borrowers', 'bibliographies', 'accession-groups', 'catalog-types', 'authors', 'publishers', 'subjects', 'degrees', 'languages'];
+
+  if (libraryModules.includes(moduleSlug)) {
+    return 'library';
+  }
+
+  // Default to 'core' for other modules (users, roles, departments, etc.)
+  return 'core';
 }
 
 // Helper to create a ModuleService instance for custom endpoints
-async function createModuleService() {
+async function createModuleService(appName?: string) {
   const apiUrl = await getApiDomain();
-  
+
   let tenantId: string | undefined;
   let userSessionId: string | undefined;
   let userId: string | undefined;
@@ -24,7 +45,7 @@ async function createModuleService() {
     // Get session and user details
     const session = await getCurrentSession();
     const user = await getCurrentUser();
-    
+
     tenantId = session?.tenantId;
     userSessionId = session?.id;
     userId = user?.id;
@@ -36,7 +57,7 @@ async function createModuleService() {
     tenantId,
     userSessionId,
     userId,
-    appName: 'core' // Default app name
+    appName: appName || 'core' // Use provided appName or default to 'core'
   });
 }
 
@@ -47,18 +68,20 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
     for (const [key, value] of formData.entries()) {
       console.log(`  ${key}: ${value}`);
     }
-    
+
     // Support both actionKey and actionId for backwards compatibility
     const actionKey = (formData.get("actionKey") || formData.get("actionId")) as string;
     const moduleSlug = formData.get("moduleSlug") as string;
     const id = formData.get("id") as string;
     const selectedIds = formData.getAll("selectedIds") as string[];
+    const appName = (formData.get("appName") as string) || undefined; // Get appName from formData if provided
 
     console.log("📋 executeExtraAction: Parsed values:", {
       actionKey,
       moduleSlug,
       id,
-      selectedIds
+      selectedIds,
+      appName
     });
 
     if (!actionKey) {
@@ -81,14 +104,15 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
 
     // Prepare action data from form fields
     const actionData: Record<string, any> = {};
-    
+
     // Copy all form fields except metadata
     for (const [key, value] of formData.entries()) {
-      if (!["actionKey", "moduleSlug", "id", "selectedIds"].includes(key)) {
+      // Exclude all metadata fields and internal form fields
+      if (!["actionKey", "actionId", "moduleSlug", "id", "selectedIds", "action", "appName"].includes(key)) {
         actionData[key] = value;
       }
     }
-    
+
     // Add selected IDs for bulk operations
     if (selectedIds.length > 0) {
       actionData.selectedIds = selectedIds;
@@ -187,11 +211,72 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
 
       result = response.data;
     } else {
-      // Use standard PATCH method for other extra actions
-      result = await updateModuleItem(moduleSlug, targetId, actionData);
+      // Use ModuleService executeExtraAction (POST method) for extra actions
+      // Determine appName: if not provided, infer from module slug
+      const inferredAppName = appName || inferAppNameFromModule(moduleSlug);
+      const moduleService = await createModuleService(inferredAppName);
+      const apiUrl = await getApiDomain();
+      const endpoint = `/${inferredAppName}/${moduleSlug}/${targetId}/${actionKey}`;
+      const fullUrl = `${apiUrl}${endpoint}`;
+
+      console.log('================================');
+      console.log('📡 [extra-actions] HTTP REQUEST DETAILS');
+      console.log('================================');
+      console.log('🌐 Full URL:', fullUrl);
+      console.log('📍 Endpoint:', endpoint);
+      console.log('🔧 Method:', 'POST');
+      console.log('🏢 Tenant ID:', moduleService['tenantId']);
+      console.log('👤 User Session ID:', moduleService['userSessionId']);
+      console.log('🆔 User ID:', moduleService['userId']);
+      console.log('📦 Request Body:', JSON.stringify(actionData, null, 2));
+      console.log('================================');
+
+      const response = await moduleService['httpClient'].request(
+        endpoint,
+        {
+          method: "POST",
+          body: actionData,
+          tenantId: moduleService['tenantId'],
+          userSessionId: moduleService['userSessionId'],
+          userId: moduleService['userId'],
+          withAuth: true,
+        }
+      );
+
+      console.log('================================');
+      console.log('📥 [extra-actions] HTTP RESPONSE DETAILS');
+      console.log('================================');
+      console.log('✅ Success:', response.success);
+      console.log('📊 Status:', response.status);
+      console.log('📦 Response Data:', JSON.stringify(response.data, null, 2));
+      console.log('❌ Error:', response.error || 'None');
+      console.log('================================');
+
+      if (!response.success) {
+        throw new Error(response.error || `Failed to execute ${actionKey}`);
+      }
+
+      result = response.data;
+
+      // Revalidate the affected pages
+      revalidatePath(`/${moduleSlug}`);
+      revalidatePath(`/${moduleSlug}/[id]`, 'page');
+
+      return {
+        success: true,
+        message: result.message || "Action completed successfully",
+        data: result,
+        debugInfo: {
+          url: fullUrl,
+          method: 'POST',
+          requestBody: actionData,
+          response: response.data,
+          timestamp: new Date().toISOString(),
+        }
+      };
     }
 
-    // Revalidate the affected pages
+    // Revalidate the affected pages (for special actions)
     revalidatePath(`/${moduleSlug}`);
     revalidatePath(`/${moduleSlug}/[id]`, 'page');
 
@@ -203,11 +288,33 @@ export async function executeExtraAction(formData: FormData): Promise<ExtraActio
 
   } catch (error) {
     const actionKey = formData.get("actionKey") as string;
+    const moduleSlug = formData.get("moduleSlug") as string;
+    const id = formData.get("id") as string;
+    const formAppName = (formData.get("appName") as string) || undefined;
     console.error(`Failed to execute action "${actionKey}":`, error);
+
+    const actionData: Record<string, any> = {};
+    for (const [key, value] of formData.entries()) {
+      if (!["actionKey", "actionId", "moduleSlug", "id", "selectedIds", "action", "appName"].includes(key)) {
+        actionData[key] = value;
+      }
+    }
+
+    const apiUrl = await getApiDomain();
+    const inferredAppName = formAppName || inferAppNameFromModule(moduleSlug);
+    const endpoint = `/${inferredAppName}/${moduleSlug}/${id}/${actionKey}`;
+    const fullUrl = `${apiUrl}${endpoint}`;
 
     return {
       success: false,
       message: error instanceof Error ? error.message : "An unexpected error occurred",
+      debugInfo: {
+        url: fullUrl,
+        method: 'POST',
+        requestBody: actionData,
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      }
     };
   }
 }

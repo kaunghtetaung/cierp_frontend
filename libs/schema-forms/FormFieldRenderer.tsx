@@ -229,8 +229,8 @@ export function FormFieldRenderer({
     ? "flex items-start gap-2 sm:gap-4"
     : "space-y-2";
 
-  // Check if this field should take full width (specific field names)
-  const isFullWidthField = ['gender', 'dateOfBirth', 'race', 'religion', 'nrcField', 'nrcNumber'].includes(field.fieldName);
+  // Check if this field should take full width (specific field names or field types)
+  const isFullWidthField = ['gender', 'dateOfBirth', 'race', 'religion', 'nrcField', 'nrcNumber'].includes(field.fieldName) || field.fieldType === 'textArea';
 
   // Handle arrayField separately - it manages its own labeling
   if (field.fieldType === 'arrayField') {
@@ -453,7 +453,7 @@ function FormFieldInput({
           placeholder={field.placeHolder}
           readOnly={isReadonly}
           rows={field.rows || 3}
-          className={`${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+          className={`w-full ${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
           onChange={(e) => {
             formField.onChange(e);
             onValueChange?.(e.target.value);

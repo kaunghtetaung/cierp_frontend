@@ -15,8 +15,11 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/publicWeb/package.json ./apps/publicWeb/
 COPY libs ./libs
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies with cache mount for faster rebuilds
+# Using --no-frozen-lockfile due to react-pdf version mismatch
+RUN --mount=type=cache,target=/root/.pnpm-store \
+    pnpm config set store-dir /root/.pnpm-store && \
+    pnpm install --no-frozen-lockfile
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -34,9 +37,10 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the publicWeb app
+# Build the publicWeb app with cache mount for Next.js
 WORKDIR /app/apps/publicWeb
-RUN pnpm build
+RUN --mount=type=cache,target=/app/apps/publicWeb/.next/cache \
+    pnpm build
 
 # Stage 3: Production
 FROM node:20-alpine AS runner

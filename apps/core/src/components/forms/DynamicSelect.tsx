@@ -17,6 +17,7 @@ import { cn } from "@repo/ui";
 import { getModuleReferenceAction } from "@repo/app-modules/server-actions";
 import type { FormField } from "@repo/types";
 import type { MultilingualText } from "@repo/types";
+import { TypeaheadDynamicSelect } from "@repo/schema-forms";
 
 interface DynamicSelectProps {
   field: FormField;
@@ -79,7 +80,6 @@ export function DynamicSelect({
 
   // SOLID Principle: Open/Closed - Extend behavior through composition
   if (isTypeaheadField) {
-    const TypeaheadDynamicSelect = require('./TypeaheadDynamicSelect').TypeaheadDynamicSelect;
     return (
       <TypeaheadDynamicSelect
         field={field}

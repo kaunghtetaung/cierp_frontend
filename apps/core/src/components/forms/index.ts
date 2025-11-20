@@ -7,8 +7,11 @@ export { FormWithLanguage } from "./FormWithLanguage";
 export { DynamicSelect } from "./DynamicSelect";
 export { MultiLanguageInput } from "./MultiLanguageInput";
 
-// Extra Action Form System
-export { DynamicExtraActionForm } from "./DynamicExtraActionForm";
-// Re-export from schema-forms for consistency - single source of truth
-export { ExtraActionFormRouter, type PreBuiltFormProps } from "@repo/schema-forms";
-export { ExtraActionModal } from "@repo/schema-forms";
+// Extra Action Form System - moved to components/extraAction
+export {
+  ExtraActionModal,
+  ExtraActionFormRouter,
+  DynamicExtraActionForm,
+  DynamicExtraActionFormWithSections,
+  type PreBuiltFormProps
+} from "../extraAction";

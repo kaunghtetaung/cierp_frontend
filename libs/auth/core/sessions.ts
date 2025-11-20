@@ -241,11 +241,24 @@ export async function renewSession(
 
   // Update in cache with new TTL using proper cache key
   const cache = getCacheInstance();
-  await cache.set(
-    CacheKeys.userSession(session.tenantId, sessionId),
-    renewedSession,
-    fullConfig.maxAge
-  );
+
+  // CRITICAL: Update BOTH the session data AND the session lookup key with new TTL
+  // If we only update the session data, the lookup key will expire first and session becomes unreachable
+  await Promise.all([
+    cache.set(
+      CacheKeys.userSession(session.tenantId, sessionId),
+      renewedSession,
+      fullConfig.maxAge
+    ),
+    // Also renew the session lookup key with same TTL
+    cache.set(
+      CacheKeys.sessionLookup(sessionId),
+      session.tenantId,
+      fullConfig.maxAge
+    )
+  ]);
+
+  console.log(`✅ [renewSession] Session renewed for ${sessionId.substring(0, 16)}... - New expiry: ${newExpiresAt.toISOString()}, TTL: ${fullConfig.maxAge}s`);
 
   return renewedSession;
 }
@@ -265,14 +278,23 @@ export async function extendSessionOnly(
 ): Promise<SessionData | null> {
   console.log(`🔄 [extendSessionOnly] Starting session extension for ${sessionId.substring(0, 16)}...`);
 
-  const renewedSession = await renewSession(sessionId, config);
-
-  if (!renewedSession) {
-    console.error(`❌ [extendSessionOnly] Failed to renew session ${sessionId}`);
+  // First check if session exists
+  const existingSession = await getSession(sessionId);
+  if (!existingSession) {
+    console.error(`❌ [extendSessionOnly] Session ${sessionId.substring(0, 16)}... not found before renewal`);
     return null;
   }
 
-  console.log(`✅ [extendSessionOnly] Session renewed, new expiry: ${renewedSession.expiresAt}`);
+  console.log(`✅ [extendSessionOnly] Found existing session - Current expiry: ${existingSession.expiresAt}`);
+
+  const renewedSession = await renewSession(sessionId, config);
+
+  if (!renewedSession) {
+    console.error(`❌ [extendSessionOnly] renewSession returned null for ${sessionId.substring(0, 16)}...`);
+    return null;
+  }
+
+  console.log(`✅ [extendSessionOnly] Session renewed successfully - New expiry: ${renewedSession.expiresAt}`);
 
   return renewedSession;
 }

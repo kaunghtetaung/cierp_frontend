@@ -1,251 +1,333 @@
-# Frontend Production Deployment Guide
+# Production Deployment Guide
 
-## Overview
-
-This guide documents the production deployment process for the frontend applications (Core and PublicWeb) to Kubernetes using Harbor registry.
-
-## Architecture
-
-- **Harbor Registry**: `192.168.200.41/ciapp-frontend`
-- **Kubernetes Namespace**: `ciapp-frontend`
-- **Applications**:
-  - **Core**: Main ERP application
-  - **PublicWeb**: Public multi-tenant website
-
-## Key Features
-
-### 1. NPM Cache Optimization
-The Docker builds use BuildKit cache mounts to preserve npm/pnpm cache between builds:
-```dockerfile
-RUN --mount=type=cache,target=/root/.npm \
-    --mount=type=cache,target=/root/.pnpm-store \
-    npm ci || pnpm install
-```
-This significantly speeds up rebuilds by caching downloaded packages.
-
-### 2. Multi-Stage Builds
-- **deps**: Install dependencies with cache
-- **builder**: Build Next.js applications
-- **runner**: Minimal production image
-
-### 3. Standalone Next.js Builds
-Uses Next.js standalone output for smaller Docker images (~200-300MB vs 1.5GB).
-
-## Prerequisites
-
-1. **Docker with BuildKit**:
-   ```bash
-   export DOCKER_BUILDKIT=1
-   # Or install buildx for better performance
-   ```
-
-2. **Harbor Access**:
-   - Registry: `192.168.200.41`
-   - Project: `ciapp-frontend`
-   - Credentials set as environment variables
-
-3. **Kubernetes Access**:
-   - SSH key: `~/.ssh/ciservers`
-   - K8s master: `192.168.200.11`
-
-## Directory Structure
+## 📁 Directory Structure
 
 ```
 .aProduction/
 ├── Docker/
-│   ├── Dockerfile.core        # Core app Dockerfile
-│   └── Dockerfile.publicWeb   # PublicWeb Dockerfile
-├── k8s/
-│   ├── namespace.yaml         # Namespace definition
-│   ├── core/
-│   │   └── deployment.yaml    # Core deployment & service
-│   └── publicWeb/
-│       └── deployment.yaml    # PublicWeb deployment & service
-└── scripts/
-    ├── build-frontend-services.sh  # Build all services
-    ├── build-single-frontend.sh    # Build single service
-    ├── push-to-harbor.sh           # Push to Harbor
-    └── deploy-to-kubernetes.sh     # Deploy to K8s
+│   ├── Dockerfile.core          # Optimized Core app Dockerfile
+│   ├── Dockerfile.publicWeb     # Optimized PublicWeb app Dockerfile
+│   └── .dockerignore            # Build context exclusions
+├── scripts/
+│   ├── build-core.sh            # Build Core app only (3-4 min)
+│   ├── build-publicweb.sh       # Build PublicWeb app only (3-4 min)
+│   ├── build-all.sh             # Build both apps in parallel (3-4 min)
+│   ├── build-with-proxy.sh      # Interactive build with proxy support
+│   ├── push-to-harbor.sh        # Push images to Harbor registry
+│   └── deploy-to-kubernetes.sh  # Deploy to K8s cluster
+└── k8s/
+    └── [Kubernetes manifests]
 ```
 
-## Deployment Process
+---
 
-### Step 1: Build Docker Images
+## 🚀 Quick Start
 
-Build all frontend services:
+### 1. Build Docker Images
+
+**Build Core app:**
 ```bash
-./.aProduction/scripts/build-frontend-services.sh
+cd /home/ciadmin/ciapp_frontend
+./.aProduction/scripts/build-core.sh
 ```
 
-Or build a single service:
+**Build PublicWeb app:**
 ```bash
-./.aProduction/scripts/build-single-frontend.sh core
-./.aProduction/scripts/build-single-frontend.sh publicWeb
+./.aProduction/scripts/build-publicweb.sh
 ```
 
-**Features**:
-- Uses npm cache mounts for faster rebuilds
-- Multi-stage builds for optimized images
-- Thailand Alpine mirror for network reliability
-- Automatic cleanup of dangling images
-
-### Step 2: Push to Harbor
-
-Push built images to Harbor registry:
+**Build both apps in parallel (recommended for production):**
 ```bash
-# Set credentials (or export as env vars)
-export HARBOR_USER=admin
-export HARBOR_PASS=your-password
+./.aProduction/scripts/build-all.sh
+```
 
-# Push images
+**Build with proxy support:**
+```bash
+./.aProduction/scripts/build-with-proxy.sh
+```
+
+### 2. Push to Harbor Registry
+
+```bash
 ./.aProduction/scripts/push-to-harbor.sh
 ```
 
-### Step 3: Deploy to Kubernetes
+### 3. Deploy to Kubernetes
 
-Deploy services to Kubernetes cluster:
 ```bash
 ./.aProduction/scripts/deploy-to-kubernetes.sh
 ```
 
-**What it does**:
-- Creates namespace if needed
-- Deploys both applications
-- Shows deployment status
-- Configures 2 replicas per service
+---
 
-## Configuration
+## 🔧 Docker Configuration
 
-### Environment Variables
+### Dockerfiles
 
-Key environment variables configured in K8s deployments:
+Both `Dockerfile.core` and `Dockerfile.publicWeb` use:
+- **Single-stage build** - Preserves pnpm workspace symlinks
+- **BuildKit cache mounts** - Faster rebuilds
+- **Proxy support** - Reliable builds through corporate proxies
+- **Thailand mirror** - For Alpine packages (Myanmar ISP compatibility)
+- **Non-root user** - Security best practice
 
-```yaml
-- NODE_ENV: production
-- NEXT_PUBLIC_API_URL: https://api.mmhub.info
-- REDIS_HOST: 192.168.200.32
-- MINIO_ENDPOINT: 192.168.200.33
+### .dockerignore
+
+Excludes unnecessary files to reduce build context:
+- `node_modules/` - Installed fresh in Docker
+- `.next/` - Built fresh in Docker
+- `.git/` - Not needed in container
+- Build artifacts and documentation
+
+---
+
+## 📊 Build Performance
+
+| Metric | Time |
+|--------|------|
+| Build Context Transfer | ~1.4s |
+| pnpm install | ~12s |
+| Next.js build | ~120s |
+| **Total Build Time** | **~3.5 min** |
+
+### Image Sizes
+- Core: ~4.2 GB
+- PublicWeb: ~4.2 GB
+
+---
+
+## 🛠️ Build Scripts
+
+### build-core.sh
+Builds Core app Docker image
+- **Input:** `/home/ciadmin/ciapp_frontend`
+- **Output:** `192.168.200.41/ciapp-frontend/core:latest`
+- **Time:** ~3-4 minutes
+
+### build-publicweb.sh
+Builds PublicWeb app Docker image
+- **Input:** `/home/ciadmin/ciapp_frontend`
+- **Output:** `192.168.200.41/ciapp-frontend/publicweb:latest`
+- **Time:** ~3-4 minutes
+
+### build-all.sh
+Builds both apps in parallel
+- **Output:** Both Core and PublicWeb images
+- **Time:** ~3-4 minutes (parallel execution)
+
+### build-with-proxy.sh
+Interactive build with proxy support
+- Auto-detects system proxy settings
+- Lets you choose which app(s) to build
+- Passes proxy configuration to Docker
+
+### push-to-harbor.sh
+Pushes images to Harbor registry
+- Registry: `192.168.200.41`
+- Project: `ciapp-frontend`
+
+### deploy-to-kubernetes.sh
+Deploys images to Kubernetes cluster
+- Namespace: `ciapp-frontend`
+- Updates deployments with latest images
+
+---
+
+## 🔍 Dockerfile Details
+
+### Key Features
+
+#### 1. Workspace Symlink Preservation
+```dockerfile
+# Copy everything first
+COPY . .
+
+# Install IN PLACE (preserves symlinks)
+RUN pnpm install --no-frozen-lockfile
+
+# Build IN PLACE (workspace packages work)
+WORKDIR /app/apps/core
+RUN pnpm build
 ```
 
-### Resource Limits
+#### 2. BuildKit Cache Mounts
+```dockerfile
+# pnpm store cache
+RUN --mount=type=cache,target=/root/.pnpm-store \
+    pnpm install --no-frozen-lockfile
 
-Each pod is configured with:
-- **Requests**: 512Mi RAM, 250m CPU
-- **Limits**: 1Gi RAM, 500m CPU
-
-### Health Checks
-
-- **Liveness Probe**: `/api/health` every 10s
-- **Readiness Probe**: `/api/health` every 5s
-
-## Monitoring
-
-### Check Deployment Status
-```bash
-kubectl get deployments -n ciapp-frontend
-kubectl get pods -n ciapp-frontend -o wide
+# Next.js build cache
+RUN --mount=type=cache,target=/app/apps/core/.next/cache \
+    pnpm build
 ```
 
-### View Logs
-```bash
-kubectl logs -n ciapp-frontend deployment/core
-kubectl logs -n ciapp-frontend deployment/publicweb
+#### 3. Proxy Support
+```dockerfile
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY}
 ```
 
-### Port Forward for Testing
-```bash
-# Core application
-kubectl port-forward -n ciapp-frontend svc/core 3000:3000
-
-# PublicWeb
-kubectl port-forward -n ciapp-frontend svc/publicweb 3001:3000
+#### 4. Optimized pnpm Configuration
+```dockerfile
+RUN pnpm config set store-dir /root/.pnpm-store && \
+    pnpm config set network-timeout 300000 && \
+    pnpm config set fetch-retries 5
 ```
 
-## CI/CD Integration
+---
 
-The scripts support GitLab CI variables:
-- `CI_PIPELINE_ID`: Build number
-- `CI_COMMIT_REF_NAME`: Branch name
-- `CI_COMMIT_SHORT_SHA`: Git commit hash
+## 📝 Usage Examples
 
-Version tagging format: `v{VERSION}-{BRANCH}.{PIPELINE_ID}`
-
-## Troubleshooting
-
-### Build Issues
-
-1. **NPM Cache Not Working**:
-   ```bash
-   export DOCKER_BUILDKIT=1
-   ```
-
-2. **Network Issues**:
-   - Uses Thailand mirrors for Alpine and npm
-   - Check network connectivity to mirrors
-
-3. **Out of Memory**:
-   - Next.js builds require significant RAM
-   - Increase Docker memory limits
-
-### Deployment Issues
-
-1. **Pods Not Starting**:
-   ```bash
-   kubectl describe pod -n ciapp-frontend <pod-name>
-   ```
-
-2. **Image Pull Errors**:
-   - Verify Harbor credentials
-   - Check image exists in Harbor
-
-3. **Health Check Failures**:
-   - Ensure `/api/health` endpoint exists
-   - Check application logs
-
-## Best Practices
-
-1. **Version Management**:
-   - Update VERSION file before builds
-   - Use semantic versioning
-
-2. **Security**:
-   - Never commit secrets to repository
-   - Use K8s secrets for sensitive data
-   - Run containers as non-root user
-
-3. **Performance**:
-   - Enable BuildKit for cache mounts
-   - Use standalone Next.js builds
-   - Configure appropriate resource limits
-
-4. **Monitoring**:
-   - Implement comprehensive health checks
-   - Set up logging aggregation
-   - Monitor resource usage
-
-## Quick Commands
+### Development Workflow
 
 ```bash
-# Full deployment pipeline
-./.aProduction/scripts/build-frontend-services.sh && \
-./.aProduction/scripts/push-to-harbor.sh && \
+# 1. Make code changes
+vim apps/core/src/...
+
+# 2. Build Core image
+./.aProduction/scripts/build-core.sh
+
+# 3. Push to Harbor
+./.aProduction/scripts/push-to-harbor.sh
+
+# 4. Deploy to K8s
 ./.aProduction/scripts/deploy-to-kubernetes.sh
-
-# Check everything
-kubectl get all -n ciapp-frontend
-
-# Restart deployment
-kubectl rollout restart deployment/core -n ciapp-frontend
-kubectl rollout restart deployment/publicweb -n ciapp-frontend
-
-# Scale deployment
-kubectl scale deployment/core --replicas=3 -n ciapp-frontend
 ```
 
-## Support
+### Production Release
 
-For issues or questions:
-- Check application logs first
-- Review Harbor registry for image status
-- Verify K8s cluster health
-- Check network connectivity between services
+```bash
+# 1. Build both apps in parallel
+./.aProduction/scripts/build-all.sh
+
+# 2. Push all images
+./.aProduction/scripts/push-to-harbor.sh
+
+# 3. Deploy to production
+./.aProduction/scripts/deploy-to-kubernetes.sh
+```
+
+### Build with Proxy
+
+```bash
+# Set proxy environment variables
+export HTTP_PROXY="http://proxy:8080"
+export HTTPS_PROXY="http://proxy:8080"
+
+# Build with proxy support
+./.aProduction/scripts/build-with-proxy.sh
+# Select option: 1 (Core), 2 (PublicWeb), or 3 (Both)
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Build Fails with Module Not Found
+
+**Problem:**
+```
+Module not found: Can't resolve '@repo/schema-utils'
+```
+
+**Solution:**
+This should be fixed with the single-stage Dockerfile. Ensure you're using the latest Dockerfiles from `.aProduction/Docker/`.
+
+### Slow pnpm install
+
+**Solution:**
+1. Ensure BuildKit is enabled: `export DOCKER_BUILDKIT=1`
+2. Check Docker version: `docker version` (should be 19.03+)
+3. Cache should speed up subsequent builds
+
+### Proxy Timeout
+
+**Solution:**
+Use the proxy build script:
+```bash
+./.aProduction/scripts/build-with-proxy.sh
+```
+
+### Out of Disk Space
+
+**Solution:**
+```bash
+# Check disk usage
+docker system df
+
+# Clean old images
+docker image prune -a
+
+# Clean old build cache
+docker builder prune --filter "until=168h"
+```
+
+---
+
+## 🔐 Harbor Registry
+
+- **URL:** `192.168.200.41`
+- **Project:** `ciapp-frontend`
+- **Images:**
+  - `ciapp-frontend/core:latest`
+  - `ciapp-frontend/core:v1.0.0-<timestamp>`
+  - `ciapp-frontend/publicweb:latest`
+  - `ciapp-frontend/publicweb:v1.0.0-<timestamp>`
+
+---
+
+## ☸️ Kubernetes Deployment
+
+- **Namespace:** `ciapp-frontend`
+- **Deployments:**
+  - `core` - Core application (port 3001)
+  - `publicweb` - PublicWeb application (port 3002)
+
+---
+
+## 📂 File Reference
+
+### Dockerfiles
+- `Docker/Dockerfile.core` - Core app Dockerfile
+- `Docker/Dockerfile.publicWeb` - PublicWeb app Dockerfile
+- `Docker/.dockerignore` - Build context exclusions
+
+### Build Scripts
+- `scripts/build-core.sh` - Build Core app
+- `scripts/build-publicweb.sh` - Build PublicWeb app
+- `scripts/build-all.sh` - Build both apps in parallel
+- `scripts/build-with-proxy.sh` - Build with proxy support
+
+### Deployment Scripts
+- `scripts/push-to-harbor.sh` - Push to Harbor registry
+- `scripts/deploy-to-kubernetes.sh` - Deploy to Kubernetes
+
+---
+
+## 🎯 Best Practices
+
+### Daily Development
+1. Build only the app you're working on (`build-core.sh` or `build-publicweb.sh`)
+2. Push to Harbor for testing
+3. Deploy to dev/staging environment first
+
+### Production Releases
+1. Build both apps in parallel (`build-all.sh`)
+2. Tag with version number
+3. Push to Harbor
+4. Deploy to production with specific version tags
+5. Verify deployment health
+
+### Cache Management
+- BuildKit cache persists automatically
+- Weekly: Test builds to keep cache warm
+- Monthly: Clean old cache with `docker builder prune`
+
+---
+
+**Last Updated:** November 16, 2025
+**Build System:** Docker BuildKit
+**Build Time:** ~3.5 minutes per app
+**Status:** ✅ Production Ready

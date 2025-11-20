@@ -9,7 +9,7 @@ metadata:
     tier: frontend
     priority: high
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -26,23 +26,35 @@ spec:
         tier: frontend
         priority: high
     spec:
-      # Deploy only on worker nodes
+      # Deploy only on worker-2 (worker-1 has proxy issues)
       nodeSelector:
-        node-role.kubernetes.io/worker: "true"
+        kubernetes.io/hostname: k8s-worker-2
+
+      # Override DNS for API domains to use internal reverse proxy
+      # This avoids NAT firewall issues with external DNS
+      hostAliases:
+      - ip: "192.168.200.3"
+        hostnames:
+        - "api.crystal-image.net"
+        - "api.um1ygn.edu.mm"
+        - "api.udmlibrary.edu.mm"
+        - "auth.crystal-image.net"
+        - "auth.um1ygn.edu.mm"
+        - "auth.udmlibrary.edu.mm"
 
       containers:
       - name: core
-        image: 192.168.200.41/ciapp-frontend/core:latest
+        image: 192.168.200.41/ciappfrontend/core:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 3000
+        - containerPort: 3001
           name: http
           protocol: TCP
         env:
         - name: NODE_ENV
           value: "production"
         - name: PORT
-          value: "3000"
+          value: "3001"
         # Config Service
         - name: ENABLE_CONFIG_HOT_RELOAD
           value: "true"
@@ -144,17 +156,15 @@ spec:
             memory: "1Gi"
             cpu: "500m"
         livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
+          tcpSocket:
+            port: 3001
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
+          tcpSocket:
+            port: 3001
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
@@ -174,6 +184,6 @@ spec:
     app: core
   ports:
   - port: 3000
-    targetPort: 3000
+    targetPort: 3001
     protocol: TCP
     name: http

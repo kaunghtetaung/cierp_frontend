@@ -527,14 +527,28 @@ export async function handleRefreshSession(
     }
 
     // Step 1: Extend session
+    console.log(`🔄 [REFRESH_SESSION] Calling extendSessionOnly for session: ${sessionId.substring(0, 16)}...`);
+
     const { extendSessionOnly } = await import('../core/sessions');
     const renewedSession = await extendSessionOnly(sessionId);
 
     if (!renewedSession) {
+      console.error(`❌ [REFRESH_SESSION] extendSessionOnly returned null - session not found or renewal failed`);
       return NextResponse.json(
         { error: "Failed to extend session" },
         { status: 500 }
       );
+    }
+
+    console.log(`✅ [REFRESH_SESSION] Session extended successfully - New expiry: ${renewedSession.expiresAt}`);
+
+    // Verify the session was actually stored in Redis
+    const { getSession } = await import('../core/sessions');
+    const verifySession = await getSession(sessionId);
+    if (!verifySession) {
+      console.error(`❌ [REFRESH_SESSION] CRITICAL: Session extension succeeded but verification failed - session not found in Redis!`);
+    } else {
+      console.log(`✅ [REFRESH_SESSION] Verification passed - Session found in Redis with expiry: ${verifySession.expiresAt}`);
     }
 
     // Step 2: Refresh user access token (FORCE refresh, don't just get cached token)
