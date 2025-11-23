@@ -59,6 +59,7 @@ const getSecondaryNavItems = (
 ];
 
 // Function to convert clean client modules to navigation items with language support
+// Supports hierarchical navigation with parent modules
 function modulesToNavItems(
   modules: ClientModule[],
   language: string,
@@ -99,27 +100,109 @@ function modulesToNavItems(
 
   const appPrefix = getAppPrefix();
 
-  return modules.map((module) => {
-    // Use static routes from server-provided module data
+  // Step 1: Identify actual parent modules and child modules
+  const parentModulesMap = new Map<string, ClientModule>(); // Actual parent modules (keyed by slug)
+  const childModulesMap = new Map<string, ClientModule[]>(); // Children grouped by parent slug
+  const standaloneModules: ClientModule[] = [];
+
+  // First pass: Find all modules that are referenced as parents (by slug)
+  const parentSlugs = new Set<string>();
+  modules.forEach((module) => {
+    if (module.parentModule) {
+      // Handle both string slug and object formats
+      const parentSlug = typeof module.parentModule === 'string'
+        ? module.parentModule
+        : module.parentModule.slug;
+      if (parentSlug) {
+        parentSlugs.add(parentSlug);
+      }
+    }
+  });
+
+  // Second pass: Categorize modules
+  modules.forEach((module) => {
+    if (module.parentModule) {
+      // This module has a parent - it's a child
+      const parentSlug = typeof module.parentModule === 'string'
+        ? module.parentModule
+        : module.parentModule.slug;
+
+      if (parentSlug) {
+        if (!childModulesMap.has(parentSlug)) {
+          childModulesMap.set(parentSlug, []);
+        }
+        childModulesMap.get(parentSlug)!.push(module);
+      }
+    } else if (parentSlugs.has(module.slug)) {
+      // This module is referenced as a parent by others
+      parentModulesMap.set(module.slug, module);
+    } else {
+      // Standalone module (no parent, not a parent)
+      standaloneModules.push(module);
+    }
+  });
+
+  const navItems: any[] = [];
+
+  // Process parent modules with their children
+  parentModulesMap.forEach((parentModule, parentSlug) => {
+    const children = childModulesMap.get(parentSlug) || [];
+
+    // Build child items
+    const childItems = children.map((childModule) => {
+      const staticRoutes = childModule.staticRoutes || [];
+      const hasStaticRoutes = staticRoutes.length > 0;
+
+      return {
+        title: getLocalizedText(childModule.name, language) || childModule.slug,
+        url: `${appPrefix}/${childModule.slug}`,
+        icon: ({ className, ...props }: any) => (
+          <IconComponent
+            name={childModule.iconName || "Circle"}
+            fallback="Circle"
+            className={className}
+            {...props}
+          />
+        ),
+        items: hasStaticRoutes
+          ? [
+              {
+                title: getLocalizedText({ en: "List", mm: "စာရင်း" }, language),
+                url: `${appPrefix}/${childModule.slug}`,
+              },
+              ...staticRoutes.map(route => ({
+                title: route.title,
+                url: `${appPrefix}/${childModule.slug}/${route.path}`,
+              }))
+            ]
+          : [],
+        isActive: hasStaticRoutes,
+      };
+    });
+
+    // Add parent nav item with children
+    navItems.push({
+      title: getLocalizedText(parentModule.name, language) || parentModule.slug,
+      url: '#', // Parent items are collapsible groups, no direct URL
+      icon: ({ className, ...props }: any) => (
+        <IconComponent
+          name={parentModule.iconName || "Folder"}
+          fallback="Folder"
+          className={className}
+          {...props}
+        />
+      ),
+      items: childItems,
+      isActive: true, // Always collapsible
+    });
+  });
+
+  // Process standalone modules
+  standaloneModules.forEach((module) => {
     const staticRoutes = module.staticRoutes || [];
+    const hasStaticRoutes = staticRoutes.length > 0;
 
-    // Build sub-items array
-    const subItems = staticRoutes.length > 0
-      ? [
-          // Add main list view as first item
-          {
-            title: getLocalizedText({ en: "List", mm: "စာရင်း" }, language),
-            url: `${appPrefix}/${module.slug}`,
-          },
-          // Add custom static routes
-          ...staticRoutes.map(route => ({
-            title: route.title,
-            url: `${appPrefix}/${module.slug}/${route.path}`,
-          }))
-        ]
-      : []; // No sub-items if no static routes
-
-    return {
+    navItems.push({
       title: getLocalizedText(module.name, language) || module.slug,
       url: `${appPrefix}/${module.slug}`,
       icon: ({ className, ...props }: any) => (
@@ -130,10 +213,23 @@ function modulesToNavItems(
           {...props}
         />
       ),
-      items: subItems,
-      isActive: staticRoutes.length > 0, // Make collapsible if has sub-items
-    };
+      items: hasStaticRoutes
+        ? [
+            {
+              title: getLocalizedText({ en: "List", mm: "စာရین်း" }, language),
+              url: `${appPrefix}/${module.slug}`,
+            },
+            ...staticRoutes.map(route => ({
+              title: route.title,
+              url: `${appPrefix}/${module.slug}/${route.path}`,
+            }))
+          ]
+        : [],
+      isActive: hasStaticRoutes,
+    });
   });
+
+  return navItems;
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {

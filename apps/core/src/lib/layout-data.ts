@@ -165,6 +165,9 @@ function createClientModule(module: any, appId: string): ClientModule {
     description: module.description,
     iconName: module.iconName,
 
+    // Include parent module for hierarchical navigation
+    parentModule: module.parentModule,
+
     // Include necessary schema properties for page functionality (non-sensitive)
     formLayout: module.formLayout,
     formFields: module.formFields,

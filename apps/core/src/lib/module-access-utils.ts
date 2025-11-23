@@ -35,9 +35,40 @@ function getUserPrimaryRole(user: User | null): string {
 }
 
 /**
+ * Check if a module is a parent container (referenced by other modules as their parent)
+ */
+function isParentContainer(module: ModuleSchema, allModules: ModuleSchema[]): boolean {
+  // Check if any other module references this module as their parent
+  // Backend can send parentModule as either a string slug or an object with id
+  return allModules.some(m => {
+    const parentRef = (m as any).parentModule;
+    if (!parentRef) return false;
+
+    // Handle string-based parent reference (e.g., "setup")
+    if (typeof parentRef === 'string') {
+      return parentRef === module.slug;
+    }
+
+    // Handle object-based parent reference (e.g., { id: 299, slug: "setup" })
+    if (typeof parentRef === 'object') {
+      return parentRef.id === module.id || parentRef.slug === module.slug;
+    }
+
+    return false;
+  });
+}
+
+/**
  * Check if a user has read access to a module based on role-based access control
  */
-function hasModuleReadAccess(module: ModuleSchema, user: User | null): boolean {
+function hasModuleReadAccess(module: ModuleSchema, user: User | null, allModules: ModuleSchema[] = []): boolean {
+  // Parent container modules (that are referenced by children) always have access
+  // Their visibility is controlled by their children's access permissions
+  if (isParentContainer(module, allModules)) {
+    console.log(`[MODULE_ACCESS] Parent container module ${module.slug}, allowing access (has children)`)
+    return true
+  }
+
   // If no access policy defined, default to public access
   if (!module.moduleAccessPolicy?.accessPolicy) {
     console.log(`[MODULE_ACCESS] No access policy for module ${module.slug}, allowing access`)
@@ -86,6 +117,7 @@ function hasModuleReadAccess(module: ModuleSchema, user: User | null): boolean {
 /**
  * Filter modules array based on user's role permissions
  * Only returns modules where user has read access
+ * Parent containers are always included if they have children
  */
 export function filterModulesByUserAccess(
   modules: ModuleSchema[],
@@ -98,7 +130,7 @@ export function filterModulesByUserAccess(
   console.log(`[MODULE_FILTER] Filtering ${modules.length} modules for user:`, user?.email || 'anonymous')
 
   const filteredModules = modules.filter(module => {
-    const hasAccess = hasModuleReadAccess(module, user)
+    const hasAccess = hasModuleReadAccess(module, user, modules)
 
     if (hasAccess) {
       console.log(`[MODULE_FILTER] ✅ User has access to module: ${module.slug}`)

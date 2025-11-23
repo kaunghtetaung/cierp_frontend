@@ -37,6 +37,15 @@ export interface ClientModule {
   description: any // MultilingualText
   iconName: string
 
+  // Parent module for hierarchical navigation
+  // Can be either a string slug or a full parent object
+  parentModule?: string | {
+    id: number
+    name: any // MultilingualText
+    slug: string
+    iconName: string
+  } | null
+
   // Include necessary schema properties for page functionality (non-sensitive)
   formLayout?: string
   formFields?: any[]

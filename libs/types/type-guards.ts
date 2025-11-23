@@ -35,14 +35,20 @@ export const isFormField = (obj: any): obj is FormField => {
 
 // Type guard for DataTableSchema
 export const isDataTableSchema = (obj: any): obj is DataTableSchema => {
-  return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.layout === 'string' &&
-    Array.isArray(obj.columns) &&
-    obj.actions &&
-    typeof obj.actions === 'object'
-  );
+  // Allow parent container modules with minimal dataTableSchema (no layout, no actions)
+  if (obj && typeof obj === 'object' && Array.isArray(obj.columns)) {
+    // If columns is empty, this is likely a parent container - allow it
+    if (obj.columns.length === 0) {
+      return true;
+    }
+    // If columns exist, require full schema
+    return (
+      typeof obj.layout === 'string' &&
+      obj.actions &&
+      typeof obj.actions === 'object'
+    );
+  }
+  return false;
 };
 
 // Type guard for ModuleSchema
