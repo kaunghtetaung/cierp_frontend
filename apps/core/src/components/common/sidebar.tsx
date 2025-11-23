@@ -99,6 +99,10 @@ function modulesToNavItems(
   };
 
   const appPrefix = getAppPrefix();
+  const appId = currentAppId || appPrefix.replace('/', '');
+
+  // Import hasRootPage function for checking if module root has page.tsx
+  const { hasRootPage } = require('@/lib/static-module-utils');
 
   // Step 1: Identify actual parent modules and child modules
   const parentModulesMap = new Map<string, ClientModule>(); // Actual parent modules (keyed by slug)
@@ -152,6 +156,7 @@ function modulesToNavItems(
     const childItems = children.map((childModule) => {
       const staticRoutes = childModule.staticRoutes || [];
       const hasStaticRoutes = staticRoutes.length > 0;
+      const moduleHasRootPage = hasRootPage(appId, childModule.slug);
 
       return {
         title: getLocalizedText(childModule.name, language) || childModule.slug,
@@ -166,10 +171,11 @@ function modulesToNavItems(
         ),
         items: hasStaticRoutes
           ? [
-              {
+              // Only include "List" menu if module root has page.tsx
+              ...(moduleHasRootPage ? [{
                 title: getLocalizedText({ en: "List", mm: "စာရင်း" }, language),
                 url: `${appPrefix}/${childModule.slug}`,
-              },
+              }] : []),
               ...staticRoutes.map(route => ({
                 title: route.title,
                 url: `${appPrefix}/${childModule.slug}/${route.path}`,
@@ -201,6 +207,7 @@ function modulesToNavItems(
   standaloneModules.forEach((module) => {
     const staticRoutes = module.staticRoutes || [];
     const hasStaticRoutes = staticRoutes.length > 0;
+    const moduleHasRootPage = hasRootPage(appId, module.slug);
 
     navItems.push({
       title: getLocalizedText(module.name, language) || module.slug,
@@ -215,10 +222,11 @@ function modulesToNavItems(
       ),
       items: hasStaticRoutes
         ? [
-            {
-              title: getLocalizedText({ en: "List", mm: "စာရین်း" }, language),
+            // Only include "List" menu if module root has page.tsx
+            ...(moduleHasRootPage ? [{
+              title: getLocalizedText({ en: "List", mm: "စာရင်း" }, language),
               url: `${appPrefix}/${module.slug}`,
-            },
+            }] : []),
             ...staticRoutes.map(route => ({
               title: route.title,
               url: `${appPrefix}/${module.slug}/${route.path}`,

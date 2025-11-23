@@ -80,6 +80,30 @@ export function getStaticModuleRoutes(appId: string, moduleSlug: string): Static
 }
 
 /**
+ * Check if a static module has a root page.tsx file
+ * This determines whether the "List" menu should be shown
+ *
+ * @param appId - Application ID (e.g., "library", "cpms")
+ * @param moduleSlug - Module slug (e.g., "bibliographies", "students")
+ * @returns true if page.tsx exists in module root, false otherwise
+ */
+export function hasRootPage(appId: string, moduleSlug: string): boolean {
+  try {
+    const rootPagePath = path.join(
+      process.cwd(),
+      'src',
+      'staticModules',
+      appId,
+      moduleSlug,
+      'page.tsx'
+    )
+    return existsSync(rootPagePath)
+  } catch (error) {
+    return false
+  }
+}
+
+/**
  * Check if a static module has any custom routes
  */
 export function hasStaticModuleRoutes(appId: string, moduleSlug: string): boolean {

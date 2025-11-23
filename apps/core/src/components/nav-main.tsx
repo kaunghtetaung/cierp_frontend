@@ -141,12 +141,21 @@ export function NavMain({
           return (
             <Collapsible key={item.title} asChild defaultOpen={isActive}>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={item.title} isActive={isParentHighlighted}>
-                  <Link href={item.url}>
+                {item.items?.length ? (
+                  // If item has subitems, make it non-clickable (just for expand/collapse)
+                  <SidebarMenuButton tooltip={item.title} isActive={isParentHighlighted}>
                     <item.icon />
                     <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
+                  </SidebarMenuButton>
+                ) : (
+                  // If no subitems, make it a clickable link
+                  <SidebarMenuButton asChild tooltip={item.title} isActive={isParentHighlighted}>
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                )}
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
