@@ -17,6 +17,7 @@ import { MultiLanguageInput } from './MultiLanguageInput'
 import { PhoneInput } from './PhoneInput'
 import { NrcField } from './NrcField'
 import { IconComponent, IconSelector } from '@repo/ui'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@repo/ui'
 import { DatePicker } from './components/DatePicker'
 import { MediaBrowserField } from './fields/MediaBrowserField'
 import type { FormField as SchemaFormField } from '@repo/types'
@@ -142,6 +143,15 @@ export function FormFieldRenderer({
     if (typeof field.label === 'string') return field.label
     return field.label[currentLanguage as keyof typeof field.label] || field.label.en
   }
+
+  // Get help text for the field
+  const getHelpText = (field: SchemaFormField) => {
+    // Support both 'helpText' (from backend) and 'helperText' (from type definition)
+    const helpTextValue = (field as any).helpText || field.helperText;
+    if (!helpTextValue) return undefined;
+    if (typeof helpTextValue === 'string') return helpTextValue;
+    return helpTextValue[currentLanguage as keyof typeof helpTextValue] || helpTextValue.en;
+  }
   
   // Get validation error message
   const getErrorMessage = (field: SchemaFormField) => {
@@ -172,18 +182,54 @@ export function FormFieldRenderer({
         {isVerticalLayout ? (
           <div className={labelContainerClasses}>
             <label className="block text-xs sm:text-sm font-medium">
-              {getFieldLabel(field)}{" "}
-              {field.validationRule?.required && (
-                <span className="text-red-500">*</span>
-              )}
+              <span className="inline-flex items-center gap-1">
+                {getFieldLabel(field)}{" "}
+                {field.validationRule?.required && (
+                  <span className="text-red-500">*</span>
+                )}
+                {getHelpText(field) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Help"
+                      >
+                        <IconComponent name="HelpCircle" className="w-3 h-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      {getHelpText(field)}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
             </label>
           </div>
         ) : (
           <label className="block text-sm font-medium">
-            {getFieldLabel(field)}{" "}
-            {field.validationRule?.required && (
-              <span className="text-red-500">*</span>
-            )}
+            <span className="inline-flex items-center gap-1">
+              {getFieldLabel(field)}{" "}
+              {field.validationRule?.required && (
+                <span className="text-red-500">*</span>
+              )}
+              {getHelpText(field) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Help"
+                    >
+                      <IconComponent name="HelpCircle" className="w-3 h-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs">
+                    {getHelpText(field)}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </span>
           </label>
         )}
         <div className={inputContainerClasses}>
@@ -257,7 +303,25 @@ export function FormFieldRenderer({
             <FormLabel className={`${isRequired ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''} ${
               isVerticalLayout ? "text-xs sm:text-sm" : "text-sm"
             }`}>
-              {label}
+              <span className="inline-flex items-center gap-1">
+                {label}
+                {getHelpText(field) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Help"
+                      >
+                        <IconComponent name="HelpCircle" className="w-3 h-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      {getHelpText(field)}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
             </FormLabel>
             <FormControl>
               <FormFieldInput
@@ -665,7 +729,28 @@ function FormFieldInput({
           )}
         />
       )
-    
+
+    case 'time':
+      return (
+        <Controller
+          control={control}
+          name={field.fieldName}
+          render={({ field: { onChange, value } }) => (
+            <Input
+              type="time"
+              value={value || ''}
+              onChange={(e) => {
+                onChange(e.target.value);
+                onValueChange?.(e.target.value);
+              }}
+              placeholder={field.placeHolder || "HH:mm"}
+              disabled={isReadonly}
+              className={`w-full ${isReadonly ? 'bg-muted' : ''} ${errors[field.fieldName] ? 'border-destructive focus:ring-destructive bg-destructive/5' : ''}`}
+            />
+          )}
+        />
+      )
+
     case 'file':
       return (
         <Input

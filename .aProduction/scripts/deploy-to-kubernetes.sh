@@ -61,9 +61,17 @@ ssh -i ${SSH_KEY} -p ${SSH_PORT} ${SSH_HOST} "kubectl apply -f /dev/stdin" < .aP
 echo "✅ PublicWeb application deployed"
 echo ""
 
-# Wait for deployments to start
-echo "Step 4: Waiting for deployments to start..."
-sleep 10
+# Force rollout restart to ensure pods pick up configuration changes
+echo "Step 4: Forcing rollout restart to apply changes..."
+ssh -i ${SSH_KEY} -p ${SSH_PORT} ${SSH_HOST} "kubectl rollout restart deployment/core -n ${K8S_NAMESPACE}"
+ssh -i ${SSH_KEY} -p ${SSH_PORT} ${SSH_HOST} "kubectl rollout restart deployment/publicweb -n ${K8S_NAMESPACE}"
+echo "✅ Rollout restart triggered"
+echo ""
+
+# Wait for rollouts to complete
+echo "Step 5: Waiting for rollouts to complete..."
+ssh -i ${SSH_KEY} -p ${SSH_PORT} ${SSH_HOST} "kubectl rollout status deployment/publicweb -n ${K8S_NAMESPACE} --timeout=300s" || echo "⚠️  PublicWeb rollout taking longer than expected"
+sleep 5
 
 # Show deployment status
 echo ""

@@ -55,6 +55,7 @@ export class StandardHeaderBuilder implements HeaderBuilder {
     const {
       tenantId,
       userSessionId,
+      userId,
       withAuth = this.config.enableAuth
     } = config;
 
@@ -62,6 +63,16 @@ export class StandardHeaderBuilder implements HeaderBuilder {
       Accept: "application/json",
       ...customHeaders,
     };
+
+    // Add user ID header if provided
+    if (userId) {
+      headers['x-user-id'] = userId;
+    }
+
+    // Add access context (user session ID) if provided
+    if (userSessionId) {
+      headers['x-access-context'] = userSessionId;
+    }
 
     // CRITICAL: Always resolve and add tenant ID header for API gateway
     const resolvedTenantId = await getValidTenantId(tenantId);
@@ -94,7 +105,7 @@ export class StandardHeaderBuilder implements HeaderBuilder {
     if (withAuth) {
       const tokenStrategy = config.tokenStrategy || 'auto';
       // Use resolvedTenantId (not tenantId) to ensure token lookup works even when tenantId is not explicitly passed
-      const token = await this.getAuthToken(resolvedTenantId, config.userId, tokenStrategy);
+      const token = await this.getAuthToken(resolvedTenantId || undefined, config.userId, tokenStrategy);
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }

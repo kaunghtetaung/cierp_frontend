@@ -20,6 +20,7 @@ export type FieldType =
   | 'checkbox'
   | 'boolean'
   | 'date'
+  | 'time'
   | 'radio'
   | 'file'
   | 'mediaBrowser'      // Single file selection with media browser dialog
@@ -287,6 +288,7 @@ export interface FormField {
   className?: string; // Custom CSS classes
   style?: Record<string, unknown>; // Inline styles
   helperText?: MultilingualText; // Helper text to display below field
+  helpText?: MultilingualText; // Alternative property name for helper text (backend compatibility)
   
   // Field ordering and grouping
   order?: number; // Field display order

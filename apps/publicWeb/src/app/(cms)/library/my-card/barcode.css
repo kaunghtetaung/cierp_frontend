@@ -1,0 +1,50 @@
+@font-face {
+  font-family: 'IDAutomationC39S';
+  src: local('IDAutomationC39S'),
+    url('/fonts/IDAutomationC39S.woff') format('woff'),
+    url('/fonts/IDAutomationC39S.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.barcode-font {
+  font-family: 'IDAutomationC39S', monospace !important;
+  font-size: 24px !important;
+  letter-spacing: 0 !important;
+  color: black !important;
+  line-height: 1 !important;
+}
+
+/* Print-specific styles */
+@media print {
+  @page {
+    size: 85.6mm 54mm;
+    margin: 0;
+  }
+
+  @font-face {
+    font-family: 'IDAutomationC39S';
+    src: local('IDAutomationC39S'),
+      url('/fonts/IDAutomationC39S.woff') format('woff'),
+      url('/fonts/IDAutomationC39S.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+  }
+
+  .barcode-font {
+    font-family: 'IDAutomationC39S', monospace !important;
+    font-size: 12px !important;
+    letter-spacing: 0 !important;
+    color: black !important;
+    line-height: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure only desktop version renders in print */
+  .md\:hidden {
+    display: none !important;
+  }
+}

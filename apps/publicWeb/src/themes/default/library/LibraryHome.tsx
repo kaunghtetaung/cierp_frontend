@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
 import { SearchHero } from './SearchHero';
 import { NewArrivals } from './NewArrivals';
+import { MyCardButton } from '@/components/library/MyCardButton';
 import type { Bibliography } from '@/actions/library/books.actions';
 
 interface PaginationInfo {
@@ -92,6 +93,9 @@ export function LibraryHome({
             )}
         </div>
       </div>
+
+      {/* Floating My Card Button - Only shows when user is authenticated */}
+      <MyCardButton />
     </div>
   );
 }

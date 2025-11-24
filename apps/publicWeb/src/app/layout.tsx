@@ -20,6 +20,17 @@ export async function generateMetadata(): Promise<Metadata> {
       return {
         title: tenantName,
         description: getLocalizedText(tenant.localizedDescription) || `${tenantName} - Student Portal`,
+        manifest: '/manifest.webmanifest',
+        appleWebApp: {
+          capable: true,
+          statusBarStyle: 'default',
+          title: 'Library Card',
+        },
+        viewport: {
+          width: 'device-width',
+          initialScale: 1,
+          maximumScale: 1,
+        },
       };
     }
   } catch (error) {
@@ -30,6 +41,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "University Portal",
     description: "Student Management System",
+    manifest: '/manifest.webmanifest',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: 'University Portal',
+    },
+    viewport: {
+      width: 'device-width',
+      initialScale: 1,
+      maximumScale: 1,
+    },
   };
 }
 
