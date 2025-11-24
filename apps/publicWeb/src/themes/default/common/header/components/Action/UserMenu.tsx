@@ -331,7 +331,7 @@ export const UserMenu: React.FC<{
             className="w-48 bg-background border border-border rounded-lg shadow-lg"
           >
             <DropdownMenuItem>
-              <LoginButton className="w-full justify-start py-0.5 border-0 bg-transparent hover:bg-transparent text-foreground">
+              <LoginButton className="flex items-center w-full justify-start py-0.5 border-0 bg-transparent hover:bg-transparent text-foreground">
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign In
               </LoginButton>
