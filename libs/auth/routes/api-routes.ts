@@ -166,6 +166,8 @@ export async function handleLoginRequest(
     authUrl.searchParams.set("code_challenge_method", "S256");
     authUrl.searchParams.set("tenant_id", tenantId);
 
+    // Return JSON with authorization URL for client-side redirect
+    // This allows better error handling and debugging
     return NextResponse.json({
       authorizationUrl: authUrl.toString(),
       state,

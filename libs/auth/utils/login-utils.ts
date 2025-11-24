@@ -11,14 +11,15 @@ export async function initiateLogin(returnUrl?: string): Promise<void> {
       params.append('returnUrl', returnUrl);
     }
 
+    // Fetch authorization URL from server
     const response = await fetch(`/api/auth/login?${params.toString()}`);
-    
+
     if (!response.ok) {
       throw new Error('Failed to initiate login');
     }
 
     const data = await response.json();
-    
+
     if (data.authorizationUrl) {
       // Redirect to OIDC authorization server
       window.location.href = data.authorizationUrl;

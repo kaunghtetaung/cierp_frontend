@@ -27,6 +27,7 @@ import {
   getBatchSubjects,
   approveStudent,
 } from "./student-actions";
+import { isDebugEnabled } from "@/lib/env";
 
 // Validation schema
 const batchEnrollmentSchema = z.object({
@@ -781,8 +782,8 @@ export function ApproveStudentForm({
               </Alert>
             )}
 
-            {/* Debug Information Section */}
-            {debugInfo && (
+            {/* Debug Information Section - Only show in development */}
+            {isDebugEnabled() && debugInfo && (
               <div className="border-2 rounded-lg p-4 bg-blue-50 border-blue-200 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-base flex items-center gap-2 text-blue-900">

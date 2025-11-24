@@ -1,24 +1,35 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@repo/ui';
-import { Input, Label, Textarea, Badge } from '@repo/ui';
-import { IconComponent } from '@repo/ui';
-import { toast } from 'sonner';
-import { bulkCheckoutBooks } from '../actions/circulation.actions';
-import { BarcodeScanner } from '../components/BarcodeScanner';
-import type { BulkCheckoutResponse } from '../types/circulation.types';
+import { useState } from "react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui";
+import { Input, Label, Textarea, Badge } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
+import { toast } from "sonner";
+import { bulkCheckoutBooks } from "../actions/circulation.actions";
+import { BarcodeScanner } from "../components/BarcodeScanner";
+import type { BulkCheckoutResponse } from "../types/circulation.types";
 
 interface BulkCheckoutFormProps {
   onSuccess?: (result: BulkCheckoutResponse) => void;
   onCancel?: () => void;
 }
 
-export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps) {
-  const [borrowerId, setBorrowerId] = useState('');
+export function BulkCheckoutForm({
+  onSuccess,
+  onCancel,
+}: BulkCheckoutFormProps) {
+  const [libraryCardNumber, setLibraryCardNumber] = useState("");
   const [accessionNos, setAccessionNos] = useState<string[]>([]);
-  const [currentInput, setCurrentInput] = useState('');
-  const [notes, setNotes] = useState('');
+  const [currentInput, setCurrentInput] = useState("");
+  const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
@@ -26,27 +37,27 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
     const trimmed = currentInput.trim();
 
     if (!trimmed) {
-      toast.error('Please enter an accession number');
+      toast.error("Please enter an accession number");
       return;
     }
 
     if (accessionNos.includes(trimmed)) {
-      toast.error('This book is already in the list');
+      toast.error("This book is already in the list");
       return;
     }
 
     setAccessionNos([...accessionNos, trimmed]);
-    setCurrentInput('');
-    toast.success('Book added to checkout list');
+    setCurrentInput("");
+    toast.success("Book added to checkout list");
   };
 
   const handleRemoveBook = (accessionNo: string) => {
     setAccessionNos(accessionNos.filter((no) => no !== accessionNo));
-    toast.info('Book removed from list');
+    toast.info("Book removed from list");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddBook();
     }
@@ -55,13 +66,13 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!borrowerId) {
-      toast.error('Please enter borrower ID');
+    if (!libraryCardNumber) {
+      toast.error("Please enter library card number");
       return;
     }
 
     if (accessionNos.length === 0) {
-      toast.error('Please add at least one book');
+      toast.error("Please add at least one book");
       return;
     }
 
@@ -69,7 +80,7 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
 
     try {
       const response = await bulkCheckoutBooks({
-        borrowerId,
+        libraryCardNumber,
         accessionNos,
         notes: notes || undefined,
       });
@@ -77,35 +88,39 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
       if (response.success && response.data) {
         const { successCount, failureCount, status } = response.data;
 
-        if (status === 'all_success') {
+        if (status === "all_success") {
           toast.success(`All ${successCount} books checked out successfully!`);
-        } else if (status === 'partial_success') {
-          toast.warning(`Partial success: ${successCount} succeeded, ${failureCount} failed`, {
-            description: 'Check the results for details',
-          });
+        } else if (status === "partial_success") {
+          toast.warning(
+            `Partial success: ${successCount} succeeded, ${failureCount} failed`,
+            {
+              description: "Check the results for details",
+            }
+          );
         } else {
           toast.error(`All ${failureCount} checkouts failed`);
         }
 
         // Reset form
-        setBorrowerId('');
+        setLibraryCardNumber("");
         setAccessionNos([]);
-        setCurrentInput('');
-        setNotes('');
+        setCurrentInput("");
+        setNotes("");
 
         // Call success callback
         if (onSuccess) {
           onSuccess(response.data);
         }
       } else {
-        toast.error('Bulk checkout failed', {
-          description: response.error || 'An error occurred during bulk checkout',
+        toast.error("Bulk checkout failed", {
+          description:
+            response.error || "An error occurred during bulk checkout",
         });
       }
     } catch (error) {
-      console.error('Bulk checkout error:', error);
-      toast.error('Bulk checkout failed', {
-        description: 'An unexpected error occurred',
+      console.error("Bulk checkout error:", error);
+      toast.error("Bulk checkout failed", {
+        description: "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -113,10 +128,10 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
   };
 
   const handleReset = () => {
-    setBorrowerId('');
+    setLibraryCardNumber("");
     setAccessionNos([]);
-    setCurrentInput('');
-    setNotes('');
+    setCurrentInput("");
+    setNotes("");
     if (onCancel) {
       onCancel();
     }
@@ -126,13 +141,13 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
     const trimmed = barcode.trim();
 
     if (accessionNos.includes(trimmed)) {
-      toast.error('This book is already in the list');
+      toast.error("This book is already in the list");
       return;
     }
 
     setAccessionNos([...accessionNos, trimmed]);
     setIsScannerOpen(false);
-    toast.success('Book scanned and added', {
+    toast.success("Book scanned and added", {
       description: barcode,
     });
   };
@@ -151,17 +166,17 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
-          {/* Borrower ID */}
+          {/* Library Card Number */}
           <div className="space-y-2">
-            <Label htmlFor="bulk-borrowerId">
-              Borrower ID <span className="text-destructive">*</span>
+            <Label htmlFor="bulk-libraryCardNumber">
+              Library Card Number <span className="text-destructive">*</span>
             </Label>
             <Input
-              id="bulk-borrowerId"
+              id="bulk-libraryCardNumber"
               type="text"
-              placeholder="Enter borrower ID"
-              value={borrowerId}
-              onChange={(e) => setBorrowerId(e.target.value)}
+              placeholder="Enter library card number"
+              value={libraryCardNumber}
+              onChange={(e) => setLibraryCardNumber(e.target.value)}
               required
               disabled={isLoading}
             />
@@ -211,7 +226,8 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
               <div className="border rounded-lg p-4 space-y-2 max-h-64 overflow-y-auto">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium">
-                    {accessionNos.length} {accessionNos.length === 1 ? 'book' : 'books'} in list
+                    {accessionNos.length}{" "}
+                    {accessionNos.length === 1 ? "book" : "books"} in list
                   </p>
                   <Badge variant="secondary">{accessionNos.length}</Badge>
                 </div>
@@ -221,7 +237,10 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
                     className="flex items-center justify-between p-2 bg-muted rounded hover:bg-muted/80"
                   >
                     <div className="flex items-center gap-2">
-                      <IconComponent name="Book" className="w-4 h-4 text-muted-foreground" />
+                      <IconComponent
+                        name="Book"
+                        className="w-4 h-4 text-muted-foreground"
+                      />
                       <span className="font-mono text-sm">{accessionNo}</span>
                     </div>
                     <Button
@@ -238,7 +257,10 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
               </div>
             ) : (
               <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                <IconComponent name="BookOpen" className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <IconComponent
+                  name="BookOpen"
+                  className="w-12 h-12 mx-auto mb-2 opacity-50"
+                />
                 <p className="text-sm">No books added yet</p>
                 <p className="text-xs">Scan or enter accession numbers above</p>
               </div>
@@ -259,7 +281,7 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-between gap-2">
+        <CardFooter className="flex justify-between mt-4 gap-2">
           <Button
             type="button"
             variant="outline"
@@ -271,11 +293,14 @@ export function BulkCheckoutForm({ onSuccess, onCancel }: BulkCheckoutFormProps)
           </Button>
           <Button
             type="submit"
-            disabled={isLoading || !borrowerId || accessionNos.length === 0}
+            disabled={isLoading || !libraryCardNumber || accessionNos.length === 0}
           >
             {isLoading ? (
               <>
-                <IconComponent name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+                <IconComponent
+                  name="Loader2"
+                  className="w-4 h-4 mr-2 animate-spin"
+                />
                 Processing...
               </>
             ) : (

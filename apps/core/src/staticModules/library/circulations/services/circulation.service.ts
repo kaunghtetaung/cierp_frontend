@@ -1,10 +1,10 @@
 /**
  * Library Circulation Service
  * Handles all API calls to the circulation module
- * Uses HttpClient from @repo/api following project standards
+ * Following ModuleService pattern with httpClient.request()
  */
 
-import { httpClient } from '@repo/api/client';
+import { getCachedServerHttpClient } from '@repo/api/server-only';
 import type { ApiResponse } from '@repo/types';
 import type {
   CheckoutRequest,
@@ -20,25 +20,72 @@ import type {
 } from '../types/circulation.types';
 
 // Base endpoint for circulation API
-const CIRCULATION_BASE = '/core/library/circulation';
+// Backend URL structure: http://api-dev.tenant.com/library/circulation
+// Following API gateway pattern: /{serviceName}/{module}
+// serviceName = library, module = circulation
+const CIRCULATION_BASE = '/library/circulation';
 
 /**
  * Circulation Service Class
- * Follows project patterns with HttpClient and proper error handling
+ * Follows ModuleService pattern with proper request config
  */
 export class CirculationService {
+  private httpClient;
+  private baseURL: string;
+  private tenantId?: string;
+  private userSessionId?: string;
+  private userId?: string;
+
+  constructor(
+    baseURL: string,
+    options?: {
+      tenantId?: string;
+      userSessionId?: string;
+      userId?: string;
+    }
+  ) {
+    this.baseURL = baseURL;
+    this.httpClient = getCachedServerHttpClient(baseURL);
+    this.tenantId = options?.tenantId;
+    this.userSessionId = options?.userSessionId;
+    this.userId = options?.userId;
+  }
+
+  /**
+   * Get the full URL for a circulation endpoint
+   * @param action The action endpoint (e.g., 'checkout', 'checkin')
+   * @returns Full URL string
+   */
+  getRequestUrl(action: string): string {
+    return `${this.baseURL}${CIRCULATION_BASE}/${action}`;
+  }
+
   /**
    * Checkout a single book
    * @param data Checkout request data
    * @returns Circulation record
    */
-  static async checkout(
+  async checkout(
     data: CheckoutRequest
   ): Promise<ApiResponse<CirculationResponse>> {
-    return httpClient.post<CirculationResponse>(
+    const response = await this.httpClient.request<CirculationResponse>(
       `${CIRCULATION_BASE}/checkout`,
-      data
+      {
+        method: 'POST',
+        body: data,
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to checkout book');
+    }
+
+    return response;
   }
 
   /**
@@ -46,13 +93,27 @@ export class CirculationService {
    * @param data Bulk checkout request data
    * @returns Bulk checkout results
    */
-  static async bulkCheckout(
+  async bulkCheckout(
     data: BulkCheckoutRequest
   ): Promise<ApiResponse<BulkCheckoutResponse>> {
-    return httpClient.post<BulkCheckoutResponse>(
+    const response = await this.httpClient.request<BulkCheckoutResponse>(
       `${CIRCULATION_BASE}/checkout/bulk`,
-      data
+      {
+        method: 'POST',
+        body: data,
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to bulk checkout books');
+    }
+
+    return response;
   }
 
   /**
@@ -60,13 +121,27 @@ export class CirculationService {
    * @param data Checkin request data
    * @returns Updated circulation record with fine calculation
    */
-  static async checkin(
+  async checkin(
     data: CheckinRequest
   ): Promise<ApiResponse<CirculationResponse>> {
-    return httpClient.post<CirculationResponse>(
+    const response = await this.httpClient.request<CirculationResponse>(
       `${CIRCULATION_BASE}/checkin`,
-      data
+      {
+        method: 'POST',
+        body: data,
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to checkin book');
+    }
+
+    return response;
   }
 
   /**
@@ -74,13 +149,27 @@ export class CirculationService {
    * @param data Renewal request data
    * @returns Updated circulation record with new due date
    */
-  static async renew(
+  async renew(
     data: RenewRequest
   ): Promise<ApiResponse<CirculationResponse>> {
-    return httpClient.post<CirculationResponse>(
+    const response = await this.httpClient.request<CirculationResponse>(
       `${CIRCULATION_BASE}/renew`,
-      data
+      {
+        method: 'POST',
+        body: data,
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to renew book');
+    }
+
+    return response;
   }
 
   /**
@@ -88,28 +177,47 @@ export class CirculationService {
    * @param params Query parameters for filtering and pagination
    * @returns Paginated circulation records
    */
-  static async getCirculations(
+  async getCirculations(
     params?: CirculationQueryParams
   ): Promise<ApiResponse<PaginatedCirculationResponse>> {
-    // Convert params to query string format
-    const queryParams: Record<string, string | number | boolean> = {};
+    // Build query string
+    let endpoint = CIRCULATION_BASE;
+    const queryParams = new URLSearchParams();
 
     if (params) {
-      if (params.page) queryParams.page = params.page;
-      if (params.limit) queryParams.limit = params.limit;
-      if (params.borrowerId) queryParams.borrowerId = params.borrowerId;
-      if (params.accessionNo) queryParams.accessionNo = params.accessionNo;
-      if (params.bibliographyId) queryParams.bibliographyId = params.bibliographyId;
-      if (params.status) queryParams.status = params.status;
-      if (params.startDate) queryParams.startDate = params.startDate;
-      if (params.endDate) queryParams.endDate = params.endDate;
-      if (params.overdue !== undefined) queryParams.overdue = params.overdue;
+      if (params.page) queryParams.set('page', String(params.page));
+      if (params.limit) queryParams.set('limit', String(params.limit));
+      if (params.borrowerId) queryParams.set('borrowerId', params.borrowerId);
+      if (params.accessionNo) queryParams.set('accessionNo', params.accessionNo);
+      if (params.bibliographyId) queryParams.set('bibliographyId', params.bibliographyId);
+      if (params.status) queryParams.set('status', params.status);
+      if (params.startDate) queryParams.set('startDate', params.startDate);
+      if (params.endDate) queryParams.set('endDate', params.endDate);
+      if (params.overdue !== undefined) queryParams.set('overdue', String(params.overdue));
     }
 
-    return httpClient.get<PaginatedCirculationResponse>(
-      CIRCULATION_BASE,
-      queryParams
+    if (queryParams.toString()) {
+      endpoint += `?${queryParams.toString()}`;
+    }
+
+    const response = await this.httpClient.request<PaginatedCirculationResponse>(
+      endpoint,
+      {
+        method: 'GET',
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+        timeout: 25000,
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch circulation records');
+    }
+
+    return response;
   }
 
   /**
@@ -117,12 +225,26 @@ export class CirculationService {
    * @param id Circulation record ID
    * @returns Single circulation record
    */
-  static async getCirculationById(
+  async getCirculationById(
     id: string
   ): Promise<ApiResponse<CirculationResponse>> {
-    return httpClient.get<CirculationResponse>(
-      `${CIRCULATION_BASE}/${id}`
+    const response = await this.httpClient.request<CirculationResponse>(
+      `${CIRCULATION_BASE}/${id}`,
+      {
+        method: 'GET',
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch circulation record');
+    }
+
+    return response;
   }
 
   /**
@@ -130,35 +252,67 @@ export class CirculationService {
    * @param params Query parameters for filtering
    * @returns Count of matching records
    */
-  static async getCirculationCount(
+  async getCirculationCount(
     params?: CirculationQueryParams
   ): Promise<ApiResponse<CirculationCountResponse>> {
-    const queryParams: Record<string, string | number | boolean> = {};
+    let endpoint = `${CIRCULATION_BASE}/count`;
+    const queryParams = new URLSearchParams();
 
     if (params) {
-      if (params.borrowerId) queryParams.borrowerId = params.borrowerId;
-      if (params.accessionNo) queryParams.accessionNo = params.accessionNo;
-      if (params.bibliographyId) queryParams.bibliographyId = params.bibliographyId;
-      if (params.status) queryParams.status = params.status;
-      if (params.startDate) queryParams.startDate = params.startDate;
-      if (params.endDate) queryParams.endDate = params.endDate;
-      if (params.overdue !== undefined) queryParams.overdue = params.overdue;
+      if (params.borrowerId) queryParams.set('borrowerId', params.borrowerId);
+      if (params.accessionNo) queryParams.set('accessionNo', params.accessionNo);
+      if (params.bibliographyId) queryParams.set('bibliographyId', params.bibliographyId);
+      if (params.status) queryParams.set('status', params.status);
+      if (params.startDate) queryParams.set('startDate', params.startDate);
+      if (params.endDate) queryParams.set('endDate', params.endDate);
+      if (params.overdue !== undefined) queryParams.set('overdue', String(params.overdue));
     }
 
-    return httpClient.get<CirculationCountResponse>(
-      `${CIRCULATION_BASE}/count`,
-      queryParams
+    if (queryParams.toString()) {
+      endpoint += `?${queryParams.toString()}`;
+    }
+
+    const response = await this.httpClient.request<CirculationCountResponse>(
+      endpoint,
+      {
+        method: 'GET',
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch circulation count');
+    }
+
+    return response;
   }
 
   /**
    * Update overdue status for all checked-out books (typically called by cron)
    * @returns Number of records updated
    */
-  static async updateOverdueStatus(): Promise<ApiResponse<UpdateOverdueStatusResponse>> {
-    return httpClient.post<UpdateOverdueStatusResponse>(
-      `${CIRCULATION_BASE}/update-overdue-status`
+  async updateOverdueStatus(): Promise<ApiResponse<UpdateOverdueStatusResponse>> {
+    const response = await this.httpClient.request<UpdateOverdueStatusResponse>(
+      `${CIRCULATION_BASE}/update-overdue-status`,
+      {
+        method: 'POST',
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
     );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to update overdue status');
+    }
+
+    return response;
   }
 
   /**
@@ -166,7 +320,7 @@ export class CirculationService {
    * @param borrowerId Borrower ID
    * @returns Active circulation records
    */
-  static async getBorrowerActiveCheckouts(
+  async getBorrowerActiveCheckouts(
     borrowerId: string
   ): Promise<ApiResponse<PaginatedCirculationResponse>> {
     return this.getCirculations({
@@ -183,7 +337,7 @@ export class CirculationService {
    * @param limit Items per page
    * @returns Overdue circulation records
    */
-  static async getOverdueBooks(
+  async getOverdueBooks(
     page: number = 1,
     limit: number = 10
   ): Promise<ApiResponse<PaginatedCirculationResponse>> {
@@ -194,6 +348,3 @@ export class CirculationService {
     });
   }
 }
-
-// Export singleton instance for convenience
-export const circulationService = CirculationService;

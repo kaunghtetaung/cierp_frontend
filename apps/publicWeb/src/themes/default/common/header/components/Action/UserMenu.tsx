@@ -51,8 +51,31 @@ const ProfileSelectionDialog: React.FC<{
   const [hoveredCard, setHoveredCard] = React.useState<string | null>(null);
 
   const handleSelection = (type: "student" | "staff" | "alumni") => {
-    onOpenChange(false);
-    router.push(`/profileSetup/${type}`);
+    // Only student registration is ready
+    if (type === "student") {
+      onOpenChange(false);
+      router.push(`/profileSetup/${type}`);
+    } else {
+      // Staff and Alumni are coming soon
+      const { toast } = require("sonner");
+      const messages = {
+        staff: {
+          en: "Staff registration is coming soon!",
+          mm: "ဝန်ထမ်းမှတ်ပုံတင်ခြင်းကို မကြာမီ ရရှိနိုင်ပါမည်!",
+        },
+        alumni: {
+          en: "Alumni registration is coming soon!",
+          mm: "ကျောင်းဟောင်းမှတ်ပုံတင်ခြင်းကို မကြာမီ ရရှိနိုင်ပါမည်!",
+        },
+      };
+
+      const message = messages[type][currentLanguage as keyof typeof messages[typeof type]]
+        || messages[type].en;
+
+      toast.info("Coming Soon", {
+        description: message,
+      });
+    }
   };
 
   const texts = {
@@ -169,14 +192,21 @@ const ProfileSelectionDialog: React.FC<{
               </div>
             </button>
 
-            {/* Staff Card */}
+            {/* Staff Card - Coming Soon */}
             <button
               type="button"
               onClick={() => handleSelection("staff")}
               onMouseEnter={() => setHoveredCard("staff")}
               onMouseLeave={() => setHoveredCard(null)}
-              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#1B4CB4] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1B4CB4]/50"
+              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#1B4CB4] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1B4CB4]/50 opacity-75"
             >
+              {/* Coming Soon Badge */}
+              <div className="absolute top-2 right-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Coming Soon
+                </span>
+              </div>
+
               {/* Icon Circle */}
               <div className="mb-3 flex justify-center">
                 <div className="rounded-full bg-gradient-to-br from-[#1B4CB4] to-[#3154A1] p-3 shadow-md">
@@ -195,19 +225,26 @@ const ProfileSelectionDialog: React.FC<{
 
                 {/* CTA */}
                 <div className="text-xs text-[#1B4CB4] font-medium">
-                  {t.staff.cta} →
+                  {currentLanguage === "mm" ? "မကြာမီရရှိမည်" : "Coming Soon"} →
                 </div>
               </div>
             </button>
 
-            {/* Alumni Card */}
+            {/* Alumni Card - Coming Soon */}
             <button
               type="button"
               onClick={() => handleSelection("alumni")}
               onMouseEnter={() => setHoveredCard("alumni")}
               onMouseLeave={() => setHoveredCard(null)}
-              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#059669] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#059669]/50"
+              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-200 hover:border-[#059669] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#059669]/50 opacity-75"
             >
+              {/* Coming Soon Badge */}
+              <div className="absolute top-2 right-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Coming Soon
+                </span>
+              </div>
+
               {/* Icon Circle */}
               <div className="mb-3 flex justify-center">
                 <div className="rounded-full bg-gradient-to-br from-[#059669] to-[#047857] p-3 shadow-md">
@@ -226,7 +263,7 @@ const ProfileSelectionDialog: React.FC<{
 
                 {/* CTA */}
                 <div className="text-xs text-[#059669] font-medium">
-                  {t.alumni.cta} →
+                  {currentLanguage === "mm" ? "မကြာမီရရှိမည်" : "Coming Soon"} →
                 </div>
               </div>
             </button>
@@ -252,11 +289,14 @@ export const UserMenu: React.FC<{
   const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   // Check if profile needs to be completed
+  // Show modal for guest users with created/incomplete/pending profiles
   const needsProfileCompletion =
-    user?.profileState === "created" &&
-    user?.roles?.some((roleObj: any) => roleObj.Role === "guest");
+    user?.roles?.some((roleObj: any) => roleObj.Role === "guest") &&
+    (user?.profileState === "created" ||
+     user?.profileState === "incomplete" ||
+     user?.profileState === "pending");
 
-  // Auto-open dialog when user is authenticated as guest with created profile state
+  // Auto-open dialog when user is authenticated as guest with incomplete profile
   useEffect(() => {
     if (!isLoading && isAuthenticated && needsProfileCompletion) {
       setShowProfileDialog(true);

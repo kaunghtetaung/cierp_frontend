@@ -5,7 +5,10 @@
 
 'use server';
 
-import { circulationService } from '../services/circulation.service';
+import { headers } from 'next/headers';
+import { getCurrentUser, getCurrentSession } from '@repo/auth/server-api';
+import { getApiDomain } from '@repo/utils/server';
+import { CirculationService } from '../services/circulation.service';
 import type { ApiResponse } from '@repo/types';
 import type {
   CheckoutRequest,
@@ -14,7 +17,37 @@ import type {
   RenewRequest,
   CirculationResponse,
   BulkCheckoutResponse,
+  PaginatedCirculationResponse,
+  CirculationQueryParams,
 } from '../types/circulation.types';
+
+/**
+ * Get circulation service instance with proper context
+ */
+async function getCirculationService(): Promise<CirculationService> {
+  const headerStore = await headers();
+  const [user, session] = await Promise.all([
+    getCurrentUser(headerStore),
+    getCurrentSession(headerStore),
+  ]);
+
+  if (!user || !session) {
+    throw new Error('Authentication required');
+  }
+
+  const tenantId = headerStore.get('x-tenant-id') || user.tenantId || session.tenantId;
+  if (!tenantId) {
+    throw new Error('Tenant context required');
+  }
+
+  const apiUrl = await getApiDomain();
+
+  return new CirculationService(apiUrl, {
+    tenantId,
+    userSessionId: session.id,
+    userId: user.id,
+  });
+}
 
 /**
  * Checkout a single book
@@ -22,14 +55,16 @@ import type {
  */
 export async function checkoutBook(
   data: CheckoutRequest
-): Promise<ApiResponse<CirculationResponse>> {
+): Promise<ApiResponse<CirculationResponse> & { debugUrl?: string }> {
   try {
     // Validate required fields
-    if (!data.borrowerId) {
+    if (!data.libraryCardNumber) {
       return {
         success: false,
-        error: 'Borrower ID is required',
-        data: null,
+        error: 'Library card number is required',
+        message: 'Validation failed',
+        data: null as any,
+        timestamp: new Date(),
       };
     }
 
@@ -37,20 +72,29 @@ export async function checkoutBook(
       return {
         success: false,
         error: 'Accession number is required',
-        data: null,
+        message: 'Validation failed',
+        data: null as any,
+        timestamp: new Date(),
       };
     }
 
-    // Call service
-    const response = await circulationService.checkout(data);
+    // Get service instance and call checkout
+    const service = await getCirculationService();
+    const debugUrl = service.getRequestUrl('checkout');
+    const response = await service.checkout(data);
 
-    return response;
+    return {
+      ...response,
+      debugUrl,
+    };
   } catch (error) {
     console.error('Checkout error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to checkout book',
-      data: null,
+      message: 'Checkout failed',
+      data: null as any,
+      timestamp: new Date(),
     };
   }
 }
@@ -64,11 +108,13 @@ export async function bulkCheckoutBooks(
 ): Promise<ApiResponse<BulkCheckoutResponse>> {
   try {
     // Validate required fields
-    if (!data.borrowerId) {
+    if (!data.libraryCardNumber) {
       return {
         success: false,
-        error: 'Borrower ID is required',
-        data: null,
+        error: 'Library card number is required',
+        message: 'Validation failed',
+        data: null as any,
+        timestamp: new Date(),
       };
     }
 
@@ -76,12 +122,15 @@ export async function bulkCheckoutBooks(
       return {
         success: false,
         error: 'At least one accession number is required',
-        data: null,
+        message: 'Validation failed',
+        data: null as any,
+        timestamp: new Date(),
       };
     }
 
-    // Call service
-    const response = await circulationService.bulkCheckout(data);
+    // Get service instance and call bulkCheckout
+    const service = await getCirculationService();
+    const response = await service.bulkCheckout(data);
 
     return response;
   } catch (error) {
@@ -89,7 +138,9 @@ export async function bulkCheckoutBooks(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to bulk checkout books',
-      data: null,
+      message: 'Bulk checkout failed',
+      data: null as any,
+      timestamp: new Date(),
     };
   }
 }
@@ -107,12 +158,15 @@ export async function checkinBook(
       return {
         success: false,
         error: 'Accession number is required',
-        data: null,
+        message: 'Validation failed',
+        data: null as any,
+        timestamp: new Date(),
       };
     }
 
-    // Call service
-    const response = await circulationService.checkin(data);
+    // Get service instance and call checkin
+    const service = await getCirculationService();
+    const response = await service.checkin(data);
 
     return response;
   } catch (error) {
@@ -120,7 +174,9 @@ export async function checkinBook(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to checkin book',
-      data: null,
+      message: 'Checkin failed',
+      data: null as any,
+      timestamp: new Date(),
     };
   }
 }
@@ -138,12 +194,15 @@ export async function renewBook(
       return {
         success: false,
         error: 'Accession number is required',
-        data: null,
+        message: 'Validation failed',
+        data: null as any,
+        timestamp: new Date(),
       };
     }
 
-    // Call service
-    const response = await circulationService.renew(data);
+    // Get service instance and call renew
+    const service = await getCirculationService();
+    const response = await service.renew(data);
 
     return response;
   } catch (error) {
@@ -151,7 +210,32 @@ export async function renewBook(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to renew book',
-      data: null,
+      message: 'Renewal failed',
+      data: null as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
+ * Get circulation history with filters
+ * Server action for circulation history table
+ */
+export async function getCirculationHistory(
+  params?: CirculationQueryParams
+): Promise<ApiResponse<PaginatedCirculationResponse>> {
+  try {
+    const service = await getCirculationService();
+    const response = await service.getCirculations(params);
+    return response;
+  } catch (error) {
+    console.error('Get circulation history error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch circulation history',
+      message: 'Failed to fetch circulation history',
+      data: null as any,
+      timestamp: new Date(),
     };
   }
 }

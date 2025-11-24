@@ -18,15 +18,15 @@ export enum CirculationStatus {
 // ============================================
 
 export interface CheckoutRequest {
-  borrowerId: string;      // MongoDB ObjectId of borrower
-  accessionNo: string;     // Unique book copy identifier
-  notes?: string;          // Optional checkout notes
+  libraryCardNumber: string;  // Library card number of borrower
+  accessionNo: string;        // Unique book copy identifier
+  notes?: string;             // Optional checkout notes
 }
 
 export interface BulkCheckoutRequest {
-  borrowerId: string;      // MongoDB ObjectId of borrower
-  accessionNos: string[];  // Array of accession numbers (min: 1)
-  notes?: string;          // Optional notes applied to all checkouts
+  libraryCardNumber: string;  // Library card number of borrower
+  accessionNos: string[];     // Array of accession numbers (min: 1)
+  notes?: string;             // Optional notes applied to all checkouts
 }
 
 export interface CheckinRequest {
@@ -80,6 +80,7 @@ export interface LendingPolicyInfo {
 export interface CirculationResponse {
   id: string;
   borrowerId: string;
+  borrowerName: string;            // Denormalized borrower name from backend
   accessionNo: string;
   bibliographyId: string;
   lendingPolicyId: string;
@@ -170,7 +171,7 @@ export enum CirculationErrorCode {
 // ============================================
 
 export interface CheckoutFormState {
-  borrowerId: string;
+  libraryCardNumber: string;
   accessionNo: string;
   notes: string;
   isLoading: boolean;
@@ -178,7 +179,7 @@ export interface CheckoutFormState {
 }
 
 export interface BulkCheckoutFormState {
-  borrowerId: string;
+  libraryCardNumber: string;
   accessionNos: string[];
   currentInput: string;
   notes: string;

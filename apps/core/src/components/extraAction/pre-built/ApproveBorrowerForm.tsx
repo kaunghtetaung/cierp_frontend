@@ -21,6 +21,7 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import type { PreBuiltFormProps } from "../ExtraActionFormRouter";
 import { approveBorrower } from "./borrower-actions";
 import { extractItemId } from "./form-utils";
+import { isDebugEnabled } from "@/lib/env";
 
 // Validation schema based on backend ApproveBorrowerDto
 const approveBorrowerSchema = z.object({
@@ -415,8 +416,8 @@ export function ApproveBorrowerForm({
           </Alert>
         )}
 
-        {/* Debug Information Section */}
-        {debugInfo && (
+        {/* Debug Information Section - Only show in development */}
+        {isDebugEnabled() && debugInfo && (
           <div className="border-2 rounded-lg p-4 bg-blue-50 border-blue-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-base flex items-center gap-2 text-blue-900">
