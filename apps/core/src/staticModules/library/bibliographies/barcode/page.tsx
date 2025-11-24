@@ -491,7 +491,6 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
             pageBreakAfter: pageIndex < preview.pages.length - 1 ? 'always' : 'auto',
             pageBreakInside: 'avoid',
             width: '100%',
-            minHeight: '100vh',
             boxSizing: 'border-box',
             padding: '5mm'
           }}
@@ -501,7 +500,8 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
               display: 'grid',
               gridTemplateColumns: `repeat(${preview.labelsPerRow}, 3.6cm)`,
               gap: '1mm',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              alignContent: 'start'
             }}
           >
             {pageItems.map((item, index) => (
