@@ -173,17 +173,11 @@ pushCi:
 	@echo "========================================="
 	@echo "  Deploying Frontend to Production"
 	@echo "========================================="
-	@echo "Step 1: Saving current branch..."
+	@echo "Step 1: Checking current branch..."
 	$(eval CURRENT_BRANCH := $(shell git branch --show-current))
 	@echo "Current branch: $(CURRENT_BRANCH)"
 	@echo ""
-	@echo "Step 2: Switching to main branch..."
-	git checkout main
-	@echo ""
-	@echo "Step 3: Merging dailyDev into main..."
-	git merge dailyDev -m "Merge dailyDev to main for production deployment"
-	@echo ""
-	@echo "Step 4: Syncing code to production server..."
+	@echo "Step 2: Syncing code to production server..."
 	@echo "  Source: $(PWD)/"
 	@echo "  Target: ciadmin@git.crystal-image.net:~/ciapp_frontend/"
 	@echo ""
@@ -205,9 +199,6 @@ pushCi:
 		--exclude '*.tsbuildinfo' \
 		-e "ssh -i ~/.ssh/ciservers -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
 		./ ciadmin@git.crystal-image.net:~/ciapp_frontend/
-	@echo ""
-	@echo "Step 5: Returning to original branch ($(CURRENT_BRANCH))..."
-	git checkout $(CURRENT_BRANCH)
 	@echo ""
 	@echo "✅ Frontend deployment complete!"
 	@echo ""
