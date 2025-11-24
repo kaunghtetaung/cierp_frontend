@@ -78,6 +78,7 @@ export const MobileHeaderActions: React.FC<HeaderActionsProps> = ({
             <LangSelectorIcon
               className="min-h-[44px] min-w-[40px] sm:min-w-[44px]"
               triggerClassName="min-h-[44px] min-w-[40px] sm:min-w-[44px] border-0 shadow-none hover:bg-transparent rounded-md transition-colors touch-manipulation [&_svg]:text-white p-1 sm:p-2"
+              contentClassName="bg-background border-border"
             />
           </LangSelectorWrapper>
         )}

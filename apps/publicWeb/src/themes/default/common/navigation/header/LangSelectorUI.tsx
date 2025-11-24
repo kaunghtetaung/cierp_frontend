@@ -183,16 +183,20 @@ const DropdownLangSelector: React.FC<
 
         <DropdownMenuContent
           align="end"
-          className={`min-w-[180px] border-white/20 !shadow-lg z-[9999] ${contentClassName || 'bg-[var(--color-banner-bg)]'}`}
+          className={`min-w-[180px] !shadow-lg z-[9999] ${
+            contentClassName
+              ? contentClassName
+              : 'bg-[var(--color-banner-bg)] border-white/20'
+          }`}
         >
           {languages.map((language) => (
             <DropdownMenuItem
               key={language.code}
               onClick={() => changeLanguage(language.code)}
-              className={`cursor-pointer hover:bg-white/10 text-white p-3 min-h-[44px] touch-manipulation ${
-                language.code === currentLanguage
-                  ? "bg-white/20"
-                  : ""
+              className={`cursor-pointer p-3 min-h-[44px] touch-manipulation ${
+                contentClassName
+                  ? `hover:bg-accent ${language.code === currentLanguage ? "bg-accent" : ""}`
+                  : `hover:bg-white/10 text-white ${language.code === currentLanguage ? "bg-white/20" : ""}`
               }`}
             >
               <LanguageItem
