@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { searchBooks } from '@/actions/library/books.actions';
+import { searchBooks, advancedSearchBooks } from '@/actions/library/books.actions';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
+import { type AdvancedSearchParams } from './AdvancedSearch';
 import { SearchHero } from './SearchHero';
 import { SearchResults } from './SearchResults';
 import { SearchResultsSkeleton } from './SearchResultsSkeleton';
@@ -19,6 +20,8 @@ interface LibrarySearchClientProps {
   canAccessEbooks?: boolean;
 }
 
+type SearchMode = 'simple' | 'advanced';
+
 export function LibrarySearchClient({
   initialQuery = '',
   initialSearchType = 'contains',
@@ -29,11 +32,21 @@ export function LibrarySearchClient({
 }: LibrarySearchClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Search mode state
+  const [searchMode, setSearchMode] = useState<SearchMode>('simple');
+
+  // Simple search state
   const [query, setQuery] = useState(initialQuery);
   const [searchType, setSearchType] = useState<SearchType>(initialSearchType);
   const [catalogTypeName, setCatalogTypeName] = useState(initialCatalogType);
   const [sortBy, setSortBy] = useState<SortBy>(initialSortBy);
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortOrder);
+
+  // Advanced search state
+  const [advancedParams, setAdvancedParams] = useState<AdvancedSearchParams | null>(null);
+
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -48,8 +61,28 @@ export function LibrarySearchClient({
     }
   }, [initialQuery, initialSearchType, initialCatalogType, initialSortBy, initialSortOrder]);
 
-  // React Query for search
-  const { data, isLoading, error, refetch } = useQuery({
+  // Check for advanced search params from sessionStorage (when navigating from homepage)
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'advanced') {
+      const storedParams = sessionStorage.getItem('advancedSearchParams');
+      if (storedParams) {
+        try {
+          const params = JSON.parse(storedParams) as AdvancedSearchParams;
+          console.log('📦 [LibrarySearchClient] Loading advanced search params from sessionStorage:', params);
+          setSearchMode('advanced');
+          setAdvancedParams(params);
+          // Clear the stored params after loading
+          sessionStorage.removeItem('advancedSearchParams');
+        } catch (error) {
+          console.error('Failed to parse advanced search params from sessionStorage:', error);
+        }
+      }
+    }
+  }, [searchParams]);
+
+  // React Query for simple search
+  const { data: simpleData, isLoading: isSimpleLoading, error: simpleError, refetch: refetchSimple } = useQuery({
     queryKey: ['library-search', query, searchType, catalogTypeName, currentPage, pageSize, sortBy, sortOrder],
     queryFn: async () => {
       try {
@@ -74,12 +107,71 @@ export function LibrarySearchClient({
         throw err;
       }
     },
-    enabled: !!query.trim(),
+    enabled: searchMode === 'simple' && !!query.trim(),
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: 2,
     retryDelay: 1000,
   });
 
+  // React Query for advanced search
+  const { data: advancedData, isLoading: isAdvancedLoading, error: advancedError, refetch: refetchAdvanced } = useQuery({
+    queryKey: ['library-advanced-search', advancedParams, currentPage, pageSize],
+    queryFn: async () => {
+      console.log('🔎 [LibrarySearchClient] Advanced search queryFn executing...');
+      console.log('   searchMode:', searchMode);
+      console.log('   advancedParams:', advancedParams);
+
+      if (!advancedParams) throw new Error('No search parameters');
+
+      try {
+        console.log('📡 [LibrarySearchClient] Calling advancedSearchBooks...');
+        const result = await advancedSearchBooks({
+          ...advancedParams,
+          page: currentPage,
+          limit: pageSize,
+        });
+
+        console.log('✅ [LibrarySearchClient] advancedSearchBooks result:', result);
+
+        // Check if the API returned an error response
+        if (!result.success) {
+          throw new Error('error' in result ? result.error : 'Failed to search books');
+        }
+
+        return result;
+      } catch (err) {
+        console.error('❌ [LibrarySearchClient] Advanced search error:', err);
+        throw err;
+      }
+    },
+    enabled: searchMode === 'advanced' && !!advancedParams,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2,
+    retryDelay: 1000,
+  });
+
+  // Derived state based on search mode
+  const data = searchMode === 'simple' ? simpleData : advancedData;
+  const isLoading = searchMode === 'simple' ? isSimpleLoading : isAdvancedLoading;
+  const error = searchMode === 'simple' ? simpleError : advancedError;
+  const refetch = searchMode === 'simple' ? refetchSimple : refetchAdvanced;
+  const hasActiveSearch = searchMode === 'simple' ? !!query.trim() : !!advancedParams;
+
+  // Extract search terms from advanced search params for highlighting
+  const getAdvancedSearchTerms = (): string => {
+    if (!advancedParams?.searchCriteria?.length) return '';
+    // Collect all non-empty search values from criteria
+    const terms = advancedParams.searchCriteria
+      .map(c => c.value?.trim())
+      .filter(Boolean);
+    // Join with space for multi-term highlighting
+    return terms.join(' ');
+  };
+
+  // Get the query string for display and highlighting
+  const displayQuery = searchMode === 'simple' ? query : getAdvancedSearchTerms() || 'Advanced Search';
+
+  // Simple search handler
   const handleSearch = (
     newQuery: string,
     newSearchType: SearchType,
@@ -108,6 +200,32 @@ export function LibrarySearchClient({
     router.push(`/library/search?${params.toString()}`, { scroll: false });
   };
 
+  // Advanced search handler
+  const handleAdvancedSearch = (params: AdvancedSearchParams) => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔍 [LibrarySearchClient] handleAdvancedSearch called!');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   params:', JSON.stringify(params, null, 2));
+    console.log('   Current searchMode:', searchMode);
+    console.log('   Current advancedParams:', advancedParams);
+
+    setSearchMode('advanced');
+    setAdvancedParams(params);
+    setCurrentPage(1); // Reset to first page on new search
+
+    console.log('✅ [LibrarySearchClient] State updated:');
+    console.log('   searchMode -> advanced');
+    console.log('   advancedParams -> set');
+
+    // Update URL to indicate advanced search mode
+    const urlParams = new URLSearchParams();
+    urlParams.set('mode', 'advanced');
+
+    // Update URL without page reload
+    router.push(`/library/search?${urlParams.toString()}`, { scroll: false });
+    console.log('🔄 [LibrarySearchClient] URL updated to:', `/library/search?${urlParams.toString()}`);
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     // Scroll to top on page change
@@ -124,12 +242,15 @@ export function LibrarySearchClient({
       {/* Collapsible Search Hero */}
       <SearchHero
         onSearch={handleSearch}
+        onAdvancedSearch={handleAdvancedSearch}
         isLoading={isLoading}
         initialQuery={initialQuery}
         initialSearchType={initialSearchType}
         initialCatalogType={initialCatalogType}
         initialSortBy={initialSortBy}
         initialSortOrder={initialSortOrder}
+        initialAdvancedParams={advancedParams || undefined}
+        initialMode={searchMode}
         collapsible={true}
       />
 
@@ -181,11 +302,11 @@ export function LibrarySearchClient({
 
           {isLoading && <SearchResultsSkeleton />}
 
-          {!isLoading && !error && data?.success && query && (
+          {!isLoading && !error && data?.success && hasActiveSearch && (
             <>
               <SearchResults
                 books={data.data || []}
-                query={query}
+                query={displayQuery}
                 total={data.pagination?.total}
                 currentPage={currentPage}
                 totalPages={data.pagination?.totalPages}
@@ -207,7 +328,7 @@ export function LibrarySearchClient({
             </>
           )}
 
-          {!isLoading && !error && !query && (
+          {!isLoading && !error && !hasActiveSearch && (
             <div className="text-center py-16">
               <svg
                 className="mx-auto h-16 w-16 text-muted-foreground mb-4"

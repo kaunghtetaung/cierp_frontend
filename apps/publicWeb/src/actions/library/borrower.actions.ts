@@ -4,6 +4,7 @@ import { getCurrentUser } from '@repo/auth/server';
 import { getApiDomain } from '@repo/utils/server';
 import { withServerActionErrorHandler } from '@repo/utils/server';
 import { createHttpClient } from '@repo/api/client';
+import { getLibraryModuleList } from '@/lib/library-module-wrapper';
 
 export interface BorrowerCardData {
   id: string;

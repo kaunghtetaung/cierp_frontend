@@ -9,6 +9,7 @@ import type { Bibliography } from '@/actions/library/books.actions';
 
 /**
  * Highlight search terms in text
+ * Supports multiple space-separated terms for advanced search
  */
 function highlightText(text: string, searchQuery?: string): React.ReactNode {
   if (!searchQuery || !text) return text;
@@ -16,13 +17,17 @@ function highlightText(text: string, searchQuery?: string): React.ReactNode {
   const query = searchQuery.trim();
   if (!query) return text;
 
-  // Escape special regex characters
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Split query into individual terms and filter out empty ones
+  const terms = query.split(/\s+/).filter(term => term.length > 0);
+  if (terms.length === 0) return text;
 
-  // Create regex for case-insensitive matching
-  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  // Escape special regex characters for each term
+  const escapedTerms = terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
-  // Split text by the search term
+  // Create regex that matches any of the terms (case-insensitive)
+  const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
+
+  // Split text by any of the search terms
   const parts = text.split(regex);
 
   return (

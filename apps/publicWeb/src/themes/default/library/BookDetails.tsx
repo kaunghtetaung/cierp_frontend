@@ -9,6 +9,11 @@ import { getAuthorName } from '@/lib/library-utils';
 import { checkAuthStatus } from '@/actions/auth/session.actions';
 import type { Bibliography } from '@/actions/library/books.actions';
 import { S3Image } from '@/components/common/S3Image';
+import {
+  checkReservationAvailability,
+  createReservation,
+  type ReservationAvailability
+} from '@/actions/library/reservation.actions';
 
 interface BookDetailsProps {
   book: Bibliography;
@@ -42,6 +47,13 @@ export function BookDetails({ book }: BookDetailsProps) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
+  // Reservation state
+  const [reservationAvailability, setReservationAvailability] = useState<ReservationAvailability | null>(null);
+  const [isCheckingReservation, setIsCheckingReservation] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
+  const [reservationError, setReservationError] = useState<string | null>(null);
+  const [reservationSuccess, setReservationSuccess] = useState(false);
+
   // Check login status on mount using server action (can access HttpOnly cookies)
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,6 +74,29 @@ export function BookDetails({ book }: BookDetailsProps) {
 
     checkAuth();
   }, []);
+
+  // Check reservation availability when user is logged in
+  useEffect(() => {
+    const checkReservation = async () => {
+      if (!isLoggedIn || isCheckingAuth) return;
+
+      setIsCheckingReservation(true);
+      try {
+        console.log('[BookDetails] Checking reservation availability...');
+        const result = await checkReservationAvailability(book._id);
+        console.log('[BookDetails] Reservation availability:', result);
+        if (result.success && result.data) {
+          setReservationAvailability(result.data);
+        }
+      } catch (error) {
+        console.error('[BookDetails] Error checking reservation:', error);
+      } finally {
+        setIsCheckingReservation(false);
+      }
+    };
+
+    checkReservation();
+  }, [isLoggedIn, isCheckingAuth, book._id]);
 
   // Multilingual text
   const texts = {
@@ -90,6 +125,22 @@ export function BookDetails({ book }: BookDetailsProps) {
     available: currentLanguage === 'mm' ? 'ရရှိနိုင်သည်' : 'Available',
     notAvailable: currentLanguage === 'mm' ? 'ရရှိနိုင်မှုမရှိပါ' : 'Not Available',
     loginRequired: currentLanguage === 'mm' ? 'eBook ဖတ်ရန် အကောင့်ဝင်ရန်လိုအပ်သည်' : 'Login required to read eBook',
+    // Reservation texts
+    reserving: currentLanguage === 'mm' ? 'ကြိုတင်မှာကြားနေသည်...' : 'Reserving...',
+    reservationSuccess: currentLanguage === 'mm' ? 'ကြိုတင်မှာကြားမှုအောင်မြင်ပါသည်!' : 'Reservation successful!',
+    reservationSuccessDesc: currentLanguage === 'mm'
+      ? 'စာအုပ်ရရှိနိုင်သောအခါ သင့်ကိုအကြောင်းကြားပါမည်။'
+      : 'You will be notified when the book is available.',
+    alreadyReserved: currentLanguage === 'mm' ? 'ဤစာအုပ်ကို သင်ကြိုတင်မှာထားပြီးဖြစ်သည်' : 'You already have a reservation for this book',
+    viewMyReservations: currentLanguage === 'mm' ? 'ကျွန်ုပ်၏ကြိုတင်မှာကြားမှုများကြည့်မည်' : 'View My Reservations',
+    cannotReserve: currentLanguage === 'mm' ? 'ကြိုတင်မှာကြား၍မရပါ' : 'Cannot reserve',
+    loginToReserve: currentLanguage === 'mm' ? 'ကြိုတင်မှာကြားရန် အကောင့်ဝင်ပါ' : 'Login to reserve',
+    queuePosition: currentLanguage === 'mm' ? 'တန်းစီနေရာ' : 'Queue Position',
+    estimatedWait: currentLanguage === 'mm' ? 'ခန့်မှန်းစောင့်ဆိုင်းချိန်' : 'Estimated Wait',
+    peopleWaiting: currentLanguage === 'mm' ? 'ဦးစောင့်ဆိုင်းနေသည်' : 'people waiting',
+    availableCopies: currentLanguage === 'mm' ? 'ရရှိနိုင်သောမိတ္တူ' : 'Available Copies',
+    allCopiesOut: currentLanguage === 'mm' ? 'မိတ္တူအားလုံးငှားထုတ်ထားသည်' : 'All copies are checked out',
+    checkingAvailability: currentLanguage === 'mm' ? 'စစ်ဆေးနေသည်...' : 'Checking availability...',
   };
 
   const handleOpenPdfViewer = (pdfUrl: string, title: string) => {
@@ -169,9 +220,46 @@ export function BookDetails({ book }: BookDetailsProps) {
                            book.organizationId?.shortName ||
                            book.organizationId?.fullName;
 
-  const handleReserveBook = () => {
-    // TODO: Implement reservation logic
-    alert(`Reserve book: ${book.title}`);
+  const handleReserveBook = async () => {
+    if (!isLoggedIn) {
+      // Redirect to login
+      router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      return;
+    }
+
+    if (reservationAvailability?.hasExistingReservation) {
+      router.push('/library/my-reservations');
+      return;
+    }
+
+    if (!reservationAvailability?.canReserve) {
+      setReservationError(reservationAvailability?.reason || texts.cannotReserve);
+      return;
+    }
+
+    setIsReserving(true);
+    setReservationError(null);
+
+    try {
+      console.log('[BookDetails] Creating reservation for:', book._id);
+      const result = await createReservation(book._id);
+
+      if (result.success) {
+        setReservationSuccess(true);
+        // Refresh reservation availability
+        const updatedAvailability = await checkReservationAvailability(book._id);
+        if (updatedAvailability.success && updatedAvailability.data) {
+          setReservationAvailability(updatedAvailability.data);
+        }
+      } else {
+        setReservationError(result.error || 'Failed to create reservation');
+      }
+    } catch (error) {
+      console.error('[BookDetails] Error creating reservation:', error);
+      setReservationError('An error occurred while creating reservation');
+    } finally {
+      setIsReserving(false);
+    }
   };
 
   return (
@@ -338,34 +426,161 @@ export function BookDetails({ book }: BookDetailsProps) {
                     </div>
                   )}
 
-                  {/* Reserve Button - Only show if book copies are available */}
-                  {isAvailable && (
-                    <div className="p-4 border-t border-border">
-                      <button
-                        onClick={handleReserveBook}
-                        className="w-full bg-warning hover:bg-warning/90 text-warning-foreground py-3 px-4 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                        </svg>
-                        {texts.reserveBook}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Not Available Notice */}
-                  {!isAvailable && typeof book.bookCopyCount === 'number' && (
-                    <div className="p-4 border-t border-border">
-                      <div className="bg-muted rounded-md p-3 text-center">
-                        <svg className="w-5 h-5 mx-auto text-muted-foreground mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {texts.notAvailable}
-                        </p>
+                  {/* Reservation Section */}
+                  <div className="p-4 border-t border-border">
+                    {/* Success Message */}
+                    {reservationSuccess && (
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-4 mb-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="font-semibold text-green-900 dark:text-green-200">{texts.reservationSuccess}</p>
+                            <p className="text-sm text-green-800 dark:text-green-300 mt-1">{texts.reservationSuccessDesc}</p>
+                            <button
+                              onClick={() => router.push('/library/my-reservations')}
+                              className="text-sm text-green-700 dark:text-green-400 hover:underline mt-2 inline-flex items-center gap-1"
+                            >
+                              {texts.viewMyReservations}
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* Error Message */}
+                    {reservationError && (
+                      <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md p-4 mb-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm text-red-800 dark:text-red-300">{reservationError}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Loading/Checking State */}
+                    {isCheckingReservation && (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent mr-2"></div>
+                        <span className="text-sm text-muted-foreground">{texts.checkingAvailability}</span>
+                      </div>
+                    )}
+
+                    {/* Already Reserved */}
+                    {!isCheckingReservation && reservationAvailability?.hasExistingReservation && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="font-medium text-blue-900 dark:text-blue-200">{texts.alreadyReserved}</p>
+                            <button
+                              onClick={() => router.push('/library/my-reservations')}
+                              className="text-sm text-blue-700 dark:text-blue-400 hover:underline mt-2 inline-flex items-center gap-1"
+                            >
+                              {texts.viewMyReservations}
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Can Reserve - Show queue info and button */}
+                    {!isCheckingReservation && !reservationSuccess && !reservationAvailability?.hasExistingReservation && (
+                      <>
+                        {/* Availability Info */}
+                        {reservationAvailability && (
+                          <div className="space-y-2 mb-4">
+                            {/* Available copies info */}
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{texts.availableCopies}:</span>
+                              <span className={`font-medium ${reservationAvailability.availableCopies > 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                                {reservationAvailability.availableCopies} / {reservationAvailability.totalCopies}
+                              </span>
+                            </div>
+
+                            {/* Queue info - only show if there are people waiting */}
+                            {reservationAvailability.currentQueue > 0 && (
+                              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                                <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>
+                                    <strong>{reservationAvailability.currentQueue}</strong> {texts.peopleWaiting}
+                                  </span>
+                                </div>
+                                {reservationAvailability.estimatedWaitTime && (
+                                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 ml-6">
+                                    {texts.estimatedWait}: {reservationAvailability.estimatedWaitTime}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* All copies checked out message */}
+                            {reservationAvailability.availableCopies === 0 && (
+                              <p className="text-xs text-muted-foreground">{texts.allCopiesOut}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Reserve Button */}
+                        {isLoggedIn ? (
+                          reservationAvailability?.canReserve ? (
+                            <button
+                              onClick={handleReserveBook}
+                              disabled={isReserving}
+                              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-4 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isReserving ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                  {texts.reserving}
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                  </svg>
+                                  {texts.reserveBook}
+                                </>
+                              )}
+                            </button>
+                          ) : reservationAvailability?.reason ? (
+                            <div className="bg-muted rounded-md p-3 text-center">
+                              <svg className="w-5 h-5 mx-auto text-muted-foreground mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <p className="text-sm text-muted-foreground">{reservationAvailability.reason}</p>
+                            </div>
+                          ) : null
+                        ) : (
+                          <button
+                            onClick={() => router.push('/login?redirect=' + encodeURIComponent(window.location.pathname))}
+                            className="w-full bg-muted hover:bg-muted/80 text-foreground py-3 px-4 rounded-md font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                            {texts.loginToReserve}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -3,7 +3,8 @@
 import { getLibraryModuleReference } from "@/lib/library-module-wrapper";
 
 export interface CatalogType {
-  _id: string;
+  _id: string;      // May be name or MongoDB ObjectId depending on endpoint
+  id?: string;      // MongoDB ObjectId (if _id is name)
   name: string;
   label: string;
   description?: string;

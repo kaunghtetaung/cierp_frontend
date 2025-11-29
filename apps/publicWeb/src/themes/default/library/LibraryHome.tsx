@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
+import { type AdvancedSearchParams } from './AdvancedSearch';
 import { SearchHero } from './SearchHero';
 import { NewArrivals } from './NewArrivals';
 import { MyCardButton } from '@/components/library/MyCardButton';
@@ -51,10 +52,21 @@ export function LibraryHome({
     router.push(`/library/search?${params.toString()}`);
   };
 
+  const handleAdvancedSearch = (params: AdvancedSearchParams) => {
+    // Navigate to search page with advanced search mode
+    // Store params in sessionStorage for the search page to pick up
+    sessionStorage.setItem('advancedSearchParams', JSON.stringify(params));
+
+    const urlParams = new URLSearchParams();
+    urlParams.set('mode', 'advanced');
+
+    router.push(`/library/search?${urlParams.toString()}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Search */}
-      <SearchHero onSearch={handleSearch} />
+      <SearchHero onSearch={handleSearch} onAdvancedSearch={handleAdvancedSearch} />
 
       {/* Main Content - Homepage Sections */}
       <div className="container mx-auto px-4 py-8">

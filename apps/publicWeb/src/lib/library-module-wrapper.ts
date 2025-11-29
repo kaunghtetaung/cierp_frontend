@@ -125,3 +125,50 @@ export const getLibraryModuleReference = cache(
     return await moduleService.getReference<T>(module, queryParams);
   }
 );
+
+/**
+ * Post to a library module endpoint (for advanced search, etc.)
+ */
+export async function postLibraryModule<T = any>(
+  endpoint: string,
+  data: Record<string, any>
+): Promise<{ data: T; pagination?: any }> {
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🎯 [LIBRARY WRAPPER] postLibraryModule called");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("   Endpoint:", endpoint);
+  console.log("   Data:", JSON.stringify(data, null, 2));
+
+  const moduleService = await createLibraryServiceInstance();
+
+  console.log("📡 [LIBRARY WRAPPER] Calling moduleService.create...");
+
+  try {
+    // Use create method which does POST
+    const result = await moduleService.create<any>(`${endpoint}`, data);
+
+    console.log("✅ [LIBRARY WRAPPER] Response received:");
+    console.log("   Result type:", typeof result);
+    console.log("   Result keys:", result && typeof result === 'object' ? Object.keys(result) : 'N/A');
+    console.log("   Result sample:", JSON.stringify(result).substring(0, 500));
+
+    // Handle response format - may have data/pagination structure
+    if (result && typeof result === 'object' && 'results' in result) {
+      console.log("📦 [LIBRARY WRAPPER] Found 'results' format - extracting pagination");
+      return {
+        data: result.results as T,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          totalPages: result.totalPages
+        }
+      };
+    }
+
+    console.log("📦 [LIBRARY WRAPPER] Returning raw result as data");
+    return { data: result as T };
+  } catch (error) {
+    console.error("❌ [LIBRARY WRAPPER] Error in postLibraryModule:", error);
+    throw error;
+  }
+}

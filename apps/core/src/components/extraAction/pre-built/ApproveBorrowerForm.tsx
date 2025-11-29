@@ -46,6 +46,8 @@ interface BorrowerData {
   borrowerType?: 'student' | 'staff' | 'guest';
   borrowerGroup?: string;
   status?: string;
+  batch?: string;
+  rollNo?: string;
   studentRecordId?: {
     _id: string;
     nameEnglish: string;
@@ -219,6 +221,18 @@ export function ApproveBorrowerForm({
                     <span className="ml-2 font-medium">{borrowerData.studentRecordId.admissionNumber}</span>
                   </div>
                 </>
+              )}
+              {borrowerData.borrowerType === 'student' && borrowerData.batch && (
+                <div>
+                  <span className="text-slate-600">Batch:</span>
+                  <span className="ml-2 font-medium">{borrowerData.batch}</span>
+                </div>
+              )}
+              {borrowerData.borrowerType === 'student' && borrowerData.rollNo && (
+                <div>
+                  <span className="text-slate-600">Roll No:</span>
+                  <span className="ml-2 font-medium">{borrowerData.rollNo}</span>
+                </div>
               )}
               {borrowerData.userId && (
                 <>

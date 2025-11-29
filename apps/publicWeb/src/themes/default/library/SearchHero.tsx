@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { SearchTabs } from './SearchTabs';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
+import { type AdvancedSearchParams } from './AdvancedSearch';
 import { getAsset } from '@/lib/theme-assets';
 import { useLangSelector } from '@/feature-components/lang-selector';
+
+type SearchMode = 'simple' | 'advanced';
 
 interface SearchHeroProps {
   onSearch: (
@@ -14,12 +17,15 @@ interface SearchHeroProps {
     sortBy: SortBy,
     sortOrder: SortOrder
   ) => void;
+  onAdvancedSearch?: (params: AdvancedSearchParams) => void;
   isLoading?: boolean;
   initialQuery?: string;
   initialSearchType?: SearchType;
   initialCatalogType?: string;
   initialSortBy?: SortBy;
   initialSortOrder?: SortOrder;
+  initialAdvancedParams?: Partial<AdvancedSearchParams>;
+  initialMode?: SearchMode;
   title?: string;
   subtitle?: string;
   collapsible?: boolean;
@@ -27,12 +33,15 @@ interface SearchHeroProps {
 
 export function SearchHero({
   onSearch,
+  onAdvancedSearch,
   isLoading,
   initialQuery,
   initialSearchType,
   initialCatalogType,
   initialSortBy,
   initialSortOrder,
+  initialAdvancedParams,
+  initialMode = 'simple',
   title = 'Library Catalog',
   subtitle = 'Explore our extensive collection of books, journals, and digital resources',
   collapsible = false
@@ -128,12 +137,15 @@ export function SearchHero({
                 <div className="p-6">
                   <SearchTabs
                     onSearch={onSearch}
+                    onAdvancedSearch={onAdvancedSearch}
                     isLoading={isLoading}
                     initialQuery={initialQuery}
                     initialSearchType={initialSearchType}
                     initialCatalogType={initialCatalogType}
                     initialSortBy={initialSortBy}
                     initialSortOrder={initialSortOrder}
+                    initialAdvancedParams={initialAdvancedParams}
+                    initialMode={initialMode}
                   />
                 </div>
               )}

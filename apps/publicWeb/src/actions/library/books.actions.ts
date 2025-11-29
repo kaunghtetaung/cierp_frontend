@@ -1,6 +1,6 @@
 'use server';
 
-import { getLibraryModuleList } from "@/lib/library-module-wrapper";
+import { getLibraryModuleList, postLibraryModule } from "@/lib/library-module-wrapper";
 import { withServerActionErrorHandler } from "@repo/utils/server";
 
 // Types for library data
@@ -229,3 +229,66 @@ export async function getBookById(id: string) {
 }
 
 // Note: submitSearchForm removed - now using client-side navigation with React Query
+
+// Advanced Search Types
+export type SearchField = 'title' | 'subject' | 'publisher' | 'accessionNo' | 'year' | 'author' | 'degree' | 'any';
+export type SearchOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'not';
+export type LogicalOperator = 'AND' | 'OR' | 'NOT';
+export type WordMatchMode = 'all' | 'any' | 'exact';
+export type GlobalOperator = 'AND' | 'OR';
+export type AdvancedSortBy = 'title' | 'year' | 'createdAt' | 'updatedAt' | 'relevance';
+
+export interface SearchCriterion {
+  field: SearchField;
+  operator: SearchOperator;
+  value: string;
+  logicalOperator: LogicalOperator;
+}
+
+export interface AdvancedSearchParams {
+  catalogTypeFilter: 'specific' | 'any';
+  catalogTypeId?: string;
+  searchCriteria: SearchCriterion[];
+  wordMatchMode: WordMatchMode;
+  globalOperator: GlobalOperator;
+  page: number;
+  limit: number;
+  sortBy: AdvancedSortBy;
+  sortOrder: 'asc' | 'desc';
+}
+
+/**
+ * Advanced search for bibliographies
+ * POST /library/bibliographies/advanced-search
+ */
+export async function advancedSearchBooks(params: AdvancedSearchParams) {
+  return withServerActionErrorHandler(async () => {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log('📚 [advancedSearchBooks] Starting advanced search...');
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log('   Params:', JSON.stringify(params, null, 2));
+
+    const response = await postLibraryModule<Bibliography[]>(
+      'bibliographies/advanced-search',
+      params
+    );
+
+    console.log('✅ [advancedSearchBooks] Response received:');
+    console.log('   Data count:', Array.isArray(response.data) ? response.data.length : 'not array');
+    console.log('   Pagination:', response.pagination);
+
+    return {
+      success: true,
+      data: response.data,
+      pagination: response.pagination
+    };
+  }, {
+    operation: 'advanced-search-books',
+    component: 'library-books-actions',
+    metadata: {
+      criteriaCount: params.searchCriteria.length,
+      catalogTypeFilter: params.catalogTypeFilter,
+      page: params.page
+    }
+  });
+}

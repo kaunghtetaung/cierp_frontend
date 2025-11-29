@@ -6,8 +6,10 @@ import { useLangSelector } from '@/feature-components/lang-selector';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Configure PDF.js worker - use local file for reliability (avoid CDN issues in Myanmar)
+// The worker file is copied from node_modules/pdfjs-dist/build/pdf.worker.min.mjs to public/pdf-worker/
+// When upgrading react-pdf/pdfjs-dist, run: cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf-worker/
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs';
 
 interface PageByPagePdfViewerProps {
   pdfUrl: string; // Base URL without page parameter
@@ -25,6 +27,23 @@ interface PageByPagePdfViewerProps {
  * - Each page is watermarked on-demand by the server
  * - Uses react-pdf for rendering
  */
+// Check if we're in development mode
+const isDev = process.env.NODE_ENV === 'development';
+
+// Debug info interface for dev mode
+interface DebugInfo {
+  stage: string;
+  timestamp: string;
+  pdfUrl?: string;
+  pageUrl?: string;
+  httpStatus?: number;
+  errorType?: string;
+  errorMessage?: string;
+  responseBody?: string;
+  metadata?: unknown;
+  additionalInfo?: Record<string, unknown>;
+}
+
 export function PageByPagePdfViewer({
   pdfUrl,
   title = 'PDF Document',
@@ -47,6 +66,16 @@ export function PageByPagePdfViewer({
   const [footerHoverTimeout, setFooterHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showLeftNav, setShowLeftNav] = useState(false); // Show left navigation hint
   const [showRightNav, setShowRightNav] = useState(false); // Show right navigation hint
+
+  // Dev mode: detailed debug info
+  const [debugInfo, setDebugInfo] = useState<DebugInfo[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState(isDev);
+
+  // Add debug log entry
+  const addDebugLog = (info: Omit<DebugInfo, 'timestamp'>) => {
+    if (!isDev) return;
+    setDebugInfo(prev => [...prev, { ...info, timestamp: new Date().toISOString() }]);
+  };
 
   // Multilingual text
   const texts = {
@@ -82,39 +111,110 @@ export function PageByPagePdfViewer({
 
   // Fetch PDF metadata (page count) from API
   const fetchMetadata = async () => {
+    addDebugLog({
+      stage: 'FETCH_METADATA_START',
+      pdfUrl,
+      additionalInfo: { bookId, userId, watermark }
+    });
+
     try {
       console.log('[PageByPagePdfViewer] Fetching metadata from:', pdfUrl);
       const response = await fetch(pdfUrl);
 
+      addDebugLog({
+        stage: 'FETCH_METADATA_RESPONSE',
+        pdfUrl,
+        httpStatus: response.status,
+        additionalInfo: {
+          ok: response.ok,
+          statusText: response.statusText,
+          contentType: response.headers.get('content-type')
+        }
+      });
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch metadata: ${response.status}`);
+        // Try to get error details from response body
+        let errorBody = '';
+        try {
+          const errorData = await response.json();
+          errorBody = JSON.stringify(errorData, null, 2);
+          addDebugLog({
+            stage: 'FETCH_METADATA_ERROR',
+            pdfUrl,
+            httpStatus: response.status,
+            errorType: 'HTTP_ERROR',
+            errorMessage: errorData.error || response.statusText,
+            responseBody: errorBody,
+            additionalInfo: errorData
+          });
+          // Set more descriptive error for UI
+          setError(`${errorData.error || 'Failed to load PDF'} (HTTP ${response.status})`);
+        } catch {
+          errorBody = await response.text();
+          addDebugLog({
+            stage: 'FETCH_METADATA_ERROR',
+            pdfUrl,
+            httpStatus: response.status,
+            errorType: 'HTTP_ERROR',
+            errorMessage: response.statusText,
+            responseBody: errorBody
+          });
+          setError(`Failed to fetch metadata: HTTP ${response.status}`);
+        }
+        setIsLoading(false);
+        return;
       }
 
       const metadata = await response.json();
       console.log('[PageByPagePdfViewer] Metadata received:', metadata);
 
+      addDebugLog({
+        stage: 'FETCH_METADATA_SUCCESS',
+        pdfUrl,
+        metadata,
+        additionalInfo: { pageCount: metadata.data?.pageCount }
+      });
+
       if (metadata.success && metadata.data?.pageCount) {
         setTotalPages(metadata.data.pageCount);
         setIsLoading(false);
       } else {
-        throw new Error('Invalid metadata format');
+        addDebugLog({
+          stage: 'FETCH_METADATA_INVALID_FORMAT',
+          pdfUrl,
+          errorType: 'INVALID_FORMAT',
+          errorMessage: 'Response missing success or pageCount',
+          metadata
+        });
+        setError('Invalid metadata format - missing pageCount');
+        setIsLoading(false);
       }
     } catch (err) {
       console.error('[PageByPagePdfViewer] Error fetching metadata:', err);
-      setError(texts.error);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      addDebugLog({
+        stage: 'FETCH_METADATA_EXCEPTION',
+        pdfUrl,
+        errorType: err instanceof Error ? err.name : 'Unknown',
+        errorMessage,
+        additionalInfo: { stack: err instanceof Error ? err.stack : undefined }
+      });
+      setError(`Network error: ${errorMessage}`);
       setIsLoading(false);
     }
   };
 
-  // Handle document load success (for individual pages)
-  const onDocumentLoadSuccess = () => {
-    // Page loaded successfully
-  };
-
-  // Handle document load error
+  // Handle document load error (for individual page rendering)
   const onDocumentLoadError = (err: Error) => {
     console.error('[PageByPagePdfViewer] Error loading PDF page:', err);
-    setError(texts.error);
+    addDebugLog({
+      stage: 'PAGE_RENDER_ERROR',
+      pageUrl: getPageUrl(currentPage),
+      errorType: err.name,
+      errorMessage: err.message,
+      additionalInfo: { currentPage, stack: err.stack }
+    });
+    setError(`Failed to render page ${currentPage}: ${err.message}`);
     setIsLoading(false);
   };
 
@@ -485,7 +585,7 @@ export function PageByPagePdfViewer({
 
         {/* Error State */}
         {error && (
-          <div className="flex items-center justify-center p-8 min-h-[600px]">
+          <div className="flex flex-col items-center justify-center p-8 min-h-[600px]">
             <div className="bg-white rounded-lg shadow-lg border border-red-200 p-8 max-w-md w-full">
               <div className="text-center">
                 {/* Error Icon */}
@@ -509,6 +609,7 @@ export function PageByPagePdfViewer({
                 <button
                   onClick={() => {
                     setError(null);
+                    setDebugInfo([]);
                     setIsLoading(true);
                     fetchMetadata();
                   }}
@@ -521,6 +622,85 @@ export function PageByPagePdfViewer({
                 </button>
               </div>
             </div>
+
+            {/* Debug Panel - Only in Development */}
+            {isDev && debugInfo.length > 0 && (
+              <div className="mt-6 w-full max-w-4xl">
+                <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-700 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <span className="text-yellow-400 font-semibold text-sm">Debug Info (Dev Mode Only)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDebugPanel(!showDebugPanel)}
+                      className="text-gray-400 hover:text-white text-sm"
+                    >
+                      {showDebugPanel ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+
+                  {showDebugPanel && (
+                    <div className="p-4 max-h-96 overflow-auto">
+                      <div className="space-y-4">
+                        {debugInfo.map((log, index) => (
+                          <div key={index} className="border border-gray-700 rounded-lg overflow-hidden">
+                            <div className={`px-3 py-2 text-xs font-mono font-semibold ${
+                              log.stage.includes('ERROR') || log.stage.includes('EXCEPTION')
+                                ? 'bg-red-900/50 text-red-300'
+                                : log.stage.includes('SUCCESS')
+                                ? 'bg-green-900/50 text-green-300'
+                                : 'bg-blue-900/50 text-blue-300'
+                            }`}>
+                              [{log.timestamp.split('T')[1]?.slice(0, 8)}] {log.stage}
+                            </div>
+                            <div className="p-3 bg-gray-800/50 text-xs font-mono text-gray-300 space-y-2">
+                              {log.pdfUrl && (
+                                <div><span className="text-gray-500">URL:</span> {log.pdfUrl}</div>
+                              )}
+                              {log.pageUrl && (
+                                <div><span className="text-gray-500">Page URL:</span> {log.pageUrl}</div>
+                              )}
+                              {log.httpStatus && (
+                                <div>
+                                  <span className="text-gray-500">HTTP Status:</span>{' '}
+                                  <span className={log.httpStatus >= 400 ? 'text-red-400' : 'text-green-400'}>
+                                    {log.httpStatus}
+                                  </span>
+                                </div>
+                              )}
+                              {log.errorType && (
+                                <div><span className="text-gray-500">Error Type:</span> <span className="text-red-400">{log.errorType}</span></div>
+                              )}
+                              {log.errorMessage && (
+                                <div><span className="text-gray-500">Error Message:</span> <span className="text-red-400">{log.errorMessage}</span></div>
+                              )}
+                              {log.responseBody && (
+                                <div>
+                                  <span className="text-gray-500">Response Body:</span>
+                                  <pre className="mt-1 p-2 bg-gray-900 rounded text-xs overflow-x-auto">{log.responseBody}</pre>
+                                </div>
+                              )}
+                              {log.additionalInfo && Object.keys(log.additionalInfo).length > 0 && (
+                                <div>
+                                  <span className="text-gray-500">Additional Info:</span>
+                                  <pre className="mt-1 p-2 bg-gray-900 rounded text-xs overflow-x-auto">
+                                    {JSON.stringify(log.additionalInfo, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -529,29 +709,40 @@ export function PageByPagePdfViewer({
           <div className="w-full min-h-full flex items-start justify-center py-8 px-4 relative" onContextMenu={handleContextMenu}>
             {/* Render current watermarked page */}
             <div className="relative shadow-2xl rounded-lg overflow-hidden" style={{ zIndex: 15 }}>
-              {(
-                <Document
-                  file={currentPageUrl}
-                  onLoadError={onDocumentLoadError}
-                  loading={
-                    <div className="flex items-center justify-center p-8 min-h-[600px] min-w-[800px]">
-                      <div className="text-center">
-                        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent mb-4"></div>
-                        <p className="text-gray-700 font-medium">{texts.loadingPage}</p>
-                      </div>
+              <Document
+                key={`pdf-page-${currentPage}`}
+                file={currentPageUrl}
+                onLoadSuccess={() => {
+                  addDebugLog({
+                    stage: 'PAGE_LOAD_SUCCESS',
+                    pageUrl: currentPageUrl,
+                    additionalInfo: { currentPage }
+                  });
+                }}
+                onLoadError={onDocumentLoadError}
+                loading={
+                  <div className="flex items-center justify-center p-8 min-h-[600px] min-w-[800px]">
+                    <div className="text-center">
+                      <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent mb-4"></div>
+                      <p className="text-gray-700 font-medium">{texts.loadingPage}</p>
                     </div>
-                  }
-                  error={<div />}
-                >
-                  <Page
-                    pageNumber={1}
-                    width={fitToWidth ? Math.min(containerWidth, 1200) : Math.min(containerWidth, 1200) * zoom}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    canvasClassName="!border-0 !outline-0"
-                  />
-                </Document>
-              )}
+                  </div>
+                }
+                error={
+                  <div className="flex items-center justify-center p-8 min-h-[600px] min-w-[800px]">
+                    <div className="text-center text-red-500">
+                      <p>Failed to load page {currentPage}</p>
+                    </div>
+                  </div>
+                }
+              >
+                <Page
+                  pageNumber={1}
+                  width={fitToWidth ? Math.min(containerWidth, 1200) : Math.min(containerWidth, 1200) * zoom}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              </Document>
             </div>
 
             {/* Left Navigation Zone (for Previous Page) - Behind PDF */}

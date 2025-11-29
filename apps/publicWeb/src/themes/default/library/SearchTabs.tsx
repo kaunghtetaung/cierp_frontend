@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLangSelector } from '@/feature-components/lang-selector';
 import { SimpleSearch, SearchType, SortBy, SortOrder } from './SimpleSearch';
+import { AdvancedSearch, type AdvancedSearchParams } from './AdvancedSearch';
 
 type SearchMode = 'simple' | 'advanced';
 
@@ -14,24 +15,33 @@ interface SearchTabsProps {
     sortBy: SortBy,
     sortOrder: SortOrder
   ) => void;
+  onAdvancedSearch?: (params: AdvancedSearchParams) => void;
   isLoading?: boolean;
   initialQuery?: string;
   initialSearchType?: SearchType;
   initialCatalogType?: string;
   initialSortBy?: SortBy;
   initialSortOrder?: SortOrder;
+  initialAdvancedParams?: Partial<AdvancedSearchParams>;
+  initialMode?: SearchMode;
 }
 
 export function SearchTabs({
   onSearch,
+  onAdvancedSearch,
   isLoading,
   initialQuery,
   initialSearchType,
   initialCatalogType,
   initialSortBy,
-  initialSortOrder
+  initialSortOrder,
+  initialAdvancedParams,
+  initialMode = 'simple'
 }: SearchTabsProps) {
-  const [activeTab, setActiveTab] = useState<SearchMode>('simple');
+  // Auto-select advanced tab if initialAdvancedParams exists or initialMode is 'advanced'
+  const [activeTab, setActiveTab] = useState<SearchMode>(
+    initialAdvancedParams?.searchCriteria?.length ? 'advanced' : initialMode
+  );
   const { currentLanguage } = useLangSelector();
 
   const texts = {
@@ -86,9 +96,25 @@ export function SearchTabs({
             initialSortOrder={initialSortOrder}
           />
         ) : (
-          <div className="text-center py-12" style={{ color: '#FFF' }}>
-            <p>Advanced Search form will be implemented here</p>
-          </div>
+          <AdvancedSearch
+            onSearch={(params) => {
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.log('🔗 [SearchTabs] onSearch wrapper called!');
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.log('   params:', JSON.stringify(params, null, 2));
+              console.log('   onAdvancedSearch exists:', !!onAdvancedSearch);
+              console.log('   onAdvancedSearch type:', typeof onAdvancedSearch);
+              if (onAdvancedSearch) {
+                console.log('🚀 [SearchTabs] Calling onAdvancedSearch...');
+                onAdvancedSearch(params);
+                console.log('✅ [SearchTabs] onAdvancedSearch called!');
+              } else {
+                console.warn('⚠️ [SearchTabs] onAdvancedSearch is NOT defined!');
+              }
+            }}
+            isLoading={isLoading}
+            initialParams={initialAdvancedParams}
+          />
         )}
       </div>
     </div>
