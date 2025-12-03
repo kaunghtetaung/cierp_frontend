@@ -88,7 +88,7 @@ import {
   getDefaultColumnOrder,
   isFixedColumn,
   FIXED_COLUMNS,
-} from "@repo/schema-tables";
+} from "../lib/columnOrderUtils";
 import ModuleLoading from "../../../apps/core/src/app/[appId]/[module]/loading";
 
 interface DataTableProps<TData, TValue> {
@@ -116,6 +116,10 @@ interface DataTableProps<TData, TValue> {
   onAdvancedFilterToggle?: () => void; // Advanced filter toggle callback
   isAdvancedFilterOpen?: boolean; // Advanced filter open state
   activeFilterCount?: number; // Number of active filters
+  // Recycle bin props
+  showRecycleBin?: boolean; // Show recycle bin button
+  recycleBinCount?: number; // Number of deleted items
+  onRecycleBinClick?: () => void; // Recycle bin click handler
 }
 
 export function DataTable<TData, TValue>({
@@ -143,6 +147,9 @@ export function DataTable<TData, TValue>({
   onAdvancedFilterToggle,
   isAdvancedFilterOpen = false,
   activeFilterCount = 0,
+  showRecycleBin = false,
+  recycleBinCount = 0,
+  onRecycleBinClick,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -1298,6 +1305,39 @@ export function DataTable<TData, TValue>({
                 {activeFilterCount > 0 && (
                   <span className="ml-1 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-xs font-medium">
                     {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            )}
+
+            {/* Recycle Bin Button */}
+            {showRecycleBin && (
+              <Button
+                variant="outline"
+                size="sm"
+                title="Recycle Bin"
+                className="h-8 relative"
+                onClick={onRecycleBinClick}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+                {recycleBinCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-medium px-1">
+                    {recycleBinCount > 99 ? "99+" : recycleBinCount}
                   </span>
                 )}
               </Button>

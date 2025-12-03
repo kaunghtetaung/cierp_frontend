@@ -74,6 +74,6 @@
       "@repo/utils/*": ["./libs/utils/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "apps/core/src/staticModules/content/posts/pagebackup"],
   "exclude": ["node_modules"]
 }

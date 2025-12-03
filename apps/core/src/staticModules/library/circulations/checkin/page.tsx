@@ -16,9 +16,7 @@ export default function CheckinPage() {
       </div>
 
       {/* Check-in Form */}
-      <div className="flex justify-center">
-        <CheckinForm />
-      </div>
+      <CheckinForm />
     </div>
   );
 }

@@ -14,6 +14,31 @@ import {
   createReservation,
   type ReservationAvailability
 } from '@/actions/library/reservation.actions';
+import { LibraryMobileFooter } from '@/components/library/LibraryMobileFooter';
+
+// Roles allowed to access eBooks
+const EBOOK_ALLOWED_ROLES = [
+  'student',
+  'staff',
+  'organizationadmin',
+  'organizationmember',
+  'departmentadmin',
+  'departmentstaff',
+  'systemadmin'
+];
+
+// Helper to extract role name from role object or string
+function getRoleName(role: any): string {
+  if (typeof role === 'string') return role.toLowerCase();
+  if (role && typeof role === 'object' && role.Role) return role.Role.toLowerCase();
+  return '';
+}
+
+// Check if user has any of the allowed roles for eBook access
+function canUserAccessEbooks(roles: any[]): boolean {
+  if (!roles || !Array.isArray(roles)) return false;
+  return roles.some((role: any) => EBOOK_ALLOWED_ROLES.includes(getRoleName(role)));
+}
 
 interface BookDetailsProps {
   book: Bibliography;
@@ -42,8 +67,9 @@ export function BookDetails({ book }: BookDetailsProps) {
     title: ''
   });
 
-  // Check if user is logged in
+  // Check if user is logged in and has eBook access
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [canAccessEbooks, setCanAccessEbooks] = useState(false);
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
@@ -63,9 +89,12 @@ export function BookDetails({ book }: BookDetailsProps) {
         console.log('[BookDetails] Auth status:', authStatus);
         setIsLoggedIn(authStatus.isAuthenticated);
         setUserId(authStatus.userId);
+        // Check if user has allowed role for eBook access
+        setCanAccessEbooks(canUserAccessEbooks(authStatus.userRoles || []));
       } catch (error) {
         console.error('[BookDetails] Error checking auth:', error);
         setIsLoggedIn(false);
+        setCanAccessEbooks(false);
         setUserId(undefined);
       } finally {
         setIsCheckingAuth(false);
@@ -119,6 +148,7 @@ export function BookDetails({ book }: BookDetailsProps) {
     downloadAbstract: currentLanguage === 'mm' ? 'အကျဉ်းချုပ်ဒေါင်းလုဒ်' : 'Download Abstract',
     downloadContent: currentLanguage === 'mm' ? 'အကြောင်းအရာဒေါင်းလုဒ်' : 'Download Content',
     remark: currentLanguage === 'mm' ? 'မှတ်ချက်:' : 'Remark:',
+    note: currentLanguage === 'mm' ? 'မှတ်စု:' : 'Note:',
     bookCopies: currentLanguage === 'mm' ? 'စာအုပ်အရေအတွက်:' : 'Available Copies:',
     noDescription: currentLanguage === 'mm' ? 'ဖော်ပြချက်မရှိပါ' : 'No description available',
     reserveBook: currentLanguage === 'mm' ? 'စာအုပ်ကြိုတင်မှာကြားမည်' : 'Reserve Book',
@@ -179,14 +209,13 @@ export function BookDetails({ book }: BookDetailsProps) {
 
   const handleReadEbook = () => {
     console.log('[BookDetails] handleReadEbook called', {
-      isLoggedIn,
+      canAccessEbooks,
       hasEbookFile: !!book.ebookFile,
       ebookFile: book.ebookFile
     });
 
-    if (!isLoggedIn) {
-      alert(texts.loginRequired);
-      // TODO: Redirect to login page
+    if (!canAccessEbooks) {
+      // This shouldn't happen as button is hidden, but safety check
       return;
     }
 
@@ -263,7 +292,7 @@ export function BookDetails({ book }: BookDetailsProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header with Back Button */}
       <div className="border-b border-border bg-card/50">
         <div className="container mx-auto px-4 py-4">
@@ -346,33 +375,18 @@ export function BookDetails({ book }: BookDetailsProps) {
                         {currentLanguage === 'mm' ? 'PDF ဖိုင်များ' : 'Available PDFs'}
                       </p>
 
-                      {/* eBook Button - Only show if user is logged in */}
-                      {hasEbook && (
+                      {/* eBook Button - Only show if user has allowed role */}
+                      {hasEbook && canAccessEbooks && (
                         <div className="space-y-2 mb-3">
                           <button
                             onClick={handleReadEbook}
-                            className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                              isLoggedIn
-                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
-                                : 'bg-muted hover:bg-muted/80 text-muted-foreground cursor-not-allowed'
-                            }`}
-                            disabled={!isLoggedIn}
+                            className="w-full py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                             {texts.readEbook}
-                            {!isLoggedIn && (
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                            )}
                           </button>
-                          {!isLoggedIn && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              {texts.loginRequired}
-                            </p>
-                          )}
                         </div>
                       )}
 
@@ -719,6 +733,18 @@ export function BookDetails({ book }: BookDetailsProps) {
                 </div>
               )}
 
+              {/* Note */}
+              {book.note && (
+                <div className="bg-card border border-border rounded-lg p-6 shadow-md">
+                  <h2 className="text-xl font-semibold text-foreground mb-3">
+                    {texts.note}
+                  </h2>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {book.note.replace(/<[^>]*>/g, '')}
+                  </p>
+                </div>
+              )}
+
               {/* Remark */}
               {book.remark && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
@@ -758,6 +784,9 @@ export function BookDetails({ book }: BookDetailsProps) {
           userId={userId}
         />
       )}
+
+      {/* Mobile Footer Navigation */}
+      <LibraryMobileFooter />
     </div>
   );
 }

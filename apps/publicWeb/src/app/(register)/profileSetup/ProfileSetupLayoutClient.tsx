@@ -82,8 +82,16 @@ export default function ProfileSetupLayoutClient({
                 </div>
               )}
               <div className="text-white">
+                {/* Short name on mobile, full name on md+ */}
                 <h1 className="text-xl font-semibold">
-                  {(tenant.displayName && tenant.displayName[initialLanguage as keyof typeof tenant.displayName]) || tenant.brandInfo?.title || "Profile Setup"}
+                  <span className="md:hidden">
+                    {(tenant.displayShortName && tenant.displayShortName[initialLanguage as keyof typeof tenant.displayShortName]) ||
+                     (tenant.displayName && tenant.displayName[initialLanguage as keyof typeof tenant.displayName]) ||
+                     tenant.brandInfo?.title || "Profile Setup"}
+                  </span>
+                  <span className="hidden md:inline">
+                    {(tenant.displayName && tenant.displayName[initialLanguage as keyof typeof tenant.displayName]) || tenant.brandInfo?.title || "Profile Setup"}
+                  </span>
                 </h1>
                 <p className="text-sm text-blue-100">Student Registration</p>
               </div>
@@ -105,12 +113,12 @@ export default function ProfileSetupLayoutClient({
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="mt-auto border-t border-gray-200 bg-white">
+      {/* Footer - hidden on mobile */}
+      <footer className="hidden sm:block mt-auto border-t border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm text-gray-600">
             © {new Date().getFullYear()}{" "}

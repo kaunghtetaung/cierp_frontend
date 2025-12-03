@@ -440,6 +440,106 @@ export class ModuleService {
   }
 
   /**
+   * Hard delete module item (permanent deletion)
+   */
+  async hardDelete<T = any>(module: string, id: string): Promise<T> {
+    const response = await this.httpClient.request<T>(`/${this.appName}/${module}/hard/${id}`, {
+      method: "DELETE",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to permanently delete module item");
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Restore soft-deleted module item
+   * Backend uses POST /:module/:id/restore format
+   */
+  async restore<T = any>(module: string, id: string): Promise<T> {
+    const response = await this.httpClient.request<T>(`/${this.appName}/${module}/${id}/restore`, {
+      method: "POST",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to restore module item");
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Get count of deleted items for trash bin badge
+   */
+  async getDeletedCount(module: string): Promise<{ count: number }> {
+    const endpoint = `/${this.appName}/${module}/deleted/count`;
+    console.log(`🗑️ [ModuleService.getDeletedCount] Calling: ${endpoint}`);
+
+    const response = await this.httpClient.request<{ count: number }>(endpoint, {
+      method: "GET",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+    });
+
+    console.log(`🗑️ [ModuleService.getDeletedCount] Response:`, response);
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get deleted count");
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Get deleted items with pagination
+   */
+  async getDeletedList<T = any>(
+    module: string,
+    params: { page?: number; limit?: number } = {}
+  ): Promise<{ data: T[]; meta: any }> {
+    let endpoint = `/${this.appName}/${module}/deleted`;
+
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set("page", String(params.page));
+    if (params.limit) queryParams.set("limit", String(params.limit));
+
+    if (queryParams.toString()) {
+      endpoint += `?${queryParams.toString()}`;
+    }
+
+    const response = await this.httpClient.request<any>(endpoint, {
+      method: "GET",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to fetch deleted items");
+    }
+
+    // Backend returns { data: [...], meta: {...} }
+    return response.data;
+  }
+
+  /**
    * Fetch reference data for dropdowns (supports dependencies)
    */
   async getReference<T = any>(

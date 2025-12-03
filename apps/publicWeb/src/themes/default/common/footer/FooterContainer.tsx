@@ -93,7 +93,7 @@ export async function FooterContainer({
     // Fallback footer in case of error
     return (
       <footer
-        className={`${className || ""}`}
+        className={`hidden md:block ${className || ""}`}
         style={{ backgroundColor: "#1F54B5" }}
       >
         <div className="max-w-7xl mx-auto px-4 py-8">

@@ -1,5 +1,6 @@
 // Utilities
 export * from "./lib/utils";
+export * from "./lib/columnOrderUtils";
 
 // Navigation and icons
 export * from "./components/navigation-menu";

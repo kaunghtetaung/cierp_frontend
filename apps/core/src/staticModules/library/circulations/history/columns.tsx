@@ -15,6 +15,26 @@ import {
 import { format } from "date-fns";
 import type { CirculationResponse, CirculationStatus } from "../types/circulation.types";
 
+// Helper to safely render any value (prevents React error #31)
+function safeRender(value: any, fieldName?: string): string {
+  if (value === null || value === undefined) return '-';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object') {
+    console.error(`🚨 [COLUMNS] Object passed to render for field "${fieldName}":`, {
+      keys: Object.keys(value),
+      value,
+    });
+    // Try to extract name property if it exists
+    if ('name' in value) return value.name;
+    if ('title' in value) return value.title;
+    // Fallback to JSON for debugging
+    return '[Object]';
+  }
+  return String(value);
+}
+
 // Status badge component
 function StatusBadge({ status }: { status: CirculationStatus }) {
   const variants = {
@@ -71,7 +91,7 @@ export function getCirculationColumns({
       accessorKey: "accessionNo",
       header: "Accession No.",
       cell: ({ row }) => (
-        <div className="font-medium">{row.original.accessionNo}</div>
+        <div className="font-medium">{safeRender(row.original.accessionNo, 'accessionNo')}</div>
       ),
       size: 120,
     },
@@ -83,16 +103,40 @@ export function getCirculationColumns({
         const borrowerName = row.original.borrowerName;
         const borrower = row.original.borrower;
 
+        // Debug: Check if borrowerName is an object
+        if (borrowerName && typeof borrowerName === 'object') {
+          console.error('🚨 [COLUMNS] borrowerName is an object!', borrowerName);
+        }
+
+        // Safe extraction of borrower name
+        const displayName = (() => {
+          if (typeof borrowerName === 'string') return borrowerName;
+          if (borrowerName && typeof borrowerName === 'object' && 'name' in borrowerName) {
+            return (borrowerName as any).name;
+          }
+          if (borrower) {
+            const firstName = typeof borrower.firstName === 'string' ? borrower.firstName : '';
+            const lastName = typeof borrower.lastName === 'string' ? borrower.lastName : '';
+            return `${firstName} ${lastName}`.trim() || '-';
+          }
+          return '-';
+        })();
+
+        // Safe extraction of library card number
+        const cardNo = (() => {
+          if (!borrower?.libraryCardNo) return null;
+          if (typeof borrower.libraryCardNo === 'string') return borrower.libraryCardNo;
+          if (typeof borrower.libraryCardNo === 'object' && 'name' in borrower.libraryCardNo) {
+            return (borrower.libraryCardNo as any).name;
+          }
+          return null;
+        })();
+
         return (
           <div>
-            <div className="font-medium">
-              {borrowerName ||
-                (borrower ? `${borrower.firstName} ${borrower.lastName}` : "-")}
-            </div>
-            {borrower?.libraryCardNo && (
-              <div className="text-xs text-muted-foreground">
-                {borrower.libraryCardNo}
-              </div>
+            <div className="font-medium">{displayName}</div>
+            {cardNo && (
+              <div className="text-xs text-muted-foreground">{cardNo}</div>
             )}
           </div>
         );
@@ -105,12 +149,21 @@ export function getCirculationColumns({
       accessorFn: (row) => row.bibliography?.title || "-",
       cell: ({ row }) => {
         const book = row.original.bibliography;
+        // Handle author which might be a string or an object with name property
+        const getAuthorName = (author: any): string | null => {
+          if (!author) return null;
+          if (typeof author === 'string') return author;
+          if (typeof author === 'object' && author.name) return author.name;
+          return null;
+        };
+        const authorName = book ? getAuthorName(book.author) : null;
+
         return book ? (
           <div>
             <div className="font-medium line-clamp-1">{book.title}</div>
-            {book.author && (
+            {authorName && (
               <div className="text-xs text-muted-foreground">
-                by {book.author}
+                by {authorName}
               </div>
             )}
           </div>

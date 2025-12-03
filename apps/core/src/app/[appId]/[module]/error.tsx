@@ -1,100 +1,112 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui'
-import { Button } from '@repo/ui'
-import { Alert, AlertDescription } from '@repo/ui'
-import { RefreshCw, AlertTriangle, Clock, Wifi, Home } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui";
+import { Button } from "@repo/ui";
+import { Alert, AlertDescription } from "@repo/ui";
+import { RefreshCw, AlertTriangle, Clock, Wifi, Home } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ModuleErrorProps {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }
 
 export default function ModuleError({ error, reset }: ModuleErrorProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     // Log error for debugging
-    console.error('Module page error:', error)
-  }, [error])
+    console.error("Module page error:", error);
+  }, [error]);
 
   // Check if this is a timeout error
-  const isTimeoutError = error.message.includes('timeout') || 
-                        error.message.includes('timed out') ||
-                        error.message.includes('Request to microservice timed out')
+  const isTimeoutError =
+    error.message.includes("timeout") ||
+    error.message.includes("timed out") ||
+    error.message.includes("Request to microservice timed out");
 
   // Check if this is a network error
-  const isNetworkError = error.message.includes('fetch') || 
-                        error.message.includes('network') ||
-                        error.message.includes('ECONNREFUSED')
+  const isNetworkError =
+    error.message.includes("fetch") ||
+    error.message.includes("network") ||
+    error.message.includes("ECONNREFUSED");
 
   const getErrorIcon = () => {
-    if (isTimeoutError) return <Clock className="h-6 w-6 text-warning" />
-    if (isNetworkError) return <Wifi className="h-6 w-6 text-danger" />
-    return <AlertTriangle className="h-6 w-6 text-danger" />
-  }
+    if (isTimeoutError) return <Clock className="h-6 w-6 text-warning" />;
+    if (isNetworkError) return <Wifi className="h-6 w-6 text-danger" />;
+    return <AlertTriangle className="h-6 w-6 text-danger" />;
+  };
 
   const getErrorTitle = () => {
-    if (isTimeoutError) return 'Request Timed Out'
-    if (isNetworkError) return 'Connection Error'
-    return 'Module Load Error'
-  }
+    if (isTimeoutError) return "Request Timed Out";
+    if (isNetworkError) return "Connection Error";
+    return "Module Load Error";
+  };
 
   const getErrorDescription = () => {
     if (isTimeoutError) {
-      return 'The microservice is taking longer than expected to respond. This usually happens during high load or when processing large datasets.'
+      return "The microservice is taking longer than expected to respond. This usually happens during high load or when processing large datasets.";
     }
     if (isNetworkError) {
-      return 'Unable to connect to the microservice. Please check your network connection and try again.'
+      return "Unable to connect to the microservice. Please check your network connection and try again.";
     }
-    return 'An unexpected error occurred while loading the module.'
-  }
+    return "An unexpected error occurred while loading the module.";
+  };
 
   const getSuggestions = () => {
-    const common = ['Check your internet connection', 'Wait a moment and try again']
-    
+    const common = [
+      "Check your internet connection",
+      "Wait a moment and try again",
+    ];
+
     if (isTimeoutError) {
       return [
-        'The server might be processing a large request',
-        'Try refreshing the page in a few seconds',
-        'Consider using filters to reduce data load',
-        ...common
-      ]
+        "The server might be processing a large request",
+        "Try refreshing the page in a few seconds",
+        "Consider using filters to reduce data load",
+        ...common,
+      ];
     }
-    
+
     if (isNetworkError) {
       return [
-        'Check if the microservice is running',
-        'Verify your network connection',
-        ...common
-      ]
+        "Check if the microservice is running",
+        "Verify your network connection",
+        ...common,
+      ];
     }
-    
-    return [
-      'This might be a temporary issue',
-      ...common
-    ]
-  }
+
+    return ["This might be a temporary issue", ...common];
+  };
 
   return (
     <div className="w-full min-w-0 overflow-hidden">
-      <Card className={`w-full ${isTimeoutError ? 'border-warning' : 'border-danger'}`}>
+      <Card
+        className={`w-full ${
+          isTimeoutError ? "border-warning" : "border-danger"
+        }`}
+      >
         <CardHeader>
           <div className="flex items-center gap-3">
             {getErrorIcon()}
             <div>
-              <CardTitle className={isTimeoutError ? 'text-warning' : 'text-danger'}>
+              <CardTitle
+                className={isTimeoutError ? "text-warning" : "text-danger"}
+              >
                 {getErrorTitle()}
               </CardTitle>
-              <CardDescription>
-                {getErrorDescription()}
-              </CardDescription>
+              <CardDescription>{getErrorDescription()}</CardDescription>
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Error Details */}
           <Alert variant={isTimeoutError ? "default" : "destructive"}>
@@ -102,7 +114,7 @@ export default function ModuleError({ error, reset }: ModuleErrorProps) {
             <AlertDescription>
               <details className="cursor-pointer">
                 <summary className="font-medium mb-2">
-                  {isTimeoutError ? 'Timeout Details' : 'Error Details'}
+                  {isTimeoutError ? "Timeout Details" : "Error Details"}
                 </summary>
                 <div className="space-y-2">
                   <code className="text-xs bg-background p-2 rounded block border">
@@ -135,29 +147,26 @@ export default function ModuleError({ error, reset }: ModuleErrorProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-2">
-            <Button 
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button
               variant="default"
               onClick={reset}
-              className="flex-1 sm:flex-none"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
-            
-            <Button 
+
+            <Button
               variant="outline"
               onClick={() => router.refresh()}
-              className="flex-1 sm:flex-none"
             >
               <Wifi className="h-4 w-4 mr-2" />
               Refresh Page
             </Button>
-            
-            <Button 
+
+            <Button
               variant="outline"
-              onClick={() => router.push('/')}
-              className="flex-1 sm:flex-none"
+              onClick={() => router.push("/")}
             >
               <Home className="h-4 w-4 mr-2" />
               Go Home
@@ -169,13 +178,14 @@ export default function ModuleError({ error, reset }: ModuleErrorProps) {
             <div className="bg-info-light border border-info rounded-lg p-4">
               <h4 className="font-medium text-info text-sm mb-2">💡 Pro Tip</h4>
               <p className="text-sm text-info">
-                If timeouts keep happening, try using table filters to reduce the amount of data being loaded, 
-                or contact your system administrator if the issue persists.
+                If timeouts keep happening, try using table filters to reduce
+                the amount of data being loaded, or contact your system
+                administrator if the issue persists.
               </p>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

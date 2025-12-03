@@ -104,8 +104,8 @@ export function CheckinForm({ onSuccess, onCancel }: CheckinFormProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="w-full max-w-2xl">
+    <div className="space-y-4 w-full">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconComponent name="BookCheck" className="w-5 h-5" />
@@ -207,7 +207,7 @@ export function CheckinForm({ onSuccess, onCancel }: CheckinFormProps) {
 
       {/* Result Display */}
       {result && (
-        <Card className="w-full max-w-2xl">
+        <Card className="w-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <IconComponent name="CheckCircle" className="w-5 h-5 text-green-600" />

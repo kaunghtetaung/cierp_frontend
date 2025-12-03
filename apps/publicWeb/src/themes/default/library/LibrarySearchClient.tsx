@@ -10,6 +10,7 @@ import { SearchHero } from './SearchHero';
 import { SearchResults } from './SearchResults';
 import { SearchResultsSkeleton } from './SearchResultsSkeleton';
 import { Pagination } from './Pagination';
+import { LibraryMobileFooter } from '@/components/library/LibraryMobileFooter';
 
 interface LibrarySearchClientProps {
   initialQuery?: string;
@@ -61,10 +62,11 @@ export function LibrarySearchClient({
     }
   }, [initialQuery, initialSearchType, initialCatalogType, initialSortBy, initialSortOrder]);
 
-  // Check for advanced search params from sessionStorage (when navigating from homepage)
+  // Check for advanced search params from sessionStorage or URL (when navigating from homepage or A-Z index)
   useEffect(() => {
     const mode = searchParams.get('mode');
     if (mode === 'advanced') {
+      // First try sessionStorage
       const storedParams = sessionStorage.getItem('advancedSearchParams');
       if (storedParams) {
         try {
@@ -74,9 +76,50 @@ export function LibrarySearchClient({
           setAdvancedParams(params);
           // Clear the stored params after loading
           sessionStorage.removeItem('advancedSearchParams');
+          return;
         } catch (error) {
           console.error('Failed to parse advanced search params from sessionStorage:', error);
         }
+      }
+
+      // Fallback: Try URL params (for A-Z index or direct links)
+      const urlParams = searchParams.get('params');
+      const startsWith = searchParams.get('startsWith');
+
+      if (urlParams) {
+        try {
+          const params = JSON.parse(decodeURIComponent(urlParams)) as AdvancedSearchParams;
+          console.log('📦 [LibrarySearchClient] Loading advanced search params from URL:', params);
+          setSearchMode('advanced');
+          setAdvancedParams(params);
+          return;
+        } catch (error) {
+          console.error('Failed to parse advanced search params from URL:', error);
+        }
+      }
+
+      // Fallback: Build params from startsWith param (A-Z index)
+      if (startsWith) {
+        const params: AdvancedSearchParams = {
+          catalogTypeFilter: 'any',
+          searchCriteria: [
+            {
+              field: 'title',
+              operator: 'startsWith',
+              value: startsWith,
+              logicalOperator: 'AND'
+            }
+          ],
+          wordMatchMode: 'any',
+          globalOperator: 'AND',
+          page: 1,
+          limit: 20,
+          sortBy: 'title',
+          sortOrder: 'asc'
+        };
+        console.log('📦 [LibrarySearchClient] Building advanced search params from startsWith:', startsWith);
+        setSearchMode('advanced');
+        setAdvancedParams(params);
       }
     }
   }, [searchParams]);
@@ -238,7 +281,7 @@ export function LibrarySearchClient({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Collapsible Search Hero */}
       <SearchHero
         onSearch={handleSearch}
@@ -353,6 +396,9 @@ export function LibrarySearchClient({
           )}
         </div>
       </div>
+
+      {/* Mobile Footer Navigation */}
+      <LibraryMobileFooter />
     </div>
   );
 }

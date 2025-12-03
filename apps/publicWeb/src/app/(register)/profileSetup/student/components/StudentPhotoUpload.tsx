@@ -90,7 +90,7 @@ export function StudentPhotoUpload({
 
   // Validate file before upload
   const validateFile = (file: File): string | null => {
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
@@ -98,7 +98,7 @@ export function StudentPhotoUpload({
     }
 
     if (file.size > maxSize) {
-      return "Image size must be less than 2MB";
+      return "Image size must be less than 10MB";
     }
 
     return null;
@@ -319,7 +319,7 @@ export function StudentPhotoUpload({
       {/* File Requirements */}
       <div className="text-xs text-gray-500 text-center space-y-1">
         <p>Accepted formats: JPEG, PNG, WebP</p>
-        <p>Maximum size: 2MB</p>
+        <p>Maximum size: 10MB</p>
         <p>Recommended: Clear, front-facing photo</p>
       </div>
     </div>

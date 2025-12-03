@@ -12,6 +12,7 @@ export async function checkAuthStatus(): Promise<{
   isAuthenticated: boolean;
   userEmail?: string;
   userId?: string;
+  userRoles?: any[];
 }> {
   try {
     const cookieStore = await cookies();
@@ -31,6 +32,7 @@ export async function checkAuthStatus(): Promise<{
       isAuthenticated: sessionInfo.isAuthenticated,
       userEmail: sessionInfo.user?.email,
       userId: sessionInfo.session?.userId,
+      userRoles: sessionInfo.user?.roles || [],
     };
   } catch (error) {
     console.error('[checkAuthStatus] Error:', error);

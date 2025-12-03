@@ -12,6 +12,36 @@ import { getCirculationHistory } from "../actions/circulation.actions";
 import type { CirculationResponse, CirculationStatus } from "../types/circulation.types";
 import { toast } from "sonner";
 
+// Debug helper to find all nested objects in data
+function debugFindObjects(data: any[], prefix: string = ''): void {
+  if (!data || data.length === 0) return;
+
+  const firstItem = data[0];
+  console.log(`🔍 [DEBUG] Analyzing data structure at "${prefix || 'root'}":`);
+
+  const analyzeValue = (value: any, path: string) => {
+    if (value === null || value === undefined) return;
+    if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      console.log(`📦 [DEBUG] Object at "${path}":`, {
+        keys: Object.keys(value),
+        hasId: 'id' in value,
+        hasName: 'name' in value,
+        has_id: '_id' in value,
+      });
+      // Recursively check nested objects
+      Object.entries(value).forEach(([k, v]) => {
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          analyzeValue(v, `${path}.${k}`);
+        }
+      });
+    }
+  };
+
+  Object.entries(firstItem).forEach(([key, value]) => {
+    analyzeValue(value, key);
+  });
+}
+
 export default function CirculationHistoryPage() {
   const [data, setData] = useState<CirculationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +90,53 @@ export default function CirculationHistoryPage() {
 
         const response = await getCirculationHistory(queryParams);
 
+        console.log('📊 [CIRCULATION HISTORY] API Response:', {
+          success: response.success,
+          hasData: !!response.data,
+          dataLength: response.data?.data?.length,
+          error: response.error,
+        });
+
         if (response.success && response.data) {
+          // Debug: Comprehensive analysis of data structure
+          debugFindObjects(response.data.data, 'circulation');
+
+          // Debug: Log first item's structure to identify object fields
+          if (response.data.data.length > 0) {
+            const firstItem = response.data.data[0];
+            console.log('📊 [CIRCULATION HISTORY] First item structure:', {
+              id: firstItem.id,
+              accessionNo: firstItem.accessionNo,
+              status: firstItem.status,
+              borrowerName: firstItem.borrowerName,
+              borrowerNameType: typeof firstItem.borrowerName,
+              borrower: firstItem.borrower,
+              borrowerType: typeof firstItem.borrower,
+              bibliography: firstItem.bibliography,
+              bibliographyType: typeof firstItem.bibliography,
+              bibliographyAuthor: firstItem.bibliography?.author,
+              bibliographyAuthorType: typeof firstItem.bibliography?.author,
+              lendingPolicy: firstItem.lendingPolicy,
+              lendingPolicyType: typeof firstItem.lendingPolicy,
+            });
+
+            // Check for any object fields that might cause React error #31
+            const checkForObjects = (obj: any, path: string = '') => {
+              if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+                Object.entries(obj).forEach(([key, value]) => {
+                  const currentPath = path ? `${path}.${key}` : key;
+                  if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+                    console.log(`⚠️ [CIRCULATION HISTORY] Object field found at: ${currentPath}`, {
+                      keys: Object.keys(value),
+                      value,
+                    });
+                  }
+                });
+              }
+            };
+            checkForObjects(firstItem);
+          }
+
           setData(response.data.data);
           setTotalPages(response.data.pagination.totalPages);
           setTotalItems(response.data.pagination.total);

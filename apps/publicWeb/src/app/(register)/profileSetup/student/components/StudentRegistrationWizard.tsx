@@ -218,7 +218,45 @@ export function StudentRegistrationWizard({
     defaultValues.placeOfBirth = '';
   }
 
+  // 🔧 FIX: Ensure family member objects have all required fields with default values
+  // Family fields are in conditionally rendered tabs - if a tab is never visited before submission,
+  // Controller components won't mount and fields won't be registered with React Hook Form.
+  // This ensures all fields are tracked even if the tab is never visited.
+
+  // Father fields
+  if (!defaultValues.father) {
+    defaultValues.father = {};
+  }
+  const fatherMotherFields = ['nameMyanmar', 'nameEnglish', 'nrcNumber', 'occupation'];
+  fatherMotherFields.forEach(field => {
+    if (!(field in defaultValues.father)) {
+      defaultValues.father[field] = '';
+    }
+  });
+
+  // Mother fields
+  if (!defaultValues.mother) {
+    defaultValues.mother = {};
+  }
+  fatherMotherFields.forEach(field => {
+    if (!(field in defaultValues.mother)) {
+      defaultValues.mother[field] = '';
+    }
+  });
+
+  // Guardian fields (includes extra fields like email, phone, address)
+  if (!defaultValues.guardian) {
+    defaultValues.guardian = {};
+  }
+  const guardianFields = ['nameMyanmar', 'nameEnglish', 'nrcNumber', 'occupation', 'relationship', 'phoneNumber', 'email', 'address'];
+  guardianFields.forEach(field => {
+    if (!(field in defaultValues.guardian)) {
+      defaultValues.guardian[field] = '';
+    }
+  });
+
   console.log('🎯 [WIZARD] Final placeOfBirth in defaultValues:', defaultValues.placeOfBirth);
+  console.log('🎯 [WIZARD] Final guardian in defaultValues:', defaultValues.guardian);
 
   // Initialize React Hook Form
   const methods = useForm({
@@ -319,7 +357,7 @@ export function StudentRegistrationWizard({
         nrcNumber: existingProfile.nrcNumber || '',
         dateOfBirth: dobValue,
         placeOfBirth: existingProfile.placeOfBirth || '',
-        phone: existingProfile.phoneNumber || '', // Backend uses phoneNumber, form uses phone
+        phoneNumber: existingProfile.phoneNumber || '',
         email: existingProfile.email || user?.email || '',
         profilePhoto: existingProfile.profilePhoto || '',
 
@@ -535,11 +573,15 @@ export function StudentRegistrationWizard({
       console.log('🚀 [FORM SUBMIT] Mode:', mode);
       console.log('🚀 [FORM SUBMIT] User ID:', user.id);
       console.log('🚀 [FORM SUBMIT] Complete Form Data:', JSON.stringify(data, null, 2));
-      console.log('🔍 [FORM SUBMIT] placeOfBirth value:', data.placeOfBirth);
-      console.log('🔍 [FORM SUBMIT] placeOfBirth type:', typeof data.placeOfBirth);
-      console.log('🔍 [FORM SUBMIT] placeOfBirth is undefined?', data.placeOfBirth === undefined);
-      console.log('🔍 [FORM SUBMIT] placeOfBirth is null?', data.placeOfBirth === null);
-      console.log('🔍 [FORM SUBMIT] placeOfBirth is empty string?', data.placeOfBirth === '');
+
+      // Log family members data specifically
+      console.log('👨 [FORM SUBMIT] Father object:', JSON.stringify(data.father, null, 2));
+      console.log('👩 [FORM SUBMIT] Mother object:', JSON.stringify(data.mother, null, 2));
+      console.log('👤 [FORM SUBMIT] Guardian object:', JSON.stringify(data.guardian, null, 2));
+      console.log('📧 [FORM SUBMIT] Guardian email specifically:', data.guardian?.email);
+      console.log('📞 [FORM SUBMIT] Guardian phone specifically:', data.guardian?.phoneNumber);
+      console.log('🏠 [FORM SUBMIT] Guardian address specifically:', data.guardian?.address);
+
       console.log('🔍 [FORM SUBMIT] All personal fields:', {
         nameMyanmar: data.nameMyanmar,
         nameEnglish: data.nameEnglish,
@@ -807,7 +849,7 @@ export function StudentRegistrationWizard({
               console.log("⌨️  [FORM] Current step:", currentStep);
             }
           }}
-          className="space-y-6"
+          className="space-y-0 sm:space-y-6"
         >
           {/* Edit Mode Indicator */}
           {mode === 'edit' && (
@@ -831,7 +873,7 @@ export function StudentRegistrationWizard({
           )}
 
           {/* Step Indicators - Desktop */}
-          <div className="hidden md:block bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+          <div className="hidden md:block bg-white rounded-none shadow-sm p-4 border border-gray-200 mb-4">
             <div className="flex justify-between items-center gap-4 mb-3">
               {/* Previous Button - Circle */}
               <button
@@ -909,8 +951,8 @@ export function StudentRegistrationWizard({
             </div>
           </div>
 
-          {/* Mobile Step Indicator */}
-          <div className="md:hidden bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+          {/* Tablet Step Indicator - hidden on mobile, shown on sm to md */}
+          <div className="hidden sm:block md:hidden bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             {/* Navigation Buttons Row */}
             <div className="flex items-center justify-between gap-3 mb-3">
               {/* Previous Button - Circle */}
@@ -972,7 +1014,7 @@ export function StudentRegistrationWizard({
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-[#19184A]">
-                    {currentStepConfig.title}
+                    {currentStep + 1}. {currentStepConfig.title}
                   </h3>
                   <p className="text-xs text-gray-600">
                     {currentStepConfig.description}
@@ -991,12 +1033,12 @@ export function StudentRegistrationWizard({
           </div>
 
           {/* Step Content */}
-          <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 border border-gray-200">
+          <div className="bg-white rounded-none sm:rounded-lg shadow-sm p-4 sm:p-6 md:p-8 border-y sm:border border-gray-200 pb-20 sm:pb-6 md:pb-8 [&_input]:rounded-sm [&_input]:h-11 [&_button[role=combobox]]:rounded-sm [&_button[role=combobox]]:h-11 [&_select]:rounded-sm [&_select]:h-11 [&_[data-slot=select-trigger]]:rounded-sm [&_[data-slot=select-trigger]]:h-11 [&_textarea]:rounded-sm">
             {/* Step Header with Helper */}
             <div className="mb-6 hidden md:block">
               <div className="flex items-start justify-between">
                 <h2 className="text-2xl font-bold text-[#19184A]">
-                  {currentStepConfig.title}
+                  {currentStep + 1}. {currentStepConfig.title}
                 </h2>
 
                 {/* Helper Button */}
@@ -1033,7 +1075,7 @@ export function StudentRegistrationWizard({
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-[#19184A]">
-                    {currentStepConfig.title}
+                    {currentStep + 1}. {currentStepConfig.title}
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
                     {currentStepConfig.description}
@@ -1082,8 +1124,8 @@ export function StudentRegistrationWizard({
             </div>
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          {/* Navigation Buttons - Fixed at bottom on mobile */}
+          <div className="flex justify-between bg-white rounded-none sm:rounded-lg shadow-sm p-4 sm:p-6 border-y sm:border border-gray-200 fixed bottom-0 left-0 right-0 z-50 sm:static sm:z-auto">
             <Button
               type="button"
               variant="outline"

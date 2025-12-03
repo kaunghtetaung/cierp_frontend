@@ -209,3 +209,46 @@ export const getModuleReference = cache(
     return await moduleService.getReference<T>(module, queryParams);
   }
 );
+
+/**
+ * Hard delete a module item (permanent deletion).
+ */
+export async function hardDeleteModuleItem<T = any>(
+  module: string,
+  id: string
+): Promise<T> {
+  const moduleService = await createServiceInstance();
+  return await moduleService.hardDelete<T>(module, id);
+}
+
+/**
+ * Restore a soft-deleted module item.
+ */
+export async function restoreModuleItem<T = any>(
+  module: string,
+  id: string
+): Promise<T> {
+  const moduleService = await createServiceInstance();
+  return await moduleService.restore<T>(module, id);
+}
+
+/**
+ * Get count of deleted items for trash bin badge.
+ */
+export async function getDeletedModuleCount(
+  module: string
+): Promise<{ count: number }> {
+  const moduleService = await createServiceInstance();
+  return await moduleService.getDeletedCount(module);
+}
+
+/**
+ * Get deleted items with pagination.
+ */
+export async function getDeletedModuleList<T = any>(
+  module: string,
+  params: { page?: number; limit?: number } = {}
+): Promise<{ data: T[]; meta: any }> {
+  const moduleService = await createServiceInstance();
+  return await moduleService.getDeletedList<T>(module, params);
+}

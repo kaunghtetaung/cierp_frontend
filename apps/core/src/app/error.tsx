@@ -1,23 +1,23 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@repo/ui'
-import { IconComponent } from '@repo/ui'
-import { getLocalizedText } from '@repo/utils'
-import { reportError, ApplicationError } from '@repo/utils/common'
-import { getClientRequestContext } from '@repo/utils/client/error-context'
+import React from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@repo/ui";
+import { IconComponent } from "@repo/ui";
+import { getLocalizedText } from "@repo/utils";
+import { reportError, ApplicationError } from "@repo/utils/common";
+import { getClientRequestContext } from "@repo/utils/client/error-context";
 
 interface ErrorPageProps {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
-  const router = useRouter()
+  const router = useRouter();
   // Use default language since error pages may execute before providers are available
-  const currentLanguage = "en"
+  const currentLanguage = "en";
 
   // Log error for debugging and monitoring
   useEffect(() => {
@@ -26,12 +26,12 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
     // Report error to monitoring service with full context
     const appError = new ApplicationError({
-      type: 'UNKNOWN_ERROR',
+      type: "UNKNOWN_ERROR",
       message: error.message,
-      severity: 'high',
-      category: 'application',
-      operation: 'page-render',
-      component: 'error-boundary',
+      severity: "high",
+      category: "application",
+      operation: "page-render",
+      component: "error-boundary",
       cause: error,
       // Include request context
       hostname: requestContext.hostname,
@@ -43,48 +43,48 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       userAgent: requestContext.userAgent,
       metadata: {
         digest: error.digest,
-        errorName: error.name
-      }
+        errorName: error.name,
+      },
     });
 
-    reportError(appError).catch(err => {
-      console.error('Failed to report error:', err);
+    reportError(appError).catch((err) => {
+      console.error("Failed to report error:", err);
     });
 
     // Fallback console logging
-    console.error('Application Error:', error)
-  }, [error])
+    console.error("Application Error:", error);
+  }, [error]);
 
   const errorMessages = {
     title: {
-      en: 'Something went wrong!',
-      mm: 'တစ်ခုခု မှားယွင်းနေသည်!'
+      en: "Something went wrong!",
+      mm: "တစ်ခုခု မှားယွင်းနေသည်!",
     },
     description: {
-      en: 'An unexpected error has occurred. Please try again or contact support if the problem persists.',
-      mm: 'မမျှော်လင့်ထားသော အမှားအယွင်းတစ်ခု ဖြစ်ပွားခဲ့သည်။ ကျေးဇူးပြု၍ ထပ်မံကြိုးစားပါ သို့မဟုတ် ပြဿနာ ဆက်လက်ရှိနေပါက ပံ့ပိုးကူညီမှုကို ဆက်သွယ်ပါ။'
+      en: "An unexpected error has occurred. Please try again or contact support if the problem persists.",
+      mm: "မမျှော်လင့်ထားသော အမှားအယွင်းတစ်ခု ဖြစ်ပွားခဲ့သည်။ ကျေးဇူးပြု၍ ထပ်မံကြိုးစားပါ သို့မဟုတ် ပြဿနာ ဆက်လက်ရှိနေပါက ပံ့ပိုးကူညီမှုကို ဆက်သွယ်ပါ။",
     },
     tryAgain: {
-      en: 'Try again',
-      mm: 'ထပ်မံကြိုးစားပါ'
+      en: "Try again",
+      mm: "ထပ်မံကြိုးစားပါ",
     },
     goHome: {
-      en: 'Go to Home',
-      mm: 'ပင်မစာမျက်နှာသို့ ပြန်သွားပါ'
+      en: "Go to Home",
+      mm: "ပင်မစာမျက်နှာသို့ ပြန်သွားပါ",
     },
     contactSupport: {
-      en: 'Contact Support',
-      mm: 'ပံ့ပိုးကူညီမှုကို ဆက်သွယ်ပါ'
-    }
-  }
+      en: "Contact Support",
+      mm: "ပံ့ပိုးကူညီမှုကို ဆက်သွယ်ပါ",
+    },
+  };
 
   const handleGoHome = () => {
-    router.push('/')
-  }
+    router.push("/");
+  };
 
   const handleContactSupport = () => {
-    router.push('/support')
-  }
+    router.push("/support");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -92,8 +92,8 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <div className="text-center">
           {/* Error Icon */}
           <div className="mx-auto mb-6 w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-            <IconComponent 
-              name="AlertTriangle" 
+            <IconComponent
+              name="AlertTriangle"
               className="w-8 h-8 text-destructive"
             />
           </div>
@@ -109,7 +109,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           </p>
 
           {/* Error Details (Development only) */}
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV === "development" && (
             <div className="mb-6 p-4 bg-muted rounded-lg text-left">
               <h3 className="font-semibold text-sm mb-2">Error Details:</h3>
               <p className="text-xs text-muted-foreground font-mono break-words">
@@ -135,18 +135,15 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Button 
-              onClick={reset} 
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={reset} className="w-full" size="lg">
+              {" "}
               <IconComponent name="RotateCcw" className="w-4 h-4 mr-2" />
               {getLocalizedText(errorMessages.tryAgain, currentLanguage)}
             </Button>
 
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleGoHome}
                 className="flex-1"
               >
@@ -154,18 +151,21 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
                 {getLocalizedText(errorMessages.goHome, currentLanguage)}
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleContactSupport}
                 className="flex-1"
               >
                 <IconComponent name="LifeBuoy" className="w-4 h-4 mr-2" />
-                {getLocalizedText(errorMessages.contactSupport, currentLanguage)}
+                {getLocalizedText(
+                  errorMessages.contactSupport,
+                  currentLanguage
+                )}
               </Button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

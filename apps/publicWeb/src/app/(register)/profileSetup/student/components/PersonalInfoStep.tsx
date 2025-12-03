@@ -157,10 +157,13 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                 >
                   <SelectValue placeholder={t.genderPlaceholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-300 z-[100]">
-                  <SelectItem value="male">{t.genderMale}</SelectItem>
-                  <SelectItem value="female">{t.genderFemale}</SelectItem>
-                  <SelectItem value="other">{t.genderOther}</SelectItem>
+                <SelectContent
+                  className="bg-white border border-gray-300 z-[100] w-[var(--radix-select-trigger-width)] p-1"
+                  sideOffset={4}
+                >
+                  <SelectItem value="male" className="py-2.5 px-3">{t.genderMale}</SelectItem>
+                  <SelectItem value="female" className="py-2.5 px-3">{t.genderFemale}</SelectItem>
+                  <SelectItem value="other" className="py-2.5 px-3">{t.genderOther}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -243,8 +246,9 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-full p-0 bg-white border border-gray-300 z-[100]"
+                    className="p-0 bg-white border border-gray-300 z-[100] w-[var(--radix-popover-trigger-width)]"
                     align="start"
+                    sideOffset={4}
                   >
                     <div className="flex items-center border-b border-gray-200 px-3 bg-white">
                       <Input
@@ -257,7 +261,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                     </div>
                     <div className="max-h-[200px] overflow-y-auto bg-white p-1">
                       {filteredOptions.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                        <div className="px-3 py-2.5 text-sm text-gray-500">
                           {t.pressEnterToUse.replace('{value}', inputValue)}
                         </div>
                       ) : (
@@ -265,7 +269,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                           <div
                             key={option}
                             onClick={() => handleSelect(option)}
-                            className="relative flex items-center rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100 text-gray-900"
+                            className="relative flex items-center rounded-sm px-3 py-2.5 text-sm cursor-pointer hover:bg-gray-100 text-gray-900"
                           >
                             <Check
                               className={cn(
@@ -358,8 +362,9 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-full p-0 bg-white border border-gray-300 z-[100]"
+                    className="p-0 bg-white border border-gray-300 z-[100] w-[var(--radix-popover-trigger-width)]"
                     align="start"
+                    sideOffset={4}
                   >
                     <div className="flex items-center border-b border-gray-200 px-3 bg-white">
                       <Input
@@ -372,7 +377,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                     </div>
                     <div className="max-h-[200px] overflow-y-auto bg-white p-1">
                       {filteredOptions.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                        <div className="px-3 py-2.5 text-sm text-gray-500">
                           {t.pressEnterToUse.replace('{value}', inputValue)}
                         </div>
                       ) : (
@@ -380,7 +385,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                           <div
                             key={option}
                             onClick={() => handleSelect(option)}
-                            className="relative flex items-center rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100 text-gray-900"
+                            className="relative flex items-center rounded-sm px-3 py-2.5 text-sm cursor-pointer hover:bg-gray-100 text-gray-900"
                           >
                             <Check
                               className={cn(
@@ -416,15 +421,18 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                 >
                   <SelectValue placeholder={t.bloodTypePlaceholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-300 z-[100]">
-                  <SelectItem value="A+">A+</SelectItem>
-                  <SelectItem value="A-">A-</SelectItem>
-                  <SelectItem value="B+">B+</SelectItem>
-                  <SelectItem value="B-">B-</SelectItem>
-                  <SelectItem value="AB+">AB+</SelectItem>
-                  <SelectItem value="AB-">AB-</SelectItem>
-                  <SelectItem value="O+">O+</SelectItem>
-                  <SelectItem value="O-">O-</SelectItem>
+                <SelectContent
+                  className="bg-white border border-gray-300 z-[100] w-[var(--radix-select-trigger-width)] p-1"
+                  sideOffset={4}
+                >
+                  <SelectItem value="A+" className="py-2.5 px-3">A+</SelectItem>
+                  <SelectItem value="A-" className="py-2.5 px-3">A-</SelectItem>
+                  <SelectItem value="B+" className="py-2.5 px-3">B+</SelectItem>
+                  <SelectItem value="B-" className="py-2.5 px-3">B-</SelectItem>
+                  <SelectItem value="AB+" className="py-2.5 px-3">AB+</SelectItem>
+                  <SelectItem value="AB-" className="py-2.5 px-3">AB-</SelectItem>
+                  <SelectItem value="O+" className="py-2.5 px-3">O+</SelectItem>
+                  <SelectItem value="O-" className="py-2.5 px-3">O-</SelectItem>
                 </SelectContent>
               </Select>
             )}

@@ -69,7 +69,8 @@ export interface BorrowerInfo {
 export interface BibliographyInfo {
   id: string;
   title: string;
-  author?: string;
+  // Author can be a string or a populated object from the backend
+  author?: string | { id?: string; _id?: string; name: string };
 }
 
 export interface LendingPolicyInfo {

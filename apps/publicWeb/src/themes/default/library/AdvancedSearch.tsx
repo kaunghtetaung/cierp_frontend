@@ -345,9 +345,10 @@ export function AdvancedSearch({
               key={criterion.id}
               className="p-4 rounded-lg border border-white/20 bg-white/5"
             >
-              <div className="flex flex-col lg:flex-row gap-3 items-center">
+              {/* Desktop Layout */}
+              <div className="hidden md:flex flex-row gap-3 items-center">
                 {/* Field Selector */}
-                <div className="flex-1 lg:max-w-[180px]">
+                <div className="flex-1 max-w-[180px]">
                   <select
                     value={criterion.field}
                     onChange={(e) => handleCriterionChange(criterion.id, 'field', e.target.value)}
@@ -362,7 +363,7 @@ export function AdvancedSearch({
                 </div>
 
                 {/* Operator Selector */}
-                <div className="flex-1 lg:max-w-[160px]">
+                <div className="flex-1 max-w-[160px]">
                   <select
                     value={criterion.operator}
                     onChange={(e) => handleCriterionChange(criterion.id, 'operator', e.target.value)}
@@ -432,6 +433,92 @@ export function AdvancedSearch({
                     <Minus className="w-5 h-5" />
                   </button>
                 )}
+              </div>
+
+              {/* Mobile Layout */}
+              <div className="flex md:hidden flex-col gap-3">
+                {/* Row 1: Field + Operator */}
+                <div className="flex gap-2">
+                  <select
+                    value={criterion.field}
+                    onChange={(e) => handleCriterionChange(criterion.id, 'field', e.target.value)}
+                    disabled={isLoading}
+                    aria-label={texts.searchField}
+                    className="flex-1 h-10 px-3 border border-input bg-background text-foreground text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {fieldOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={criterion.operator}
+                    onChange={(e) => handleCriterionChange(criterion.id, 'operator', e.target.value)}
+                    disabled={isLoading}
+                    className="flex-1 h-10 px-3 border border-input bg-background text-foreground text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {operatorOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Row 2: Value Input (full width) */}
+                <input
+                  type="text"
+                  value={criterion.value}
+                  onChange={(e) => {
+                    handleCriterionChange(criterion.id, 'value', e.target.value);
+                    if (validationError) setValidationError('');
+                  }}
+                  placeholder={texts.value}
+                  disabled={isLoading}
+                  className="w-full h-10 px-3 border border-input bg-background text-foreground text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+
+                {/* Row 3: Action Buttons - Each button takes 50% width */}
+                <div className="flex gap-2">
+                  {index < criteria.length - 1 ? (
+                    <select
+                      value={criteria[index + 1]?.logicalOperator || 'AND'}
+                      onChange={(e) => {
+                        const nextCriterion = criteria[index + 1];
+                        if (nextCriterion) {
+                          handleCriterionChange(nextCriterion.id, 'logicalOperator', e.target.value);
+                        }
+                      }}
+                      disabled={isLoading}
+                      aria-label="Logical operator"
+                      className="flex-1 h-10 px-2 border border-input bg-background text-foreground text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {logicalOperatorOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddCriterion}
+                      disabled={isLoading}
+                      className="flex-1 h-10 flex items-center justify-center gap-1 text-sm font-medium text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 border border-green-300 hover:border-green-400 rounded-lg transition-colors"
+                      title={texts.addCriterion}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add</span>
+                    </button>
+                  )}
+                  {criteria.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCriterion(criterion.id)}
+                      disabled={isLoading}
+                      className="flex-1 h-10 flex items-center justify-center gap-1 text-sm font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-300 hover:border-red-400 rounded-lg transition-colors"
+                      title={texts.removeCriterion}
+                    >
+                      <Minus className="w-4 h-4" />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

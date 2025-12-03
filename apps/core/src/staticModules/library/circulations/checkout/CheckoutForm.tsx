@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Button,
   Card,
@@ -12,23 +12,20 @@ import {
 } from "@repo/ui";
 import { Input, Label, Textarea } from "@repo/ui";
 import { IconComponent } from "@repo/ui";
+import { Alert, AlertDescription } from "@repo/ui";
+import { Badge } from "@repo/ui";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@repo/ui";
 import { toast } from "sonner";
 import { checkoutBook } from "../actions/circulation.actions";
+import { getBorrowerReservations, checkReservationForAccession } from "../actions/reservation.actions";
 import { BarcodeScanner } from "../components/BarcodeScanner";
 import type { CirculationResponse } from "../types/circulation.types";
-import { isDebugEnabled } from "@/lib/env";
+import type { Reservation, BorrowerReservationSummary, ReservationCheckResult } from "../types/reservation.types";
+import { format } from "date-fns";
 
 interface CheckoutFormProps {
   onSuccess?: (circulation: CirculationResponse) => void;
   onCancel?: () => void;
-}
-
-interface DebugInfo {
-  requestUrl: string;
-  requestData: any;
-  responseData: any;
-  error: string | null;
-  timestamp: string;
 }
 
 export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
@@ -37,7 +34,97 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+
+  // Reservation states
+  const [borrowerReservations, setBorrowerReservations] = useState<BorrowerReservationSummary | null>(null);
+  const [isLoadingReservations, setIsLoadingReservations] = useState(false);
+  const [reservationCheck, setReservationCheck] = useState<ReservationCheckResult | null>(null);
+  const [isCheckingReservation, setIsCheckingReservation] = useState(false);
+  const [showReservations, setShowReservations] = useState(true);
+
+  // Fetch borrower reservations when library card number changes
+  const fetchBorrowerReservations = useCallback(async (cardNumber: string) => {
+    if (!cardNumber || cardNumber.length < 3) {
+      setBorrowerReservations(null);
+      return;
+    }
+
+    setIsLoadingReservations(true);
+
+    try {
+      const response = await getBorrowerReservations(cardNumber);
+
+      if (response.success && response.data) {
+        setBorrowerReservations(response.data);
+        // Auto-show if there are ready reservations
+        if (response.data.readyCount > 0) {
+          setShowReservations(true);
+        }
+      } else {
+        setBorrowerReservations(null);
+      }
+    } catch (error) {
+      console.error("Error fetching borrower reservations:", error);
+      setBorrowerReservations(null);
+    } finally {
+      setIsLoadingReservations(false);
+    }
+  }, []);
+
+  // Check reservation when accession number changes
+  const checkAccessionReservation = useCallback(async (accession: string) => {
+    if (!accession || accession.length < 3) {
+      setReservationCheck(null);
+      return;
+    }
+
+    setIsCheckingReservation(true);
+    try {
+      const response = await checkReservationForAccession(accession);
+      if (response.success && response.data) {
+        setReservationCheck(response.data);
+      } else {
+        setReservationCheck(null);
+      }
+    } catch (error) {
+      console.error("Error checking reservation:", error);
+      setReservationCheck(null);
+    } finally {
+      setIsCheckingReservation(false);
+    }
+  }, []);
+
+  // Debounced effect for library card number
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (libraryCardNumber) {
+        fetchBorrowerReservations(libraryCardNumber);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [libraryCardNumber, fetchBorrowerReservations]);
+
+  // Debounced effect for accession number
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (accessionNo) {
+        checkAccessionReservation(accessionNo);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [accessionNo, checkAccessionReservation]);
+
+  // Quick checkout from reservation
+  const handleQuickCheckout = (reservation: Reservation) => {
+    if (reservation.accessionNo) {
+      setAccessionNo(reservation.accessionNo);
+      toast.info("Book selected from reservation", {
+        description: `${reservation.bibliography?.title}`,
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,26 +143,8 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
       notes: notes || undefined,
     };
 
-    // Set initial debug info
-    setDebugInfo({
-      requestUrl: "Loading...",
-      requestData: requestData,
-      responseData: null,
-      error: null,
-      timestamp: new Date().toISOString(),
-    });
-
     try {
       const response = await checkoutBook(requestData);
-
-      // Update debug info with response and actual URL
-      setDebugInfo({
-        requestUrl: (response as any).debugUrl || "URL not available",
-        requestData: requestData,
-        responseData: response,
-        error: response.success ? null : (response.error || "Unknown error"),
-        timestamp: new Date().toISOString(),
-      });
 
       if (response.success && response.data) {
         toast.success("Book checked out successfully!", {
@@ -102,16 +171,6 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
       }
     } catch (error) {
       console.error("Checkout error:", error);
-
-      // Update debug info with caught error
-      setDebugInfo((prev) => ({
-        requestUrl: prev?.requestUrl || "URL not available",
-        requestData: requestData,
-        responseData: null,
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
-      }));
-
       toast.error("Checkout failed", {
         description: "An unexpected error occurred",
       });
@@ -124,6 +183,8 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
     setLibraryCardNumber("");
     setAccessionNo("");
     setNotes("");
+    setBorrowerReservations(null);
+    setReservationCheck(null);
     if (onCancel) {
       onCancel();
     }
@@ -168,6 +229,110 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
             </p>
           </div>
 
+          {/* Borrower Reservations Alert */}
+          {isLoadingReservations && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <IconComponent name="Loader2" className="w-4 h-4 animate-spin" />
+              Checking reservations...
+            </div>
+          )}
+
+          {borrowerReservations && (borrowerReservations.readyCount > 0 || borrowerReservations.pendingCount > 0) && (
+            <Collapsible open={showReservations} onOpenChange={setShowReservations}>
+              <Alert className={borrowerReservations.readyCount > 0 ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30" : "border-blue-300 dark:border-blue-700"}>
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <IconComponent name="CalendarClock" className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <AlertDescription className="font-medium">
+                        Active Reservations
+                        {borrowerReservations.readyCount > 0 && (
+                          <Badge variant="default" className="ml-2 bg-green-600">
+                            {borrowerReservations.readyCount} Ready
+                          </Badge>
+                        )}
+                        {borrowerReservations.pendingCount > 0 && (
+                          <Badge variant="secondary" className="ml-2">
+                            {borrowerReservations.pendingCount} Pending
+                          </Badge>
+                        )}
+                      </AlertDescription>
+                    </div>
+                    <IconComponent
+                      name={showReservations ? "ChevronUp" : "ChevronDown"}
+                      className="w-4 h-4"
+                    />
+                  </div>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent className="mt-3 space-y-2">
+                  {/* Ready for Pickup - Priority */}
+                  {borrowerReservations.readyForPickup.map((reservation) => (
+                    <div
+                      key={reservation.id}
+                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{reservation.bibliography?.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="default" className="text-xs bg-green-600">
+                            Ready for Pickup
+                          </Badge>
+                          {reservation.accessionNo && (
+                            <span className="text-xs text-muted-foreground">
+                              Accession: {reservation.accessionNo}
+                            </span>
+                          )}
+                        </div>
+                        {reservation.pickupDeadline && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Pickup by: {format(new Date(reservation.pickupDeadline), "PPP")}
+                          </p>
+                        )}
+                      </div>
+                      {reservation.accessionNo && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleQuickCheckout(reservation)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <IconComponent name="Zap" className="w-3 h-3 mr-1" />
+                          Quick
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Pending Reservations */}
+                  {borrowerReservations.activeReservations
+                    .filter((r) => r.status === "pending")
+                    .slice(0, 3)
+                    .map((reservation) => (
+                      <div
+                        key={reservation.id}
+                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border"
+                      >
+                        <div>
+                          <p className="font-medium text-sm">{reservation.bibliography?.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary" className="text-xs">
+                              Queue #{reservation.queuePosition}
+                            </Badge>
+                            {reservation.estimatedWaitTime && (
+                              <span className="text-xs text-muted-foreground">
+                                ~{reservation.estimatedWaitTime}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </CollapsibleContent>
+              </Alert>
+            </Collapsible>
+          )}
+
           {/* Accession Number */}
           <div className="space-y-2">
             <Label htmlFor="accessionNo">
@@ -200,6 +365,56 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
               Unique book copy identifier
             </p>
           </div>
+
+          {/* Reservation Check Alert */}
+          {isCheckingReservation && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <IconComponent name="Loader2" className="w-4 h-4 animate-spin" />
+              Checking reservation status...
+            </div>
+          )}
+
+          {reservationCheck?.hasReservation && reservationCheck.reservation && (
+            <Alert
+              variant={reservationCheck.isForCurrentBorrower ? "default" : "destructive"}
+              className={
+                reservationCheck.isForCurrentBorrower
+                  ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30"
+                  : ""
+              }
+            >
+              <IconComponent
+                name={reservationCheck.isForCurrentBorrower ? "CheckCircle" : "AlertTriangle"}
+                className="w-4 h-4"
+              />
+              <AlertDescription>
+                {reservationCheck.isForCurrentBorrower ? (
+                  <div>
+                    <p className="font-medium text-green-700 dark:text-green-300">
+                      This book is reserved for this borrower
+                    </p>
+                    <p className="text-sm mt-1">
+                      Reservation will be fulfilled upon checkout.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="font-medium">
+                      This book is reserved for another borrower!
+                    </p>
+                    <p className="text-sm mt-1">
+                      Reserved for: {reservationCheck.reservation.borrower?.firstName}{" "}
+                      {reservationCheck.reservation.borrower?.lastName} (
+                      {reservationCheck.reservation.borrower?.libraryCardNumber})
+                    </p>
+                    <p className="text-sm mt-1">
+                      Please find an available copy or cancel the reservation first.
+                    </p>
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">
@@ -256,78 +471,6 @@ export function CheckoutForm({ onSuccess, onCancel }: CheckoutFormProps) {
         description="Position the barcode within the camera frame"
       />
 
-      {/* Debug Information Panel - Only show in development */}
-      {isDebugEnabled() && debugInfo && (
-        <Card className="mt-4 border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-900">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2 text-orange-900 dark:text-orange-100">
-              <IconComponent name="Bug" className="w-4 h-4" />
-              Debug Information
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Request and response details for debugging
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Request URL */}
-            <div className="space-y-1">
-              <div className="text-xs font-semibold text-orange-900 dark:text-orange-100">
-                Request URL:
-              </div>
-              <div className="p-2 bg-white dark:bg-gray-900 rounded border border-orange-200 dark:border-orange-800">
-                <code className="text-xs text-orange-800 dark:text-orange-200">
-                  {debugInfo.requestUrl}
-                </code>
-              </div>
-            </div>
-
-            {/* Request Data */}
-            <div className="space-y-1">
-              <div className="text-xs font-semibold text-orange-900 dark:text-orange-100">
-                Request Data:
-              </div>
-              <div className="p-2 bg-white dark:bg-gray-900 rounded border border-orange-200 dark:border-orange-800 max-h-32 overflow-auto">
-                <pre className="text-xs text-orange-800 dark:text-orange-200">
-                  {JSON.stringify(debugInfo.requestData, null, 2)}
-                </pre>
-              </div>
-            </div>
-
-            {/* Response Data */}
-            <div className="space-y-1">
-              <div className="text-xs font-semibold text-orange-900 dark:text-orange-100">
-                Response Data:
-              </div>
-              <div className="p-2 bg-white dark:bg-gray-900 rounded border border-orange-200 dark:border-orange-800 max-h-48 overflow-auto">
-                <pre className="text-xs text-orange-800 dark:text-orange-200">
-                  {debugInfo.responseData
-                    ? JSON.stringify(debugInfo.responseData, null, 2)
-                    : "No response yet..."}
-                </pre>
-              </div>
-            </div>
-
-            {/* Error */}
-            {debugInfo.error && (
-              <div className="space-y-1">
-                <div className="text-xs font-semibold text-red-900 dark:text-red-100">
-                  Error:
-                </div>
-                <div className="p-2 bg-red-50 dark:bg-red-950/30 rounded border border-red-200 dark:border-red-800">
-                  <code className="text-xs text-red-800 dark:text-red-200">
-                    {debugInfo.error}
-                  </code>
-                </div>
-              </div>
-            )}
-
-            {/* Timestamp */}
-            <div className="text-xs text-orange-600 dark:text-orange-400">
-              Timestamp: {new Date(debugInfo.timestamp).toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </Card>
   );
 }

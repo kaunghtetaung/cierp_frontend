@@ -40,30 +40,30 @@ export function UserProfileView({ user }: UserProfileViewProps) {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-[#4C67E1] to-[#6B85FF] flex items-center justify-center text-white text-2xl font-bold">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-[#4C67E1] to-[#6B85FF] flex items-center justify-center text-white text-xl sm:text-2xl font-bold flex-shrink-0">
                 {user.name?.charAt(0)?.toUpperCase() || "U"}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
-                <p className="text-gray-600">{user.email}</p>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{user.name}</h1>
+                <p className="text-gray-600 text-sm sm:text-base truncate">{user.email}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Link
                 href="/"
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
               >
                 <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Home</span>
+                <span>Home</span>
               </Link>
               <Link
                 href="/logout"
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span>Sign Out</span>
               </Link>
             </div>
           </div>

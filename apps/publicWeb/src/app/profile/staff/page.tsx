@@ -1,6 +1,27 @@
 import { redirect } from "next/navigation";
 import { getAuthenticationStatus } from "@repo/auth/server";
 import { Check } from "lucide-react";
+import { AccessDenied } from "../components/AccessDenied";
+import { getMyStaffProfile } from "./actions";
+
+// Helper to extract role name from role object or string
+function getRoleName(role: any): string {
+  if (typeof role === 'string') return role.toLowerCase();
+  if (role && typeof role === 'object' && role.Role) return role.Role.toLowerCase();
+  return '';
+}
+
+// Check if user has the required role
+function hasRole(user: any, requiredRole: string): boolean {
+  if (!user?.roles || !Array.isArray(user.roles)) return false;
+  return user.roles.some((role: any) => getRoleName(role) === requiredRole.toLowerCase());
+}
+
+// Get primary role display name
+function getPrimaryRole(user: any): string {
+  if (!user?.roles || !Array.isArray(user.roles) || user.roles.length === 0) return 'unknown';
+  return getRoleName(user.roles[0]) || 'unknown';
+}
 
 export default async function StaffProfilePage() {
   const authStatus = await getAuthenticationStatus();
@@ -10,6 +31,51 @@ export default async function StaffProfilePage() {
   }
 
   const user = authStatus.user;
+
+  // Check user roles
+  const isStaff = hasRole(user, 'staff');
+  const isGuest = hasRole(user, 'guest');
+
+  console.log('👤 [STAFF PROFILE] User role check:', {
+    userId: user.id,
+    isStaff,
+    isGuest,
+    roles: user.roles,
+  });
+
+  // If user is neither staff nor guest, deny access
+  if (!isStaff && !isGuest) {
+    console.log('⛔ [STAFF PROFILE] Access denied - user is neither staff nor guest:', {
+      userId: user.id,
+      roles: user.roles,
+    });
+    return <AccessDenied requiredRole="staff" currentRole={getPrimaryRole(user)} />;
+  }
+
+  // For guest users, check if they have a profile
+  // Guest users can only view this page if they have submitted a profile
+  if (isGuest) {
+    const profileResult = await getMyStaffProfile();
+
+    if (!profileResult.success || !profileResult.data) {
+      // Guest user without profile - redirect to profile setup
+      console.log('📝 [STAFF PROFILE] Guest user without profile, redirecting to setup');
+      redirect("/profileSetup/staff");
+    }
+
+    const status = profileResult.data.registrationStatus;
+    console.log('📋 [STAFF PROFILE] Guest user profile status:', status);
+
+    // Guest users can access if status is pending or complete
+    if (!['pending', 'complete', 'incomplete'].includes(status)) {
+      console.log('⛔ [STAFF PROFILE] Guest user profile status not allowed:', status);
+      return <AccessDenied requiredRole="staff" currentRole={`guest (${status})`} />;
+    }
+  }
+
+  console.log('👤 [STAFF PROFILE] User info:', {
+    userId: user.id,
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">

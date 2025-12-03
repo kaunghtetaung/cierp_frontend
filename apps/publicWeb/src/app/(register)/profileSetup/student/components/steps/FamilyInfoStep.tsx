@@ -81,16 +81,20 @@ export function FamilyInfoStep() {
     if (activeTab === "guardian") {
       if (guardianType === "father" && fatherData) {
         console.log("📋 [FamilyInfoStep] Copying father's data to guardian");
+        console.log("📋 [FamilyInfoStep] Father NRC value:", fatherData.nrcNumber);
         setValue("guardian.nameMyanmar", fatherData.nameMyanmar || "");
         setValue("guardian.nameEnglish", fatherData.nameEnglish || "");
-        setValue("guardian.nrcNumber", fatherData.nrcNumber || "");
+        // Use shouldDirty and shouldValidate to ensure the value is properly registered
+        setValue("guardian.nrcNumber", fatherData.nrcNumber || "", { shouldDirty: true, shouldValidate: false });
         setValue("guardian.occupation", fatherData.occupation || "");
         setValue("guardian.relationship", "Father");
       } else if (guardianType === "mother" && motherData) {
         console.log("📋 [FamilyInfoStep] Copying mother's data to guardian");
+        console.log("📋 [FamilyInfoStep] Mother NRC value:", motherData.nrcNumber);
         setValue("guardian.nameMyanmar", motherData.nameMyanmar || "");
         setValue("guardian.nameEnglish", motherData.nameEnglish || "");
-        setValue("guardian.nrcNumber", motherData.nrcNumber || "");
+        // Use shouldDirty and shouldValidate to ensure the value is properly registered
+        setValue("guardian.nrcNumber", motherData.nrcNumber || "", { shouldDirty: true, shouldValidate: false });
         setValue("guardian.occupation", motherData.occupation || "");
         setValue("guardian.relationship", "Mother");
       } else if (guardianType === "other") {
@@ -318,7 +322,7 @@ export function FamilyInfoStep() {
                   control={control}
                   render={({ field }) => (
                     <PublicNrcField
-                      value={field.value}
+                      value={field.value || ""}
                       onChange={field.onChange}
                       error={(errors.father as any)?.nrcNumber?.message as string}
                     />
@@ -400,7 +404,7 @@ export function FamilyInfoStep() {
                   control={control}
                   render={({ field }) => (
                     <PublicNrcField
-                      value={field.value}
+                      value={field.value || ""}
                       onChange={field.onChange}
                       error={(errors.mother as any)?.nrcNumber?.message as string}
                     />
@@ -440,8 +444,8 @@ export function FamilyInfoStep() {
                 Select Guardian
                 <span className="text-red-500 ml-1">*</span>
               </Label>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
+              <div className="grid grid-cols-3 gap-4">
+                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[#4C67E1] hover:bg-[#4C67E1]/5 transition-all">
                   <input
                     type="radio"
                     name="guardianType"
@@ -450,9 +454,9 @@ export function FamilyInfoStep() {
                     onChange={(e) => setGuardianType(e.target.value as GuardianType)}
                     className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
                   />
-                  <span className="text-sm text-gray-700">Father as Guardian</span>
+                  <span className="text-sm text-gray-700">Father</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[#4C67E1] hover:bg-[#4C67E1]/5 transition-all">
                   <input
                     type="radio"
                     name="guardianType"
@@ -461,9 +465,9 @@ export function FamilyInfoStep() {
                     onChange={(e) => setGuardianType(e.target.value as GuardianType)}
                     className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
                   />
-                  <span className="text-sm text-gray-700">Mother as Guardian</span>
+                  <span className="text-sm text-gray-700">Mother</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[#4C67E1] hover:bg-[#4C67E1]/5 transition-all">
                   <input
                     type="radio"
                     name="guardianType"
@@ -479,117 +483,8 @@ export function FamilyInfoStep() {
 
             <p className="text-sm text-gray-600">All fields marked with <span className="text-red-500">*</span> are required</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Row 1: Name Myanmar, Name English, Relationship */}
-              <div className="space-y-2">
-                <Label className={labelClass}>
-                  Name (Myanmar)
-                  <span className="text-red-500 ml-1">*</span>
-                </Label>
-                <input
-                  {...register("guardian.nameMyanmar")}
-                  type="text"
-                  disabled={guardianType !== "other"}
-                  className={cn(
-                    inputClass,
-                    (errors.guardian as any)?.nameMyanmar && "border-red-300 focus:border-red-500",
-                    guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
-                  )}
-                  placeholder="Enter guardian's name in Myanmar"
-                  onKeyDown={handleInputEscKey("guardian.nameMyanmar")}
-                />
-                {(errors.guardian as any)?.nameMyanmar && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).nameMyanmar.message as string}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className={labelClass}>
-                  Name (English)
-                  <span className="text-red-500 ml-1">*</span>
-                </Label>
-                <input
-                  {...register("guardian.nameEnglish")}
-                  type="text"
-                  disabled={guardianType !== "other"}
-                  className={cn(
-                    inputClass,
-                    (errors.guardian as any)?.nameEnglish && "border-red-300 focus:border-red-500",
-                    guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
-                  )}
-                  placeholder="Enter guardian's name in English"
-                  onKeyDown={handleInputEscKey("guardian.nameEnglish")}
-                />
-                {(errors.guardian as any)?.nameEnglish && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).nameEnglish.message as string}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className={labelClass}>
-                  Relationship
-                  <span className="text-red-500 ml-1">*</span>
-                </Label>
-                <input
-                  {...register("guardian.relationship")}
-                  type="text"
-                  disabled={guardianType !== "other"}
-                  className={cn(
-                    inputClass,
-                    (errors.guardian as any)?.relationship && "border-red-300 focus:border-red-500",
-                    guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
-                  )}
-                  placeholder="e.g., Uncle, Aunt"
-                  onKeyDown={handleInputEscKey("guardian.relationship")}
-                />
-                {(errors.guardian as any)?.relationship && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).relationship.message as string}</p>
-                )}
-              </div>
-            </div>
-
+            {/* Contact Information - Phone, Email, Address (moved to top) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Row 2: NRC, Occupation */}
-              <div className="space-y-2">
-                <Controller
-                  name="guardian.nrcNumber"
-                  control={control}
-                  render={({ field }) => (
-                    <PublicNrcField
-                      value={field.value}
-                      onChange={field.onChange}
-                      error={(errors.guardian as any)?.nrcNumber?.message as string}
-                      disabled={guardianType !== "other"}
-                    />
-                  )}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className={labelClass}>
-                  Occupation
-                  <span className="text-red-500 ml-1">*</span>
-                </Label>
-                <input
-                  {...register("guardian.occupation")}
-                  type="text"
-                  disabled={guardianType !== "other"}
-                  className={cn(
-                    inputClass,
-                    (errors.guardian as any)?.occupation && "border-red-300 focus:border-red-500",
-                    guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
-                  )}
-                  placeholder="Enter guardian's occupation"
-                  onKeyDown={handleInputEscKey("guardian.occupation")}
-                />
-                {(errors.guardian as any)?.occupation && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).occupation.message as string}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Phone Number and Email */}
               <div className="space-y-2">
                 <Label className={labelClass}>
                   Phone Number
@@ -623,15 +518,22 @@ export function FamilyInfoStep() {
                   Email
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
-                <input
-                  {...register("guardian.email")}
-                  type="email"
-                  className={cn(
-                    inputClass,
-                    (errors.guardian as any)?.email && "border-red-300 focus:border-red-500"
+                <Controller
+                  name="guardian.email"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      value={field.value || ""}
+                      type="email"
+                      className={cn(
+                        inputClass,
+                        (errors.guardian as any)?.email && "border-red-300 focus:border-red-500"
+                      )}
+                      placeholder="Enter email address"
+                      onKeyDown={handleInputEscKey("guardian.email")}
+                    />
                   )}
-                  placeholder="Enter email address"
-                  onKeyDown={handleInputEscKey("guardian.email")}
                 />
                 {(errors.guardian as any)?.email && (
                   <p className="text-sm text-red-600">{(errors.guardian as any).email.message as string}</p>
@@ -643,17 +545,24 @@ export function FamilyInfoStep() {
                   Address
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
-                <textarea
-                  {...register("guardian.address")}
-                  rows={3}
-                  className={cn(
-                    inputClass,
-                    (errors.guardian as any)?.address && "border-red-300 focus:border-red-500",
-                    sameAsStudentAddress && "bg-gray-50"
+                <Controller
+                  name="guardian.address"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      value={field.value || ""}
+                      rows={3}
+                      className={cn(
+                        inputClass,
+                        (errors.guardian as any)?.address && "border-red-300 focus:border-red-500",
+                        sameAsStudentAddress && "bg-gray-50"
+                      )}
+                      placeholder="Enter full address"
+                      disabled={sameAsStudentAddress}
+                      onKeyDown={handleInputEscKey("guardian.address")}
+                    />
                   )}
-                  placeholder="Enter full address"
-                  disabled={sameAsStudentAddress}
-                  onKeyDown={handleInputEscKey("guardian.address")}
                 />
 
                 {/* Checkbox: Same as Student's Permanent Address */}
@@ -675,6 +584,144 @@ export function FamilyInfoStep() {
 
                 {(errors.guardian as any)?.address && (
                   <p className="text-sm text-red-600">{(errors.guardian as any).address.message as string}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Name and Personal Information */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Row 1: Name Myanmar, Name English, Relationship */}
+              <div className="space-y-2">
+                <Label className={labelClass}>
+                  Name (Myanmar)
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Controller
+                  name="guardian.nameMyanmar"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      value={field.value || ""}
+                      type="text"
+                      disabled={guardianType !== "other"}
+                      className={cn(
+                        inputClass,
+                        (errors.guardian as any)?.nameMyanmar && "border-red-300 focus:border-red-500",
+                        guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
+                      )}
+                      placeholder="Enter guardian's name in Myanmar"
+                      onKeyDown={handleInputEscKey("guardian.nameMyanmar")}
+                    />
+                  )}
+                />
+                {(errors.guardian as any)?.nameMyanmar && (
+                  <p className="text-sm text-red-600">{(errors.guardian as any).nameMyanmar.message as string}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className={labelClass}>
+                  Name (English)
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Controller
+                  name="guardian.nameEnglish"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      value={field.value || ""}
+                      type="text"
+                      disabled={guardianType !== "other"}
+                      className={cn(
+                        inputClass,
+                        (errors.guardian as any)?.nameEnglish && "border-red-300 focus:border-red-500",
+                        guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
+                      )}
+                      placeholder="Enter guardian's name in English"
+                      onKeyDown={handleInputEscKey("guardian.nameEnglish")}
+                    />
+                  )}
+                />
+                {(errors.guardian as any)?.nameEnglish && (
+                  <p className="text-sm text-red-600">{(errors.guardian as any).nameEnglish.message as string}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className={labelClass}>
+                  Relationship
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Controller
+                  name="guardian.relationship"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      value={field.value || ""}
+                      type="text"
+                      disabled={guardianType !== "other"}
+                      className={cn(
+                        inputClass,
+                        (errors.guardian as any)?.relationship && "border-red-300 focus:border-red-500",
+                        guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
+                      )}
+                      placeholder="e.g., Uncle, Aunt"
+                      onKeyDown={handleInputEscKey("guardian.relationship")}
+                    />
+                  )}
+                />
+                {(errors.guardian as any)?.relationship && (
+                  <p className="text-sm text-red-600">{(errors.guardian as any).relationship.message as string}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Row 2: NRC, Occupation */}
+              <div className="space-y-2">
+                <Controller
+                  name="guardian.nrcNumber"
+                  control={control}
+                  render={({ field }) => (
+                    <PublicNrcField
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      error={(errors.guardian as any)?.nrcNumber?.message as string}
+                      disabled={guardianType !== "other"}
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className={labelClass}>
+                  Occupation
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Controller
+                  name="guardian.occupation"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      value={field.value || ""}
+                      type="text"
+                      disabled={guardianType !== "other"}
+                      className={cn(
+                        inputClass,
+                        (errors.guardian as any)?.occupation && "border-red-300 focus:border-red-500",
+                        guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
+                      )}
+                      placeholder="Enter guardian's occupation"
+                      onKeyDown={handleInputEscKey("guardian.occupation")}
+                    />
+                  )}
+                />
+                {(errors.guardian as any)?.occupation && (
+                  <p className="text-sm text-red-600">{(errors.guardian as any).occupation.message as string}</p>
                 )}
               </div>
             </div>

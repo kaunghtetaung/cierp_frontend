@@ -25,7 +25,8 @@ interface ConfirmationDialogProps {
   variant?: "default" | "destructive" | "warning";
   icon?: string;
   isLoading?: boolean;
-  
+  children?: React.ReactNode;
+
   // Delete-specific props
   deleteType?: "soft" | "hard";
   itemName?: string;
@@ -44,7 +45,8 @@ export function ConfirmationDialog({
   variant = "default",
   icon,
   isLoading = false,
-  
+  children,
+
   // Delete-specific props
   deleteType,
   itemName,
@@ -166,7 +168,9 @@ export function ConfirmationDialog({
         <AlertDialogDescription className="text-left">
           {actualDescription}
         </AlertDialogDescription>
-        
+
+        {children}
+
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel} disabled={isDisabled}>
             {cancelText}

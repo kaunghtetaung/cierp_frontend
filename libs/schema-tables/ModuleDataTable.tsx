@@ -26,6 +26,7 @@ import {
   useDeleteModuleItem,
   useHardDeleteModuleItem,
   useBulkModuleOperation,
+  useDeletedModuleCount,
 } from "@repo/schema-hooks";
 import { Pagination } from "@repo/ui";
 // Import from apps/core since ExtraActionModal is app-specific (uses ExtraActionFormRouter)
@@ -37,6 +38,7 @@ import { PrefilterTypeahead } from "./PrefilterTypeahead";
 import { PrefilterText } from "./PrefilterText";
 import { PrefilterYearRange } from "./PrefilterYearRange";
 import { PrefilterSort } from "./PrefilterSort";
+import { RecycleBinDialog } from "./RecycleBinDialog";
 import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -60,6 +62,7 @@ interface ModuleDataTableProps {
   onMonthChange?: (year: number, month: number) => void; // Callback for month selection
   selectedYear?: number;
   selectedMonth?: number;
+  showRecycleBin?: boolean; // Show recycle bin button in toolbar
 }
 
 export function ModuleDataTable({
@@ -80,6 +83,7 @@ export function ModuleDataTable({
   onMonthChange,
   selectedYear = new Date().getFullYear(),
   selectedMonth = new Date().getMonth() + 1,
+  showRecycleBin = true,
 }: Omit<ModuleDataTableProps, "currentLanguage">) {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
@@ -394,6 +398,20 @@ export function ModuleDataTable({
   const hardDeleteItemMutation = useHardDeleteModuleItem(module.slug);
   const bulkOperationMutation = useBulkModuleOperation(module.slug);
 
+  // Deleted count for recycle bin badge
+  const { data: deletedCount = 0, isLoading: isDeletedCountLoading, error: deletedCountError } = useDeletedModuleCount(module.slug, {
+    enabled: showRecycleBin,
+  });
+
+  // Debug: Log recycle bin status
+  console.log("🗑️ [ModuleDataTable] Recycle bin status:", {
+    showRecycleBin,
+    deletedCount,
+    isDeletedCountLoading,
+    deletedCountError,
+    moduleSlug: module.slug,
+  });
+
   // Debug: Log the actions configuration
   console.log("ModuleDataTable actions config:", {
     hasActions: !!module.dataTableSchema.actions,
@@ -413,6 +431,9 @@ export function ModuleDataTable({
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [extraActionConfirmOpen, setExtraActionConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // Recycle bin state
+  const [recycleBinOpen, setRecycleBinOpen] = useState(false);
 
   // Debug state
   const [debugLogs, setDebugLogs] = useState<Array<{
@@ -2547,6 +2568,9 @@ export function ModuleDataTable({
               onAdvancedFilterToggle={() => setShowAdvancedFilters(!showAdvancedFilters)}
               isAdvancedFilterOpen={showAdvancedFilters}
               activeFilterCount={filterSummary ? filterSummary.length : 0}
+              showRecycleBin={showRecycleBin}
+              recycleBinCount={deletedCount}
+              onRecycleBinClick={() => setRecycleBinOpen(true)}
             />
           </div>
         </div>
@@ -2825,6 +2849,16 @@ export function ModuleDataTable({
           </div>
         )}
       </div>
+
+      {/* Recycle Bin Dialog */}
+      {showRecycleBin && (
+        <RecycleBinDialog
+          moduleSlug={module.slug}
+          moduleName={getLocalizedText(module.name, currentLanguage)}
+          open={recycleBinOpen}
+          onOpenChange={setRecycleBinOpen}
+        />
+      )}
     </div>
   );
 }

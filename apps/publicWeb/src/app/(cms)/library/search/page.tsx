@@ -2,6 +2,30 @@ import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { LibrarySearchClient } from '@/themes/default/library/LibrarySearchClient';
 import { getCurrentUser } from '@repo/auth/server';
 
+// Roles allowed to access eBooks
+const EBOOK_ALLOWED_ROLES = [
+  'student',
+  'staff',
+  'organizationadmin',
+  'organizationmember',
+  'departmentadmin',
+  'departmentstaff',
+  'systemadmin'
+];
+
+// Helper to extract role name from role object or string
+function getRoleName(role: any): string {
+  if (typeof role === 'string') return role.toLowerCase();
+  if (role && typeof role === 'object' && role.Role) return role.Role.toLowerCase();
+  return '';
+}
+
+// Check if user has any of the allowed roles for eBook access
+function canUserAccessEbooks(user: any): boolean {
+  if (!user?.roles || !Array.isArray(user.roles)) return false;
+  return user.roles.some((role: any) => EBOOK_ALLOWED_ROLES.includes(getRoleName(role)));
+}
+
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
@@ -16,7 +40,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   // Get current user for eBook access control
   const user = await getCurrentUser();
-  const canAccessEbooks = user && user.role !== 'guest';
+  const canAccessEbooks = canUserAccessEbooks(user);
 
   return (
     <QueryProvider>

@@ -6,6 +6,7 @@ import {
   hardDeleteModuleItemAction,
   restoreModuleItemAction,
   getDeletedModuleItemsAction,
+  getDeletedModuleCountAction,
   bulkModuleOperationAction,
   submitModuleForm,
 } from "@repo/app-modules/server-actions";
@@ -210,20 +211,30 @@ export function useDeleteModuleItem(module: string) {
   return useMutation({
     mutationFn: async (id: string) => {
       const result = await deleteModuleItemAction(module, id);
-      
+
       // Throw error if the action failed
       if (!result.success) {
         throw new Error(result.error || `Failed to delete ${module} item`);
       }
-      
+
       return result;
     },
     onSuccess: async () => {
       // Invalidate and immediately refetch all list queries for this module
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: [...moduleKeys.lists(), module],
         exact: false,
         refetchType: 'all' // Force immediate refetch
+      });
+      // Also invalidate deleted count (soft delete adds to recycle bin)
+      await queryClient.invalidateQueries({
+        queryKey: [...moduleKeys.all, module, "deleted-count"],
+        exact: false
+      });
+      // Also invalidate deleted items list
+      await queryClient.invalidateQueries({
+        queryKey: [...moduleKeys.all, module, "deleted"],
+        exact: false
       });
     },
     onError: (error) => {
@@ -240,14 +251,19 @@ export function useHardDeleteModuleItem(module: string) {
     mutationFn: (id: string) => hardDeleteModuleItemAction(module, id),
     onSuccess: async () => {
       // Invalidate all list queries for this module
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: [...moduleKeys.lists(), module],
-        exact: false 
+        exact: false
       });
       // Also invalidate deleted items list
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: [...moduleKeys.all, module, "deleted"],
-        exact: false 
+        exact: false
+      });
+      // Also invalidate deleted count
+      await queryClient.invalidateQueries({
+        queryKey: [...moduleKeys.all, module, "deleted-count"],
+        exact: false
       });
     },
   });
@@ -260,19 +276,51 @@ export function useRestoreModuleItem(module: string) {
     mutationFn: (id: string) => restoreModuleItemAction(module, id),
     onSuccess: async () => {
       // Invalidate both main list and deleted items list
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: [...moduleKeys.lists(), module],
-        exact: false 
+        exact: false
       });
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: [...moduleKeys.all, module, "deleted"],
-        exact: false 
+        exact: false
+      });
+      // Also invalidate deleted count
+      await queryClient.invalidateQueries({
+        queryKey: [...moduleKeys.all, module, "deleted-count"],
+        exact: false
       });
     },
   });
 }
 
 export function useDeletedModuleItems<T = any>(
+  module: string,
+  params: { page?: number; limit?: number } = {},
+  options?: {
+    enabled?: boolean;
+    staleTime?: number;
+    refetchInterval?: number;
+  }
+) {
+  return useQuery({
+    queryKey: [...moduleKeys.all, module, "deleted", params],
+    queryFn: async () => {
+      const result = await getDeletedModuleItemsAction<T>(module, params);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch deleted items");
+      }
+      return {
+        data: result.data || [],
+        meta: result.meta,
+      };
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes
+    refetchInterval: options?.refetchInterval,
+  });
+}
+
+export function useDeletedModuleCount(
   module: string,
   options?: {
     enabled?: boolean;
@@ -281,16 +329,21 @@ export function useDeletedModuleItems<T = any>(
   }
 ) {
   return useQuery({
-    queryKey: [...moduleKeys.all, module, "deleted"],
+    queryKey: [...moduleKeys.all, module, "deleted-count"],
     queryFn: async () => {
-      const result = await getDeletedModuleItemsAction<T>(module);
+      console.log(`🗑️ [useDeletedModuleCount] Fetching deleted count for module: ${module}`);
+      const result = await getDeletedModuleCountAction(module);
+      console.log(`🗑️ [useDeletedModuleCount] Result:`, result);
       if (!result.success) {
-        throw new Error(result.error || "Failed to fetch deleted items");
+        console.error(`🗑️ [useDeletedModuleCount] Error:`, result.error);
+        throw new Error(result.error || "Failed to fetch deleted count");
       }
-      return result.data;
+      const count = result.data?.count || 0;
+      console.log(`🗑️ [useDeletedModuleCount] Count:`, count);
+      return count;
     },
     enabled: options?.enabled ?? true,
-    staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes
+    staleTime: options?.staleTime ?? 2 * 60 * 1000, // 2 minutes for count
     refetchInterval: options?.refetchInterval,
   });
 }

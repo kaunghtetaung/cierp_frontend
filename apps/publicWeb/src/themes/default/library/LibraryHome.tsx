@@ -6,6 +6,7 @@ import { type AdvancedSearchParams } from './AdvancedSearch';
 import { SearchHero } from './SearchHero';
 import { NewArrivals } from './NewArrivals';
 import { MyCardButton } from '@/components/library/MyCardButton';
+import { LibraryMobileFooter } from '@/components/library/LibraryMobileFooter';
 import type { Bibliography } from '@/actions/library/books.actions';
 
 interface PaginationInfo {
@@ -64,7 +65,7 @@ export function LibraryHome({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Hero Section with Search */}
       <SearchHero onSearch={handleSearch} onAdvancedSearch={handleAdvancedSearch} />
 
@@ -106,8 +107,13 @@ export function LibraryHome({
         </div>
       </div>
 
-      {/* Floating My Card Button - Only shows when user is authenticated */}
-      <MyCardButton />
+      {/* Floating My Card Button - Only shows on desktop when user is authenticated with staff/student role */}
+      <div className="hidden md:block">
+        <MyCardButton />
+      </div>
+
+      {/* Mobile Footer Navigation */}
+      <LibraryMobileFooter />
     </div>
   );
 }

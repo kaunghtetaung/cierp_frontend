@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SearchTabs } from './SearchTabs';
+import { AlphabetIndex } from './AlphabetIndex';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
 import { type AdvancedSearchParams } from './AdvancedSearch';
 import { getAsset } from '@/lib/theme-assets';
@@ -47,6 +48,7 @@ export function SearchHero({
   collapsible = false
 }: SearchHeroProps) {
   const [isExpanded, setIsExpanded] = useState(!collapsible);
+  const [isAZVisible, setIsAZVisible] = useState(false);
   const { currentLanguage } = useLangSelector();
 
   // Get theme-specific banner
@@ -57,7 +59,9 @@ export function SearchHero({
       ? 'စာအုပ်များ၊ စာရေးဆရာများ၊ ISBN...'
       : 'Search books, authors, ISBN...',
     expand: currentLanguage === 'mm' ? 'တိုးချဲ့မည်' : 'Expand',
-    collapse: currentLanguage === 'mm' ? 'ခေါက်သိမ်းမည်' : 'Collapse'
+    collapse: currentLanguage === 'mm' ? 'ခေါက်သိမ်းမည်' : 'Collapse',
+    showAZ: currentLanguage === 'mm' ? 'A-Z ပြသမည်' : 'Show A-Z Index',
+    hideAZ: currentLanguage === 'mm' ? 'A-Z ဖျောက်မည်' : 'Hide A-Z Index'
   };
 
   return (
@@ -69,6 +73,46 @@ export function SearchHero({
         backgroundPosition: 'center',
       }}
     >
+      {/* A-Z Index Bar - Full width at top with transparent background */}
+      {(!collapsible || isExpanded) && (
+        <div className="relative">
+          {/* A-Z Bar Content */}
+          <div
+            className={`w-full backdrop-blur-sm border-b border-white/10 transition-all duration-300 overflow-hidden ${
+              isAZVisible ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0 border-b-0'
+            }`}
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+          >
+            <div className="container mx-auto px-4 py-2">
+              <AlphabetIndex className="w-full" />
+            </div>
+          </div>
+
+          {/* Toggle Button - Positioned under right side of bar */}
+          <div className="container mx-auto px-4">
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                onClick={() => setIsAZVisible(!isAZVisible)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-b-lg transition-all hover:bg-white/20"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', color: '#FFF' }}
+                title={isAZVisible ? texts.hideAZ : texts.showAZ}
+              >
+                <span>{isAZVisible ? texts.hideAZ : texts.showAZ}</span>
+                <svg
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${isAZVisible ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`container mx-auto px-4 ${collapsible ? 'py-4' : 'py-12 md:py-16'}`}>
         <div className="max-w-3xl mx-auto text-center">
           {/* Header - Only show when not collapsible or when expanded */}

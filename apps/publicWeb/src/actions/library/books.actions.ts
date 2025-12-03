@@ -81,6 +81,7 @@ export interface Bibliography {
   organizationId?: Organization;
   slug?: string;
   remark?: string;
+  note?: string;
   version?: number;
   deletedAt?: string | null;
   createdAt: string;

@@ -77,7 +77,7 @@ export function StudentSelfRegistrationForm({
   }
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-0 md:p-4">
       <div className="max-w-5xl mx-auto">
         {/* Student Registration Wizard */}
         <StudentRegistrationWizard

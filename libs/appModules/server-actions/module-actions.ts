@@ -13,6 +13,10 @@ import {
   getModuleList,
   getModuleItem,
   getModuleReference,
+  hardDeleteModuleItem as hardDeleteModuleItemService,
+  restoreModuleItem as restoreModuleItemService,
+  getDeletedModuleCount,
+  getDeletedModuleList,
 } from "../wrapper";
 import { ModuleListParams } from "../types";
 import type { BackendValidationError, ActionResponse } from "./types";
@@ -378,23 +382,14 @@ export async function hardDeleteModuleItemAction(
   id: string
 ): Promise<ActionResponse> {
   try {
-    // Call the hard delete endpoint
-    const response = await fetch(`/api/${module}/hard/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Hard delete failed: ${response.statusText}`);
-    }
+    const result = await hardDeleteModuleItemService(module, id);
 
     // Revalidate the module list page
     revalidatePath(`/${module}`);
 
     return {
       success: true,
+      data: result,
     };
   } catch (error) {
     console.error(`Error hard deleting ${module} item:`, error);
@@ -416,24 +411,14 @@ export async function restoreModuleItemAction(
   id: string
 ): Promise<ActionResponse> {
   try {
-    // Call the restore endpoint
-    const response = await fetch(`/api/${module}/deleted/restore/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Restore failed: ${response.statusText}`);
-    }
+    const result = await restoreModuleItemService(module, id);
 
     // Revalidate the module list and deleted items pages
     revalidatePath(`/${module}`);
-    revalidatePath(`/${module}/deleted`);
 
     return {
       success: true,
+      data: result,
     };
   } catch (error) {
     console.error(`Error restoring ${module} item:`, error);
@@ -448,29 +433,19 @@ export async function restoreModuleItemAction(
 }
 
 /**
- * Server action to get deleted items
+ * Server action to get deleted items with pagination
  */
 export async function getDeletedModuleItemsAction<T = any>(
-  module: string
-): Promise<ActionResponse<T[]>> {
+  module: string,
+  params: { page?: number; limit?: number } = {}
+): Promise<ActionResponse<T[]> & { meta?: any }> {
   try {
-    // Call the deleted items endpoint
-    const response = await fetch(`/api/${module}/deleted/list`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch deleted items: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const result = await getDeletedModuleList<T>(module, params);
 
     return {
       success: true,
-      data,
+      data: result.data,
+      meta: result.meta,
     };
   } catch (error) {
     console.error(`Error fetching deleted ${module} items:`, error);
@@ -480,6 +455,33 @@ export async function getDeletedModuleItemsAction<T = any>(
         error instanceof Error
           ? error.message
           : `Failed to fetch deleted ${module} items`,
+    };
+  }
+}
+
+/**
+ * Server action to get count of deleted items for trash bin badge
+ */
+export async function getDeletedModuleCountAction(
+  module: string
+): Promise<ActionResponse<{ count: number }>> {
+  try {
+    console.log(`🗑️ [getDeletedModuleCountAction] Called for module: ${module}`);
+    const result = await getDeletedModuleCount(module);
+    console.log(`🗑️ [getDeletedModuleCountAction] Result:`, result);
+
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    console.error(`🗑️ [getDeletedModuleCountAction] Error fetching deleted count for ${module}:`, error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : `Failed to fetch deleted count for ${module}`,
     };
   }
 }

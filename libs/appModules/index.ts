@@ -11,6 +11,7 @@ export {
   hardDeleteModuleItemAction,
   restoreModuleItemAction,
   getDeletedModuleItemsAction,
+  getDeletedModuleCountAction,
   bulkModuleOperationAction,
   executeExtraActionAction,
   getModuleReferenceAction,
