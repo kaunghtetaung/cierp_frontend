@@ -9,6 +9,7 @@ import {
   type Reservation
 } from '@/actions/library/reservation.actions';
 import { S3Image } from '@/components/common/S3Image';
+import { LibraryMobileFooter } from '@/components/library/LibraryMobileFooter';
 
 type FilterStatus = 'all' | 'pending' | 'ready';
 
@@ -178,7 +179,7 @@ export function MyReservations() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-20 md:pb-8">
         <div className="max-w-4xl mx-auto">
           {/* Title */}
           <h1 className="text-3xl font-bold text-foreground mb-6">{texts.title}</h1>
@@ -396,6 +397,9 @@ export function MyReservations() {
           )}
         </div>
       </div>
+
+      {/* Mobile Footer Navigation */}
+      <LibraryMobileFooter />
     </div>
   );
 }

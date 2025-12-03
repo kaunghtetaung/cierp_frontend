@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 // Helper to extract role name from role object or string
 function getRoleName(role: any): string {
@@ -29,6 +29,7 @@ interface UserState {
  */
 export function LibraryMobileFooter() {
   const pathname = usePathname();
+  const router = useRouter();
   const [userState, setUserState] = useState<UserState>({
     isAuthenticated: false,
     hasLibraryAccess: false,
@@ -56,17 +57,25 @@ export function LibraryMobileFooter() {
 
   // Focus on search input when clicking search button
   const handleSearchClick = () => {
-    // Try to find and focus the search input
-    const searchInput = document.querySelector('input[type="text"][placeholder*="Search"]') as HTMLInputElement
-      || document.querySelector('input[type="text"][placeholder*="books"]') as HTMLInputElement
-      || document.querySelector('input[placeholder*="စာအုပ်"]') as HTMLInputElement;
+    // Check if we're on a page that doesn't have a search box (my-card, my-reservations)
+    const needsRedirect = pathname.includes('/my-card') || pathname.includes('/my-reservations');
 
-    if (searchInput) {
-      searchInput.focus();
-      searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (needsRedirect) {
+      // Navigate to library page with a flag to focus search
+      router.push('/library?focusSearch=true');
     } else {
-      // Fallback: scroll to top where search box is
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Try to find and focus the search input on current page
+      const searchInput = document.querySelector('input[type="text"][placeholder*="Search"]') as HTMLInputElement
+        || document.querySelector('input[type="text"][placeholder*="books"]') as HTMLInputElement
+        || document.querySelector('input[placeholder*="စာအုပ်"]') as HTMLInputElement;
+
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // Fallback: scroll to top where search box is
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 

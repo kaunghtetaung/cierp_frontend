@@ -1,6 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { SearchType, SortBy, SortOrder } from './SimpleSearch';
 import { type AdvancedSearchParams } from './AdvancedSearch';
 import { SearchHero } from './SearchHero';
@@ -32,6 +33,25 @@ export function LibraryHome({
   newArrivals
 }: LibraryHomeProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Focus search input if focusSearch parameter is present
+  useEffect(() => {
+    const focusSearch = searchParams.get('focusSearch');
+    if (focusSearch === 'true') {
+      // Wait for DOM to render, then focus the search input
+      setTimeout(() => {
+        const searchInput = document.querySelector('input[type="text"][placeholder*="Search"]') as HTMLInputElement
+          || document.querySelector('input[type="text"][placeholder*="books"]') as HTMLInputElement
+          || document.querySelector('input[placeholder*="စာအုပ်"]') as HTMLInputElement;
+
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [searchParams]);
 
   const handleSearch = (
     query: string,

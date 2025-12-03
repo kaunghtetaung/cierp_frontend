@@ -4,6 +4,7 @@ import { getMyBorrowerCard } from '@/actions/library/borrower.actions';
 import { DigitalBorrowerCard } from '@/components/library/DigitalBorrowerCard';
 import { CardActions } from '@/components/library/CardActions';
 import { AddToHomeScreen } from '@/components/library/AddToHomeScreen';
+import { LibraryMobileFooter } from '@/components/library/LibraryMobileFooter';
 import { Alert, AlertDescription } from '@repo/ui';
 import { IconComponent, Button } from '@repo/ui';
 import Link from 'next/link';
@@ -115,7 +116,7 @@ export default async function MyCardPage() {
       {/* Content Area - Flex-1 takes remaining viewport space */}
       <div className="flex-1 overflow-y-auto print:flex print:items-center print:justify-center print:fixed print:inset-0">
         {/* Mobile: Full width card */}
-        <div className="md:hidden p-4 print:!hidden">
+        <div className="md:hidden p-4 pb-20 print:!hidden">
           <AddToHomeScreen />
           <DigitalBorrowerCard borrower={borrowerResponse.data} showDetails={true} tenant={tenant} />
           <div className="mt-4 space-y-3">
@@ -167,6 +168,9 @@ export default async function MyCardPage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Footer Navigation */}
+      <LibraryMobileFooter />
     </div>
   );
 }
