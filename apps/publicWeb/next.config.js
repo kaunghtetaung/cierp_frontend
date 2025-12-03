@@ -11,6 +11,9 @@ const nextConfig = {
   },
   transpilePackages: ['@repo/nrc-hooks'],
   experimental: {
+    serverActions: {
+      bodySizeLimit: '15mb', // Allow up to 15MB file uploads for student photos
+    },
     optimizePackageImports: ['@repo/ui', '@repo/utils', '@repo/language'],
   },
   webpack: (config, { isServer, webpack, dev }) => {

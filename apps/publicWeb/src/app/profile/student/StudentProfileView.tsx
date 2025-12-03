@@ -445,7 +445,15 @@ export function StudentProfileView({
             {/* Back button */}
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => {
+                // Check if there's a referrer (previous page)
+                if (document.referrer && document.referrer !== '') {
+                  router.back();
+                } else {
+                  // No referrer, go to home
+                  router.push('/');
+                }
+              }}
               className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
