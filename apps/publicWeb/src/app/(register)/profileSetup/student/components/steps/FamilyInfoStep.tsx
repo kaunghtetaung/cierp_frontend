@@ -868,7 +868,6 @@ export function FamilyInfoStep() {
                       value={field.value || ""}
                       onChange={field.onChange}
                       error={(errors.guardian as any)?.nrcNumber?.message as string}
-                      disabled={guardianType !== "other"}
                     />
                   )}
                 />

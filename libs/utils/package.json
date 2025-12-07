@@ -8,7 +8,7 @@
     ".": "./index.ts",
     "./common": "./common/index.ts",
     "./common/*": "./common/*.ts",
-    "./client": "./client/index.ts", 
+    "./client": "./client/index.ts",
     "./client/*": "./client/*.ts",
     "./server": "./server/index.ts",
     "./server/*": "./server/*.ts",
@@ -23,7 +23,7 @@
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.0.0",
     "tldts": "^6.1.59",
-    "next": "15.4.3",
+    "next": "15.4.8",
     "react": "^19.0.0",
     "sonner": "^2.0.7",
     "@repo/config": "workspace:*"

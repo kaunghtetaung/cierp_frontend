@@ -14,7 +14,7 @@
     "@repo/tenant": "workspace:*",
     "@repo/section": "workspace:*",
     "@repo/api": "workspace:*",
-    "next": "15.4.3",
+    "next": "15.4.8",
     "react": "^19.0.0"
   },
   "devDependencies": {

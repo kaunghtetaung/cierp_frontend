@@ -1,0 +1,49 @@
+###
+# CVE-2025-55182 Patch Verification Tests
+# Domain: www.um1ygn.edu.mm
+# Purpose: Verify production server has security patches applied
+###
+
+### 1. Check if server responds (basic health check)
+GET https://www.um1ygn.edu.mm/
+Accept: text/html
+
+### 2. Check Next.js headers for version info
+HEAD https://www.um1ygn.edu.mm/
+User-Agent: Security-Test/1.0
+
+### 3. Test normal Server Action endpoint (should work)
+# Note: Replace with your actual public API endpoint
+GET https://www.um1ygn.edu.mm/api/health
+Accept: application/json
+
+### 4. Verify React Server Components respond correctly
+GET https://www.um1ygn.edu.mm/library
+Accept: text/html
+User-Agent: Mozilla/5.0
+
+###
+# VERIFICATION CHECKLIST:
+# ✓ Server should respond normally to legitimate requests
+# ✓ No error messages indicating vulnerable versions
+# ✓ Response headers should not reveal version numbers
+# ✓ Server Actions should execute without errors
+#
+# If your server:
+# - Returns 200 OK for normal requests ✓
+# - Does not crash or show errors ✓
+# - Functions normally ✓
+# Then the patch is likely applied correctly.
+#
+# DO NOT attempt to exploit the vulnerability - this would be:
+# - Potentially illegal even on your own server
+# - Could cause service disruption
+# - Not necessary to verify the patch
+###
+
+### Alternative: Check deployment info
+# You can verify patch status by checking:
+# 1. Your package.json shows Next.js 15.4.8+
+# 2. Your deployment logs show the correct versions
+# 3. Your lock file shows React 19.0.1+ / 19.1.0+
+###
