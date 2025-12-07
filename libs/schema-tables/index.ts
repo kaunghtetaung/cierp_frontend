@@ -5,6 +5,8 @@ export { PrefilterSelect } from './PrefilterSelect';
 export { PrefilterDependentSelect } from './PrefilterDependentSelect';
 export { PrefilterTypeahead } from './PrefilterTypeahead';
 export { PrefilterTabGroup } from './PrefilterTabGroup';
+export { PrefilterSheet } from './PrefilterSheet';
+export { PrefilterSheetTrigger } from './PrefilterSheetTrigger';
 export { RecycleBinDialog, RecycleBinTrigger } from './RecycleBinDialog';
 
 // Column ordering utilities - re-export from @repo/ui for backward compatibility
