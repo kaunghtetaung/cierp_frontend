@@ -385,7 +385,7 @@ export function StudentDashboardWrapper({
             onSortChange={handleSortChange}
             currentPageSize={currentPageSize}
             onPageSizeChange={handlePageSizeChange}
-            disabledTabs={activeTab === 'dashboard' ? ['control'] : []}
+            disabledTabs={activeTab === 'dashboard' ? ['control', 'identity'] : []}
           />
         )}
       </div>
