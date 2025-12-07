@@ -10,6 +10,7 @@ interface ModuleDataTableWrapperProps {
   initialData?: any[];
   userPermissions?: ModulePermissions;
   hidePrefilters?: boolean; // Hide prefilters when rendered externally (e.g., in dashboard wrapper)
+  hideTitle?: boolean; // Hide module title and description (default: false - shows title)
 }
 
 /**
@@ -29,6 +30,7 @@ export function ModuleDataTableWrapper({
   initialData = [],
   userPermissions,
   hidePrefilters = false,
+  hideTitle = false,
 }: ModuleDataTableWrapperProps) {
   console.log("🧠 [ROUTER] Using SERVER-SIDE pagination for module:", module.slug);
 
@@ -38,6 +40,7 @@ export function ModuleDataTableWrapper({
       initialData={initialData}
       userPermissions={userPermissions}
       hidePrefilters={hidePrefilters}
+      hideTitle={hideTitle}
     />
   );
 }

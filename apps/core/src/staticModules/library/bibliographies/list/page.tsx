@@ -37,7 +37,6 @@ export default async function BibliographiesListPage({
   if (isServerSidePaging) {
     return (
       <div className="w-full min-w-0 overflow-hidden">
-        "FROM Static"
         <ModuleDataTableWrapper
           module={clientModule}
           initialData={[]}

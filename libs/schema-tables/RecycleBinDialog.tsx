@@ -191,7 +191,7 @@ export function RecycleBinDialog({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-lg flex flex-col"
+          className="max-w-full sm:max-w-lg flex flex-col"
         >
           <SheetHeader className="border-b pb-4">
             <div className="flex items-center gap-2">

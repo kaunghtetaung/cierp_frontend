@@ -65,6 +65,7 @@ interface ModuleDataTableProps {
   selectedMonth?: number;
   showRecycleBin?: boolean; // Show recycle bin button in toolbar
   hidePrefilters?: boolean; // Hide prefilters when they're rendered externally (e.g., in dashboard wrapper)
+  hideTitle?: boolean; // Hide module title and description (default: false - shows title)
   userPermissions?: any; // User permissions for the module
 }
 
@@ -88,6 +89,7 @@ export function ModuleDataTable({
   selectedMonth = new Date().getMonth() + 1,
   showRecycleBin = true,
   hidePrefilters = false,
+  hideTitle = false,
   userPermissions,
 }: Omit<ModuleDataTableProps, "currentLanguage">) {
   const { currentLanguage } = useLanguage();
@@ -189,13 +191,6 @@ export function ModuleDataTable({
           // Using pipe instead of comma to support values containing commas
           if (field.multiple && paramValue.includes('|')) {
             const splitValues = paramValue.split('|').map(v => v.trim());
-            console.log('🔍 PrefilterTypeahead split debug:', {
-              fieldName: field.fieldName,
-              paramValue,
-              splitValues,
-              separator: '|',
-              containsSpaces: splitValues.some(v => v.includes(' '))
-            });
             values[field.fieldName] = splitValues;
           } else {
             values[field.fieldName] = paramValue;
@@ -332,13 +327,6 @@ export function ModuleDataTable({
         // For multiple values, join with pipe (|) separator
         // Using pipe instead of comma to support values containing commas
         const joinedValue = val.join('|');
-        console.log('🔍 PrefilterTypeahead join debug:', {
-          key,
-          originalArray: val,
-          joinedValue,
-          separator: '|',
-          containsSpaces: val.some(v => String(v).includes(' '))
-        });
         newSearchParams.set(key, joinedValue);
       } else {
         newSearchParams.set(key, val as string);
@@ -550,23 +538,6 @@ export function ModuleDataTable({
     enabled: showRecycleBin,
   });
 
-  // Debug: Log recycle bin status
-  console.log("🗑️ [ModuleDataTable] Recycle bin status:", {
-    showRecycleBin,
-    deletedCount,
-    isDeletedCountLoading,
-    deletedCountError,
-    moduleSlug: module.slug,
-  });
-
-  // Debug: Log the actions configuration
-  console.log("ModuleDataTable actions config:", {
-    hasActions: !!module.dataTableSchema.actions,
-    actions: module.dataTableSchema.actions,
-    edit: module.dataTableSchema.actions?.edit,
-    delete: module.dataTableSchema.actions?.delete,
-    view: module.dataTableSchema.actions?.view,
-  });
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [activeExtraAction, setActiveExtraAction] =
     useState<ExtraAction | null>(null);
@@ -582,23 +553,6 @@ export function ModuleDataTable({
   // Recycle bin state
   const [recycleBinOpen, setRecycleBinOpen] = useState(false);
 
-  // Debug state
-  const [debugLogs, setDebugLogs] = useState<Array<{
-    timestamp: string;
-    type: 'FETCH' | 'DELETE' | 'BULK_OP' | 'DATA_RECEIVED';
-    url?: string;
-    method?: string;
-    params?: any;
-    response?: any;
-    dataCount?: number;
-  }>>([]);
-  const [showDebug, setShowDebug] = useState(true);
-
-  // Helper to add debug log
-  const addDebugLog = (type: 'FETCH' | 'DELETE' | 'BULK_OP' | 'DATA_RECEIVED', logData: any) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setDebugLogs(prev => [...prev, { timestamp, type, ...logData }]);
-  };
   const [pendingDeleteType, setPendingDeleteType] = useState<"soft" | "hard">(
     "soft"
   );
@@ -758,29 +712,6 @@ export function ModuleDataTable({
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Debug: Log when data is received
-  useEffect(() => {
-    addDebugLog('DATA_RECEIVED', {
-      dataCount: data?.length || 0,
-      totalItems,
-      totalPages,
-      currentPage: queryParams.page,
-      pageSize: queryParams.limit,
-      params: {
-        page: queryParams.page,
-        limit: queryParams.limit,
-        sortBy: queryParams.sortBy,
-        sortOrder: queryParams.sortOrder,
-        filters: queryParams.filters,
-      },
-      response: {
-        data: data || [],
-        totalItems,
-        totalPages,
-      }
-    });
-  }, [data, totalItems, totalPages, queryParams]);
-
   // Helper function to get nested field values
   const getNestedValue = (obj: any, path: string) => {
     const value = path.split(".").reduce((current, key) => current?.[key], obj);
@@ -856,7 +787,6 @@ export function ModuleDataTable({
         setPendingExtraAction(action);
         setExtraActionConfirmOpen(true);
       } else {
-        console.log(`Executing inline action: ${action.actionKey}`);
         // Here you would call the API
       }
     }
@@ -866,14 +796,8 @@ export function ModuleDataTable({
   // Handle extra actions for single rows (automatically handle selection for actions that need it)
   const handleExtraActionForRow = (action: ExtraAction, item: any) => {
     const itemId = item._id || item.id;
-    console.log(
-      `🎯 handleExtraActionForRow: Processing action "${action.actionKey}" for item ${itemId}`
-    );
 
     if (action.type === "modal") {
-      console.log(
-        `🎭 handleExtraActionForRow: Opening modal for "${action.actionKey}" with preselected item ${itemId}`
-      );
       // Set the row action item and clear bulk selection
       setRowActionItem(item);
       setSelectedItems([]); // Clear any bulk selections
@@ -886,10 +810,6 @@ export function ModuleDataTable({
         setPendingExtraAction(action);
         setExtraActionConfirmOpen(true);
       } else {
-        console.log(
-          `Executing inline action: ${action.actionKey} for item:`,
-          itemId
-        );
         // Here you would call the API
       }
     }
@@ -897,7 +817,6 @@ export function ModuleDataTable({
 
   const executeExtraAction = () => {
     if (pendingExtraAction) {
-      console.log(`Executing API action: ${pendingExtraAction.actionKey}`);
       // Here you would call the API
       setPendingExtraAction(null);
     }
@@ -906,21 +825,13 @@ export function ModuleDataTable({
   const handleExtraActionSuccess = () => {
     // This is now called only when modal closes (if data was changed)
     // The ExtraActionModal tracks changes and only calls this on close if needed
-    
-    console.log('🔄 ModuleDataTable - handleExtraActionSuccess called', {
-      hasOnRefresh: typeof onRefresh === 'function',
-      onRefresh
-    });
-    
+
     // Trigger data refresh using the onRefresh callback
     if (onRefresh && typeof onRefresh === 'function') {
-      console.log('✅ ModuleDataTable - Calling onRefresh');
       // Call the refresh function to refetch data (usually triggers React Query refetch)
       onRefresh();
-    } else {
-      console.warn('⚠️ ModuleDataTable - No onRefresh callback available');
     }
-    
+
     // Note: The modal stays open for multiple operations
     // Data is only refetched once when modal closes (if changes were made)
   };
@@ -934,12 +845,6 @@ export function ModuleDataTable({
     if (!pendingDeleteId) return;
 
     try {
-      addDebugLog('DELETE', {
-        method: 'DELETE',
-        url: `/api/${module.slug}/${pendingDeleteId}`,
-        itemId: pendingDeleteId,
-      });
-
       const result = await deleteItemMutation.mutateAsync(pendingDeleteId);
 
       // Check if the mutation actually succeeded
@@ -950,12 +855,6 @@ export function ModuleDataTable({
             : "Delete failed - Unable to connect to server"
         );
       }
-
-      addDebugLog('DELETE', {
-        method: 'DELETE',
-        url: `/api/${module.slug}/${pendingDeleteId}`,
-        response: { success: true, result },
-      });
 
       // Only show success toast if operation truly succeeded
       const successMessage =
@@ -1008,12 +907,6 @@ export function ModuleDataTable({
     try {
       const ids = selectedItems.map((item) => item._id || item.id);
 
-      addDebugLog('BULK_OP', {
-        method: 'POST',
-        url: `/api/${module.slug}/bulk`,
-        params: { operation: 'delete', ids, count: ids.length },
-      });
-
       const result = await bulkOperationMutation.mutateAsync({
         operation: "delete",
         ids: ids,
@@ -1027,12 +920,6 @@ export function ModuleDataTable({
             : "Bulk delete failed - Unable to connect to server"
         );
       }
-
-      addDebugLog('BULK_OP', {
-        method: 'POST',
-        url: `/api/${module.slug}/bulk`,
-        response: { success: true, deletedCount: ids.length, result },
-      });
 
       // Only show success if operation truly succeeded
       // Clear selection and show success toast
@@ -1962,25 +1849,27 @@ export function ModuleDataTable({
 
   return (
     <div className="space-y-6 w-full min-w-0 max-w-full overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <IconComponent
-              name={module.iconName}
-              className="w-6 h-6 text-primary"
-            />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">
-              {getLocalizedText(module.name, currentLanguage)}
-            </h1>
-            <p className="text-muted-foreground hidden md:block">
-              {getLocalizedText(module.description, currentLanguage)}
-            </p>
+      {/* Header - Hidden when hideTitle is true */}
+      {!hideTitle && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <IconComponent
+                name={module.iconName}
+                className="w-6 h-6 text-primary"
+              />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">
+                {getLocalizedText(module.name, currentLanguage)}
+              </h1>
+              <p className="text-muted-foreground hidden md:block">
+                {getLocalizedText(module.description, currentLanguage)}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Advanced Filter Section - Hidden when prefilters are rendered externally */}
       {hasPrefilters && !hidePrefilters && (
@@ -2849,148 +2738,6 @@ export function ModuleDataTable({
           icon={pendingExtraAction.icon}
         />
       )}
-
-      {/* Debug Panel */}
-      <div className="mt-6 border rounded-lg overflow-hidden">
-        <div className="bg-muted/50 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <IconComponent name="Bug" className="w-5 h-5 text-muted-foreground" />
-            <h3 className="font-semibold text-sm">Debug Information</h3>
-            <Badge variant="outline" className="text-xs">
-              {debugLogs.length} {currentLanguage === "mm" ? "မှတ်တမ်း" : "logs"}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDebugLogs([])}
-              disabled={debugLogs.length === 0}
-            >
-              <IconComponent name="Trash2" className="w-4 h-4 mr-1" />
-              {currentLanguage === "mm" ? "ရှင်းမည်" : "Clear Logs"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowDebug(!showDebug)}
-            >
-              <IconComponent
-                name={showDebug ? "ChevronUp" : "ChevronDown"}
-                className="w-4 h-4"
-              />
-            </Button>
-          </div>
-        </div>
-
-        {showDebug && (
-          <div className="p-4 space-y-4 bg-background max-h-[500px] overflow-y-auto">
-            {/* Table Schema Info */}
-            <div className="border rounded-lg p-3 bg-muted/20">
-              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                <IconComponent name="Table" className="w-4 h-4" />
-                Table Layout Schema
-              </h4>
-              <div className="text-xs space-y-1 font-mono">
-                <div><strong>Module:</strong> {module.slug}</div>
-                <div><strong>Layout:</strong> {module.dataTableSchema?.layout || 'default'}</div>
-                <div><strong>Columns:</strong> {module.dataTableSchema?.columns?.length || 0}</div>
-                <div><strong>Pagination:</strong> {module.dataTableSchema?.pagination?.defaultLimit || 10} per page</div>
-                <div><strong>Sorting:</strong> {module.dataTableSchema?.sorting?.defaultSort?.field || 'none'} ({module.dataTableSchema?.sorting?.defaultSort?.direction || 'asc'})</div>
-                <div><strong>Has Prefilters:</strong> {(module.dataTableSchema as any)?.prefilters?.fields?.length > 0 ? 'Yes' : 'No'}</div>
-                {(module.dataTableSchema as any)?.prefilters?.fields?.length > 0 && (
-                  <div className="mt-2">
-                    <strong>Prefilter Fields:</strong>
-                    <ul className="ml-4 mt-1">
-                      {(module.dataTableSchema as any).prefilters.fields.map((field: any) => (
-                        <li key={field.fieldName}>
-                          {field.fieldName} ({field.type})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Debug Logs */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm flex items-center gap-2">
-                <IconComponent name="Activity" className="w-4 h-4" />
-                Activity Logs
-              </h4>
-              {debugLogs.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">
-                  {currentLanguage === "mm" ? "မှတ်တမ်းမရှိသေးပါ" : "No logs yet"}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {debugLogs.slice().reverse().map((log, idx) => (
-                    <div
-                      key={debugLogs.length - idx}
-                      className={`border rounded p-2 text-xs font-mono ${
-                        log.type === 'DELETE' ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' :
-                        log.type === 'BULK_OP' ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800' :
-                        log.type === 'DATA_RECEIVED' ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800' :
-                        'bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge
-                          variant={
-                            log.type === 'DELETE' ? 'destructive' :
-                            log.type === 'BULK_OP' ? 'default' :
-                            log.type === 'DATA_RECEIVED' ? 'secondary' :
-                            'outline'
-                          }
-                          className="text-xs"
-                        >
-                          {log.type}
-                        </Badge>
-                        <span className="text-muted-foreground">{log.timestamp}</span>
-                      </div>
-
-                      {log.url && (
-                        <div className="mt-1">
-                          <strong className="text-blue-600 dark:text-blue-400">{log.method}:</strong> {log.url}
-                        </div>
-                      )}
-
-                      {log.dataCount !== undefined && (
-                        <div className="mt-1">
-                          <strong>Data Received:</strong> {log.dataCount} items (Total: {log.response?.totalItems || totalItems})
-                        </div>
-                      )}
-
-                      {log.params && (
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                            Parameters
-                          </summary>
-                          <pre className="mt-1 p-2 bg-background rounded text-xs overflow-x-auto">
-                            {JSON.stringify(log.params, null, 2)}
-                          </pre>
-                        </details>
-                      )}
-
-                      {log.response && (
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                            Response
-                          </summary>
-                          <pre className="mt-1 p-2 bg-background rounded text-xs overflow-x-auto">
-                            {JSON.stringify(log.response, null, 2)}
-                          </pre>
-                        </details>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Recycle Bin Dialog */}
       {showRecycleBin && (

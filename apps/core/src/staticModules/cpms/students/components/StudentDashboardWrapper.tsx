@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@repo/ui';
 import { IconComponent } from '@repo/ui';
 import { Card, CardContent, Button } from '@repo/ui';
 import { useLanguage } from '@repo/language';
+import { getLocalizedText } from '@repo/utils';
 import { getModuleDashboardAction } from '@repo/app-modules/server-actions';
 import { StudentDashboard } from './StudentDashboard';
 import { ModuleDataTableWrapper } from '@/components/modules/ModuleDataTableWrapper';
@@ -375,56 +376,76 @@ export function StudentDashboardWrapper({
   // Module has dashboard - render prefilters above tabs
   return (
     <div className="space-y-4">
-      {/* Header with View Tabs and Filter Button */}
-      <div className="flex items-center justify-between">
-        <Tabs value={activeTab} onValueChange={handleViewTabChange} className="w-auto">
-          <TabsList>
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <IconComponent name="LayoutDashboard" className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-2">
-              <IconComponent name="Table" className="h-4 w-4" />
-              Data
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {/* Filter Sheet Trigger and Clear All Button */}
-        {hasPrefilters && fieldGroupsWithControl.length > 0 && (
-          <div className="flex items-center gap-2">
-            <PrefilterSheetTrigger
-              fieldGroups={fieldGroupsWithControl}
-              prefilterValues={prefilterValues}
-              onPrefilterChange={handlePrefilterChange}
-              onClearAll={handleClearAllPrefilters}
-              currentLanguage={currentLanguage}
-              moduleSlug={module.slug}
-              totalItems={totalItems}
-              sortOptions={sortOptions}
-              currentSort={currentSort}
-              currentOrder={currentSortOrder}
-              onSortChange={handleSortChange}
-              currentPageSize={currentPageSize}
-              onPageSizeChange={handlePageSizeChange}
-              disabledTabs={activeTab === 'dashboard' ? ['control', 'identity'] : []}
-            />
-
-            {/* Clear All Filters Button */}
-            {totalActiveFilters > 0 && (
-              <Button
-                variant="outline"
-                onClick={handleClearAllPrefilters}
-                className="h-10 px-4 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 transition-all duration-200"
-              >
-                <IconComponent name="X" className="h-4 w-4" />
-                <span className="font-medium">
-                  {currentLanguage === "mm" ? "အားလုံးရှင်း" : "Clear All"}
-                </span>
-              </Button>
+      {/* Header with Module Title and Actions */}
+      <div className="flex items-start justify-between gap-4">
+        {/* Left: Module Icon, Title & Description */}
+        <div className="flex items-start gap-3 flex-1">
+          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+            <IconComponent name={module.iconName || "GraduationCap"} className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-foreground">
+              {getLocalizedText(module.name, currentLanguage)}
+            </h1>
+            {module.description && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {getLocalizedText(module.description, currentLanguage)}
+              </p>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Right: View Tabs, Filter Button, and Clear All Button */}
+        <div className="flex items-center gap-2">
+          <Tabs value={activeTab} onValueChange={handleViewTabChange} className="w-auto">
+            <TabsList>
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <IconComponent name="LayoutDashboard" className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="data" className="flex items-center gap-2">
+                <IconComponent name="Table" className="h-4 w-4" />
+                Data
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Filter Sheet Trigger and Clear All Button */}
+          {hasPrefilters && fieldGroupsWithControl.length > 0 && (
+            <>
+              <PrefilterSheetTrigger
+                fieldGroups={fieldGroupsWithControl}
+                prefilterValues={prefilterValues}
+                onPrefilterChange={handlePrefilterChange}
+                onClearAll={handleClearAllPrefilters}
+                currentLanguage={currentLanguage}
+                moduleSlug={module.slug}
+                totalItems={totalItems}
+                sortOptions={sortOptions}
+                currentSort={currentSort}
+                currentOrder={currentSortOrder}
+                onSortChange={handleSortChange}
+                currentPageSize={currentPageSize}
+                onPageSizeChange={handlePageSizeChange}
+                disabledTabs={activeTab === 'dashboard' ? ['control', 'identity'] : []}
+              />
+
+              {/* Clear All Filters Button */}
+              {totalActiveFilters > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={handleClearAllPrefilters}
+                  className="h-10 px-4 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 transition-all duration-200"
+                >
+                  <IconComponent name="X" className="h-4 w-4" />
+                  <span className="font-medium">
+                    {currentLanguage === "mm" ? "အားလုံးရှင်း" : "Clear All"}
+                  </span>
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Content Area */}
@@ -462,6 +483,7 @@ export function StudentDashboardWrapper({
           initialData={initialData}
           userPermissions={userPermissions}
           hidePrefilters={true}
+          hideTitle={true}
         />
       )}
     </div>

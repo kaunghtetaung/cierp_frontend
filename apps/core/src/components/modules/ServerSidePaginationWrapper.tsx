@@ -15,6 +15,7 @@ interface ServerSidePaginationWrapperProps {
   initialData?: any[];
   userPermissions?: ModulePermissions;
   hidePrefilters?: boolean; // Hide prefilters when rendered externally (e.g., in dashboard wrapper)
+  hideTitle?: boolean; // Hide module title and description (default: false - shows title)
 }
 
 /**
@@ -34,6 +35,7 @@ export function ServerSidePaginationWrapper({
   initialData = [],
   userPermissions,
   hidePrefilters = false,
+  hideTitle = false,
 }: ServerSidePaginationWrapperProps) {
   const { currentLanguage } = useLanguage();
   const searchParams = useSearchParams();
@@ -351,6 +353,7 @@ export function ServerSidePaginationWrapper({
       onRefresh={refetch}
       userPermissions={userPermissions}
       hidePrefilters={hidePrefilters}
+      hideTitle={hideTitle}
     />
   );
 }
