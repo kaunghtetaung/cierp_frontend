@@ -163,13 +163,13 @@ export function PrefilterSheet({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-3xl p-0 flex flex-col">
         {/* Header */}
-        <SheetHeader className="px-6 py-4 border-b">
+        <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-muted/10 via-transparent to-muted/10">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold flex items-center gap-2">
               <IconComponent name="Filter" className="h-5 w-5 text-primary" />
               {currentLanguage === "mm" ? "စစ်ထုတ်မှုများ" : "Filters"}
               {totalActiveFilters > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground">
+                <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground font-bold">
                   {totalActiveFilters}
                 </Badge>
               )}
@@ -179,10 +179,16 @@ export function PrefilterSheet({
                 variant="ghost"
                 size="sm"
                 onClick={onClearAll}
-                className="h-8 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                className="h-9 px-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-lg font-medium"
               >
-                <IconComponent name="X" className="h-4 w-4 mr-1" />
+                <IconComponent name="X" className="h-4 w-4 mr-2" />
                 {currentLanguage === "mm" ? "အားလုံးရှင်း" : "Clear All"}
+                <Badge
+                  variant="secondary"
+                  className="ml-2 text-xs px-2 py-0.5 bg-destructive/20 text-destructive border-0 font-bold"
+                >
+                  {totalActiveFilters}
+                </Badge>
               </Button>
             )}
           </div>
@@ -191,7 +197,7 @@ export function PrefilterSheet({
         {/* Body with Vertical Tabs */}
         <div className="flex flex-1 overflow-hidden">
           {/* Vertical Tab Sidebar */}
-          <div className="w-48 border-r bg-muted/30 overflow-y-auto">
+          <div className="w-48 border-r border-border/60 bg-gradient-to-b from-muted/20 via-muted/10 to-muted/20 overflow-y-auto">
             <div className="p-2 space-y-1">
               {fieldGroups.map((group) => {
                 const isActive = activeTab === group.groupKey;
@@ -205,28 +211,31 @@ export function PrefilterSheet({
                     onClick={() => !isDisabled && setActiveTab(group.groupKey)}
                     disabled={isDisabled}
                     className={cn(
-                      "w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-md transition-all duration-200",
+                      "relative w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ease-in-out",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-foreground hover:bg-accent hover:text-accent-foreground",
-                      isDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent"
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:shadow-sm",
+                      isDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground hover:shadow-none scale-100"
                     )}
                   >
-                    <span className="truncate">
+                    <span className={cn("relative z-10 truncate", isActive && "text-primary-foreground")}>
                       {getLocalizedText(group.groupLabel, currentLanguage)}
                     </span>
                     {filterCount > 0 && (
                       <Badge
                         variant={isActive ? "secondary" : "outline"}
                         className={cn(
-                          "ml-2 h-5 min-w-5 px-1.5 text-xs font-bold flex items-center justify-center",
+                          "ml-0.5 px-2 py-0.5 text-xs font-bold h-5 min-w-5 flex items-center justify-center transition-all duration-200",
                           isActive
-                            ? "bg-red-500 text-white border-0"
-                            : "bg-muted text-muted-foreground"
+                            ? "bg-red-500 text-white shadow-sm"
+                            : "bg-muted text-muted-foreground border-border/50"
                         )}
                       >
                         {filterCount}
                       </Badge>
+                    )}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary-foreground/10 to-primary/0 rounded-lg animate-pulse" />
                     )}
                   </button>
                 );
@@ -238,7 +247,7 @@ export function PrefilterSheet({
           <div className="flex-1 overflow-y-auto">
             {activeGroup && activeGroup.groupKey === "control" ? (
               /* Control Tab Content */
-              <div className="p-6">
+              <div className="p-6 bg-gradient-to-b from-muted/5 to-transparent">
                 <div className="space-y-6">
                   {/* Sort By */}
                   {sortOptions.length > 0 && onSortChange && (
@@ -310,7 +319,7 @@ export function PrefilterSheet({
               </div>
             ) : activeGroup ? (
               /* Regular Filter Tab Content */
-              <div className="p-6">
+              <div className="p-6 bg-gradient-to-b from-muted/5 to-transparent">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {activeGroup.fields.map((field) => (
                     <div key={field.fieldName} className="min-w-0">
@@ -324,17 +333,40 @@ export function PrefilterSheet({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t bg-muted/30">
+        <div className="px-5 py-3 border-t border-border/60 bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <IconComponent name="Database" className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2.5 ml-2">
+              <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary/10">
+                <IconComponent
+                  name="Database"
+                  className="h-4 w-4 text-primary"
+                />
+              </div>
               <span className="text-sm font-semibold text-foreground/80">
                 {currentLanguage === "mm" ? "စုစုပေါင်း:" : "Total:"}
               </span>
-              <Badge variant="outline" className="text-sm font-bold px-3 py-1 bg-background/80 border-primary/30 text-primary">
+              <Badge
+                variant="outline"
+                className="text-sm font-bold px-3 py-1 bg-background/80 border-primary/30 text-primary shadow-sm"
+              >
                 {totalItems.toLocaleString()}
               </Badge>
             </div>
+
+            {/* Active filters summary */}
+            {totalActiveFilters > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 mr-2">
+                <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/15">
+                  <IconComponent name="Filter" className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground/80">
+                  {totalActiveFilters}{" "}
+                  {currentLanguage === "mm"
+                    ? "စစ်ထုတ်မှုများ အသုံးပြုထား"
+                    : `filter${totalActiveFilters > 1 ? "s" : ""} active`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </SheetContent>
