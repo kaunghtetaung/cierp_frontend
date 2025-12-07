@@ -236,6 +236,27 @@ export function StudentDashboardWrapper({
     router.push(`${pathname}?${newSearchParams.toString()}`);
   }, [searchParams, getPrefilterFields, router, pathname]);
 
+  // Calculate total active filters
+  const totalActiveFilters = useMemo(() => {
+    let count = 0;
+    const allFields = getPrefilterFields();
+
+    allFields.forEach((field) => {
+      const value = prefilterValues[field.fieldName];
+      if (value !== undefined && value !== '' && value !== null) {
+        if (Array.isArray(value)) {
+          if (value.length > 0) count++;
+        } else if (typeof value === 'object') {
+          if (value.from || value.to) count++;
+        } else {
+          count++;
+        }
+      }
+    });
+
+    return count;
+  }, [prefilterValues, getPrefilterFields]);
+
   // Build query params for dashboard API from URL search params
   // This reuses the same prefilter params that ModuleDataTable uses
   const dashboardQueryParams = useMemo(() => {
@@ -369,24 +390,40 @@ export function StudentDashboardWrapper({
           </TabsList>
         </Tabs>
 
-        {/* Filter Sheet Trigger */}
+        {/* Filter Sheet Trigger and Clear All Button */}
         {hasPrefilters && fieldGroupsWithControl.length > 0 && (
-          <PrefilterSheetTrigger
-            fieldGroups={fieldGroupsWithControl}
-            prefilterValues={prefilterValues}
-            onPrefilterChange={handlePrefilterChange}
-            onClearAll={handleClearAllPrefilters}
-            currentLanguage={currentLanguage}
-            moduleSlug={module.slug}
-            totalItems={totalItems}
-            sortOptions={sortOptions}
-            currentSort={currentSort}
-            currentOrder={currentSortOrder}
-            onSortChange={handleSortChange}
-            currentPageSize={currentPageSize}
-            onPageSizeChange={handlePageSizeChange}
-            disabledTabs={activeTab === 'dashboard' ? ['control', 'identity'] : []}
-          />
+          <div className="flex items-center gap-2">
+            <PrefilterSheetTrigger
+              fieldGroups={fieldGroupsWithControl}
+              prefilterValues={prefilterValues}
+              onPrefilterChange={handlePrefilterChange}
+              onClearAll={handleClearAllPrefilters}
+              currentLanguage={currentLanguage}
+              moduleSlug={module.slug}
+              totalItems={totalItems}
+              sortOptions={sortOptions}
+              currentSort={currentSort}
+              currentOrder={currentSortOrder}
+              onSortChange={handleSortChange}
+              currentPageSize={currentPageSize}
+              onPageSizeChange={handlePageSizeChange}
+              disabledTabs={activeTab === 'dashboard' ? ['control', 'identity'] : []}
+            />
+
+            {/* Clear All Filters Button */}
+            {totalActiveFilters > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleClearAllPrefilters}
+                className="h-10 px-4 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 transition-all duration-200"
+              >
+                <IconComponent name="X" className="h-4 w-4" />
+                <span className="font-medium">
+                  {currentLanguage === "mm" ? "အားလုံးရှင်း" : "Clear All"}
+                </span>
+              </Button>
+            )}
+          </div>
         )}
       </div>
 

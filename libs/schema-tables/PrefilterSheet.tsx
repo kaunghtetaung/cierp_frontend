@@ -320,27 +320,6 @@ export function PrefilterSheet({
             ) : activeGroup ? (
               /* Regular Filter Tab Content */
               <div className="p-6 bg-gradient-to-b from-muted/5 to-transparent">
-                {/* Clear Filters Button */}
-                {totalActiveFilters > 0 && (
-                  <div className="mb-6 flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onClearAll}
-                      className="h-8 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-lg font-medium"
-                    >
-                      <IconComponent name="X" className="h-3.5 w-3.5 mr-1.5" />
-                      {currentLanguage === "mm" ? "အားလုံးရှင်း" : "Clear All"}
-                      <Badge
-                        variant="secondary"
-                        className="ml-1.5 text-xs px-1.5 py-0.5 bg-destructive/20 text-destructive border-0 font-bold"
-                      >
-                        {totalActiveFilters}
-                      </Badge>
-                    </Button>
-                  </div>
-                )}
-
                 <div className="grid grid-cols-1 gap-6">
                   {activeGroup.fields.map((field) => (
                     <div key={field.fieldName} className="min-w-0">
