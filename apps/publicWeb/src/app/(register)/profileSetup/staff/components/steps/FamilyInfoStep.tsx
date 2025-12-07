@@ -12,42 +12,59 @@ type FamilyTab = "father" | "mother" | "guardian";
 type GuardianType = "father" | "mother" | "other";
 
 export function FamilyInfoStep() {
-  const { register, control, formState: { errors }, trigger, watch, setValue, resetField } = useFormContext();
+  const {
+    register,
+    control,
+    formState: { errors },
+    trigger,
+    watch,
+    setValue,
+    resetField,
+  } = useFormContext();
   const [activeTab, setActiveTab] = useState<FamilyTab>("father");
 
   // Reusable key handler for input fields (ESC to reset, Enter prevention)
-  const handleInputEscKey = (fieldName: string) => (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
-      setValue(fieldName, "");
+  const handleInputEscKey =
+    (fieldName: string) =>
+    (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        (e.target as HTMLInputElement | HTMLTextAreaElement).value = "";
+        setValue(fieldName, "");
 
-      // Trigger React Hook Form's onChange
-      const event = new Event('input', { bubbles: true });
-      e.target.dispatchEvent(event);
-    } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
-      // Prevent Enter key from submitting the form on input fields
-      e.preventDefault();
-    }
-  };
+        // Trigger React Hook Form's onChange
+        const event = new Event("input", { bubbles: true });
+        e.target.dispatchEvent(event);
+      } else if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+        // Prevent Enter key from submitting the form on input fields
+        e.preventDefault();
+      }
+    };
 
   // ESC key handler for Select fields
-  const handleSelectEscKey = (fieldName: string, currentValue: string) => (e: React.KeyboardEvent) => {
-    if (e.key === "Escape" && currentValue) {
-      e.preventDefault();
-      e.stopPropagation();
-      setValue(fieldName, "");
-    }
-  };
+  const handleSelectEscKey =
+    (fieldName: string, currentValue: string) => (e: React.KeyboardEvent) => {
+      if (e.key === "Escape" && currentValue) {
+        e.preventDefault();
+        e.stopPropagation();
+        setValue(fieldName, "");
+      }
+    };
 
   // Guardian selection state with localStorage support
   const [guardianType, setGuardianType] = useState<GuardianType>(() => {
     // Load from localStorage on initial render
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('studentRegistration_guardianType');
-      if (saved && (saved === 'father' || saved === 'mother' || saved === 'other')) {
-        console.log('📋 [FamilyInfoStep] Loaded guardian type from localStorage:', saved);
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("studentRegistration_guardianType");
+      if (
+        saved &&
+        (saved === "father" || saved === "mother" || saved === "other")
+      ) {
+        console.log(
+          "📋 [FamilyInfoStep] Loaded guardian type from localStorage:",
+          saved
+        );
         return saved as GuardianType;
       }
     }
@@ -56,9 +73,12 @@ export function FamilyInfoStep() {
 
   // Save guardian type to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('studentRegistration_guardianType', guardianType);
-      console.log('📋 [FamilyInfoStep] Saved guardian type to localStorage:', guardianType);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("studentRegistration_guardianType", guardianType);
+      console.log(
+        "📋 [FamilyInfoStep] Saved guardian type to localStorage:",
+        guardianType
+      );
     }
   }, [guardianType]);
 
@@ -102,7 +122,9 @@ export function FamilyInfoStep() {
 
   useEffect(() => {
     if (sameAsStudentAddress && studentPermanentAddress) {
-      console.log("📋 [FamilyInfoStep] Copying student's permanent address to guardian address");
+      console.log(
+        "📋 [FamilyInfoStep] Copying student's permanent address to guardian address"
+      );
       setValue("guardian.address", studentPermanentAddress);
     }
   }, [sameAsStudentAddress, studentPermanentAddress, setValue]);
@@ -115,17 +137,22 @@ export function FamilyInfoStep() {
         const tagName = target.tagName.toLowerCase();
 
         // Check if ESC is pressed inside any interactive element or dropdown
-        const isInInput = tagName === "input" || tagName === "textarea" || tagName === "select";
+        const isInInput =
+          tagName === "input" || tagName === "textarea" || tagName === "select";
         const isInButton = tagName === "button";
-        const isInDropdown = target.closest('[role="dialog"]') ||
-                           target.closest('[data-radix-popper-content-wrapper]') ||
-                           target.closest('[data-radix-popover-content]');
+        const isInDropdown =
+          target.closest('[role="dialog"]') ||
+          target.closest("[data-radix-popper-content-wrapper]") ||
+          target.closest("[data-radix-popover-content]");
 
         // Only reset current tab's fields if ESC is pressed outside of interactive elements
         if (!isInInput && !isInButton && !isInDropdown) {
           event.preventDefault();
           event.stopPropagation(); // Stop event from reaching the wizard's ESC handler
-          console.log("🔄 [FamilyInfoStep] ESC pressed - resetting current tab:", activeTab);
+          console.log(
+            "🔄 [FamilyInfoStep] ESC pressed - resetting current tab:",
+            activeTab
+          );
 
           // Reset fields based on current active tab
           const fieldsToReset = getFieldsForTab(activeTab);
@@ -138,10 +165,12 @@ export function FamilyInfoStep() {
 
           // Reset additional state for guardian tab
           if (activeTab === "guardian") {
-            console.log("🔄 [FamilyInfoStep] Resetting guardian additional state");
+            console.log(
+              "🔄 [FamilyInfoStep] Resetting guardian additional state"
+            );
             setSameAsStudentAddress(false);
             setGuardianType("other");
-            localStorage.removeItem('studentRegistration_guardianType');
+            localStorage.removeItem("studentRegistration_guardianType");
           }
         }
       }
@@ -170,7 +199,12 @@ export function FamilyInfoStep() {
   const handleTabChange = async (newTab: FamilyTab) => {
     // Validate current tab before switching
     const fieldsToValidate = getFieldsForTab(activeTab);
-    console.log("🔍 [FamilyInfoStep] Validating fields before tab change:", activeTab, "→", newTab);
+    console.log(
+      "🔍 [FamilyInfoStep] Validating fields before tab change:",
+      activeTab,
+      "→",
+      newTab
+    );
     const isValid = await trigger(fieldsToValidate);
     console.log("✅ [FamilyInfoStep] Tab change validation result:", isValid);
 
@@ -183,10 +217,14 @@ export function FamilyInfoStep() {
   };
 
   const handleNext = async () => {
-    const currentIndex = tabs.findIndex(t => t.value === activeTab);
+    const currentIndex = tabs.findIndex((t) => t.value === activeTab);
     if (currentIndex < tabs.length - 1) {
       const fieldsToValidate = getFieldsForTab(activeTab);
-      console.log("🔍 [FamilyInfoStep] Validating fields for tab:", activeTab, fieldsToValidate);
+      console.log(
+        "🔍 [FamilyInfoStep] Validating fields for tab:",
+        activeTab,
+        fieldsToValidate
+      );
 
       // Get current form values for debugging
       const formValues = watch();
@@ -200,13 +238,15 @@ export function FamilyInfoStep() {
       if (isValid) {
         setActiveTab(tabs[currentIndex + 1].value);
       } else {
-        console.log("❌ [FamilyInfoStep] Validation failed - staying on current tab");
+        console.log(
+          "❌ [FamilyInfoStep] Validation failed - staying on current tab"
+        );
       }
     }
   };
 
   const handlePrevious = () => {
-    const currentIndex = tabs.findIndex(t => t.value === activeTab);
+    const currentIndex = tabs.findIndex((t) => t.value === activeTab);
     if (currentIndex > 0) {
       setActiveTab(tabs[currentIndex - 1].value);
     }
@@ -215,9 +255,19 @@ export function FamilyInfoStep() {
   const getFieldsForTab = (tab: FamilyTab): string[] => {
     switch (tab) {
       case "father":
-        return ["father.nameMyanmar", "father.nameEnglish", "father.nrcNumber", "father.occupation"];
+        return [
+          "father.nameMyanmar",
+          "father.nameEnglish",
+          "father.nrcNumber",
+          "father.occupation",
+        ];
       case "mother":
-        return ["mother.nameMyanmar", "mother.nameEnglish", "mother.nrcNumber", "mother.occupation"];
+        return [
+          "mother.nameMyanmar",
+          "mother.nameEnglish",
+          "mother.nrcNumber",
+          "mother.occupation",
+        ];
       case "guardian":
         return [
           "guardian.nameMyanmar",
@@ -227,7 +277,7 @@ export function FamilyInfoStep() {
           "guardian.relationship",
           "guardian.phoneNumber",
           "guardian.email",
-          "guardian.address"
+          "guardian.address",
         ];
       default:
         return [];
@@ -235,7 +285,10 @@ export function FamilyInfoStep() {
   };
 
   const handleSameAsStudentAddress = (checked: boolean) => {
-    console.log("☑️ [FamilyInfoStep] Same as student address checkbox:", checked);
+    console.log(
+      "☑️ [FamilyInfoStep] Same as student address checkbox:",
+      checked
+    );
     setSameAsStudentAddress(checked);
     if (checked && studentPermanentAddress) {
       setValue("guardian.address", studentPermanentAddress);
@@ -270,7 +323,10 @@ export function FamilyInfoStep() {
         {/* Father Information Tab */}
         {activeTab === "father" && (
           <div className="space-y-6">
-            <p className="text-sm text-gray-600">All fields marked with <span className="text-red-500">*</span> are required</p>
+            <p className="text-sm text-gray-600">
+              All fields marked with <span className="text-red-500">*</span> are
+              required
+            </p>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className={labelClass}>
@@ -282,13 +338,16 @@ export function FamilyInfoStep() {
                   type="text"
                   className={cn(
                     inputClass,
-                    (errors.father as any)?.nameMyanmar && "border-red-300 focus:border-red-500"
+                    (errors.father as any)?.nameMyanmar &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter father's name in Myanmar"
                   onKeyDown={handleInputEscKey("father.nameMyanmar")}
                 />
                 {(errors.father as any)?.nameMyanmar && (
-                  <p className="text-sm text-red-600">{(errors.father as any).nameMyanmar.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.father as any).nameMyanmar.message as string}
+                  </p>
                 )}
               </div>
 
@@ -302,13 +361,16 @@ export function FamilyInfoStep() {
                   type="text"
                   className={cn(
                     inputClass,
-                    (errors.father as any)?.nameEnglish && "border-red-300 focus:border-red-500"
+                    (errors.father as any)?.nameEnglish &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter father's name in English"
                   onKeyDown={handleInputEscKey("father.nameEnglish")}
                 />
                 {(errors.father as any)?.nameEnglish && (
-                  <p className="text-sm text-red-600">{(errors.father as any).nameEnglish.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.father as any).nameEnglish.message as string}
+                  </p>
                 )}
               </div>
 
@@ -320,7 +382,9 @@ export function FamilyInfoStep() {
                     <PublicNrcField
                       value={field.value}
                       onChange={field.onChange}
-                      error={(errors.father as any)?.nrcNumber?.message as string}
+                      error={
+                        (errors.father as any)?.nrcNumber?.message as string
+                      }
                     />
                   )}
                 />
@@ -336,13 +400,16 @@ export function FamilyInfoStep() {
                   type="text"
                   className={cn(
                     inputClass,
-                    (errors.father as any)?.occupation && "border-red-300 focus:border-red-500"
+                    (errors.father as any)?.occupation &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter father's occupation"
                   onKeyDown={handleInputEscKey("father.occupation")}
                 />
                 {(errors.father as any)?.occupation && (
-                  <p className="text-sm text-red-600">{(errors.father as any).occupation.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.father as any).occupation.message as string}
+                  </p>
                 )}
               </div>
             </div>
@@ -352,7 +419,10 @@ export function FamilyInfoStep() {
         {/* Mother Information Tab */}
         {activeTab === "mother" && (
           <div className="space-y-6">
-            <p className="text-sm text-gray-600">All fields marked with <span className="text-red-500">*</span> are required</p>
+            <p className="text-sm text-gray-600">
+              All fields marked with <span className="text-red-500">*</span> are
+              required
+            </p>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className={labelClass}>
@@ -364,13 +434,16 @@ export function FamilyInfoStep() {
                   type="text"
                   className={cn(
                     inputClass,
-                    (errors.mother as any)?.nameMyanmar && "border-red-300 focus:border-red-500"
+                    (errors.mother as any)?.nameMyanmar &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter mother's name in Myanmar"
                   onKeyDown={handleInputEscKey("mother.nameMyanmar")}
                 />
                 {(errors.mother as any)?.nameMyanmar && (
-                  <p className="text-sm text-red-600">{(errors.mother as any).nameMyanmar.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.mother as any).nameMyanmar.message as string}
+                  </p>
                 )}
               </div>
 
@@ -384,13 +457,16 @@ export function FamilyInfoStep() {
                   type="text"
                   className={cn(
                     inputClass,
-                    (errors.mother as any)?.nameEnglish && "border-red-300 focus:border-red-500"
+                    (errors.mother as any)?.nameEnglish &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter mother's name in English"
                   onKeyDown={handleInputEscKey("mother.nameEnglish")}
                 />
                 {(errors.mother as any)?.nameEnglish && (
-                  <p className="text-sm text-red-600">{(errors.mother as any).nameEnglish.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.mother as any).nameEnglish.message as string}
+                  </p>
                 )}
               </div>
 
@@ -402,7 +478,9 @@ export function FamilyInfoStep() {
                     <PublicNrcField
                       value={field.value}
                       onChange={field.onChange}
-                      error={(errors.mother as any)?.nrcNumber?.message as string}
+                      error={
+                        (errors.mother as any)?.nrcNumber?.message as string
+                      }
                     />
                   )}
                 />
@@ -418,13 +496,16 @@ export function FamilyInfoStep() {
                   type="text"
                   className={cn(
                     inputClass,
-                    (errors.mother as any)?.occupation && "border-red-300 focus:border-red-500"
+                    (errors.mother as any)?.occupation &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter mother's occupation"
                   onKeyDown={handleInputEscKey("mother.occupation")}
                 />
                 {(errors.mother as any)?.occupation && (
-                  <p className="text-sm text-red-600">{(errors.mother as any).occupation.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.mother as any).occupation.message as string}
+                  </p>
                 )}
               </div>
             </div>
@@ -447,10 +528,14 @@ export function FamilyInfoStep() {
                     name="guardianType"
                     value="father"
                     checked={guardianType === "father"}
-                    onChange={(e) => setGuardianType(e.target.value as GuardianType)}
+                    onChange={(e) =>
+                      setGuardianType(e.target.value as GuardianType)
+                    }
                     className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
                   />
-                  <span className="text-sm text-gray-700">Father as Guardian</span>
+                  <span className="text-sm text-gray-700">
+                    Father as Guardian
+                  </span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -458,10 +543,14 @@ export function FamilyInfoStep() {
                     name="guardianType"
                     value="mother"
                     checked={guardianType === "mother"}
-                    onChange={(e) => setGuardianType(e.target.value as GuardianType)}
+                    onChange={(e) =>
+                      setGuardianType(e.target.value as GuardianType)
+                    }
                     className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
                   />
-                  <span className="text-sm text-gray-700">Mother as Guardian</span>
+                  <span className="text-sm text-gray-700">
+                    Mother as Guardian
+                  </span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -469,7 +558,9 @@ export function FamilyInfoStep() {
                     name="guardianType"
                     value="other"
                     checked={guardianType === "other"}
-                    onChange={(e) => setGuardianType(e.target.value as GuardianType)}
+                    onChange={(e) =>
+                      setGuardianType(e.target.value as GuardianType)
+                    }
                     className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
                   />
                   <span className="text-sm text-gray-700">Other</span>
@@ -477,7 +568,10 @@ export function FamilyInfoStep() {
               </div>
             </div>
 
-            <p className="text-sm text-gray-600">All fields marked with <span className="text-red-500">*</span> are required</p>
+            <p className="text-sm text-gray-600">
+              All fields marked with <span className="text-red-500">*</span> are
+              required
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Row 1: Name Myanmar, Name English, Relationship */}
@@ -492,14 +586,17 @@ export function FamilyInfoStep() {
                   disabled={guardianType !== "other"}
                   className={cn(
                     inputClass,
-                    (errors.guardian as any)?.nameMyanmar && "border-red-300 focus:border-red-500",
+                    (errors.guardian as any)?.nameMyanmar &&
+                      "border-red-300 focus:border-red-500",
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="Enter guardian's name in Myanmar"
                   onKeyDown={handleInputEscKey("guardian.nameMyanmar")}
                 />
                 {(errors.guardian as any)?.nameMyanmar && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).nameMyanmar.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).nameMyanmar.message as string}
+                  </p>
                 )}
               </div>
 
@@ -514,14 +611,17 @@ export function FamilyInfoStep() {
                   disabled={guardianType !== "other"}
                   className={cn(
                     inputClass,
-                    (errors.guardian as any)?.nameEnglish && "border-red-300 focus:border-red-500",
+                    (errors.guardian as any)?.nameEnglish &&
+                      "border-red-300 focus:border-red-500",
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="Enter guardian's name in English"
                   onKeyDown={handleInputEscKey("guardian.nameEnglish")}
                 />
                 {(errors.guardian as any)?.nameEnglish && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).nameEnglish.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).nameEnglish.message as string}
+                  </p>
                 )}
               </div>
 
@@ -536,14 +636,17 @@ export function FamilyInfoStep() {
                   disabled={guardianType !== "other"}
                   className={cn(
                     inputClass,
-                    (errors.guardian as any)?.relationship && "border-red-300 focus:border-red-500",
+                    (errors.guardian as any)?.relationship &&
+                      "border-red-300 focus:border-red-500",
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="e.g., Uncle, Aunt"
                   onKeyDown={handleInputEscKey("guardian.relationship")}
                 />
                 {(errors.guardian as any)?.relationship && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).relationship.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).relationship.message as string}
+                  </p>
                 )}
               </div>
             </div>
@@ -558,8 +661,9 @@ export function FamilyInfoStep() {
                     <PublicNrcField
                       value={field.value}
                       onChange={field.onChange}
-                      error={(errors.guardian as any)?.nrcNumber?.message as string}
-                      disabled={guardianType !== "other"}
+                      error={
+                        (errors.guardian as any)?.nrcNumber?.message as string
+                      }
                     />
                   )}
                 />
@@ -576,14 +680,17 @@ export function FamilyInfoStep() {
                   disabled={guardianType !== "other"}
                   className={cn(
                     inputClass,
-                    (errors.guardian as any)?.occupation && "border-red-300 focus:border-red-500",
+                    (errors.guardian as any)?.occupation &&
+                      "border-red-300 focus:border-red-500",
                     guardianType !== "other" && "bg-gray-100 cursor-not-allowed"
                   )}
                   placeholder="Enter guardian's occupation"
                   onKeyDown={handleInputEscKey("guardian.occupation")}
                 />
                 {(errors.guardian as any)?.occupation && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).occupation.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).occupation.message as string}
+                  </p>
                 )}
               </div>
             </div>
@@ -604,8 +711,8 @@ export function FamilyInfoStep() {
                       onChange={field.onChange}
                       error={!!(errors.guardian as any)?.phoneNumber}
                       config={{
-                        defaultCountry: 'MM',
-                        preferredCountries: ['MM', 'US', 'GB'],
+                        defaultCountry: "MM",
+                        preferredCountries: ["MM", "US", "GB"],
                         showDialingCode: true,
                         showCountryFlag: true,
                         autoFormat: true,
@@ -614,7 +721,9 @@ export function FamilyInfoStep() {
                   )}
                 />
                 {(errors.guardian as any)?.phoneNumber && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).phoneNumber.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).phoneNumber.message as string}
+                  </p>
                 )}
               </div>
 
@@ -628,13 +737,16 @@ export function FamilyInfoStep() {
                   type="email"
                   className={cn(
                     inputClass,
-                    (errors.guardian as any)?.email && "border-red-300 focus:border-red-500"
+                    (errors.guardian as any)?.email &&
+                      "border-red-300 focus:border-red-500"
                   )}
                   placeholder="Enter email address"
                   onKeyDown={handleInputEscKey("guardian.email")}
                 />
                 {(errors.guardian as any)?.email && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).email.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).email.message as string}
+                  </p>
                 )}
               </div>
 
@@ -648,7 +760,8 @@ export function FamilyInfoStep() {
                   rows={3}
                   className={cn(
                     inputClass,
-                    (errors.guardian as any)?.address && "border-red-300 focus:border-red-500",
+                    (errors.guardian as any)?.address &&
+                      "border-red-300 focus:border-red-500",
                     sameAsStudentAddress && "bg-gray-50"
                   )}
                   placeholder="Enter full address"
@@ -662,7 +775,9 @@ export function FamilyInfoStep() {
                     type="checkbox"
                     id="sameAsStudentAddress"
                     checked={sameAsStudentAddress}
-                    onChange={(e) => handleSameAsStudentAddress(e.target.checked)}
+                    onChange={(e) =>
+                      handleSameAsStudentAddress(e.target.checked)
+                    }
                     className="h-4 w-4 rounded border-gray-300 text-[#4C67E1] focus:ring-[#4C67E1] cursor-pointer"
                   />
                   <label
@@ -674,7 +789,9 @@ export function FamilyInfoStep() {
                 </div>
 
                 {(errors.guardian as any)?.address && (
-                  <p className="text-sm text-red-600">{(errors.guardian as any).address.message as string}</p>
+                  <p className="text-sm text-red-600">
+                    {(errors.guardian as any).address.message as string}
+                  </p>
                 )}
               </div>
             </div>
