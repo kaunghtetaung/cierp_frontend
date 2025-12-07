@@ -1,6 +1,54 @@
 /* Import Tailwind CSS v4 */
 @import "tailwindcss";
 
+/* ======================================
+   CSS VARIABLES FOR DESIGN SYSTEM
+   Required for @repo/ui Button and other components
+   ====================================== */
+@theme {
+  /* Primary Brand Colors */
+  --color-primary: #1D7BDB;
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  /* Secondary Colors */
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+
+  /* Surface Colors */
+  --color-background: #F5F7FA;
+  --color-foreground: #000;
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+
+  /* Accent & Muted Colors */
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-accent: hsl(210 40% 96.1%);
+  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+
+  /* Semantic Colors */
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-success: hsl(142 76% 36%);
+  --color-success-foreground: hsl(0 0% 100%);
+  --color-warning: hsl(7 100% 67%);
+  --color-warning-foreground: hsl(0 0% 100%);
+  --color-info: hsl(221.2 83.2% 53.3%);
+  --color-info-foreground: hsl(210 40% 98%);
+  --color-danger: hsl(0 84.2% 60.2%);
+  --color-danger-foreground: hsl(210 40% 98%);
+
+  /* Border & Form Colors */
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(221 76% 40%);
+
+  /* Border Radius */
+  --radius: 0.5rem;
+}
+
 /* Global styles for publicWeb app */
 html,
 body {

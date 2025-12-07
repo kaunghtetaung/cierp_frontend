@@ -142,17 +142,30 @@ export function DynamicSelect({
 
   // Watch dependency fields - use all dependency values to trigger re-renders
   const watchedFields = dropdownConfig.dependsOn?.map(fieldName => watch?.(fieldName)) || [];
-  
-  // Get current dependency values
+
+  // Helper function to normalize a value (extract ID from object if needed)
+  const normalizeFieldValue = (value: any): any => {
+    if (!value) return value;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value;
+    // Handle populated objects from backend (e.g., {_id: "abc", name: "..."})
+    if (value && typeof value === 'object') {
+      return value._id || value.id || value;
+    }
+    return value;
+  };
+
+  // Get current dependency values (normalized to handle populated objects from backend)
   const dependencyValues = useMemo(() => {
     if (!dropdownConfig.dependsOn || !watch) return {};
-    
+
     const values: Record<string, any> = {};
     dropdownConfig.dependsOn.forEach((fieldName) => {
-      values[fieldName] = watch(fieldName);
+      const rawValue = watch(fieldName);
+      // Normalize the value to extract ID from populated objects
+      values[fieldName] = normalizeFieldValue(rawValue);
     });
-    
-    
+
     return values;
   }, [dropdownConfig.dependsOn, watch, ...watchedFields]);
 
@@ -293,8 +306,12 @@ export function DynamicSelect({
 
       if (dropdownConfig.dependsOn && dropdownConfig.dependsOn.length > 0) {
         dropdownConfig.dependsOn.forEach((fieldName, index) => {
-          // Use searchParam from dataSource if specified, otherwise use dependentFieldValue for backward compatibility
-          const paramName = field.dataSource?.searchParam || "dependentFieldValue";
+          // Extract the base field name from array path (e.g., "batches.0.academicYearId" -> "academicYearId")
+          const baseFieldName = fieldName.includes('.') ? fieldName.split('.').pop()! : fieldName;
+
+          // Use the actual dependent field name as the query parameter
+          // Priority: dataSource.searchParam > dataSource.dependentField > extracted field name
+          const paramName = field.dataSource?.searchParam || field.dataSource?.dependentField?.split('.').pop() || baseFieldName;
           const paramValue = dependencyValues[fieldName];
 
           if (paramValue) {

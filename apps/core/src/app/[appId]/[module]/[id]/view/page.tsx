@@ -5,6 +5,8 @@ import { getModuleItemWithNavigation } from '@repo/app-modules'
 import { DetailViewRenderer } from '@/components/modules/DetailViewRenderer'
 import { StudentDetailView } from '@/components/modules/StudentDetailView'
 import type { ModuleSchema } from '@repo/types'
+import { existsSync } from 'fs'
+import path from 'path'
 
 interface ModuleViewPageProps {
   params: Promise<{
@@ -24,6 +26,41 @@ export default async function ModuleViewPage({ params, searchParams }: ModuleVie
     resolvedParams.appId,
     resolvedParams.module
   )
+
+  // ⭐ CHECK: If static module view page exists for this appId/module combination
+  const staticModulePath = path.join(
+    process.cwd(),
+    "src",
+    "staticModules",
+    resolvedParams.appId,
+    resolvedParams.module,
+    "view.tsx"
+  );
+
+  if (existsSync(staticModulePath)) {
+    // Dynamic import of static module
+    try {
+      const StaticModule = await import(
+        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/view`
+      );
+      return (
+        <StaticModule.default
+          module={fullModule}
+          user={user}
+          tenant={tenant}
+          appId={resolvedParams.appId}
+          itemId={resolvedParams.id}
+          searchParams={resolvedSearchParams}
+        />
+      );
+    } catch (error) {
+      console.error(
+        `Failed to load static module view page: ${resolvedParams.appId}/${resolvedParams.module}`,
+        error
+      );
+      // Fall through to generic module if import fails
+    }
+  }
 
   // Get filtered layout data (this will only include modules user has access to)
   const { appSchemaData } = await fetchLayoutData()

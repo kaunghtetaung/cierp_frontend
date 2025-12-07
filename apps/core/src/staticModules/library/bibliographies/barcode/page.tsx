@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, Plus, Printer } from "lucide-react";
-import { searchBibliographiesAction } from "./actions";
+import { searchBibliographiesAction, type SearchField } from "./actions";
 import "./barcode.css";
 import {
   Button,
@@ -73,12 +73,20 @@ interface BarcodeItem {
 
 export default function BarcodePage({ module, user, tenant, appId }: any) {
   const [paperSize, setPaperSize] = useState<keyof typeof PAPER_SIZES>("A4");
-  const [accessionNo, setAccessionNo] = useState("");
+  const [searchValue, setSearchValue] = useState("");
+  const [searchField, setSearchField] = useState<SearchField>("accessionNumber");
   const [searchResults, setSearchResults] = useState<BibliographySearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [barcodeQueue, setBarcodeQueue] = useState<BarcodeItem[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Search field options
+  const searchFieldOptions: { value: SearchField; label: string; placeholder: string }[] = [
+    { value: "accessionNumber", label: "Accession Number", placeholder: "e.g., MG0000022401" },
+    { value: "isbn", label: "ISBN", placeholder: "e.g., 978-3-16-148410-0" },
+    { value: "title", label: "Title", placeholder: "e.g., Introduction to..." },
+  ];
 
   // Calculate how many labels fit on the selected paper
   const calculateLabelsPerPage = () => {
@@ -96,17 +104,18 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
     };
   };
 
-  // Search for bibliographies by accession number
+  // Search for bibliographies by selected field (accessionNumber, isbn, or title)
   const handleSearch = async () => {
-    if (!accessionNo.trim()) {
-      setSearchError("Please enter an accession number");
+    if (!searchValue.trim()) {
+      const fieldLabel = searchFieldOptions.find(f => f.value === searchField)?.label || "search term";
+      setSearchError(`Please enter ${searchField === "isbn" ? "an" : "a"} ${fieldLabel.toLowerCase()}`);
       return;
     }
 
     setIsSearching(true);
     setSearchError(null);
     try {
-      const result = await searchBibliographiesAction(accessionNo);
+      const result = await searchBibliographiesAction(searchValue, searchField);
 
       if (result.success && result.data) {
         setSearchResults(result.data);
@@ -205,13 +214,26 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
                 <DialogTitle>Search Books</DialogTitle>
               </DialogHeader>
 
-              {/* Search Input */}
+              {/* Search Input with Field Selector */}
               <div className="flex gap-2 mb-4">
+                <Select value={searchField} onValueChange={(value: SearchField) => setSearchField(value)}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {searchFieldOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
-                  placeholder="Enter accession number (e.g., MG0000022401)..."
-                  value={accessionNo}
-                  onChange={(e) => setAccessionNo(e.target.value)}
+                  placeholder={searchFieldOptions.find(f => f.value === searchField)?.placeholder || "Enter search term..."}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="flex-1"
                 />
                 <Button onClick={handleSearch} disabled={isSearching}>
                   <Search className="h-4 w-4" />
@@ -251,7 +273,7 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
                       size="sm"
                       onClick={() => {
                         setSearchError(null);
-                        setAccessionNo("");
+                        setSearchValue("");
                       }}
                       className="mt-4"
                     >
@@ -264,9 +286,9 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
                       <Search className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <p className="text-muted-foreground text-center">
-                      {accessionNo
-                        ? "No books found with this accession number"
-                        : "Enter an accession number to search"}
+                      {searchValue
+                        ? "No books found matching your search"
+                        : `Select a field and enter a value to search`}
                     </p>
                   </div>
                 ) : (
@@ -523,7 +545,7 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
                     {item.callNo}
                   </div>
                 )}
-                <div className="barcode-font" style={{ fontFamily: 'IDAutomationC39S', fontSize: '6pt', color: 'black' }}>
+                <div className="barcode-font" style={{ fontFamily: 'IDAutomationC39S', fontSize: '10pt', color: 'black' }}>
                   *{item.accessionNo}*
                 </div>
                 <div style={{ fontFamily: 'Times New Roman', fontSize: '13px', color: 'black' }}>

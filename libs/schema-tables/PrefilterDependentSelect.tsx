@@ -7,29 +7,30 @@ import { cn } from "@repo/utils";
 import { getModuleReferenceAction } from "@repo/app-modules/server-actions";
 import type { MultilingualText } from "@repo/types";
 
-interface PrefilterField {
+interface PrefilterDependentField {
   fieldName: string;
   label: MultilingualText;
-  type: "dynamicSelect" | "select" | "text";
+  type: "dependentSelect";
   dataSource?: {
     endpoint: string;
     method?: string;
     labelField?: string;
     valueField?: string;
+    dependentField?: string; // e.g., "batches.academicYearId"
+    dependentParam?: string; // e.g., "academicYearId"
     serviceName?: string;
+    searchParam?: string;
   };
-  options?: Array<{
-    value: string;
-    label: MultilingualText | string;
-  }>;
 }
 
-interface PrefilterSelectProps {
-  field: PrefilterField;
+interface PrefilterDependentSelectProps {
+  field: PrefilterDependentField;
   value: string | undefined;
   onChange: (value: string | undefined) => void;
   currentLanguage: string;
   moduleSlug: string;
+  // All prefilter values to watch for dependent field
+  prefilterValues: Record<string, string | string[] | { from: string; to: string } | undefined>;
 }
 
 interface ApiOption {
@@ -42,25 +43,37 @@ interface ApiOption {
   [key: string]: any;
 }
 
-export function PrefilterSelect({
+export function PrefilterDependentSelect({
   field,
   value,
   onChange,
   currentLanguage,
   moduleSlug,
-}: PrefilterSelectProps) {
+  prefilterValues,
+}: PrefilterDependentSelectProps) {
   const [options, setOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Load options for dynamic select
+  // Get the dependent field value from prefilterValues
+  const dependentFieldName = field.dataSource?.dependentField;
+  const dependentParamName = field.dataSource?.dependentParam;
+  const dependentValue = dependentFieldName ? prefilterValues[dependentFieldName] : undefined;
+
+  // Load options for dependent select - only when dependent value is available
   const loadOptions = useCallback(async () => {
-    if (field.type !== "dynamicSelect" || !field.dataSource) return;
+    if (!field.dataSource) return;
+
+    // If there's a dependent field but no value, clear options
+    if (dependentFieldName && !dependentValue) {
+      setOptions([]);
+      return;
+    }
 
     setIsLoading(true);
     try {
       // Parse the endpoint to extract module and existing query params
-      // e.g., "/regions/ref?type=state" -> module="regions", queryParams={type:"state"}
+      // e.g., "/regions/ref?expect=district&searchIn=state" -> module="regions", baseParams={expect:"district", searchIn:"state"}
       const [endpointPath, endpointQueryString] = field.dataSource.endpoint.split('?');
       const endpointParts = endpointPath.split('/').filter(Boolean);
       const referenceModule = endpointParts[0];
@@ -74,14 +87,35 @@ export function PrefilterSelect({
         });
       }
 
-      console.log('🔍 PrefilterSelect loadOptions:', {
+      // Add the dependent value to query params
+      // Two patterns supported:
+      // 1. Batch pattern: uses dependentParam (e.g., "academicYearId") -> /batches/ref?academicYearId=<value>
+      // 2. Region pattern: uses searchParam (e.g., "search") -> /regions/ref?expect=district&searchIn=state&search=<value>
+      if (dependentValue) {
+        if (dependentParamName) {
+          // Pattern 1: Use dependentParam for the dependent relationship (e.g., "academicYearId")
+          queryParams[dependentParamName] = dependentValue;
+        } else if (field.dataSource?.searchParam) {
+          // Pattern 2: Use searchParam for the dependent value (e.g., "search" for regions)
+          queryParams[field.dataSource.searchParam] = dependentValue;
+        } else {
+          // Fallback: use the last part of dependentField as param name
+          // e.g., "batches.academicYearId" -> "academicYearId"
+          const fallbackParam = dependentFieldName?.split('.').pop() || "search";
+          queryParams[fallbackParam] = dependentValue;
+        }
+      }
+
+      console.log('🔍 PrefilterDependentSelect loadOptions:', {
         endpoint: field.dataSource.endpoint,
         referenceModule,
         queryParams,
+        dependentValue,
+        searchParam: field.dataSource?.searchParam,
         serviceName: field.dataSource.serviceName
       });
 
-      // Call the API to get reference data
+      // Call the API to get reference data with query params
       const response = await getModuleReferenceAction<ApiOption>(
         referenceModule,
         queryParams,
@@ -109,7 +143,6 @@ export function PrefilterSelect({
           }
 
           // Use valueField to determine what value to send for filtering
-          // Default to _id for backend compatibility
           let filterValue = itemId;
           if (valueField && item[valueField] !== undefined) {
             const val = item[valueField];
@@ -121,7 +154,7 @@ export function PrefilterSelect({
           }
 
           return {
-            value: filterValue, // Use valueField (defaults to _id) for filtering
+            value: filterValue,
             label: label,
           };
         });
@@ -129,30 +162,30 @@ export function PrefilterSelect({
         setOptions(transformedOptions);
       }
     } catch (error) {
-      console.error("Failed to load prefilter options:", error);
+      console.error("Failed to load dependent prefilter options:", error);
       setOptions([]);
     } finally {
       setIsLoading(false);
     }
-  }, [field, currentLanguage]);
+  }, [field, currentLanguage, dependentValue, dependentFieldName, dependentParamName]);
 
-  // Load options on mount and when dependencies change
+  // Reload options when dependent value changes
   useEffect(() => {
-    if (field.type === "dynamicSelect") {
-      loadOptions();
-    } else if (field.type === "select" && field.options) {
-      // For static select, transform options
-      const transformedOptions = field.options.map(opt => ({
-        value: opt.value,
-        label: typeof opt.label === "object" 
-          ? (opt.label[currentLanguage as keyof MultilingualText] || opt.label.en || opt.value)
-          : opt.label
-      }));
-      setOptions(transformedOptions);
+    loadOptions();
+
+    // Clear value if dependent value is cleared
+    if (dependentFieldName && !dependentValue && value) {
+      onChange(undefined);
     }
-  }, [field, currentLanguage, loadOptions]);
+  }, [dependentValue, loadOptions, dependentFieldName]);
 
   const selectedLabel = options.find(opt => opt.value === value)?.label || "";
+
+  // Determine if the field is disabled (no dependent value selected)
+  const isDisabled = !!dependentFieldName && !dependentValue;
+  const placeholderText = isDisabled
+    ? `Select ${dependentFieldName?.split('.').pop()?.replace(/Id$/, '') || 'parent'} first`
+    : `Select ${getLocalizedText(field.label, currentLanguage)}`;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -162,18 +195,26 @@ export function PrefilterSelect({
       <div className="relative">
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => !isDisabled && setIsOpen(!isOpen)}
+          disabled={isDisabled}
           className={cn(
             "w-full min-w-[180px] flex items-center justify-between",
             "px-3 py-1.5 text-sm border rounded-md",
-            "bg-background hover:bg-accent/50",
             "transition-colors duration-200",
-            value ? "border-primary/50" : "border-input"
+            isDisabled
+              ? "bg-muted cursor-not-allowed opacity-60 border-input"
+              : value
+                ? "bg-background hover:bg-accent/50 border-primary/50"
+                : "bg-background hover:bg-accent/50 border-input"
           )}
         >
           <span className={cn(
             "truncate",
-            value ? "text-foreground font-medium" : "text-muted-foreground"
+            isDisabled
+              ? "text-muted-foreground"
+              : value
+                ? "text-foreground font-medium"
+                : "text-muted-foreground"
           )}>
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -183,13 +224,15 @@ export function PrefilterSelect({
             ) : value ? (
               selectedLabel
             ) : (
-              `Select ${getLocalizedText(field.label, currentLanguage)}`
+              placeholderText
             )}
           </span>
           <div className="flex items-center gap-1">
-            {value && (
+            {value && !isDisabled && (
               <button
                 type="button"
+                title="Clear selection"
+                aria-label="Clear selection"
                 onClick={(e) => {
                   e.stopPropagation();
                   onChange(undefined);
@@ -210,7 +253,7 @@ export function PrefilterSelect({
         </button>
 
         {/* Dropdown */}
-        {isOpen && !isLoading && (
+        {isOpen && !isLoading && !isDisabled && (
           <>
             <div
               className="fixed inset-0 z-40"

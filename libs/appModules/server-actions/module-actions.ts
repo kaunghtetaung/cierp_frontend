@@ -701,3 +701,50 @@ export async function getModuleReferenceAction<T = any>(
     };
   }
 }
+
+/**
+ * Server action to fetch module dashboard data
+ * This supports filtering via query parameters that match prefilter values
+ */
+export async function getModuleDashboardAction<T = any>(
+  module: string,
+  queryParams?: Record<string, string | undefined>,
+  serviceName?: string
+): Promise<ActionResponse<T>> {
+  try {
+    console.log(`📊 getModuleDashboardAction: Starting request for module "${module}"`, {
+      queryParams,
+      serviceName
+    });
+
+    // Import dynamically to avoid circular dependencies
+    const { getModuleDashboard } = await import("../wrapper");
+    const data = await getModuleDashboard<T>(module, queryParams, serviceName);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ getModuleDashboardAction: Successfully fetched dashboard data for module "${module}"`);
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error(`❌ getModuleDashboardAction: Error fetching ${module} dashboard data:`, {
+      error,
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      module,
+      queryParams,
+      timestamp: new Date().toISOString()
+    });
+
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : `Failed to fetch ${module} dashboard data`,
+    };
+  }
+}

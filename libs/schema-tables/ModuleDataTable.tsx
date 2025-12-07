@@ -38,8 +38,9 @@ import { PrefilterTypeahead } from "./PrefilterTypeahead";
 import { PrefilterText } from "./PrefilterText";
 import { PrefilterYearRange } from "./PrefilterYearRange";
 import { PrefilterSort } from "./PrefilterSort";
+import { PrefilterTabGroup } from "./PrefilterTabGroup";
 import { RecycleBinDialog } from "./RecycleBinDialog";
-import type { ModuleSchema, TableColumn, ExtraAction } from "@repo/types";
+import type { ModuleSchema, TableColumn, ExtraAction, PrefilterFieldGroup, PrefilterField } from "@repo/types";
 import { isMultilingualText } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -63,6 +64,8 @@ interface ModuleDataTableProps {
   selectedYear?: number;
   selectedMonth?: number;
   showRecycleBin?: boolean; // Show recycle bin button in toolbar
+  hidePrefilters?: boolean; // Hide prefilters when they're rendered externally (e.g., in dashboard wrapper)
+  userPermissions?: any; // User permissions for the module
 }
 
 export function ModuleDataTable({
@@ -84,6 +87,8 @@ export function ModuleDataTable({
   selectedYear = new Date().getFullYear(),
   selectedMonth = new Date().getMonth() + 1,
   showRecycleBin = true,
+  hidePrefilters = false,
+  userPermissions,
 }: Omit<ModuleDataTableProps, "currentLanguage">) {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
@@ -128,69 +133,143 @@ export function ModuleDataTable({
     }
   };
 
+  // Helper to get all prefilter fields for initialization (supports both legacy fields and fieldGroups)
+  const getPrefilterFieldsForInit = (): any[] => {
+    const prefilters = module.dataTableSchema?.prefilters;
+    if (!prefilters) return [];
+
+    // If using new fieldGroups structure
+    if (prefilters.fieldGroups && prefilters.fieldGroups.length > 0) {
+      return prefilters.fieldGroups.flatMap((group: PrefilterFieldGroup) => group.fields || []);
+    }
+
+    // Legacy: use fields array directly
+    return prefilters.fields || [];
+  };
+
   // Prefilter state management - includes operators for text fields
+  // Supports both legacy fields array and new fieldGroups structure
   const [prefilterValues, setPrefilterValues] = useState<Record<string, string | string[]>>(() => {
     const values: Record<string, string | string[]> = {};
-    // Initialize from URL params - use fieldName directly from backend
-    if (module.dataTableSchema?.prefilters?.fields) {
-      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        // For text fields, check for operator-based params
-        if (field.type === 'text') {
-          // Check for different operators in URL
-          const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
-          for (const op of operators) {
-            const paramValue = searchParams.get(`${field.fieldName}[${op.value}]`);
-            if (paramValue) {
-              values[field.fieldName] = paramValue;
-              values[`${field.fieldName}_operator`] = op.value;
-              break;
-            }
-          }
-        } else if (field.type === 'yearRange') {
-          // Check for year range params
-          const exactValue = searchParams.get(`${field.fieldName}`) || searchParams.get(`${field.fieldName}[$eq]`);
-          if (exactValue) {
-            values[field.fieldName] = exactValue;
-            values[`${field.fieldName}_operator`] = '$eq';
-          } else {
-            // Check for range operators
-            const fromValue = searchParams.get(`${field.fieldName}[$gte]`);
-            const toValue = searchParams.get(`${field.fieldName}[$lte]`);
-            if (fromValue || toValue) {
-              values[field.fieldName] = { from: fromValue || '', to: toValue || '' };
-              values[`${field.fieldName}_operator`] = 'between';
-            }
-          }
-        } else {
-          // For other field types, use direct fieldName
-          const paramValue = searchParams.get(field.fieldName);
+    const allFields = getPrefilterFieldsForInit();
+
+    allFields.forEach((field: any) => {
+      // For text fields, check for operator-based params
+      if (field.type === 'text') {
+        // Check for different operators in URL
+        const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+        for (const op of operators) {
+          const paramValue = searchParams.get(`${field.fieldName}[${op.value}]`);
           if (paramValue) {
-            // Handle multiple values (pipe-separated)
-            // Using pipe instead of comma to support values containing commas
-            if (field.multiple && paramValue.includes('|')) {
-              const splitValues = paramValue.split('|').map(v => v.trim());
-              console.log('🔍 PrefilterTypeahead split debug:', {
-                fieldName: field.fieldName,
-                paramValue,
-                splitValues,
-                separator: '|',
-                containsSpaces: splitValues.some(v => v.includes(' '))
-              });
-              values[field.fieldName] = splitValues;
-            } else {
-              values[field.fieldName] = paramValue;
-            }
+            values[field.fieldName] = paramValue;
+            values[`${field.fieldName}_operator`] = op.value;
+            break;
           }
         }
-      });
-    }
+      } else if (field.type === 'yearRange') {
+        // Check for year range params
+        const exactValue = searchParams.get(`${field.fieldName}`) || searchParams.get(`${field.fieldName}[$eq]`);
+        if (exactValue) {
+          values[field.fieldName] = exactValue;
+          values[`${field.fieldName}_operator`] = '$eq';
+        } else {
+          // Check for range operators
+          const fromValue = searchParams.get(`${field.fieldName}[$gte]`);
+          const toValue = searchParams.get(`${field.fieldName}[$lte]`);
+          if (fromValue || toValue) {
+            values[field.fieldName] = { from: fromValue || '', to: toValue || '' };
+            values[`${field.fieldName}_operator`] = 'between';
+          }
+        }
+      } else {
+        // For other field types, use direct fieldName
+        const paramValue = searchParams.get(field.fieldName);
+        if (paramValue) {
+          // Handle multiple values (pipe-separated)
+          // Using pipe instead of comma to support values containing commas
+          if (field.multiple && paramValue.includes('|')) {
+            const splitValues = paramValue.split('|').map(v => v.trim());
+            console.log('🔍 PrefilterTypeahead split debug:', {
+              fieldName: field.fieldName,
+              paramValue,
+              splitValues,
+              separator: '|',
+              containsSpaces: splitValues.some(v => v.includes(' '))
+            });
+            values[field.fieldName] = splitValues;
+          } else {
+            values[field.fieldName] = paramValue;
+          }
+        }
+      }
+    });
     return values;
   });
 
+  // Sync prefilterValues with URL params when searchParams change
+  // This ensures filter values persist in form fields after server submission
+  useEffect(() => {
+    const newValues: Record<string, string | string[]> = {};
+    const allFields = getPrefilterFieldsForInit();
+
+    allFields.forEach((field: any) => {
+      if (field.type === 'text') {
+        const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+        for (const op of operators) {
+          const paramValue = searchParams.get(`${field.fieldName}[${op.value}]`);
+          if (paramValue) {
+            newValues[field.fieldName] = paramValue;
+            newValues[`${field.fieldName}_operator`] = op.value;
+            break;
+          }
+        }
+      } else if (field.type === 'yearRange') {
+        const exactValue = searchParams.get(`${field.fieldName}`) || searchParams.get(`${field.fieldName}[$eq]`);
+        if (exactValue) {
+          newValues[field.fieldName] = exactValue;
+          newValues[`${field.fieldName}_operator`] = '$eq';
+        } else {
+          const fromValue = searchParams.get(`${field.fieldName}[$gte]`);
+          const toValue = searchParams.get(`${field.fieldName}[$lte]`);
+          if (fromValue || toValue) {
+            newValues[field.fieldName] = { from: fromValue || '', to: toValue || '' };
+            newValues[`${field.fieldName}_operator`] = 'between';
+          }
+        }
+      } else {
+        const paramValue = searchParams.get(field.fieldName);
+        if (paramValue) {
+          if (field.multiple && paramValue.includes('|')) {
+            newValues[field.fieldName] = paramValue.split('|').map((v: string) => v.trim());
+          } else {
+            newValues[field.fieldName] = paramValue;
+          }
+        }
+      }
+    });
+
+    setPrefilterValues(newValues);
+  }, [searchParams]);
+
+  // Helper to get all prefilter fields (supports both legacy fields and fieldGroups)
+  const getPrefilterFields = (): any[] => {
+    const prefilters = module.dataTableSchema?.prefilters;
+    if (!prefilters) return [];
+
+    // If using new fieldGroups structure
+    if (prefilters.fieldGroups && prefilters.fieldGroups.length > 0) {
+      return prefilters.fieldGroups.flatMap((group: PrefilterFieldGroup) => group.fields || []);
+    }
+
+    // Legacy: use fields array directly
+    return prefilters.fields || [];
+  };
+
   // Handle prefilter changes - now with operator support for text fields
-  const handlePrefilterChange = (fieldName: string, value: string | string[] | undefined, operator?: string) => {
+  // Works with both legacy fields array and new fieldGroups structure
+  const handlePrefilterChange = (fieldName: string, value: string | string[] | { from: string; to: string } | undefined, operator?: string) => {
     const newValues = { ...prefilterValues };
-    
+
     if (value !== undefined && (Array.isArray(value) ? value.length > 0 : value)) {
       newValues[fieldName] = value;
       if (operator) {
@@ -201,39 +280,40 @@ export function ModuleDataTable({
       delete newValues[`${fieldName}_operator`];
     }
     setPrefilterValues(newValues);
-    
+
     // Update URL with prefilter params
     const newSearchParams = new URLSearchParams(searchParams.toString());
-    
+
+    // Get all fields (from both legacy fields and fieldGroups)
+    const allFields = getPrefilterFields();
+
     // Remove all existing prefilter params
-    if (module.dataTableSchema?.prefilters?.fields) {
-      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        if (field.type === 'text') {
-          // Clear all operator-based params for text fields
-          const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
-          operators.forEach((op: any) => {
-            newSearchParams.delete(`${field.fieldName}[${op.value}]`);
-          });
-        } else if (field.type === 'yearRange') {
-          // Clear year range params
-          newSearchParams.delete(field.fieldName);
-          newSearchParams.delete(`${field.fieldName}[$eq]`);
-          newSearchParams.delete(`${field.fieldName}[$gte]`);
-          newSearchParams.delete(`${field.fieldName}[$lte]`);
-          newSearchParams.delete(`${field.fieldName}[$gt]`);
-          newSearchParams.delete(`${field.fieldName}[$lt]`);
-        } else {
-          newSearchParams.delete(field.fieldName);
-        }
-      });
-    }
-    
+    allFields.forEach((field: any) => {
+      if (field.type === 'text') {
+        // Clear all operator-based params for text fields
+        const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+        operators.forEach((op: any) => {
+          newSearchParams.delete(`${field.fieldName}[${op.value}]`);
+        });
+      } else if (field.type === 'yearRange') {
+        // Clear year range params
+        newSearchParams.delete(field.fieldName);
+        newSearchParams.delete(`${field.fieldName}[$eq]`);
+        newSearchParams.delete(`${field.fieldName}[$gte]`);
+        newSearchParams.delete(`${field.fieldName}[$lte]`);
+        newSearchParams.delete(`${field.fieldName}[$gt]`);
+        newSearchParams.delete(`${field.fieldName}[$lt]`);
+      } else {
+        newSearchParams.delete(field.fieldName);
+      }
+    });
+
     // Add new prefilter params
     Object.entries(newValues).forEach(([key, val]) => {
       // Skip operator keys (they're handled with their corresponding field)
       if (key.endsWith('_operator')) return;
-      
-      const field = module.dataTableSchema?.prefilters?.fields?.find((f: any) => f.fieldName === key);
+
+      const field = allFields.find((f: any) => f.fieldName === key);
       if (field?.type === 'text' && newValues[`${key}_operator`]) {
         // For text fields, use operator-based param (e.g., title[$eq]=value)
         const op = newValues[`${key}_operator`] as string;
@@ -264,18 +344,85 @@ export function ModuleDataTable({
         newSearchParams.set(key, val as string);
       }
     });
-    
+
     // Reset to page 1 when prefilters change
     newSearchParams.set('page', '1');
-    
+
     // Navigate with new params
     router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
   };
 
+  // Clear all prefilters - handles both legacy fields and fieldGroups
+  const handleClearAllPrefilters = () => {
+    setPrefilterValues({});
+
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    const allFields = getPrefilterFields();
+
+    allFields.forEach((field: any) => {
+      if (field.type === 'text') {
+        const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
+        operators.forEach((op: any) => {
+          newSearchParams.delete(`${field.fieldName}[${op.value}]`);
+        });
+      } else if (field.type === 'yearRange') {
+        newSearchParams.delete(field.fieldName);
+        newSearchParams.delete(`${field.fieldName}[$eq]`);
+        newSearchParams.delete(`${field.fieldName}[$gte]`);
+        newSearchParams.delete(`${field.fieldName}[$lte]`);
+        newSearchParams.delete(`${field.fieldName}[$gt]`);
+        newSearchParams.delete(`${field.fieldName}[$lt]`);
+      } else {
+        newSearchParams.delete(field.fieldName);
+      }
+    });
+
+    newSearchParams.set('page', '1');
+    router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
+    // Keep advanced filters panel open after clearing
+  };
+
   // Check if prefilters are enabled and available
-  const hasPrefilters = module.dataTableSchema?.prefilters?.enabled && 
-                        module.dataTableSchema?.prefilters?.fields?.length > 0;
-  
+  const hasPrefilters = module.dataTableSchema?.prefilters?.enabled &&
+                        ((module.dataTableSchema?.prefilters?.fields?.length ?? 0) > 0 ||
+                         (module.dataTableSchema?.prefilters?.fieldGroups?.length ?? 0) > 0);
+
+  // Helper function to get all prefilter fields (supports both legacy fields array and new fieldGroups)
+  const getAllPrefilterFields = (): PrefilterField[] => {
+    const prefilters = module.dataTableSchema?.prefilters;
+    if (!prefilters) return [];
+
+    // If using new fieldGroups structure
+    if (prefilters.fieldGroups && prefilters.fieldGroups.length > 0) {
+      return prefilters.fieldGroups.flatMap((group: PrefilterFieldGroup) => group.fields || []);
+    }
+
+    // Legacy: use fields array directly
+    return (prefilters.fields || []) as PrefilterField[];
+  };
+
+  // Check if we should use tabs display
+  const useTabsDisplay = module.dataTableSchema?.prefilters?.displayMode === 'tabs' &&
+                         (module.dataTableSchema?.prefilters?.fieldGroups?.length ?? 0) > 0;
+
+  // State for active prefilter tab - persists across filter changes via URL
+  const [activePrefilterTab, setActivePrefilterTab] = useState<string>(() => {
+    // First try to get from URL params
+    const urlTab = searchParams.get('_prefilterTab');
+    if (urlTab) return urlTab;
+    // Otherwise initialize with the first group's key if available
+    return module.dataTableSchema?.prefilters?.fieldGroups?.[0]?.groupKey || '';
+  });
+
+  // Update URL when active tab changes
+  const handleActiveTabChange = (tabKey: string) => {
+    setActivePrefilterTab(tabKey);
+    // Update URL with the new active tab
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('_prefilterTab', tabKey);
+    router.push(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
+  };
+
   // State for showing/hiding advanced filters - auto-open if there are active filters
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(Object.keys(prefilterValues).filter(k => !k.endsWith('_operator')).length > 0);
   
@@ -1835,8 +1982,8 @@ export function ModuleDataTable({
         </div>
       </div>
 
-      {/* Advanced Filter Section */}
-      {hasPrefilters && (
+      {/* Advanced Filter Section - Hidden when prefilters are rendered externally */}
+      {hasPrefilters && !hidePrefilters && (
         <div className="space-y-3">
           {/* Filter Summary when collapsed */}
           {filterSummary && !showAdvancedFilters && (
@@ -1893,7 +2040,7 @@ export function ModuleDataTable({
                   }
                   newSearchParams.set('page', '1');
                   router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
-                  setShowAdvancedFilters(false);
+                  // Keep advanced filters panel open after clearing
                 }}
                 className="text-xs"
               >
@@ -1906,150 +2053,145 @@ export function ModuleDataTable({
           
           {/* Collapsible Filter Panel */}
           {showAdvancedFilters && (
-            <div className="bg-muted/30 border border-border/50 rounded-lg p-6 animate-in slide-in-from-top-2 duration-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {module.dataTableSchema.prefilters?.fields?.map((field: any, index: number) => {
-                  // Render different field types - all fields take 1 column in a 3-column grid
-                  if (field.type === 'text') {
-                    return (
-                      <PrefilterText
-                        key={field.fieldName}
-                        field={field}
-                        value={prefilterValues[field.fieldName] as string | undefined}
-                        operator={prefilterValues[`${field.fieldName}_operator`] as string || field.searchOptions?.defaultOperator || '$regex'}
-                        onChange={(value, operator) => handlePrefilterChange(field.fieldName, value, operator)}
+            <>
+              {/* Tab-based prefilters when displayMode is 'tabs' and fieldGroups are defined */}
+              {useTabsDisplay && module.dataTableSchema.prefilters?.fieldGroups ? (
+                <PrefilterTabGroup
+                  fieldGroups={module.dataTableSchema.prefilters.fieldGroups}
+                  prefilterValues={prefilterValues as Record<string, string | string[] | { from: string; to: string } | undefined>}
+                  onPrefilterChange={handlePrefilterChange}
+                  onClearAll={handleClearAllPrefilters}
+                  currentLanguage={currentLanguage}
+                  moduleSlug={module.slug}
+                  sortOptions={sortOptions}
+                  currentSort={searchParams.get('sortBy') || searchParams.get('sort') || module.dataTableSchema?.sorting?.defaultSort?.field || ''}
+                  currentOrder={(searchParams.get('sortOrder') || searchParams.get('order') || module.dataTableSchema?.sorting?.defaultSort?.direction || 'asc') as 'asc' | 'desc'}
+                  onSortChange={handleSortChange}
+                  totalItems={totalItems}
+                  activeTab={activePrefilterTab}
+                  onActiveTabChange={handleActiveTabChange}
+                />
+              ) : (
+                /* Legacy flat grid layout for prefilters */
+                <div className="bg-muted/30 border border-border/50 rounded-lg p-6 animate-in slide-in-from-top-2 duration-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {module.dataTableSchema.prefilters?.fields?.map((field: any, index: number) => {
+                      // Render different field types - all fields take 1 column in a 3-column grid
+                      if (field.type === 'text') {
+                        return (
+                          <PrefilterText
+                            key={field.fieldName}
+                            field={field}
+                            value={prefilterValues[field.fieldName] as string | undefined}
+                            operator={prefilterValues[`${field.fieldName}_operator`] as string || field.searchOptions?.defaultOperator || '$regex'}
+                            onChange={(value, operator) => handlePrefilterChange(field.fieldName, value, operator)}
+                            currentLanguage={currentLanguage}
+                          />
+                        );
+                      } else if (field.type === 'yearRange') {
+                        return (
+                          <PrefilterYearRange
+                            key={field.fieldName}
+                            field={field}
+                            value={prefilterValues[field.fieldName] as string | { from: string; to: string } | undefined}
+                            operator={prefilterValues[`${field.fieldName}_operator`] as string || field.yearRangeOptions?.defaultOperator || '$eq'}
+                            onChange={(value, operator) => handlePrefilterChange(field.fieldName, value, operator)}
+                            currentLanguage={currentLanguage}
+                          />
+                        );
+                      } else if (field.type === 'typeaheadDynamicSelect') {
+                        return (
+                          <PrefilterTypeahead
+                            key={field.fieldName}
+                            field={field}
+                            value={prefilterValues[field.fieldName]}
+                            onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                            currentLanguage={currentLanguage}
+                            moduleSlug={module.slug}
+                          />
+                        );
+                      } else {
+                        return (
+                          <PrefilterSelect
+                            key={field.fieldName}
+                            field={field}
+                            value={prefilterValues[field.fieldName]}
+                            onChange={(value) => handlePrefilterChange(field.fieldName, value)}
+                            currentLanguage={currentLanguage}
+                            moduleSlug={module.slug}
+                          />
+                        );
+                      }
+                    })}
+
+                    {/* Sort option at the end */}
+                    {sortOptions.length > 0 && (
+                      <PrefilterSort
+                        sortOptions={sortOptions}
+                        currentSort={searchParams.get('sortBy') || searchParams.get('sort') || module.dataTableSchema?.sorting?.defaultSort?.field || ''}
+                        currentOrder={(searchParams.get('sortOrder') || searchParams.get('order') || module.dataTableSchema?.sorting?.defaultSort?.direction || 'asc') as 'asc' | 'desc'}
+                        onChange={handleSortChange}
                         currentLanguage={currentLanguage}
                       />
-                    );
-                  } else if (field.type === 'yearRange') {
-                    return (
-                      <PrefilterYearRange
-                        key={field.fieldName}
-                        field={field}
-                        value={prefilterValues[field.fieldName] as string | { from: string; to: string } | undefined}
-                        operator={prefilterValues[`${field.fieldName}_operator`] as string || field.yearRangeOptions?.defaultOperator || '$eq'}
-                        onChange={(value, operator) => handlePrefilterChange(field.fieldName, value, operator)}
-                        currentLanguage={currentLanguage}
-                      />
-                    );
-                  } else if (field.type === 'typeaheadDynamicSelect') {
-                    return (
-                      <PrefilterTypeahead
-                        key={field.fieldName}
-                        field={field}
-                        value={prefilterValues[field.fieldName]}
-                        onChange={(value) => handlePrefilterChange(field.fieldName, value)}
-                        currentLanguage={currentLanguage}
-                        moduleSlug={module.slug}
-                      />
-                    );
-                  } else {
-                    return (
-                      <PrefilterSelect
-                        key={field.fieldName}
-                        field={field}
-                        value={prefilterValues[field.fieldName]}
-                        onChange={(value) => handlePrefilterChange(field.fieldName, value)}
-                        currentLanguage={currentLanguage}
-                        moduleSlug={module.slug}
-                      />
-                    );
-                  }
-                })}
-                
-                {/* Sort option at the end */}
-                {sortOptions.length > 0 && (
-                  <PrefilterSort
-                    sortOptions={sortOptions}
-                    currentSort={searchParams.get('sortBy') || searchParams.get('sort') || module.dataTableSchema?.sorting?.defaultSort?.field || ''}
-                    currentOrder={(searchParams.get('sortOrder') || searchParams.get('order') || module.dataTableSchema?.sorting?.defaultSort?.direction || 'asc') as 'asc' | 'desc'}
-                    onChange={handleSortChange}
-                    currentLanguage={currentLanguage}
-                  />
-                )}
-              </div>
-              
-              {/* Search Summary Footer */}
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <div className="flex items-center justify-between">
-                  {/* Left side - Search Summary */}
-                  <div className="flex items-center gap-3">
-                    {filterSummary && filterSummary.length > 0 && (
-                      <>
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {currentLanguage === "mm" ? "ရှာဖွေမှု:" : "Active Filters:"}
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {filterSummary.map((summary, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs py-0.5 px-2">
-                              {summary}
-                            </Badge>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    {(!filterSummary || filterSummary.length === 0) && (
-                      <span className="text-xs text-muted-foreground italic">
-                        {currentLanguage === "mm" ? "စစ်ထုတ်မှု မရှိပါ" : "No filters applied"}
-                      </span>
                     )}
                   </div>
-                  
-                  {/* Right side - Total Records and Clear button */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <IconComponent name="Database" className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {currentLanguage === "mm" ? "စုစုပေါင်း:" : "Total:"}
-                      </span>
-                      <Badge variant="outline" className="text-xs font-bold px-2 py-0.5">
-                        {totalItems.toLocaleString()}
-                      </Badge>
+
+                  {/* Search Summary Footer */}
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      {/* Left side - Search Summary */}
+                      <div className="flex items-center gap-3">
+                        {filterSummary && filterSummary.length > 0 && (
+                          <>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {currentLanguage === "mm" ? "ရှာဖွေမှု:" : "Active Filters:"}
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {filterSummary.map((summary, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs py-0.5 px-2">
+                                  {summary}
+                                </Badge>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {(!filterSummary || filterSummary.length === 0) && (
+                          <span className="text-xs text-muted-foreground italic">
+                            {currentLanguage === "mm" ? "စစ်ထုတ်မှု မရှိပါ" : "No filters applied"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Right side - Total Records and Clear button */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <IconComponent name="Database" className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {currentLanguage === "mm" ? "စုစုပေါင်း:" : "Total:"}
+                          </span>
+                          <Badge variant="outline" className="text-xs font-bold px-2 py-0.5">
+                            {totalItems.toLocaleString()}
+                          </Badge>
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        {filterSummary && filterSummary.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearAllPrefilters}
+                            className="h-7 px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <IconComponent name="FilterX" className="h-3.5 w-3.5 mr-1" />
+                            {currentLanguage === "mm" ? "စစ်ထုတ်မှု ဖယ်ရှားရန်" : "Clear Filters"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    
-                    {/* Clear Filters Button */}
-                    {filterSummary && filterSummary.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setPrefilterValues({});
-                          // Clear all prefilter params from URL
-                          const newSearchParams = new URLSearchParams(searchParams.toString());
-                          if (module.dataTableSchema?.prefilters?.fields) {
-                            module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-                              if (field.type === 'text') {
-                                // Clear all operator-based params for text fields
-                                const operators = field.searchOptions?.operators || [{ value: '$regex' }, { value: '$eq' }];
-                                operators.forEach((op: any) => {
-                                  newSearchParams.delete(`${field.fieldName}[${op.value}]`);
-                                });
-                              } else if (field.type === 'yearRange') {
-                                // Clear year range params
-                                newSearchParams.delete(field.fieldName);
-                                newSearchParams.delete(`${field.fieldName}[$eq]`);
-                                newSearchParams.delete(`${field.fieldName}[$gte]`);
-                                newSearchParams.delete(`${field.fieldName}[$lte]`);
-                                newSearchParams.delete(`${field.fieldName}[$gt]`);
-                                newSearchParams.delete(`${field.fieldName}[$lt]`);
-                              } else {
-                                newSearchParams.delete(field.fieldName);
-                              }
-                            });
-                          }
-                          newSearchParams.set('page', '1');
-                          router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
-                        }}
-                        className="h-7 px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <IconComponent name="FilterX" className="h-3.5 w-3.5 mr-1" />
-                        {currentLanguage === "mm" ? "စစ်ထုတ်မှု ဖယ်ရှားရန်" : "Clear Filters"}
-                      </Button>
-                    )}
                   </div>
                 </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       )}

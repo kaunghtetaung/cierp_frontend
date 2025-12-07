@@ -19,10 +19,14 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
 
   // 🔒 SECURITY: Server-side authorization check - prevents direct URL access
   // Also checks CREATE permission specifically for this operation
-  const { user, tenant, module: fullModule } = await requireModuleOperationAccess(
+  const {
+    user,
+    tenant,
+    module: fullModule,
+  } = await requireModuleOperationAccess(
     resolvedParams.appId,
     resolvedParams.module,
-    'create'
+    "create"
   );
 
   // ⭐ CHECK: If static module exists for this appId/module combination
@@ -78,13 +82,16 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
   const moduleWithMultilang = enableCommonMultilangFields(module);
 
   // Choose form component based on layout type
-  const isWizardForm = module.formLayout === "wizard-vertical" || module.formLayout === "wizard-horizontal";
+  const isWizardForm =
+    module.formLayout === "wizard-vertical" ||
+    module.formLayout === "wizard-horizontal";
   const isStudentForm = module.formLayout === "studentForm";
   const isStudentWizardForm = module.formLayout === "studentWizardForm";
   const isStaffWizardForm = module.formLayout === "staffWizardForm";
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
+      <span>Dyanmic</span>
       <FormWithLanguage
         module={moduleWithMultilang}
         action="create"
@@ -95,7 +102,7 @@ export default async function ModuleNewPage({ params }: ModuleNewPageProps) {
         isStaffWizardForm={isStaffWizardForm}
         appId={resolvedParams.appId}
         tenantId={tenant.tenantId}
-        username={user.email?.split('@')[0] || user.id}
+        username={user.email?.split("@")[0] || user.id}
         // No navigation needed for new records
       />
     </div>
@@ -110,18 +117,20 @@ export async function generateMetadata({ params }: ModuleNewPageProps) {
     const { module: fullModule } = await requireModuleOperationAccess(
       resolvedParams.appId,
       resolvedParams.module,
-      'create'
+      "create"
     );
 
     return {
-      title: `Create New ${fullModule.name?.en || fullModule.slug} - Core Dashboard`,
+      title: `Create New ${
+        fullModule.name?.en || fullModule.slug
+      } - Core Dashboard`,
       description: `Create a new ${fullModule.name?.en || fullModule.slug}`,
     };
   } catch (error) {
     // If access is denied, return generic metadata
     return {
-      title: 'Access Denied',
-      description: 'You don\'t have permission to access this module.',
+      title: "Access Denied",
+      description: "You don't have permission to access this module.",
     };
   }
 }

@@ -586,4 +586,51 @@ export class ModuleService {
 
     return response.data;
   }
+
+  /**
+   * Fetch dashboard data for analytics-enabled modules
+   * Supports filtering via query parameters that match prefilter values
+   */
+  async getDashboard<T = any>(
+    module: string,
+    queryParams?: Record<string, string | undefined>
+  ): Promise<T> {
+    let endpoint = `/${this.appName}/${module}/dashboard`;
+
+    console.log('📊 [MODULE SERVICE] getDashboard:', {
+      appName: this.appName,
+      module,
+      endpoint,
+      queryParams
+    });
+
+    // Build query parameters - filter out undefined values
+    if (queryParams && Object.keys(queryParams).length > 0) {
+      const params = new URLSearchParams();
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.set(key, String(value));
+        }
+      });
+
+      if (params.toString()) {
+        endpoint += `?${params.toString()}`;
+      }
+    }
+
+    const response = await this.httpClient.request<T>(endpoint, {
+      method: "GET",
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || `Failed to fetch ${module} dashboard data`);
+    }
+
+    return response.data;
+  }
 }

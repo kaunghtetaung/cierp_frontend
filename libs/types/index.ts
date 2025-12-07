@@ -53,6 +53,7 @@ export * from './table-types';
 export * from './access-policy-types';
 export * from './detail-view-types';
 export * from './module-schema-interfaces';
+export * from './dashboard-types';
 export * from './type-guards';
 
 // Common utility types

@@ -9,6 +9,7 @@ interface ModuleDataTableWrapperProps {
   module: ModuleSchema;
   initialData?: any[];
   userPermissions?: ModulePermissions;
+  hidePrefilters?: boolean; // Hide prefilters when rendered externally (e.g., in dashboard wrapper)
 }
 
 /**
@@ -27,6 +28,7 @@ export function ModuleDataTableWrapper({
   module,
   initialData = [],
   userPermissions,
+  hidePrefilters = false,
 }: ModuleDataTableWrapperProps) {
   console.log("🧠 [ROUTER] Using SERVER-SIDE pagination for module:", module.slug);
 
@@ -35,6 +37,7 @@ export function ModuleDataTableWrapper({
       module={module}
       initialData={initialData}
       userPermissions={userPermissions}
+      hidePrefilters={hidePrefilters}
     />
   );
 }

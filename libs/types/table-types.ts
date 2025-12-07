@@ -93,6 +93,86 @@ export interface FilteringConfig {
   searchFields?: string[];
 }
 
+// ============================================
+// Prefilter Types
+// ============================================
+
+// Prefilter field types
+export type PrefilterFieldType =
+  | 'text'
+  | 'select'
+  | 'dynamicSelect'
+  | 'typeaheadDynamicSelect'
+  | 'yearRange'
+  | 'dependentSelect';
+
+// Prefilter display modes
+export type PrefilterDisplayMode = 'tabs' | 'accordion' | 'flat';
+
+// Text search options
+export interface PrefilterTextSearchOptions {
+  operators?: Array<{
+    value: string;
+    label: MultilingualText;
+  }>;
+  defaultOperator?: string;
+  placeholder?: MultilingualText;
+}
+
+// Year range options
+export interface PrefilterYearRangeOptions {
+  operators?: Array<{
+    value: string;
+    label: MultilingualText;
+  }>;
+  defaultOperator?: string;
+  minYear?: number;
+  maxYear?: number;
+}
+
+// Data source configuration for dynamic selects
+export interface PrefilterDataSource {
+  endpoint: string;
+  method?: string;
+  labelField?: string;
+  valueField?: string;
+  serviceName?: string;
+  dependsOn?: string; // Field name this depends on (for dependent selects)
+  dependsOnParam?: string; // Query param name to use for dependent value
+}
+
+// Individual prefilter field
+export interface PrefilterField {
+  fieldName: string;
+  label: MultilingualText;
+  type: PrefilterFieldType;
+  dataSource?: PrefilterDataSource;
+  options?: Array<{
+    value: string;
+    label: MultilingualText | string;
+  }>;
+  searchOptions?: PrefilterTextSearchOptions;
+  yearRangeOptions?: PrefilterYearRangeOptions;
+  allowMultiple?: boolean; // For typeahead select
+  minSearchLength?: number; // For typeahead
+}
+
+// Prefilter field group (for tab/accordion grouping)
+export interface PrefilterFieldGroup {
+  groupKey: string;
+  groupLabel: MultilingualText;
+  collapsed?: boolean; // Initial state for accordion mode
+  fields: PrefilterField[];
+}
+
+// Main prefilter configuration
+export interface PrefilterConfig {
+  enabled: boolean;
+  displayMode?: PrefilterDisplayMode; // Default: 'flat' for backwards compatibility
+  fields?: PrefilterField[]; // Legacy flat fields array
+  fieldGroups?: PrefilterFieldGroup[]; // New grouped fields structure
+}
+
 // Data table schema configuration
 export interface DataTableSchema {
   layout: TableLayout;
@@ -101,6 +181,7 @@ export interface DataTableSchema {
   pagination?: PaginationConfig;
   sorting?: SortingConfig;
   filtering?: FilteringConfig;
+  prefilters?: PrefilterConfig;
 }
 
 // Form validation configuration

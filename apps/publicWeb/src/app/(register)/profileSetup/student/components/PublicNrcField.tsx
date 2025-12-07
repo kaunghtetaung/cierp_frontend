@@ -10,6 +10,15 @@ interface NrcFieldProps {
   onChange: (value: string) => void;
   error?: string;
   disabled?: boolean;
+  showFieldErrors?: boolean; // Show individual field validation errors
+  onValidationChange?: (isValid: boolean) => void; // Callback when validation state changes
+}
+
+interface FieldErrors {
+  stateNumber?: string;
+  townshipCode?: string;
+  type?: string;
+  serial?: string;
 }
 
 interface NrcParts {
@@ -19,15 +28,20 @@ interface NrcParts {
   serial: string;
 }
 
-// Parse NRC string: "12/OuKaMa(N)123456" or "12/ကပတ(N)123456" or partial format "12|OuKaMa||", etc.
-// Township codes can be in English (OuKaMa) or Myanmar script (ကပတ)
+// Parse NRC string: "12/ကတတ(N)123456" (Myanmar format) or partial format "12|ကတတ|N|123456"
+// Township codes are in Myanmar script (e.g., ကတတ, မဘတ)
+// Format: {stateNumber}/{townshipCode}({type}){serial}
+// Example: 12/ကမရ(N)123456
 function parseNrc(nrcString: string): NrcParts {
   if (!nrcString) {
     return { stateNumber: "", townshipCode: "", type: "", serial: "" };
   }
 
   // Try to match complete NRC format first
-  // Township can be English letters [A-Za-z] or Myanmar Unicode [\u1000-\u109F]
+  // State: 1-14 or with * (e.g., 12, 5*, 14)
+  // Township: Myanmar Unicode characters [\u1000-\u109F] (e.g., ကမရ, မဘတ)
+  // Type: Single uppercase letter (N, E, P, T, Y, S)
+  // Serial: Exactly 6 digits
   const completeMatch = nrcString.match(/^(\d{1,2}[\*]?)\/([A-Za-z\u1000-\u109F]+)\(([A-Z])\)(\d{1,6})$/);
 
   if (completeMatch) {
@@ -53,7 +67,7 @@ function parseNrc(nrcString: string): NrcParts {
   return { stateNumber: "", townshipCode: "", type: "", serial: "" };
 }
 
-// Format NRC parts: "12/OuKaMa(N)123456" for complete, or "12|OuKaMa|N|123456" for partial
+// Format NRC parts: "12/ကမရ(N)123456" for complete, or "12|ကမရ|N|123456" for partial
 function formatNrc(parts: NrcParts): string {
   const { stateNumber, townshipCode, type, serial } = parts;
 
@@ -77,7 +91,7 @@ function formatPartialNrc(parts: NrcParts): string {
   return "";
 }
 
-export function PublicNrcField({ value = "", onChange, error, disabled = false }: NrcFieldProps) {
+export function PublicNrcField({ value = "", onChange, error, disabled = false, showFieldErrors = true, onValidationChange }: NrcFieldProps) {
   // Debug: Log value on every render
   console.log("🔍 [PublicNrcField] RENDER - value prop:", JSON.stringify(value));
 
@@ -88,6 +102,92 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
     console.log("🔍 [PublicNrcField] useState INIT - value:", JSON.stringify(value), "→ parts:", initialParts);
     return initialParts;
   });
+
+  // Track which fields have been touched for validation
+  const [touched, setTouched] = useState<Record<keyof NrcParts, boolean>>({
+    stateNumber: false,
+    townshipCode: false,
+    type: false,
+    serial: false,
+  });
+
+  // Validate individual fields for Myanmar NRC format
+  const validateField = (field: keyof NrcParts, fieldValue: string): string | undefined => {
+    switch (field) {
+      case "stateNumber":
+        if (!fieldValue) return "State/Region is required";
+        const stateNum = parseInt(fieldValue.replace('*', ''));
+        if (isNaN(stateNum) || stateNum < 1 || stateNum > 14) return "State must be 1-14";
+        return undefined;
+      case "townshipCode":
+        if (!fieldValue && parts.stateNumber) return "Township is required";
+        if (fieldValue && !/^[\u1000-\u109F]+$/.test(fieldValue)) return "Township must be Myanmar script";
+        return undefined;
+      case "type":
+        if (!fieldValue) return "Type is required";
+        if (!/^[NEPTYS]$/.test(fieldValue)) return "Type must be N, E, P, T, Y, or S";
+        return undefined;
+      case "serial":
+        if (!fieldValue) return "Serial number is required";
+        if (!/^\d{6}$/.test(fieldValue)) return "Serial must be exactly 6 digits";
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  // Get field errors (only show if touched or if there's a parent error)
+  const getFieldError = (field: keyof NrcParts): string | undefined => {
+    if (!showFieldErrors) return undefined;
+    if (!touched[field] && !error) return undefined;
+    return validateField(field, parts[field]);
+  };
+
+  const fieldErrors: FieldErrors = {
+    stateNumber: getFieldError("stateNumber"),
+    townshipCode: getFieldError("townshipCode"),
+    type: getFieldError("type"),
+    serial: getFieldError("serial"),
+  };
+
+  // Check if NRC is complete and valid (Myanmar format: 12/ကမရ(N)123456)
+  // Validation rules:
+  // - stateNumber: 1-14 (required)
+  // - townshipCode: Myanmar Unicode characters (required)
+  // - type: N, E, P, T, Y, or S (required)
+  // - serial: exactly 6 digits (required)
+  const isValidStateNumber = /^(\d{1,2}[\*]?)$/.test(parts.stateNumber) &&
+    (parseInt(parts.stateNumber.replace('*', '')) >= 1 && parseInt(parts.stateNumber.replace('*', '')) <= 14);
+  const isValidTownshipCode = /^[\u1000-\u109F]+$/.test(parts.townshipCode); // Myanmar Unicode only
+  const isValidType = /^[NEPTYS]$/.test(parts.type);
+  const isValidSerial = /^\d{6}$/.test(parts.serial);
+
+  const isNrcValid = !!(
+    parts.stateNumber &&
+    parts.townshipCode &&
+    parts.type &&
+    parts.serial &&
+    isValidStateNumber &&
+    isValidTownshipCode &&
+    isValidType &&
+    isValidSerial
+  );
+
+  // Track previous validation state to avoid unnecessary callback calls
+  const prevIsNrcValidRef = useRef<boolean | null>(null);
+
+  // Notify parent of validation state changes (only when value actually changes)
+  useEffect(() => {
+    if (onValidationChange && prevIsNrcValidRef.current !== isNrcValid) {
+      prevIsNrcValidRef.current = isNrcValid;
+      onValidationChange(isNrcValid);
+    }
+  }, [isNrcValid, onValidationChange]);
+
+  // Mark field as touched on blur
+  const handleBlur = (field: keyof NrcParts) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   // Track if update came from internal change to avoid sync loops
   const isInternalChange = useRef(false);
@@ -142,7 +242,20 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
 
           // Update to English code if different
           if (parts.townshipCode !== englishCode) {
-            setParts(prev => ({ ...prev, townshipCode: englishCode }));
+            const updatedParts = { ...parts, townshipCode: englishCode };
+            setParts(updatedParts);
+
+            // Propagate to parent form so the normalized value is submitted
+            isInternalChange.current = true;
+            const completeNrc = formatNrc(updatedParts);
+            if (completeNrc) {
+              console.log("🔄 [PublicNrcField] Propagating normalized NRC to parent:", completeNrc);
+              onChange(completeNrc);
+            } else {
+              const partialNrc = formatPartialNrc(updatedParts);
+              console.log("🔄 [PublicNrcField] Propagating normalized partial NRC to parent:", partialNrc);
+              onChange(partialNrc);
+            }
           }
 
           // Clear the pending code
@@ -192,14 +305,18 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
         <div className="col-span-3">
           <Select
             value={parts.stateNumber}
-            onValueChange={(value) => handlePartChange("stateNumber", value)}
+            onValueChange={(value) => {
+              handlePartChange("stateNumber", value);
+              setTouched(prev => ({ ...prev, stateNumber: true }));
+            }}
             disabled={disabled}
           >
             <SelectTrigger
               className={cn(
                 "w-full border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
-                error && "border-red-300 focus:border-red-500"
+                (error || fieldErrors.stateNumber) && "border-red-300 focus:border-red-500"
               )}
+              onBlur={() => handleBlur("stateNumber")}
             >
               <SelectValue placeholder="State">
                 {parts.stateNumber ? (
@@ -217,20 +334,27 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
               ))}
             </SelectContent>
           </Select>
+          {fieldErrors.stateNumber && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.stateNumber}</p>
+          )}
         </div>
 
         {/* Township */}
         <div className="col-span-4">
           <Select
             value={parts.townshipCode || ""}
-            onValueChange={(value) => handlePartChange("townshipCode", value)}
+            onValueChange={(value) => {
+              handlePartChange("townshipCode", value);
+              setTouched(prev => ({ ...prev, townshipCode: true }));
+            }}
             disabled={disabled || !parts.stateNumber}
           >
             <SelectTrigger
               className={cn(
                 "w-full border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
-                error && "border-red-300 focus:border-red-500"
+                (error || fieldErrors.townshipCode) && "border-red-300 focus:border-red-500"
               )}
+              onBlur={() => handleBlur("townshipCode")}
             >
               <SelectValue placeholder="Township">
                 {parts.townshipCode ? (
@@ -255,20 +379,27 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
               ))}
             </SelectContent>
           </Select>
+          {fieldErrors.townshipCode && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.townshipCode}</p>
+          )}
         </div>
 
         {/* Type (N/E/P/T/Y/S) */}
         <div className="col-span-2">
           <Select
             value={parts.type}
-            onValueChange={(value) => handlePartChange("type", value)}
+            onValueChange={(value) => {
+              handlePartChange("type", value);
+              setTouched(prev => ({ ...prev, type: true }));
+            }}
             disabled={disabled}
           >
             <SelectTrigger
               className={cn(
                 "w-full border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
-                error && "border-red-300 focus:border-red-500"
+                (error || fieldErrors.type) && "border-red-300 focus:border-red-500"
               )}
+              onBlur={() => handleBlur("type")}
             >
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -280,6 +411,9 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
               ))}
             </SelectContent>
           </Select>
+          {fieldErrors.type && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.type}</p>
+          )}
         </div>
 
         {/* Serial Number */}
@@ -291,14 +425,19 @@ export function PublicNrcField({ value = "", onChange, error, disabled = false }
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "").slice(0, 6);
               handlePartChange("serial", value);
+              setTouched(prev => ({ ...prev, serial: true }));
             }}
+            onBlur={() => handleBlur("serial")}
             disabled={disabled}
             maxLength={6}
             className={cn(
               "border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
-              error && "border-red-300 focus:border-red-500"
+              (error || fieldErrors.serial) && "border-red-300 focus:border-red-500"
             )}
           />
+          {fieldErrors.serial && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.serial}</p>
+          )}
         </div>
       </div>
 

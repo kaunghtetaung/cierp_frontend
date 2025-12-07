@@ -24,31 +24,62 @@ interface SearchResult {
   error?: string;
 }
 
+// Search field types
+export type SearchField = "accessionNumber" | "isbn" | "title";
+
 /**
- * Server action to search bibliographies by accession number
- * Uses the same authentication pattern as the module list page
+ * Server action to search bibliographies by different fields
+ * Supports: accessionNumber, isbn, title
  */
 export async function searchBibliographiesAction(
-  accessionNo: string
+  searchValue: string,
+  searchField: SearchField = "accessionNumber"
 ): Promise<SearchResult> {
   try {
     // Validate input
-    if (!accessionNo || !accessionNo.trim()) {
-      console.warn("[BARCODE_SEARCH] Empty accession number provided");
+    if (!searchValue || !searchValue.trim()) {
+      const fieldLabels: Record<SearchField, string> = {
+        accessionNumber: "accession number",
+        isbn: "ISBN",
+        title: "title",
+      };
+      console.warn(`[BARCODE_SEARCH] Empty ${fieldLabels[searchField]} provided`);
       return {
         success: false,
-        error: "Please enter an accession number",
+        error: `Please enter ${searchField === "isbn" ? "an" : "a"} ${fieldLabels[searchField]}`,
       };
     }
 
-    console.log(`[BARCODE_SEARCH] Searching for accession number: "${accessionNo}"`);
+    console.log(`[BARCODE_SEARCH] Searching by ${searchField}: "${searchValue}"`);
 
-    // Build query params
-    // Put the accessionNo filter inside the 'filters' object so it gets processed correctly
-    const queryParams = {
-      filters: {
-        "accessionNumbers.accessionNo": accessionNo,
+    // Build query params based on search field
+    // Using the same format as prefilter module: fieldName[$operator]=value
+    const fieldMapping: Record<SearchField, string> = {
+      accessionNumber: "accessionNumbers.accessionNo",
+      isbn: "isbn",
+      title: "title",
+    };
+
+    // Define which operator to use for each field
+    // ISBN uses exact match ($eq), others use regex ($regex)
+    const operatorMapping: Record<SearchField, string> = {
+      accessionNumber: "$regex",
+      isbn: "$eq",  // ISBN must be exact match
+      title: "$regex",
+    };
+
+    const fieldName = fieldMapping[searchField] || "accessionNumbers.accessionNo";
+    const operator = operatorMapping[searchField] || "$regex";
+
+    // Build filters in the same format as prefilter module
+    const filters: Record<string, any> = {
+      [fieldName]: {
+        [operator]: searchValue,
       },
+    };
+
+    const queryParams = {
+      filters,
       limit: 50,
     };
 
@@ -56,11 +87,10 @@ export async function searchBibliographiesAction(
     console.log("🔍 [BARCODE_SEARCH] Query Parameters:");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log(JSON.stringify(queryParams, null, 2));
-    console.log("Expected API format: bibliographies?accessionNumbers.accessionNo=" + accessionNo);
+    console.log(`Search field: ${searchField}, Value: ${searchValue}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     // Use getModuleList which handles authentication automatically
-    // Search specifically by accessionNumbers.accessionNo
     const result = await getModuleList<BibliographySearchResult>(
       "bibliographies",
       queryParams
@@ -86,7 +116,8 @@ export async function searchBibliographiesAction(
   } catch (error) {
     // Enhanced error logging
     console.error("[BARCODE_SEARCH] Error searching bibliographies:", {
-      accessionNo: accessionNo,
+      searchField,
+      searchValue,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

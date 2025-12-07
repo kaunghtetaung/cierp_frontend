@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Popover, PopoverContent, PopoverTrigger, Button } from "@repo/ui";
 import { User, ChevronsUpDown, Check, Mail, Phone as PhoneIcon } from "lucide-react";
@@ -24,6 +24,7 @@ const ETHNICITY_OPTIONS = [
   "Kayah",
   "Chinese",
   "Indian",
+  "Other",
 ];
 
 const RELIGION_OPTIONS = [
@@ -33,6 +34,7 @@ const RELIGION_OPTIONS = [
   "Hinduism",
   "Animism",
   "None",
+  "Other",
 ];
 
 interface PersonalInfoStepProps {
@@ -40,7 +42,19 @@ interface PersonalInfoStepProps {
 }
 
 export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
-  const { register, formState: { errors }, control, setValue } = useFormContext();
+  const { register, formState: { errors }, control, setValue, setError, clearErrors } = useFormContext();
+
+  // Handle NRC validation state change - memoized to prevent infinite loops
+  const handleNrcValidationChange = useCallback((isValid: boolean) => {
+    if (isValid) {
+      clearErrors("nrcNumber");
+    } else {
+      setError("nrcNumber", {
+        type: "manual",
+        message: "Please complete all NRC fields (State, Township, Type, and 6-digit Serial Number)",
+      });
+    }
+  }, [setError, clearErrors]);
   const { currentLanguage } = useLangSelector();
   const t = translations[currentLanguage as keyof typeof translations] || translations.en;
 
@@ -500,6 +514,7 @@ export function PersonalInfoStep({ user }: PersonalInfoStepProps) {
                 value={field.value || ""}
                 onChange={field.onChange}
                 error={errors.nrcNumber?.message as string}
+                onValidationChange={handleNrcValidationChange}
               />
             )}
           />

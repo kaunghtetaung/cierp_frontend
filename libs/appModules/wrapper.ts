@@ -252,3 +252,18 @@ export async function getDeletedModuleList<T = any>(
   const moduleService = await createServiceInstance();
   return await moduleService.getDeletedList<T>(module, params);
 }
+
+/**
+ * Get module dashboard data using React.cache for request-level deduplication.
+ * Supports filtering via query parameters that match prefilter values.
+ */
+export const getModuleDashboard = cache(
+  async <T = any>(
+    module: string,
+    queryParams?: Record<string, string | undefined>,
+    serviceName?: string
+  ): Promise<T> => {
+    const moduleService = await createServiceInstance(serviceName);
+    return await moduleService.getDashboard<T>(module, queryParams);
+  }
+);

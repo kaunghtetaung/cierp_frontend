@@ -10,7 +10,7 @@
 
 .barcode-font {
   font-family: 'IDAutomationC39S', monospace;
-  font-size: 6pt;
+  font-size: 10pt;
   letter-spacing: 0;
   color: black !important; /* Always black for barcode */
 }

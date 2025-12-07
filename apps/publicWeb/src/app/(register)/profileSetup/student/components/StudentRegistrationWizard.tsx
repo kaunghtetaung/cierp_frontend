@@ -80,7 +80,7 @@ export function StudentRegistrationWizard({
         "nrcNumber",
         "dateOfBirth",
         "placeOfBirth",
-        "phone",
+        "phoneNumber",
         "email",
         "profilePhoto",
       ],
@@ -270,7 +270,6 @@ export function StudentRegistrationWizard({
     reset,
     watch,
     trigger,
-    formState: { errors },
   } = methods;
 
   // 🔍 DEBUG: Watch placeOfBirth field to monitor changes
@@ -521,6 +520,19 @@ export function StudentRegistrationWizard({
     };
   }, [reset, user, defaultValues]);
 
+  // Helper function to validate NRC format
+  // NRC format: "12/ABC(N)123456" where:
+  // - State: 1-14
+  // - Township: Myanmar Unicode characters
+  // - Type: N, E, P, T, Y, or S
+  // - Serial: exactly 6 digits
+  const isValidNrcFormat = (nrcValue: string): boolean => {
+    if (!nrcValue) return false;
+    // Match complete NRC format: {state}/{township}({type}){serial}
+    const nrcRegex = /^(\d{1,2}[\*]?)\/([A-Za-z\u1000-\u109F]+)\(([NEPTYS])\)(\d{6})$/;
+    return nrcRegex.test(nrcValue);
+  };
+
   // Navigation handlers
   const handleNext = async () => {
     console.log("▶️  [handleNext] Called - Current step:", currentStep);
@@ -535,8 +547,286 @@ export function StudentRegistrationWizard({
       console.log("🔍 [Wizard] Validating step:", currentStepConfig.title);
       console.log("🔍 [Wizard] Fields to validate:", fieldsToValidate);
 
-      const isValid = await trigger(fieldsToValidate);
-      console.log("✅ [Wizard] Validation result:", isValid);
+      // Run Zod validation via trigger
+      const isZodValid = await trigger(fieldsToValidate);
+      console.log("✅ [Wizard] Zod validation result:", isZodValid);
+
+      // Special validation for NRC fields
+      // NRC uses custom validation via onValidationChange callback which may not sync immediately
+      // So we validate the NRC format directly here
+      let hasNrcError = false;
+
+      // Step 0 - Personal info: validate student's NRC
+      if (currentStep === 0 && fieldsToValidate.includes("nrcNumber")) {
+        const nrcValue = methods.getValues("nrcNumber");
+        console.log("🔍 [Wizard] Student NRC value:", nrcValue);
+
+        if (nrcValue && !isValidNrcFormat(nrcValue)) {
+          hasNrcError = true;
+          methods.setError("nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields (State, Township, Type, and 6-digit Serial Number)",
+          });
+          console.log("❌ [Wizard] Student NRC validation failed - incomplete format");
+        }
+      }
+
+      // Step 1 - Address info: validate required address fields
+      let hasAddressError = false;
+      if (currentStep === 1) {
+        const requiredAddressFields = [
+          { field: "stateRegionName", label: "State/Region" },
+          { field: "districtName", label: "District" },
+          { field: "townshipName", label: "Township" },
+          { field: "townName", label: "Town/Village Tract" },
+          { field: "permanentAddress", label: "Permanent Address" },
+          { field: "currentAddress", label: "Current Address" },
+        ];
+
+        for (const { field, label } of requiredAddressFields) {
+          const value = methods.getValues(field);
+          console.log(`🔍 [Wizard] ${label} value:`, value);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasAddressError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+            console.log(`❌ [Wizard] ${label} validation failed - field is required`);
+          }
+        }
+      }
+
+      // Step 2 - Family info: validate all required family fields
+      let hasFamilyError = false;
+      if (currentStep === 2) {
+        // Required fields for father
+        const fatherRequiredFields = [
+          { field: "father.nameMyanmar", label: "Father's Name (Myanmar)" },
+          { field: "father.nameEnglish", label: "Father's Name (English)" },
+          { field: "father.occupation", label: "Father's Occupation" },
+        ];
+
+        for (const { field, label } of fatherRequiredFields) {
+          const value = methods.getValues(field);
+          console.log(`🔍 [Wizard] ${label} value:`, value);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasFamilyError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+            console.log(`❌ [Wizard] ${label} validation failed - field is required`);
+          }
+        }
+
+        // Validate father's NRC (required + format)
+        const fatherNrc = methods.getValues("father.nrcNumber");
+        console.log("🔍 [Wizard] Father NRC value:", fatherNrc);
+        if (!fatherNrc || (typeof fatherNrc === "string" && !fatherNrc.trim())) {
+          hasNrcError = true;
+          methods.setError("father.nrcNumber", {
+            type: "manual",
+            message: "Father's NRC is required",
+          });
+          console.log("❌ [Wizard] Father NRC validation failed - field is required");
+        } else if (fatherNrc && !isValidNrcFormat(fatherNrc)) {
+          hasNrcError = true;
+          methods.setError("father.nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields for Father",
+          });
+          console.log("❌ [Wizard] Father NRC validation failed - incomplete format");
+        }
+
+        // Required fields for mother
+        const motherRequiredFields = [
+          { field: "mother.nameMyanmar", label: "Mother's Name (Myanmar)" },
+          { field: "mother.nameEnglish", label: "Mother's Name (English)" },
+          { field: "mother.occupation", label: "Mother's Occupation" },
+        ];
+
+        for (const { field, label } of motherRequiredFields) {
+          const value = methods.getValues(field);
+          console.log(`🔍 [Wizard] ${label} value:`, value);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasFamilyError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+            console.log(`❌ [Wizard] ${label} validation failed - field is required`);
+          }
+        }
+
+        // Validate mother's NRC (required + format)
+        const motherNrc = methods.getValues("mother.nrcNumber");
+        console.log("🔍 [Wizard] Mother NRC value:", motherNrc);
+        if (!motherNrc || (typeof motherNrc === "string" && !motherNrc.trim())) {
+          hasNrcError = true;
+          methods.setError("mother.nrcNumber", {
+            type: "manual",
+            message: "Mother's NRC is required",
+          });
+          console.log("❌ [Wizard] Mother NRC validation failed - field is required");
+        } else if (motherNrc && !isValidNrcFormat(motherNrc)) {
+          hasNrcError = true;
+          methods.setError("mother.nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields for Mother",
+          });
+          console.log("❌ [Wizard] Mother NRC validation failed - incomplete format");
+        }
+
+        // Required fields for guardian
+        const guardianRequiredFields = [
+          { field: "guardian.nameMyanmar", label: "Guardian's Name (Myanmar)" },
+          { field: "guardian.nameEnglish", label: "Guardian's Name (English)" },
+          { field: "guardian.occupation", label: "Guardian's Occupation" },
+          { field: "guardian.relationship", label: "Guardian's Relationship" },
+          { field: "guardian.phoneNumber", label: "Guardian's Phone Number" },
+          { field: "guardian.email", label: "Guardian's Email" },
+          { field: "guardian.address", label: "Guardian's Address" },
+        ];
+
+        for (const { field, label } of guardianRequiredFields) {
+          const value = methods.getValues(field);
+          console.log(`🔍 [Wizard] ${label} value:`, value);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasFamilyError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+            console.log(`❌ [Wizard] ${label} validation failed - field is required`);
+          }
+        }
+
+        // Validate guardian's NRC (required + format)
+        const guardianNrc = methods.getValues("guardian.nrcNumber");
+        console.log("🔍 [Wizard] Guardian NRC value:", guardianNrc);
+        if (!guardianNrc || (typeof guardianNrc === "string" && !guardianNrc.trim())) {
+          hasNrcError = true;
+          methods.setError("guardian.nrcNumber", {
+            type: "manual",
+            message: "Guardian's NRC is required",
+          });
+          console.log("❌ [Wizard] Guardian NRC validation failed - field is required");
+        } else if (guardianNrc && !isValidNrcFormat(guardianNrc)) {
+          hasNrcError = true;
+          methods.setError("guardian.nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields for Guardian",
+          });
+          console.log("❌ [Wizard] Guardian NRC validation failed - incomplete format");
+        }
+      }
+
+      // Step 4 - Current Academic: validate batch enrollments if any batches are added
+      let hasBatchError = false;
+      if (currentStep === 4) {
+        const batches = methods.getValues("batches") || [];
+        console.log("🔍 [Wizard] Batches:", batches);
+
+        // Only validate if user has added batch enrollments
+        if (Array.isArray(batches) && batches.length > 0) {
+          batches.forEach((batch: any, index: number) => {
+            // Validate academicYearId
+            if (!batch.academicYearId || (typeof batch.academicYearId === "string" && !batch.academicYearId.trim())) {
+              hasBatchError = true;
+              methods.setError(`batches.${index}.academicYearId` as any, {
+                type: "manual",
+                message: "Academic Year is required",
+              });
+              console.log(`❌ [Wizard] Batch ${index} academicYearId validation failed - field is required`);
+            }
+
+            // Validate batchId
+            if (!batch.batchId || (typeof batch.batchId === "string" && !batch.batchId.trim())) {
+              hasBatchError = true;
+              methods.setError(`batches.${index}.batchId` as any, {
+                type: "manual",
+                message: "Batch is required",
+              });
+              console.log(`❌ [Wizard] Batch ${index} batchId validation failed - field is required`);
+            }
+
+            // Validate rollNo
+            if (!batch.rollNo || (typeof batch.rollNo === "string" && !batch.rollNo.trim())) {
+              hasBatchError = true;
+              methods.setError(`batches.${index}.rollNo` as any, {
+                type: "manual",
+                message: "Roll Number is required",
+              });
+              console.log(`❌ [Wizard] Batch ${index} rollNo validation failed - field is required`);
+            }
+          });
+        }
+      }
+
+      // Step 3 - Academic Info: validate previous education subjects if any subjects are added
+      let hasSubjectError = false;
+      if (currentStep === 3) {
+        const previousEducation = methods.getValues("previousEducation") || [];
+        console.log("🔍 [Wizard] Previous Education:", previousEducation);
+
+        // Iterate through each education record
+        if (Array.isArray(previousEducation) && previousEducation.length > 0) {
+          previousEducation.forEach((education: any, eduIndex: number) => {
+            const subjects = education.subjects || [];
+
+            // Only validate if user has added subjects
+            if (Array.isArray(subjects) && subjects.length > 0) {
+              subjects.forEach((subject: any, subIndex: number) => {
+                // Validate subjectId (subject name)
+                if (!subject.subjectId || (typeof subject.subjectId === "string" && !subject.subjectId.trim())) {
+                  hasSubjectError = true;
+                  methods.setError(`previousEducation.${eduIndex}.subjects.${subIndex}.subjectId` as any, {
+                    type: "manual",
+                    message: "Subject is required",
+                  });
+                  console.log(`❌ [Wizard] Education ${eduIndex} Subject ${subIndex} subjectId validation failed - field is required`);
+                }
+
+                // Validate mark
+                if (subject.mark === undefined || subject.mark === null || subject.mark === "" ||
+                    (typeof subject.mark === "number" && isNaN(subject.mark))) {
+                  hasSubjectError = true;
+                  methods.setError(`previousEducation.${eduIndex}.subjects.${subIndex}.mark` as any, {
+                    type: "manual",
+                    message: "Mark is required",
+                  });
+                  console.log(`❌ [Wizard] Education ${eduIndex} Subject ${subIndex} mark validation failed - field is required`);
+                }
+              });
+            }
+          });
+        }
+      }
+
+      // Also check for any existing errors in current step fields (including manual errors like NRC)
+      // This is important because manual errors (set via setError) may not be caught by trigger()
+      const currentErrors = methods.formState.errors;
+      const hasManualErrors = fieldsToValidate.some(fieldName => {
+        // Handle nested field names (e.g., "father.nameMyanmar")
+        const parts = fieldName.split('.');
+        let errorObj: any = currentErrors;
+        for (const part of parts) {
+          if (!errorObj) break;
+          errorObj = errorObj[part];
+        }
+        return !!errorObj;
+      });
+
+      console.log("🔍 [Wizard] Has manual errors:", hasManualErrors);
+      console.log("🔍 [Wizard] Has NRC error:", hasNrcError);
+      console.log("🔍 [Wizard] Has address error:", hasAddressError);
+      console.log("🔍 [Wizard] Has family error:", hasFamilyError);
+      console.log("🔍 [Wizard] Has batch error:", hasBatchError);
+      console.log("🔍 [Wizard] Has subject error:", hasSubjectError);
+      console.log("🔍 [Wizard] Current errors:", currentErrors);
+
+      const isValid = isZodValid && !hasManualErrors && !hasNrcError && !hasAddressError && !hasFamilyError && !hasBatchError && !hasSubjectError;
 
       if (isValid) {
         console.log(
@@ -549,17 +839,286 @@ export function StudentRegistrationWizard({
         console.log("📍 [handleNext] handleNext completed successfully");
       } else {
         console.log("❌ [Wizard] Validation failed - staying on current step");
-        console.log("🔍 [Wizard] Current errors:", errors);
+        console.log("🔍 [Wizard] Current errors:", currentErrors);
+        toast.error("Please fix validation errors", {
+          description: "You must correct the errors on this page before proceeding to the next step.",
+          duration: 5000,
+        });
       }
     } else {
       console.log("⚠️  [handleNext] Already at last step - doing nothing");
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Validate current step fields before going back
+      // This ensures user cannot skip fixing validation errors by going back
+      const currentStepConfig = WIZARD_STEPS[currentStep];
+      const fieldsToValidate = currentStepConfig.fields;
+
+      console.log("🔍 [Wizard] Validating before previous step:", currentStepConfig.title);
+      console.log("🔍 [Wizard] Fields to validate:", fieldsToValidate);
+
+      // Run Zod validation via trigger
+      const isZodValid = await trigger(fieldsToValidate);
+      console.log("✅ [Wizard] Zod validation result:", isZodValid);
+
+      // Special validation for NRC fields
+      let hasNrcError = false;
+
+      // Step 0 - Personal info: validate student's NRC
+      if (currentStep === 0 && fieldsToValidate.includes("nrcNumber")) {
+        const nrcValue = methods.getValues("nrcNumber");
+        if (nrcValue && !isValidNrcFormat(nrcValue)) {
+          hasNrcError = true;
+          methods.setError("nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields (State, Township, Type, and 6-digit Serial Number)",
+          });
+        }
+      }
+
+      // Step 1 - Address info: validate required address fields
+      let hasAddressError = false;
+      if (currentStep === 1) {
+        const requiredAddressFields = [
+          { field: "stateRegionName", label: "State/Region" },
+          { field: "districtName", label: "District" },
+          { field: "townshipName", label: "Township" },
+          { field: "townName", label: "Town/Village Tract" },
+          { field: "permanentAddress", label: "Permanent Address" },
+          { field: "currentAddress", label: "Current Address" },
+        ];
+
+        for (const { field, label } of requiredAddressFields) {
+          const value = methods.getValues(field);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasAddressError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+          }
+        }
+      }
+
+      // Step 2 - Family info: validate all required family fields
+      let hasFamilyError = false;
+      if (currentStep === 2) {
+        // Required fields for father
+        const fatherRequiredFields = [
+          { field: "father.nameMyanmar", label: "Father's Name (Myanmar)" },
+          { field: "father.nameEnglish", label: "Father's Name (English)" },
+          { field: "father.occupation", label: "Father's Occupation" },
+        ];
+
+        for (const { field, label } of fatherRequiredFields) {
+          const value = methods.getValues(field);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasFamilyError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+          }
+        }
+
+        // Validate father's NRC (required + format)
+        const fatherNrc = methods.getValues("father.nrcNumber");
+        if (!fatherNrc || (typeof fatherNrc === "string" && !fatherNrc.trim())) {
+          hasNrcError = true;
+          methods.setError("father.nrcNumber", {
+            type: "manual",
+            message: "Father's NRC is required",
+          });
+        } else if (fatherNrc && !isValidNrcFormat(fatherNrc)) {
+          hasNrcError = true;
+          methods.setError("father.nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields for Father",
+          });
+        }
+
+        // Required fields for mother
+        const motherRequiredFields = [
+          { field: "mother.nameMyanmar", label: "Mother's Name (Myanmar)" },
+          { field: "mother.nameEnglish", label: "Mother's Name (English)" },
+          { field: "mother.occupation", label: "Mother's Occupation" },
+        ];
+
+        for (const { field, label } of motherRequiredFields) {
+          const value = methods.getValues(field);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasFamilyError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+          }
+        }
+
+        // Validate mother's NRC (required + format)
+        const motherNrc = methods.getValues("mother.nrcNumber");
+        if (!motherNrc || (typeof motherNrc === "string" && !motherNrc.trim())) {
+          hasNrcError = true;
+          methods.setError("mother.nrcNumber", {
+            type: "manual",
+            message: "Mother's NRC is required",
+          });
+        } else if (motherNrc && !isValidNrcFormat(motherNrc)) {
+          hasNrcError = true;
+          methods.setError("mother.nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields for Mother",
+          });
+        }
+
+        // Required fields for guardian
+        const guardianRequiredFields = [
+          { field: "guardian.nameMyanmar", label: "Guardian's Name (Myanmar)" },
+          { field: "guardian.nameEnglish", label: "Guardian's Name (English)" },
+          { field: "guardian.occupation", label: "Guardian's Occupation" },
+          { field: "guardian.relationship", label: "Guardian's Relationship" },
+          { field: "guardian.phoneNumber", label: "Guardian's Phone Number" },
+          { field: "guardian.email", label: "Guardian's Email" },
+          { field: "guardian.address", label: "Guardian's Address" },
+        ];
+
+        for (const { field, label } of guardianRequiredFields) {
+          const value = methods.getValues(field);
+          if (!value || (typeof value === "string" && !value.trim())) {
+            hasFamilyError = true;
+            methods.setError(field as any, {
+              type: "manual",
+              message: `${label} is required`,
+            });
+          }
+        }
+
+        // Validate guardian's NRC (required + format)
+        const guardianNrc = methods.getValues("guardian.nrcNumber");
+        if (!guardianNrc || (typeof guardianNrc === "string" && !guardianNrc.trim())) {
+          hasNrcError = true;
+          methods.setError("guardian.nrcNumber", {
+            type: "manual",
+            message: "Guardian's NRC is required",
+          });
+        } else if (guardianNrc && !isValidNrcFormat(guardianNrc)) {
+          hasNrcError = true;
+          methods.setError("guardian.nrcNumber", {
+            type: "manual",
+            message: "Please complete all NRC fields for Guardian",
+          });
+        }
+      }
+
+      // Step 4 - Current Academic: validate batch enrollments if any batches are added
+      let hasBatchError = false;
+      if (currentStep === 4) {
+        const batches = methods.getValues("batches") || [];
+
+        // Only validate if user has added batch enrollments
+        if (Array.isArray(batches) && batches.length > 0) {
+          batches.forEach((batch: any, index: number) => {
+            // Validate academicYearId
+            if (!batch.academicYearId || (typeof batch.academicYearId === "string" && !batch.academicYearId.trim())) {
+              hasBatchError = true;
+              methods.setError(`batches.${index}.academicYearId` as any, {
+                type: "manual",
+                message: "Academic Year is required",
+              });
+            }
+
+            // Validate batchId
+            if (!batch.batchId || (typeof batch.batchId === "string" && !batch.batchId.trim())) {
+              hasBatchError = true;
+              methods.setError(`batches.${index}.batchId` as any, {
+                type: "manual",
+                message: "Batch is required",
+              });
+            }
+
+            // Validate rollNo
+            if (!batch.rollNo || (typeof batch.rollNo === "string" && !batch.rollNo.trim())) {
+              hasBatchError = true;
+              methods.setError(`batches.${index}.rollNo` as any, {
+                type: "manual",
+                message: "Roll Number is required",
+              });
+            }
+          });
+        }
+      }
+
+      // Step 3 - Academic Info: validate previous education subjects if any subjects are added
+      let hasSubjectError = false;
+      if (currentStep === 3) {
+        const previousEducation = methods.getValues("previousEducation") || [];
+
+        // Iterate through each education record
+        if (Array.isArray(previousEducation) && previousEducation.length > 0) {
+          previousEducation.forEach((education: any, eduIndex: number) => {
+            const subjects = education.subjects || [];
+
+            // Only validate if user has added subjects
+            if (Array.isArray(subjects) && subjects.length > 0) {
+              subjects.forEach((subject: any, subIndex: number) => {
+                // Validate subjectId (subject name)
+                if (!subject.subjectId || (typeof subject.subjectId === "string" && !subject.subjectId.trim())) {
+                  hasSubjectError = true;
+                  methods.setError(`previousEducation.${eduIndex}.subjects.${subIndex}.subjectId` as any, {
+                    type: "manual",
+                    message: "Subject is required",
+                  });
+                }
+
+                // Validate mark
+                if (subject.mark === undefined || subject.mark === null || subject.mark === "" ||
+                    (typeof subject.mark === "number" && isNaN(subject.mark))) {
+                  hasSubjectError = true;
+                  methods.setError(`previousEducation.${eduIndex}.subjects.${subIndex}.mark` as any, {
+                    type: "manual",
+                    message: "Mark is required",
+                  });
+                }
+              });
+            }
+          });
+        }
+      }
+
+      // Also check for any existing errors in current step fields (including manual errors like NRC)
+      const currentErrors = methods.formState.errors;
+      const hasManualErrors = fieldsToValidate.some(fieldName => {
+        const parts = fieldName.split('.');
+        let errorObj: any = currentErrors;
+        for (const part of parts) {
+          if (!errorObj) break;
+          errorObj = errorObj[part];
+        }
+        return !!errorObj;
+      });
+
+      console.log("🔍 [Wizard] Has manual errors:", hasManualErrors);
+      console.log("🔍 [Wizard] Has NRC error:", hasNrcError);
+      console.log("🔍 [Wizard] Has address error:", hasAddressError);
+      console.log("🔍 [Wizard] Has family error:", hasFamilyError);
+      console.log("🔍 [Wizard] Has batch error:", hasBatchError);
+      console.log("🔍 [Wizard] Has subject error:", hasSubjectError);
+
+      const isValid = isZodValid && !hasManualErrors && !hasNrcError && !hasAddressError && !hasFamilyError && !hasBatchError && !hasSubjectError;
+
+      if (isValid) {
+        setCurrentStep(currentStep - 1);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        console.log("❌ [Wizard] Validation failed - cannot go to previous step");
+        toast.error("Please fix validation errors", {
+          description: "You must correct the errors on this page before navigating away.",
+          duration: 5000,
+        });
+      }
     }
   };
 

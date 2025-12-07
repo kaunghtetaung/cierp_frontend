@@ -14,6 +14,7 @@ interface ServerSidePaginationWrapperProps {
   module: ModuleSchema;
   initialData?: any[];
   userPermissions?: ModulePermissions;
+  hidePrefilters?: boolean; // Hide prefilters when rendered externally (e.g., in dashboard wrapper)
 }
 
 /**
@@ -32,6 +33,7 @@ export function ServerSidePaginationWrapper({
   module,
   initialData = [],
   userPermissions,
+  hidePrefilters = false,
 }: ServerSidePaginationWrapperProps) {
   const { currentLanguage } = useLanguage();
   const searchParams = useSearchParams();
@@ -66,61 +68,71 @@ export function ServerSidePaginationWrapper({
     }
 
     // Get prefilter params - handle text fields with operators
-    if (module.dataTableSchema?.prefilters?.fields) {
-      module.dataTableSchema.prefilters.fields.forEach((field: any) => {
-        if (field.type === "text") {
-          // Check for operator-based params for text fields
-          const operators = field.searchOptions?.operators || [
-            { value: "$regex" },
-            { value: "$eq" },
-          ];
-          for (const op of operators) {
-            const paramValue = searchParams.get(
-              `${field.fieldName}[${op.value}]`
-            );
-            if (paramValue) {
-              if (!params.filters) params.filters = {};
-              // Send with operator structure for backend
-              if (!params.filters[field.fieldName])
-                params.filters[field.fieldName] = {};
-              params.filters[field.fieldName][op.value] = paramValue;
-              break;
-            }
-          }
-        } else if (field.type === "yearRange") {
-          // Check for year range params
-          const exactValue =
-            searchParams.get(field.fieldName) ||
-            searchParams.get(`${field.fieldName}[$eq]`);
-          if (exactValue) {
-            if (!params.filters) params.filters = {};
-            params.filters[field.fieldName] = exactValue;
-          } else {
-            // Check for range operators
-            const rangeOps = ["$gte", "$lte", "$gt", "$lt"];
-            let hasRange = false;
-            rangeOps.forEach((op) => {
-              const paramValue = searchParams.get(`${field.fieldName}[${op}]`);
-              if (paramValue) {
-                if (!params.filters) params.filters = {};
-                if (!params.filters[field.fieldName])
-                  params.filters[field.fieldName] = {};
-                params.filters[field.fieldName][op] = paramValue;
-                hasRange = true;
-              }
-            });
-          }
-        } else {
-          // For other field types, use direct fieldName
-          const paramValue = searchParams.get(field.fieldName);
+    // Helper function to process a single prefilter field
+    const processPrefilterField = (field: any) => {
+      if (field.type === "text") {
+        // Check for operator-based params for text fields
+        const operators = field.searchOptions?.operators || [
+          { value: "$regex" },
+          { value: "$eq" },
+        ];
+        for (const op of operators) {
+          const paramValue = searchParams.get(
+            `${field.fieldName}[${op.value}]`
+          );
           if (paramValue) {
             if (!params.filters) params.filters = {};
-            // For multiple values, send as comma-separated string
-            // Backend should handle splitting if needed
-            params.filters[field.fieldName] = paramValue;
+            // Send with operator structure for backend
+            if (!params.filters[field.fieldName])
+              params.filters[field.fieldName] = {};
+            params.filters[field.fieldName][op.value] = paramValue;
+            break;
           }
         }
+      } else if (field.type === "yearRange") {
+        // Check for year range params
+        const exactValue =
+          searchParams.get(field.fieldName) ||
+          searchParams.get(`${field.fieldName}[$eq]`);
+        if (exactValue) {
+          if (!params.filters) params.filters = {};
+          params.filters[field.fieldName] = exactValue;
+        } else {
+          // Check for range operators
+          const rangeOps = ["$gte", "$lte", "$gt", "$lt"];
+          rangeOps.forEach((op) => {
+            const paramValue = searchParams.get(`${field.fieldName}[${op}]`);
+            if (paramValue) {
+              if (!params.filters) params.filters = {};
+              if (!params.filters[field.fieldName])
+                params.filters[field.fieldName] = {};
+              params.filters[field.fieldName][op] = paramValue;
+            }
+          });
+        }
+      } else {
+        // For other field types (select, dynamicSelect, dependentSelect, typeaheadDynamicSelect), use direct fieldName
+        const paramValue = searchParams.get(field.fieldName);
+        if (paramValue) {
+          if (!params.filters) params.filters = {};
+          // For multiple values, send as comma-separated string
+          // Backend should handle splitting if needed
+          params.filters[field.fieldName] = paramValue;
+        }
+      }
+    };
+
+    // Support both legacy fields array and new fieldGroups structure
+    if (module.dataTableSchema?.prefilters?.fieldGroups) {
+      // New fieldGroups structure (tab-based prefilters)
+      module.dataTableSchema.prefilters.fieldGroups.forEach((group: any) => {
+        if (group.fields) {
+          group.fields.forEach(processPrefilterField);
+        }
       });
+    } else if (module.dataTableSchema?.prefilters?.fields) {
+      // Legacy flat fields array
+      module.dataTableSchema.prefilters.fields.forEach(processPrefilterField);
     }
 
     // Get sort params (using sortBy and sortOrder to match backend API)
@@ -338,6 +350,7 @@ export function ServerSidePaginationWrapper({
       isLoading={isFetching}
       onRefresh={refetch}
       userPermissions={userPermissions}
+      hidePrefilters={hidePrefilters}
     />
   );
 }

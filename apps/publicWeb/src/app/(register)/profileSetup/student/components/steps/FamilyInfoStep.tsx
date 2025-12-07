@@ -12,7 +12,7 @@ type FamilyTab = "father" | "mother" | "guardian";
 type GuardianType = "father" | "mother" | "other";
 
 export function FamilyInfoStep() {
-  const { register, control, formState: { errors }, trigger, watch, setValue, resetField } = useFormContext();
+  const { register, control, formState: { errors }, trigger, watch, setValue, resetField, setError } = useFormContext();
   const [activeTab, setActiveTab] = useState<FamilyTab>("father");
 
   // Reusable key handler for input fields (ESC to reset, Enter prevention)
@@ -171,12 +171,132 @@ export function FamilyInfoStep() {
     { value: "guardian", label: "Guardian Information" },
   ];
 
+  // Helper function to validate NRC format
+  const isValidNrcFormat = (nrcValue: string): boolean => {
+    if (!nrcValue) return false;
+    // Match complete NRC format: {state}/{township}({type}){serial}
+    const nrcRegex = /^(\d{1,2}[\*]?)\/([A-Za-z\u1000-\u109F]+)\(([NEPTYS])\)(\d{6})$/;
+    return nrcRegex.test(nrcValue);
+  };
+
+  // NRC field mapping for each tab
+  const nrcFieldMap: Record<FamilyTab, string> = {
+    father: "father.nrcNumber",
+    mother: "mother.nrcNumber",
+    guardian: "guardian.nrcNumber",
+  };
+
+  // Required text fields for each tab
+  const requiredFieldsMap: Record<FamilyTab, { field: string; label: string }[]> = {
+    father: [
+      { field: "father.nameMyanmar", label: "Father's Name (Myanmar)" },
+      { field: "father.nameEnglish", label: "Father's Name (English)" },
+      { field: "father.nrcNumber", label: "Father's NRC" },
+      { field: "father.occupation", label: "Father's Occupation" },
+    ],
+    mother: [
+      { field: "mother.nameMyanmar", label: "Mother's Name (Myanmar)" },
+      { field: "mother.nameEnglish", label: "Mother's Name (English)" },
+      { field: "mother.nrcNumber", label: "Mother's NRC" },
+      { field: "mother.occupation", label: "Mother's Occupation" },
+    ],
+    guardian: [
+      { field: "guardian.nameMyanmar", label: "Guardian's Name (Myanmar)" },
+      { field: "guardian.nameEnglish", label: "Guardian's Name (English)" },
+      { field: "guardian.nrcNumber", label: "Guardian's NRC" },
+      { field: "guardian.occupation", label: "Guardian's Occupation" },
+      { field: "guardian.relationship", label: "Guardian's Relationship" },
+      { field: "guardian.phoneNumber", label: "Guardian's Phone Number" },
+      { field: "guardian.email", label: "Guardian's Email" },
+      { field: "guardian.address", label: "Guardian's Address" },
+    ],
+  };
+
+  // Validate NRC for current tab and set error if invalid
+  const validateAndSetNrcError = (tab: FamilyTab): boolean => {
+    const nrcField = nrcFieldMap[tab];
+    const nrcValue = watch(nrcField);
+    console.log(`🔍 [FamilyInfoStep] Validating ${tab} NRC:`, nrcValue);
+
+    // NRC is required - check if empty
+    if (!nrcValue || (typeof nrcValue === "string" && !nrcValue.trim())) {
+      setError(nrcField as any, {
+        type: "manual",
+        message: `${tab.charAt(0).toUpperCase() + tab.slice(1)}'s NRC is required`,
+      });
+      console.log(`❌ [FamilyInfoStep] ${tab} NRC validation failed - field is required`);
+      return false;
+    }
+
+    // Check NRC format if value exists
+    if (nrcValue && !isValidNrcFormat(nrcValue)) {
+      // Set error for incomplete NRC
+      setError(nrcField as any, {
+        type: "manual",
+        message: `Please complete all NRC fields for ${tab.charAt(0).toUpperCase() + tab.slice(1)}`,
+      });
+      console.log(`❌ [FamilyInfoStep] ${tab} NRC validation failed - incomplete format`);
+      return false;
+    }
+
+    return true;
+  };
+
+  // Validate all required text fields for current tab and set errors for empty fields
+  const validateRequiredFields = (tab: FamilyTab): boolean => {
+    const requiredFields = requiredFieldsMap[tab];
+    let isValid = true;
+
+    console.log(`🔍 [FamilyInfoStep] Validating required fields for ${tab}:`, requiredFields);
+
+    for (const { field, label } of requiredFields) {
+      // Skip NRC fields here - they are validated separately with format validation
+      if (field.endsWith(".nrcNumber")) continue;
+
+      const value = watch(field);
+      console.log(`🔍 [FamilyInfoStep] Checking ${field}:`, value);
+
+      if (!value || (typeof value === "string" && !value.trim())) {
+        isValid = false;
+        setError(field as any, {
+          type: "manual",
+          message: `${label} is required`,
+        });
+        console.log(`❌ [FamilyInfoStep] ${field} validation failed - field is required`);
+      }
+    }
+
+    return isValid;
+  };
+
   const handleTabChange = async (newTab: FamilyTab) => {
     // Validate current tab before switching
     const fieldsToValidate = getFieldsForTab(activeTab);
     console.log("🔍 [FamilyInfoStep] Validating fields before tab change:", activeTab, "→", newTab);
-    const isValid = await trigger(fieldsToValidate);
-    console.log("✅ [FamilyInfoStep] Tab change validation result:", isValid);
+
+    // Run Zod validation
+    const isZodValid = await trigger(fieldsToValidate);
+    console.log("✅ [FamilyInfoStep] Zod validation result:", isZodValid);
+
+    // Validate NRC format for current tab
+    const isNrcValid = validateAndSetNrcError(activeTab);
+
+    // Validate all required text fields for current tab
+    const areRequiredFieldsValid = validateRequiredFields(activeTab);
+
+    // Check for existing manual errors
+    const currentErrors = errors;
+    const hasManualErrors = fieldsToValidate.some(fieldName => {
+      const parts = fieldName.split('.');
+      let errorObj: any = currentErrors;
+      for (const part of parts) {
+        if (!errorObj) break;
+        errorObj = errorObj[part];
+      }
+      return !!errorObj;
+    });
+
+    const isValid = isZodValid && !hasManualErrors && isNrcValid && areRequiredFieldsValid;
 
     if (isValid) {
       setActiveTab(newTab);
@@ -195,11 +315,34 @@ export function FamilyInfoStep() {
       // Get current form values for debugging
       const formValues = watch();
       console.log("📋 [FamilyInfoStep] Current form values:", formValues);
-      console.log("📋 [FamilyInfoStep] Father values:", formValues.father);
 
-      const isValid = await trigger(fieldsToValidate);
-      console.log("✅ [FamilyInfoStep] Validation result:", isValid);
-      console.log("🔍 [FamilyInfoStep] Current errors:", errors);
+      // Run Zod validation
+      const isZodValid = await trigger(fieldsToValidate);
+      console.log("✅ [FamilyInfoStep] Zod validation result:", isZodValid);
+
+      // Validate NRC format for current tab
+      const isNrcValid = validateAndSetNrcError(activeTab);
+
+      // Validate all required text fields for current tab
+      const areRequiredFieldsValid = validateRequiredFields(activeTab);
+
+      // Check for existing manual errors
+      const currentErrors = errors;
+      const hasManualErrors = fieldsToValidate.some(fieldName => {
+        const parts = fieldName.split('.');
+        let errorObj: any = currentErrors;
+        for (const part of parts) {
+          if (!errorObj) break;
+          errorObj = errorObj[part];
+        }
+        return !!errorObj;
+      });
+
+      console.log("🔍 [FamilyInfoStep] Has manual errors:", hasManualErrors);
+      console.log("🔍 [FamilyInfoStep] Is NRC valid:", isNrcValid);
+      console.log("🔍 [FamilyInfoStep] Are required fields valid:", areRequiredFieldsValid);
+
+      const isValid = isZodValid && !hasManualErrors && isNrcValid && areRequiredFieldsValid;
 
       if (isValid) {
         setActiveTab(tabs[currentIndex + 1].value);
@@ -209,10 +352,45 @@ export function FamilyInfoStep() {
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     const currentIndex = tabs.findIndex(t => t.value === activeTab);
     if (currentIndex > 0) {
-      setActiveTab(tabs[currentIndex - 1].value);
+      const fieldsToValidate = getFieldsForTab(activeTab);
+      console.log("🔍 [FamilyInfoStep] Validating fields before previous tab:", activeTab);
+
+      // Run Zod validation
+      const isZodValid = await trigger(fieldsToValidate);
+      console.log("✅ [FamilyInfoStep] Zod validation result:", isZodValid);
+
+      // Validate NRC format for current tab
+      const isNrcValid = validateAndSetNrcError(activeTab);
+
+      // Validate all required text fields for current tab
+      const areRequiredFieldsValid = validateRequiredFields(activeTab);
+
+      // Check for existing manual errors
+      const currentErrors = errors;
+      const hasManualErrors = fieldsToValidate.some(fieldName => {
+        const parts = fieldName.split('.');
+        let errorObj: any = currentErrors;
+        for (const part of parts) {
+          if (!errorObj) break;
+          errorObj = errorObj[part];
+        }
+        return !!errorObj;
+      });
+
+      console.log("🔍 [FamilyInfoStep] Has manual errors:", hasManualErrors);
+      console.log("🔍 [FamilyInfoStep] Is NRC valid:", isNrcValid);
+      console.log("🔍 [FamilyInfoStep] Are required fields valid:", areRequiredFieldsValid);
+
+      const isValid = isZodValid && !hasManualErrors && isNrcValid && areRequiredFieldsValid;
+
+      if (isValid) {
+        setActiveTab(tabs[currentIndex - 1].value);
+      } else {
+        console.log("❌ [FamilyInfoStep] Validation failed - cannot go to previous tab");
+      }
     }
   };
 

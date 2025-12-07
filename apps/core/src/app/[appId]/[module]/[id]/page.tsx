@@ -70,21 +70,21 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
     }
   }
 
-  // ⭐ CHECK: If static module detail page exists for this appId/module combination
+  // ⭐ CHECK: If static module edit page exists for this appId/module combination
   const staticModulePath = path.join(
     process.cwd(),
     "src",
     "staticModules",
     resolvedParams.appId,
     resolvedParams.module,
-    "detail.tsx"
+    "edit.tsx"
   );
 
   if (existsSync(staticModulePath)) {
     // Dynamic import of static module
     try {
       const StaticModule = await import(
-        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/detail`
+        `@/staticModules/${resolvedParams.appId}/${resolvedParams.module}/edit`
       );
       return (
         <StaticModule.default
@@ -98,7 +98,7 @@ export default async function ModuleDetail({ params, searchParams }: ModuleDetai
       );
     } catch (error) {
       console.error(
-        `Failed to load static module detail page: ${resolvedParams.appId}/${resolvedParams.module}`,
+        `Failed to load static module edit page: ${resolvedParams.appId}/${resolvedParams.module}`,
         error
       );
       // Fall through to generic module if import fails

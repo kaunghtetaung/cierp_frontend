@@ -36,9 +36,25 @@ export function DependentSelect({
     return null
   }
   
+  // Helper function to normalize a value (extract ID from object if needed)
+  const normalizeFieldValue = (value: any): any => {
+    if (!value) return value
+    if (typeof value === 'string') return value
+    if (typeof value === 'number') return value
+    // Handle populated objects from backend (e.g., {_id: "abc", name: "..."})
+    if (value && typeof value === 'object') {
+      return value._id || value.id || value
+    }
+    return value
+  }
+
   // Watch the dependent field values (now supports multiple dependencies)
+  // Normalize values to handle populated objects from backend
   const dependsOn = field.dropdownConfig?.dependsOn || []
-  const dependentFieldValues = dependsOn.filter(Boolean).map(fieldName => watch(fieldName))
+  const dependentFieldValues = dependsOn.filter(Boolean).map(fieldName => {
+    const rawValue = watch(fieldName)
+    return normalizeFieldValue(rawValue)
+  })
 
   // Create dependency key string for tracking
   const dependencyKeyString = dependentFieldValues.join('|')
@@ -143,10 +159,12 @@ export function DependentSelect({
             }
           })
         } else {
-          // Default mapping: use field names as parameter names
+          // Default mapping: use the base field name as parameter (extract from array path)
+          // e.g., "batches.0.academicYearId" -> "academicYearId"
           dependsOn.forEach((fieldName, index) => {
             if (dependentFieldValues[index] !== undefined) {
-              params[fieldName] = dependentFieldValues[index]
+              const baseFieldName = fieldName.includes('.') ? fieldName.split('.').pop()! : fieldName
+              params[baseFieldName] = dependentFieldValues[index]
             }
           })
         }
@@ -227,10 +245,12 @@ export function DependentSelect({
             }
           })
         } else {
-          // Default mapping: use field names as parameter names
+          // Default mapping: use the base field name as parameter (extract from array path)
+          // e.g., "batches.0.academicYearId" -> "academicYearId"
           dependsOn.forEach((fieldName, index) => {
             if (dependentFieldValues[index] !== undefined) {
-              params[fieldName] = dependentFieldValues[index]
+              const baseFieldName = fieldName.includes('.') ? fieldName.split('.').pop()! : fieldName
+              params[baseFieldName] = dependentFieldValues[index]
             }
           })
         }

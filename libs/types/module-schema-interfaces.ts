@@ -8,6 +8,13 @@ import { DataTableSchema, ExtraActionForm } from './table-types';
 import { ModuleAccessPolicy } from './access-policy-types';
 import { DetailViewSchema } from './detail-view-types';
 
+// Dashboard configuration for modules with analytics
+export interface DashboardConfig {
+  enabled: boolean;
+  endpoint?: string; // Custom endpoint, defaults to /{module}/dashboard
+  defaultTab?: 'dashboard' | 'data'; // Which tab to show by default
+}
+
 // Module schema interface
 export interface ModuleSchema {
   id: number; // Unique module identifier
@@ -16,25 +23,29 @@ export interface ModuleSchema {
   serviceName: ServiceName;
   description: MultilingualText;
   iconName: LucideIconName; // Lucide icon name for UI display
-  
+
   // Form configuration
   formLayout: FormLayout;
   customLayoutName?: string; // optional for custom layouts
   formFields: FormField[];
   wizardConfig?: WizardFormConfig; // Enhanced wizard configuration (optional)
   steps?: WizardStep[]; // Backend steps configuration (optional)
-  
+
   // Data table configuration
   dataTableSchema: DataTableSchema;
-  
+
   // Extra action forms for custom operations beyond CRUD
   extraActionForms: ExtraActionForm[];
-  
+
   // Detail view schema for displaying record details
   detailViewSchema?: DetailViewSchema;
-  
+
   // Module access policy for role-based permissions (only included in initialize endpoint)
   moduleAccessPolicy?: ModuleAccessPolicy;
+
+  // Dashboard configuration for analytics-enabled modules
+  hasDashboard?: boolean; // Simple flag - if true, module has a dashboard view
+  dashboardConfig?: DashboardConfig; // Advanced dashboard configuration
 }
 
 // Service module information response
