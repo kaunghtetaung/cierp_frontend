@@ -174,8 +174,8 @@ export function PrefilterYearRange({
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
         {getLocalizedText(field.label, currentLanguage)}
       </label>
       
@@ -187,7 +187,7 @@ export function PrefilterYearRange({
               type="button"
               onClick={() => setIsOperatorOpen(!isOperatorOpen)}
               className={cn(
-                "flex items-center gap-1 px-2 py-1.5 text-xs",
+                "flex items-center gap-1 px-4 py-2 text-sm",
                 "border rounded-md bg-background hover:bg-accent/50",
                 "transition-colors duration-200 w-full justify-between"
               )}
@@ -220,7 +220,7 @@ export function PrefilterYearRange({
                       type="button"
                       onClick={() => handleOperatorChange(op.value)}
                       className={cn(
-                        "w-full text-left px-3 py-1.5 text-xs",
+                        "w-full text-left px-4 py-2 text-xs",
                         "hover:bg-accent transition-colors",
                         selectedOperator === op.value && "bg-accent"
                       )}
@@ -269,7 +269,7 @@ export function PrefilterYearRange({
                 ? getLocalizedText(options.placeholder["$eq"], currentLanguage)
                 : "Type or select year"}
               className={cn(
-                "w-full px-3 py-1.5 pr-8 text-sm border rounded-md",
+                "w-full px-4 py-2 pr-8 text-sm border rounded-md",
                 "bg-background hover:bg-accent/50",
                 "transition-colors duration-200",
                 yearValue ? "border-primary/50" : "border-input"
@@ -299,7 +299,7 @@ export function PrefilterYearRange({
                       handleYearSelect(year);
                     }}
                     className={cn(
-                      "w-full text-left px-3 py-1.5 text-sm",
+                      "w-full text-left px-4 py-2 text-sm",
                       "hover:bg-accent transition-colors",
                       yearValue === year && "bg-accent"
                     )}
@@ -351,7 +351,7 @@ export function PrefilterYearRange({
                   ? getLocalizedText(options.placeholder["between"].from, currentLanguage)
                   : "From year"}
                 className={cn(
-                  "w-full px-3 py-1.5 text-sm border rounded-md",
+                  "w-full px-4 py-2 text-sm border rounded-md",
                   "bg-background hover:bg-accent/50",
                   "transition-colors duration-200",
                   fromYear ? "border-primary/50" : "border-input"
@@ -370,7 +370,7 @@ export function PrefilterYearRange({
                         handleFromSelect(year);
                       }}
                       className={cn(
-                        "w-full text-left px-3 py-1.5 text-sm",
+                        "w-full text-left px-4 py-2 text-sm",
                         "hover:bg-accent transition-colors",
                         fromYear === year && "bg-accent"
                       )}
@@ -425,7 +425,7 @@ export function PrefilterYearRange({
                   ? getLocalizedText(options.placeholder["between"].to, currentLanguage)
                   : "To year"}
                 className={cn(
-                  "w-full px-3 py-1.5 text-sm border rounded-md",
+                  "w-full px-4 py-2 text-sm border rounded-md",
                   "bg-background hover:bg-accent/50",
                   "transition-colors duration-200",
                   toYear ? "border-primary/50" : "border-input"
@@ -446,7 +446,7 @@ export function PrefilterYearRange({
                           handleToSelect(year);
                         }}
                         className={cn(
-                          "w-full text-left px-3 py-1.5 text-sm",
+                          "w-full text-left px-4 py-2 text-sm",
                           "hover:bg-accent transition-colors",
                           toYear === year && "bg-accent"
                         )}

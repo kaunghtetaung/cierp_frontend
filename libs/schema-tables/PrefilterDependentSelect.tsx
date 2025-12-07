@@ -188,8 +188,8 @@ export function PrefilterDependentSelect({
     : `Select ${getLocalizedText(field.label, currentLanguage)}`;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
         {getLocalizedText(field.label, currentLanguage)}
       </label>
       <div className="relative">
@@ -199,7 +199,7 @@ export function PrefilterDependentSelect({
           disabled={isDisabled}
           className={cn(
             "w-full min-w-[180px] flex items-center justify-between",
-            "px-3 py-1.5 text-sm border rounded-md",
+            "px-4 py-2 text-sm border rounded-md",
             "transition-colors duration-200",
             isDisabled
               ? "bg-muted cursor-not-allowed opacity-60 border-input"
@@ -270,7 +270,7 @@ export function PrefilterDependentSelect({
                       setIsOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-3 py-1.5 text-sm",
+                      "w-full text-left px-4 py-2 text-sm",
                       "hover:bg-accent transition-colors",
                       value === option.value && "bg-accent"
                     )}

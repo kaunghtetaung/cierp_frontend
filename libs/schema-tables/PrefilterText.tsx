@@ -93,8 +93,8 @@ export function PrefilterText({
   const currentOperatorLabel = operators.find(op => op.value === selectedOperator);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
         {getLocalizedText(field.label, currentLanguage)}
       </label>
       
@@ -106,9 +106,9 @@ export function PrefilterText({
               type="button"
               onClick={() => setIsOperatorOpen(!isOperatorOpen)}
               className={cn(
-                "flex items-center gap-1 px-2 py-1.5 text-xs",
+                "flex items-center gap-1 px-4 py-2 text-sm",
                 "border rounded-md bg-background hover:bg-accent/50",
-                "transition-colors duration-200 min-w-[80px]"
+                "transition-colors duration-200 min-w-[120px]"
               )}
             >
               <span className="truncate">
@@ -139,7 +139,7 @@ export function PrefilterText({
                       type="button"
                       onClick={() => handleOperatorChange(op.value)}
                       className={cn(
-                        "w-full text-left px-3 py-1.5 text-xs",
+                        "w-full text-left px-4 py-2 text-xs",
                         "hover:bg-accent transition-colors",
                         selectedOperator === op.value && "bg-accent"
                       )}
@@ -162,7 +162,7 @@ export function PrefilterText({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={cn(
-              "w-full px-3 py-1.5 pr-16 text-sm text-foreground font-medium border rounded-md",
+              "w-full px-4 py-2 pr-16 text-sm text-foreground font-medium border rounded-md",
               "bg-background hover:bg-accent/50",
               "transition-colors duration-200",
               searchValue ? "border-primary/50" : "border-input"

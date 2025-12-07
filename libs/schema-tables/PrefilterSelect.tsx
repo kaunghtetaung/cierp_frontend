@@ -155,8 +155,8 @@ export function PrefilterSelect({
   const selectedLabel = options.find(opt => opt.value === value)?.label || "";
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
         {getLocalizedText(field.label, currentLanguage)}
       </label>
       <div className="relative">
@@ -165,7 +165,7 @@ export function PrefilterSelect({
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "w-full min-w-[180px] flex items-center justify-between",
-            "px-3 py-1.5 text-sm border rounded-md",
+            "px-4 py-2 text-sm border rounded-md",
             "bg-background hover:bg-accent/50",
             "transition-colors duration-200",
             value ? "border-primary/50" : "border-input"
@@ -227,7 +227,7 @@ export function PrefilterSelect({
                       setIsOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-3 py-1.5 text-sm",
+                      "w-full text-left px-4 py-2 text-sm",
                       "hover:bg-accent transition-colors",
                       value === option.value && "bg-accent"
                     )}

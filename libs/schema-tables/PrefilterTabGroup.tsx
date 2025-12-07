@@ -11,7 +11,6 @@ import { PrefilterSelect } from "./PrefilterSelect";
 import { PrefilterDependentSelect } from "./PrefilterDependentSelect";
 import { PrefilterTypeahead } from "./PrefilterTypeahead";
 import { PrefilterYearRange } from "./PrefilterYearRange";
-import { PrefilterSort } from "./PrefilterSort";
 import type { PrefilterFieldGroup, PrefilterField } from "@repo/types";
 import type { MultilingualText } from "@repo/types";
 
@@ -40,8 +39,6 @@ interface PrefilterTabGroupProps {
   onActiveTabChange?: (tabKey: string) => void;
   // Disabled tabs (for dashboard mode)
   disabledTabs?: string[];
-  // Current view (dashboard or data)
-  currentView?: 'dashboard' | 'data';
   // Pagination props
   currentPageSize?: number;
   onPageSizeChange?: (pageSize: number) => void;
@@ -62,7 +59,6 @@ export function PrefilterTabGroup({
   activeTab: controlledActiveTab,
   onActiveTabChange,
   disabledTabs = [],
-  currentView = 'data',
   currentPageSize = 10,
   onPageSizeChange,
 }: PrefilterTabGroupProps) {
@@ -200,11 +196,11 @@ export function PrefilterTabGroup({
   return (
     <div className="space-y-3">
       {/* Tab Header with Sort and Clear */}
-      <div className="bg-muted/30 border border-border/50 rounded-lg">
+      <div className="bg-gradient-to-br from-background via-muted/20 to-muted/30 border border-border/60 rounded-xl shadow-sm">
         {/* Tabs Row */}
-        <div className="flex items-center justify-between border-b border-border/50 px-2">
+        <div className="flex items-center justify-between border-b border-border/40 px-3 bg-gradient-to-r from-muted/10 via-transparent to-muted/10">
           {/* Tab Buttons */}
-          <div className="flex items-center gap-1 overflow-x-auto py-1">
+          <div className="flex items-center gap-2 overflow-x-auto py-2 scrollbar-hide">
             {fieldGroups.map((group) => {
               const isActive = activeTab === group.groupKey;
               const filterCount = filterCountPerGroup[group.groupKey] || 0;
@@ -217,61 +213,51 @@ export function PrefilterTabGroup({
                   onClick={() => !isDisabled && handleTabChange(group.groupKey)}
                   disabled={isDisabled}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+                    "relative flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-all duration-300 ease-in-out",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-                    isDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:shadow-sm",
+                    isDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground hover:shadow-none scale-100"
                   )}
                 >
-                  {getLocalizedText(group.groupLabel, currentLanguage)}
+                  <span className={cn("relative z-10", isActive && "text-primary-foreground")}>{getLocalizedText(group.groupLabel, currentLanguage)}</span>
                   {filterCount > 0 && (
                     <Badge
                       variant={isActive ? "secondary" : "outline"}
                       className={cn(
-                        "ml-1 px-1.5 py-0 text-xs font-bold h-5 min-w-5 flex items-center justify-center",
-                        isActive && "bg-primary-foreground/20 text-primary-foreground"
+                        "ml-0.5 px-2 py-0.5 text-xs font-bold h-5 min-w-5 flex items-center justify-center transition-all duration-200",
+                        isActive
+                          ? "bg-red-500 text-white shadow-sm"
+                          : "bg-muted text-muted-foreground border-border/50"
                       )}
                     >
                       {filterCount}
                     </Badge>
+                  )}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary-foreground/10 to-primary/0 rounded-lg animate-pulse" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Right side: Sort + Clear */}
-          <div className="flex items-center gap-2 py-1 pl-2 shrink-0">
-            {/* Sort Controls */}
-            {sortOptions.length > 0 && onSortChange && (
-              <div className="min-w-[200px]">
-                <PrefilterSort
-                  sortOptions={sortOptions}
-                  currentSort={currentSort}
-                  currentOrder={currentOrder}
-                  onChange={onSortChange}
-                  currentLanguage={currentLanguage}
-                />
-              </div>
-            )}
-
-            {/* Divider */}
-            {totalActiveFilters > 0 && sortOptions.length > 0 && (
-              <div className="w-px h-6 bg-border" />
-            )}
-
+          {/* Right side: Clear All */}
+          <div className="flex items-center gap-3 py-1 pl-3 shrink-0">
             {/* Clear All Button */}
             {totalActiveFilters > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClearAll}
-                className="h-8 px-3 shrink-0 text-muted-foreground hover:text-destructive"
+                className="h-9 px-4 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-lg font-medium"
               >
-                <IconComponent name="X" className="h-4 w-4 mr-1.5" />
+                <IconComponent name="X" className="h-4 w-4 mr-2" />
                 {currentLanguage === "mm" ? "အားလုံးရှင်း" : "Clear All"}
-                <Badge variant="secondary" className="ml-1.5 text-xs px-1.5 py-0">
+                <Badge
+                  variant="secondary"
+                  className="ml-2 text-xs px-2 py-0.5 bg-destructive/20 text-destructive border-0 font-bold"
+                >
                   {totalActiveFilters}
                 </Badge>
               </Button>
@@ -282,22 +268,23 @@ export function PrefilterTabGroup({
         {/* Active Tab Content */}
         {activeGroup && activeGroup.groupKey === 'control' ? (
           /* Control Tab Content */
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-6 bg-gradient-to-b from-muted/5 to-transparent">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Sort By */}
               {sortOptions.length > 0 && onSortChange && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
+                <div className="space-y-2.5">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                    <IconComponent name="ArrowUpDown" className="h-4 w-4 text-primary" />
                     {currentLanguage === "mm" ? "အစီအစဉ်" : "Sort By"}
                   </label>
                   <select
                     value={currentSort}
                     onChange={(e) => onSortChange(e.target.value, currentOrder)}
                     aria-label={currentLanguage === "mm" ? "အစီအစဉ်" : "Sort By"}
-                    className="w-full h-9 px-3 py-1 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full h-10 px-4 py-2 text-sm font-medium border-2 border-border/60 bg-background/80 backdrop-blur-sm rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 hover:border-border shadow-sm"
                   >
                     <option value="">
-                      {currentLanguage === "mm" ? "ရွေးချယ်ပါ..." : "Select..."}
+                      {currentLanguage === "mm" ? "ရွေးချယ်ပါ..." : "Select field..."}
                     </option>
                     {sortOptions.map((option) => (
                       <option key={option.field} value={option.field}>
@@ -310,8 +297,9 @@ export function PrefilterTabGroup({
 
               {/* Order (ASC/DESC) */}
               {sortOptions.length > 0 && onSortChange && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
+                <div className="space-y-2.5">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                    <IconComponent name="ArrowDownUp" className="h-4 w-4 text-primary" />
                     {currentLanguage === "mm" ? "အစီအစဉ်" : "Order"}
                   </label>
                   <select
@@ -319,13 +307,13 @@ export function PrefilterTabGroup({
                     onChange={(e) => currentSort && onSortChange(currentSort, e.target.value as 'asc' | 'desc')}
                     disabled={!currentSort}
                     aria-label={currentLanguage === "mm" ? "အစီအစဉ်" : "Order"}
-                    className="w-full h-9 px-3 py-1 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-10 px-4 py-2 text-sm font-medium border-2 border-border/60 bg-background/80 backdrop-blur-sm rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 hover:border-border shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border/60"
                   >
                     <option value="asc">
-                      {currentLanguage === "mm" ? "အတက်" : "Ascending"}
+                      ↑ {currentLanguage === "mm" ? "အတက်" : "Ascending"}
                     </option>
                     <option value="desc">
-                      {currentLanguage === "mm" ? "အဆင်း" : "Descending"}
+                      ↓ {currentLanguage === "mm" ? "အဆင်း" : "Descending"}
                     </option>
                   </select>
                 </div>
@@ -333,20 +321,21 @@ export function PrefilterTabGroup({
 
               {/* Records Per Page */}
               {onPageSizeChange && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
+                <div className="space-y-2.5">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                    <IconComponent name="ListFilter" className="h-4 w-4 text-primary" />
                     {currentLanguage === "mm" ? "တစ်စာမျက်နှာလျှင် မှတ်တမ်းများ" : "Records Per Page"}
                   </label>
                   <select
                     value={currentPageSize}
                     onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
                     aria-label={currentLanguage === "mm" ? "တစ်စာမျက်နှာလျှင် မှတ်တမ်းများ" : "Records Per Page"}
-                    className="w-full h-9 px-3 py-1 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full h-10 px-4 py-2 text-sm font-medium border-2 border-border/60 bg-background/80 backdrop-blur-sm rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 hover:border-border shadow-sm"
                   >
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
+                    <option value="10">10 {currentLanguage === "mm" ? "မှတ်တမ်း" : "records"}</option>
+                    <option value="25">25 {currentLanguage === "mm" ? "မှတ်တမ်း" : "records"}</option>
+                    <option value="50">50 {currentLanguage === "mm" ? "မှတ်တမ်း" : "records"}</option>
+                    <option value="100">100 {currentLanguage === "mm" ? "မှတ်တမ်း" : "records"}</option>
                   </select>
                 </div>
               )}
@@ -354,8 +343,8 @@ export function PrefilterTabGroup({
           </div>
         ) : activeGroup ? (
           /* Regular Filter Tab Content */
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="p-6 bg-gradient-to-b from-muted/5 to-transparent">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {activeGroup.fields.map((field) => (
                 <div key={field.fieldName} className="min-w-0">
                   {renderPrefilterField(field)}
@@ -366,26 +355,33 @@ export function PrefilterTabGroup({
         ) : null}
 
         {/* Footer with Total Count */}
-        <div className="px-4 py-2 border-t border-border/50 bg-muted/20">
+        <div className="px-5 py-3 border-t border-border/60 bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <IconComponent
-                name="Database"
-                className="h-3.5 w-3.5 text-muted-foreground"
-              />
-              <span className="text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-2.5 ml-2">
+              <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary/10">
+                <IconComponent
+                  name="Database"
+                  className="h-4 w-4 text-primary"
+                />
+              </div>
+              <span className="text-sm font-semibold text-foreground/80">
                 {currentLanguage === "mm" ? "စုစုပေါင်း:" : "Total:"}
               </span>
-              <Badge variant="outline" className="text-xs font-bold px-2 py-0.5">
+              <Badge
+                variant="outline"
+                className="text-sm font-bold px-3 py-1 bg-background/80 border-primary/30 text-primary shadow-sm"
+              >
                 {totalItems.toLocaleString()}
               </Badge>
             </div>
 
             {/* Active filters summary */}
             {totalActiveFilters > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <IconComponent name="Filter" className="h-3.5 w-3.5" />
-                <span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 mr-2">
+                <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/15">
+                  <IconComponent name="Filter" className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground/80">
                   {totalActiveFilters}{" "}
                   {currentLanguage === "mm"
                     ? "စစ်ထုတ်မှုများ အသုံးပြုထား"

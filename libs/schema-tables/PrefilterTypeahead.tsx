@@ -228,8 +228,8 @@ export function PrefilterTypeahead({
                            searchTerm.length < (field.dataSource?.minSearchLength || 2);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
         {getLocalizedText(field.label, currentLanguage)}
       </label>
       
@@ -266,7 +266,7 @@ export function PrefilterTypeahead({
                 ? `Search ${getLocalizedText(field.label, currentLanguage)}`
                 : selectedLabels[0]}
               className={cn(
-                "w-full min-w-[180px] px-3 py-1.5 text-sm text-foreground font-medium border rounded-md",
+                "w-full min-w-[180px] px-4 py-2 text-sm text-foreground font-medium border rounded-md",
                 "bg-background hover:bg-accent/50",
                 "transition-colors duration-200",
                 selectedValues.length > 0 ? "border-primary/50" : "border-input"
@@ -285,7 +285,7 @@ export function PrefilterTypeahead({
             onClick={() => setIsOpen(!isOpen)}
             className={cn(
               "w-full min-w-[180px] flex items-center justify-between",
-              "px-3 py-1.5 text-sm border rounded-md",
+              "px-4 py-2 text-sm border rounded-md",
               "bg-background hover:bg-accent/50",
               "transition-colors duration-200",
               selectedValues.length > 0 ? "border-primary/50" : "border-input"
@@ -338,7 +338,7 @@ export function PrefilterTypeahead({
                     type="button"
                     onClick={() => handleSelect(option.value)}
                     className={cn(
-                      "w-full text-left px-3 py-1.5 text-sm",
+                      "w-full text-left px-4 py-2 text-sm",
                       "hover:bg-accent transition-colors",
                       "flex items-center justify-between",
                       selectedValues.includes(option.value) && "bg-accent"

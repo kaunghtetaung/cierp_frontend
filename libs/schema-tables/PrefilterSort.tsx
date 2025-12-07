@@ -52,8 +52,8 @@ export function PrefilterSort({
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
         {currentLanguage === "mm" ? "စီစဉ်မှု" : "Sort By"}
       </label>
       
@@ -65,7 +65,7 @@ export function PrefilterSort({
             onClick={() => setIsOpen(!isOpen)}
             className={cn(
               "w-full flex items-center justify-between",
-              "px-3 py-1.5 text-sm border rounded-md",
+              "px-4 py-2 text-sm border rounded-md",
               "bg-background hover:bg-accent/50",
               "transition-colors duration-200",
               currentSort ? "border-primary/50" : "border-input"
@@ -100,7 +100,7 @@ export function PrefilterSort({
                     type="button"
                     onClick={() => handleSortSelect(option.field)}
                     className={cn(
-                      "w-full text-left px-3 py-1.5 text-sm",
+                      "w-full text-left px-4 py-2 text-sm",
                       "hover:bg-accent transition-colors",
                       "flex items-center justify-between",
                       currentSort === option.field && "bg-accent"
@@ -126,7 +126,7 @@ export function PrefilterSort({
             type="button"
             onClick={toggleOrder}
             className={cn(
-              "px-3 py-1.5 border rounded-md",
+              "px-4 py-2 border rounded-md",
               "bg-background hover:bg-accent/50",
               "transition-colors duration-200",
               "flex items-center gap-1",
