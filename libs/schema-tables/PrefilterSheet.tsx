@@ -161,7 +161,7 @@ export function PrefilterSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:max-w-md lg:max-w-lg p-0 flex flex-col">
         {/* Header */}
         <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-muted/10 via-transparent to-muted/10">
           <div className="flex items-center justify-between">
@@ -320,7 +320,7 @@ export function PrefilterSheet({
             ) : activeGroup ? (
               /* Regular Filter Tab Content */
               <div className="p-6 bg-gradient-to-b from-muted/5 to-transparent">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {activeGroup.fields.map((field) => (
                     <div key={field.fieldName} className="min-w-0">
                       {renderPrefilterField(field)}
