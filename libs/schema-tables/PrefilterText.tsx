@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getLocalizedText } from "@repo/utils";
 import { IconComponent } from "@repo/ui";
 import { cn } from "@repo/utils";
@@ -42,6 +42,15 @@ export function PrefilterText({
     operator || field.searchOptions?.defaultOperator || "$regex"
   );
   const [isOperatorOpen, setIsOperatorOpen] = useState(false);
+
+  // Sync internal state with incoming props
+  useEffect(() => {
+    setSearchValue(value || "");
+  }, [value]);
+
+  useEffect(() => {
+    setSelectedOperator(operator || field.searchOptions?.defaultOperator || "$regex");
+  }, [operator, field.searchOptions?.defaultOperator]);
 
   // Get available operators
   const operators = field.searchOptions?.operators || [

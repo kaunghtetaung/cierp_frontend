@@ -64,6 +64,12 @@ export function PrefilterYearRange({
   const [isFromOpen, setIsFromOpen] = useState(false);
   const [isToOpen, setIsToOpen] = useState(false);
 
+  // Sync operator state with incoming props
+  useEffect(() => {
+    const newOperator = operator || options.defaultOperator || "$eq";
+    setSelectedOperator(newOperator);
+  }, [operator, options.defaultOperator]);
+
   // Initialize values from props
   useEffect(() => {
     if (selectedOperator === "between" && typeof value === "object" && value) {
