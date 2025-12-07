@@ -10,7 +10,7 @@ import { useLanguage } from '@repo/language';
 import { getModuleDashboardAction } from '@repo/app-modules/server-actions';
 import { StudentDashboard } from './StudentDashboard';
 import { ModuleDataTableWrapper } from '@/components/modules/ModuleDataTableWrapper';
-import { PrefilterTabGroup } from '@repo/schema-tables';
+import { PrefilterSheetTrigger } from '@repo/schema-tables';
 import type { StudentDashboardResponse, ModuleSchema, PrefilterFieldGroup, PrefilterField } from '@repo/types';
 import type { ModulePermissions } from '@/types/layout';
 
@@ -354,31 +354,8 @@ export function StudentDashboardWrapper({
   // Module has dashboard - render prefilters above tabs
   return (
     <div className="space-y-4">
-      {/* Prefilters - shared between Dashboard and Data views */}
-      {hasPrefilters && fieldGroupsWithControl.length > 0 && (
-        <PrefilterTabGroup
-          fieldGroups={fieldGroupsWithControl}
-          prefilterValues={prefilterValues}
-          onPrefilterChange={handlePrefilterChange}
-          onClearAll={handleClearAllPrefilters}
-          currentLanguage={currentLanguage}
-          moduleSlug={module.slug}
-          totalItems={totalItems}
-          activeTab={activePrefilterTab}
-          onActiveTabChange={setActivePrefilterTab}
-          disabledTabs={activeTab === 'dashboard' ? ['control'] : []}
-          currentView={activeTab}
-          sortOptions={sortOptions}
-          currentSort={currentSort}
-          currentOrder={currentSortOrder}
-          onSortChange={handleSortChange}
-          currentPageSize={currentPageSize}
-          onPageSizeChange={handlePageSizeChange}
-        />
-      )}
-
-      {/* View Tabs - below prefilters */}
-      <div className="flex items-center">
+      {/* Header with View Tabs and Filter Button */}
+      <div className="flex items-center justify-between">
         <Tabs value={activeTab} onValueChange={handleViewTabChange} className="w-auto">
           <TabsList>
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
@@ -391,6 +368,26 @@ export function StudentDashboardWrapper({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* Filter Sheet Trigger */}
+        {hasPrefilters && fieldGroupsWithControl.length > 0 && (
+          <PrefilterSheetTrigger
+            fieldGroups={fieldGroupsWithControl}
+            prefilterValues={prefilterValues}
+            onPrefilterChange={handlePrefilterChange}
+            onClearAll={handleClearAllPrefilters}
+            currentLanguage={currentLanguage}
+            moduleSlug={module.slug}
+            totalItems={totalItems}
+            sortOptions={sortOptions}
+            currentSort={currentSort}
+            currentOrder={currentSortOrder}
+            onSortChange={handleSortChange}
+            currentPageSize={currentPageSize}
+            onPageSizeChange={handlePageSizeChange}
+            disabledTabs={activeTab === 'dashboard' ? ['control'] : []}
+          />
+        )}
       </div>
 
       {/* Content Area */}
