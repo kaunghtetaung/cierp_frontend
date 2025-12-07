@@ -161,7 +161,7 @@ export function PrefilterSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md lg:max-w-lg p-0 flex flex-col">
+      <SheetContent side="right" className="w-full md:w-1/2 xl:w-1/3 p-0 flex flex-col">
         {/* Header */}
         <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-muted/10 via-transparent to-muted/10">
           <div className="flex items-center justify-between">
