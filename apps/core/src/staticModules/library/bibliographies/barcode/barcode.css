@@ -15,9 +15,9 @@
   color: black !important; /* Always black for barcode */
 }
 
-/* Barcode label container - 3.6cm width for 5 labels per A4 row */
+/* Barcode label container - 6.6cm width for 3 labels per A4 row */
 .barcode-label {
-  width: 3.6cm;
+  width: 6.6cm;
   height: 1.65cm;
   display: flex;
   flex-direction: column;
@@ -26,6 +26,7 @@
   text-align: center;
   line-height: 14px;
   padding: 1px 0; /* Reduced horizontal padding */
+  gap: 3px; /* Add gap between elements */
   position: relative;
   box-sizing: border-box;
   color: black !important; /* Always black text for barcodes */
@@ -64,12 +65,13 @@
   font-family: 'Times New Roman', serif;
   font-size: 13px;
   color: black !important; /* Always black text */
+  margin: 3px 0; /* Add margin to prevent overlap with barcode */
 }
 
 /* Barcode preview grid - dynamic columns based on paper size */
 .barcode-grid {
   display: grid;
-  grid-template-columns: repeat(var(--labels-per-row, 5), 3.6cm);
+  grid-template-columns: repeat(var(--labels-per-row, 3), 6.6cm);
   gap: 1mm; /* Narrow gap for cutting lines */
   padding: 5mm; /* Page margins */
   justify-content: center; /* Center align the grid */

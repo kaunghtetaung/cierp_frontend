@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Printer } from "lucide-react";
 import { searchBibliographiesAction, type SearchField } from "./actions";
 import "./barcode.css";
@@ -37,9 +37,9 @@ const PAPER_SIZES = {
   A5: { width: 148, height: 210, label: "A5 (148 × 210mm)" },
 };
 
-// Barcode label size (5 labels per A4 row)
+// Barcode label size (3 labels per A4 row)
 const LABEL_SIZE = {
-  width: 36, // mm (3.6cm)
+  width: 66, // mm (6.6cm) - calculated for 3 labels per A4 width
   height: 16.5, // mm (1.65cm)
   gap: 1, // mm gap between labels (narrow for cutting lines)
 };
@@ -71,6 +71,8 @@ interface BarcodeItem {
   copies: number;
 }
 
+const STORAGE_KEY = 'barcode-queue-storage';
+
 export default function BarcodePage({ module, user, tenant, appId }: any) {
   const [paperSize, setPaperSize] = useState<keyof typeof PAPER_SIZES>("A4");
   const [searchValue, setSearchValue] = useState("");
@@ -80,6 +82,30 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [barcodeQueue, setBarcodeQueue] = useState<BarcodeItem[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Load barcode queue from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setBarcodeQueue(parsed);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load barcode queue from localStorage:', error);
+    }
+  }, []);
+
+  // Save barcode queue to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(barcodeQueue));
+    } catch (error) {
+      console.error('Failed to save barcode queue to localStorage:', error);
+    }
+  }, [barcodeQueue]);
 
   // Search field options
   const searchFieldOptions: { value: SearchField; label: string; placeholder: string }[] = [
@@ -520,7 +546,7 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: `repeat(${preview.labelsPerRow}, 3.6cm)`,
+              gridTemplateColumns: `repeat(${preview.labelsPerRow}, 6.6cm)`,
               gap: '1mm',
               justifyContent: 'center',
               alignContent: 'start'
@@ -530,25 +556,26 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
               <div
                 key={`print-label-${pageIndex}-${index}`}
                 style={{
-                  width: '3.6cm',
+                  width: '6.6cm',
                   height: '1.65cm',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   textAlign: 'center',
-                  pageBreakInside: 'avoid'
+                  pageBreakInside: 'avoid',
+                  gap: '3px'
                 }}
               >
                 {item.callNo && (
-                  <div style={{ fontFamily: 'Times New Roman', fontSize: '13px', color: 'black' }}>
+                  <div style={{ fontFamily: 'Times New Roman', fontSize: '13px', color: 'black', marginBottom: '3px' }}>
                     {item.callNo}
                   </div>
                 )}
-                <div className="barcode-font" style={{ fontFamily: 'IDAutomationC39S', fontSize: '10pt', color: 'black' }}>
+                <div className="barcode-font" style={{ fontFamily: 'IDAutomationC39S', fontSize: '10pt', color: 'black', margin: '0' }}>
                   *{item.accessionNo}*
                 </div>
-                <div style={{ fontFamily: 'Times New Roman', fontSize: '13px', color: 'black' }}>
+                <div style={{ fontFamily: 'Times New Roman', fontSize: '13px', color: 'black', marginTop: '3px' }}>
                   {item.accessionNo}
                 </div>
               </div>
