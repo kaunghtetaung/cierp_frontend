@@ -548,6 +548,7 @@ export default function BarcodePage({ module, user, tenant, appId }: any) {
               display: 'grid',
               gridTemplateColumns: `repeat(${preview.labelsPerRow}, 6.6cm)`,
               gap: '1mm',
+              rowGap: '10mm',
               justifyContent: 'center',
               alignContent: 'start'
             }}

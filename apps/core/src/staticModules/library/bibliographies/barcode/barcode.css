@@ -73,6 +73,7 @@
   display: grid;
   grid-template-columns: repeat(var(--labels-per-row, 3), 6.6cm);
   gap: 1mm; /* Narrow gap for cutting lines */
+  row-gap: 10mm; /* Increased vertical spacing between rows for easier cutting */
   padding: 5mm; /* Page margins */
   justify-content: center; /* Center align the grid */
 }
