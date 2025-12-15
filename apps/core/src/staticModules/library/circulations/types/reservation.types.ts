@@ -180,13 +180,36 @@ export interface ReservationCheckResult {
   conflictMessage?: string;
 }
 
+// Backend response structure from /stats/overview
+export interface ReservationStatsResponse {
+  stats: Array<{
+    _id: string;  // Status name: 'pending', 'ready', 'cancelled', 'fulfilled', 'expired'
+    count: number;
+  }>;
+  mostReserved: Array<{
+    _id: string;
+    reservationCount: number;
+    bibliographyId: string;
+    title: string;
+  }>;
+}
+
+// Transformed stats for UI display
 export interface ReservationStats {
   totalPending: number;
   totalReady: number;
+  totalCancelled: number;
+  totalFulfilled: number;
+  totalExpired: number;
   expiringToday: number;
   expiringSoon: number;  // Within 2 days
   averageWaitDays: number;
   fulfillmentRate: number;  // Percentage
+  mostReserved: Array<{
+    bibliographyId: string;
+    title: string;
+    reservationCount: number;
+  }>;
 }
 
 // ============================================

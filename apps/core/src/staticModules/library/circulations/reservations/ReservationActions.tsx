@@ -161,7 +161,7 @@ export function ReservationActions({
   };
 
   return (
-    <div className="space-y-6 py-4">
+    <div className="space-y-6 py-4 overflow-y-auto max-h-[calc(100vh-120px)]">
       {/* Reservation Details */}
       <Card>
         <CardHeader className="pb-3">
@@ -176,21 +176,11 @@ export function ReservationActions({
             <User className="w-5 h-5 text-muted-foreground mt-0.5" />
             <div>
               <p className="font-medium">
-                {reservation.borrower?.firstName} {reservation.borrower?.lastName}
+                {reservation.borrowerName || `${reservation.borrower?.firstName || ''} ${reservation.borrower?.lastName || ''}`.trim() || '-'}
               </p>
               <p className="text-sm text-muted-foreground">
-                {reservation.borrower?.libraryCardNumber}
+                {reservation.libraryCardNo || reservation.borrower?.libraryCardNo || reservation.borrower?.libraryCardNumber || '-'}
               </p>
-              {reservation.borrower?.phone && (
-                <p className="text-sm text-muted-foreground">
-                  {reservation.borrower.phone}
-                </p>
-              )}
-              {reservation.borrower?.email && (
-                <p className="text-sm text-muted-foreground">
-                  {reservation.borrower.email}
-                </p>
-              )}
             </div>
           </div>
 

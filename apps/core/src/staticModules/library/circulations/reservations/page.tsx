@@ -163,10 +163,12 @@ export default function ReservationsPage() {
     onViewDetails: handleViewDetails,
     onMarkReady: handleMarkReady,
     onCancel: handleCancel,
+    currentPage,
+    pageSize: 10, // Default page size
   });
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="w-full py-8 px-4">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">

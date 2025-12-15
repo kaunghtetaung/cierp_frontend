@@ -15,7 +15,7 @@
     "@tanstack/react-query": "*",
     "react": "*",
     "react-dom": "*",
-    "next": "15.4.8"
+    "next": "15.4.10"
   },
   "devDependencies": {
     "@types/react": "*",

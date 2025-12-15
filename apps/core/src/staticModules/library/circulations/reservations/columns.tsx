@@ -92,18 +92,25 @@ export interface ReservationColumnsProps {
   onViewDetails?: (reservation: Reservation) => void;
   onMarkReady?: (reservation: Reservation) => void;
   onCancel?: (reservation: Reservation) => void;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export function getReservationColumns({
   onViewDetails,
   onMarkReady,
   onCancel,
+  currentPage = 1,
+  pageSize = 10,
 }: ReservationColumnsProps = {}): ColumnDef<Reservation>[] {
   return [
     {
       id: "sr",
       header: "No.",
-      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      cell: ({ row }) => {
+        const offset = (currentPage - 1) * pageSize;
+        return <div className="text-center">{offset + row.index + 1}</div>;
+      },
       enableSorting: false,
       enableHiding: false,
       size: 60,
@@ -126,18 +133,15 @@ export function getReservationColumns({
       id: "borrower",
       header: "Borrower",
       cell: ({ row }) => {
-        const borrower = row.original.borrower;
-        return borrower ? (
+        const borrowerName = row.original.borrowerName;
+        const libraryCardNo = row.original.libraryCardNo || row.original.borrower?.libraryCardNo;
+
+        return borrowerName ? (
           <div>
-            <div className="font-medium">
-              {borrower.firstName} {borrower.lastName}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {borrower.libraryCardNumber}
-            </div>
-            {borrower.phone && (
+            <div className="font-medium">{borrowerName}</div>
+            {libraryCardNo && (
               <div className="text-xs text-muted-foreground">
-                {borrower.phone}
+                {libraryCardNo}
               </div>
             )}
           </div>

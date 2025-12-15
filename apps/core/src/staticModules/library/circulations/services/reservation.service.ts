@@ -10,6 +10,7 @@ import type {
   Reservation,
   ReservationAvailability,
   ReservationStats,
+  ReservationStatsResponse,
   ReservationCheckResult,
   PaginatedReservationResponse,
   ReservationQueryParams,
@@ -216,7 +217,8 @@ export class ReservationService {
   }
 
   /**
-   * Cancel a reservation (admin)
+   * Cancel a reservation (borrower self-cancellation)
+   * Requires libraryCardNumber for verification
    */
   async cancelReservation(
     id: string,
@@ -226,6 +228,34 @@ export class ReservationService {
       `${RESERVATION_BASE}/${id}/cancel`,
       {
         method: 'DELETE',
+        body: data,
+        tenantId: this.tenantId,
+        userSessionId: this.userSessionId,
+        userId: this.userId,
+        withAuth: true,
+        tokenStrategy: 'auto',
+      }
+    );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to cancel reservation');
+    }
+
+    return response;
+  }
+
+  /**
+   * Cancel a reservation (admin/staff)
+   * Uses POST /reservations/:id/admin-cancel endpoint
+   */
+  async adminCancelReservation(
+    id: string,
+    data: { reason: string; notifyBorrower?: boolean }
+  ): Promise<ApiResponse<Reservation>> {
+    const response = await this.httpClient.request<Reservation>(
+      `${RESERVATION_BASE}/${id}/admin-cancel`,
+      {
+        method: 'POST',
         body: data,
         tenantId: this.tenantId,
         userSessionId: this.userSessionId,
@@ -443,9 +473,10 @@ export class ReservationService {
   /**
    * Get reservation statistics (dashboard)
    * Uses /stats/overview endpoint
+   * Transforms backend response to UI-friendly format
    */
   async getReservationStats(): Promise<ApiResponse<ReservationStats>> {
-    const response = await this.httpClient.request<ReservationStats>(
+    const response = await this.httpClient.request<ReservationStatsResponse>(
       `${RESERVATION_BASE}/stats/overview`,
       {
         method: 'GET',
@@ -461,7 +492,52 @@ export class ReservationService {
       throw new Error(response.error || 'Failed to fetch reservation statistics');
     }
 
-    return response;
+    // Transform backend response to UI format
+    const rawData = response.data;
+    const statsMap = new Map<string, number>();
+
+    // Build a map of status -> count
+    rawData.stats?.forEach((stat) => {
+      statsMap.set(stat._id, stat.count);
+    });
+
+    // Calculate totals
+    const totalPending = statsMap.get('pending') || 0;
+    const totalReady = statsMap.get('ready') || 0;
+    const totalCancelled = statsMap.get('cancelled') || 0;
+    const totalFulfilled = statsMap.get('fulfilled') || 0;
+    const totalExpired = statsMap.get('expired') || 0;
+
+    // Calculate fulfillment rate
+    const totalCompleted = totalFulfilled + totalCancelled + totalExpired;
+    const fulfillmentRate = totalCompleted > 0
+      ? Math.round((totalFulfilled / totalCompleted) * 100)
+      : 0;
+
+    // Transform most reserved
+    const mostReserved = (rawData.mostReserved || []).map((item) => ({
+      bibliographyId: item.bibliographyId || item._id,
+      title: item.title,
+      reservationCount: item.reservationCount,
+    }));
+
+    const transformedStats: ReservationStats = {
+      totalPending,
+      totalReady,
+      totalCancelled,
+      totalFulfilled,
+      totalExpired,
+      expiringToday: 0,  // TODO: Backend needs to provide this
+      expiringSoon: 0,   // TODO: Backend needs to provide this
+      averageWaitDays: 0, // TODO: Backend needs to provide this
+      fulfillmentRate,
+      mostReserved,
+    };
+
+    return {
+      ...response,
+      data: transformedStats,
+    };
   }
 
   /**

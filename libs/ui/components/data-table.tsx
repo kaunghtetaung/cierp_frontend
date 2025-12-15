@@ -735,7 +735,14 @@ export function DataTable<TData, TValue>({
                         const sortedIndex = sortedRows.findIndex(
                           (r) => r.id === row.id
                         );
-                        textValue = String(sortedIndex + 1);
+
+                        // Calculate serial number with pagination offset
+                        const paginationState = table.getState().pagination;
+                        const pageIndex = paginationState?.pageIndex ?? 0;
+                        const currentPageSize = paginationState?.pageSize ?? pageSize;
+                        const offset = pageIndex * currentPageSize;
+
+                        textValue = String(offset + sortedIndex + 1);
                       } else {
                         // Get the raw data value first
                         const rowData = row.original as any;
@@ -971,7 +978,14 @@ export function DataTable<TData, TValue>({
         if (column.id === "sr") {
           const sortedRows = table.getSortedRowModel().rows;
           const sortedIndex = sortedRows.findIndex((r) => r.id === row.id);
-          return sortedIndex + 1;
+
+          // Calculate serial number with pagination offset
+          const paginationState = table.getState().pagination;
+          const pageIndex = paginationState?.pageIndex ?? 0;
+          const currentPageSize = paginationState?.pageSize ?? pageSize;
+          const offset = pageIndex * currentPageSize;
+
+          return offset + sortedIndex + 1;
         }
 
         // Get the raw data value
@@ -1608,7 +1622,7 @@ export function DataTable<TData, TValue>({
           <div className="relative w-full">
             <table
               style={{
-                width: table.getCenterTotalSize(),
+                width: "100%",
                 minWidth: table.getCenterTotalSize(),
                 transition: table.getState().columnSizingInfo?.isResizingColumn
                   ? "none"

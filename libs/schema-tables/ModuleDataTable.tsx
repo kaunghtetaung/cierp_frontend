@@ -976,11 +976,18 @@ export function ModuleDataTable({
           {currentLanguage === "mm" ? "စဉ်" : "Sr."}
         </div>
       ),
-      cell: ({ row }) => (
-        <div className="text-center font-medium text-muted-foreground">
-          {row.index + 1}
-        </div>
-      ),
+      cell: ({ row }) => {
+        // Calculate serial number with pagination offset
+        const page = currentPage ?? 1;
+        const size = pageSize ?? module.dataTableSchema.pagination?.defaultLimit ?? 10;
+        const offset = (page - 1) * size;
+
+        return (
+          <div className="text-center font-medium text-muted-foreground">
+            {offset + row.index + 1}
+          </div>
+        );
+      },
       enableSorting: false,
       enableHiding: false,
       enableResizing: false, // Prevent resizing
@@ -2211,18 +2218,25 @@ export function ModuleDataTable({
       >
         {/* Mobile Card View - Show on mobile and tablet */}
         <div className="mobile-view-block space-y-4">
-          {data.map((item, index) => (
-            <div
-              key={item._id || item.id || index}
-              className="bg-card border border-border rounded-lg p-4 space-y-3"
-            >
-              {/* Sr. no and selection for mobile cards */}
-              <div className="flex items-center justify-between pb-2 border-b border-border">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {currentLanguage === "mm" ? "စဉ်" : "Sr."} {index + 1}
-                  </span>
-                </div>
+          {data.map((item, index) => {
+            // Calculate serial number with pagination offset for mobile view
+            const page = currentPage ?? 1;
+            const size = pageSize ?? module.dataTableSchema.pagination?.defaultLimit ?? 10;
+            const offset = (page - 1) * size;
+            const serialNumber = offset + index + 1;
+
+            return (
+              <div
+                key={item._id || item.id || index}
+                className="bg-card border border-border rounded-lg p-4 space-y-3"
+              >
+                {/* Sr. no and selection for mobile cards */}
+                <div className="flex items-center justify-between pb-2 border-b border-border">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {currentLanguage === "mm" ? "စဉ်" : "Sr."} {serialNumber}
+                    </span>
+                  </div>
                 {module.dataTableSchema.layout === "withCheckbox" && (
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -2524,7 +2538,8 @@ export function ModuleDataTable({
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {/* Empty state for mobile */}
           {data.length === 0 && (

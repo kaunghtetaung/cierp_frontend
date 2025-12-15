@@ -71,18 +71,25 @@ export interface CirculationColumnsProps {
   onRenew?: (circulation: CirculationResponse) => void;
   onReturn?: (circulation: CirculationResponse) => void;
   onViewDetails?: (circulation: CirculationResponse) => void;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export function getCirculationColumns({
   onRenew,
   onReturn,
   onViewDetails,
+  currentPage = 1,
+  pageSize = 10,
 }: CirculationColumnsProps = {}): ColumnDef<CirculationResponse>[] {
   return [
     {
       id: "sr",
       header: "No.",
-      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      cell: ({ row }) => {
+        const offset = (currentPage - 1) * pageSize;
+        return <div className="text-center">{offset + row.index + 1}</div>;
+      },
       enableSorting: false,
       enableHiding: false,
       size: 60,

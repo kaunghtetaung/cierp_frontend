@@ -252,6 +252,8 @@ export default function CirculationHistoryPage() {
     onRenew: handleRenew,
     onReturn: handleReturn,
     onViewDetails: handleViewDetails,
+    currentPage,
+    pageSize: 10, // Default page size
   });
 
   return (

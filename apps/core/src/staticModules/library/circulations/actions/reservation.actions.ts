@@ -262,11 +262,13 @@ export async function assignCopyToReservation(
 }
 
 /**
- * Cancel a reservation (admin)
+ * Cancel a reservation (admin/staff)
+ * Uses POST /reservations/:id/admin-cancel endpoint
  */
 export async function cancelReservation(
   id: string,
-  reason: string
+  reason: string,
+  notifyBorrower: boolean = true
 ): Promise<ApiResponse<Reservation>> {
   try {
     if (!id) {
@@ -290,7 +292,7 @@ export async function cancelReservation(
     }
 
     const service = await getReservationService();
-    return await service.cancelReservation(id, { reason, cancelledBy: 'staff' });
+    return await service.adminCancelReservation(id, { reason, notifyBorrower });
   } catch (error) {
     console.error('Cancel reservation error:', error);
     return {

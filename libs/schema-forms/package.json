@@ -18,7 +18,7 @@
     "react-dom": "*",
     "react-hook-form": "^7.62.0",
     "zod": "*",
-    "next": "15.4.8"
+    "next": "15.4.10"
   },
   "devDependencies": {
     "@types/react": "*",
