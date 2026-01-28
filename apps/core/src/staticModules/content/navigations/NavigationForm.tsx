@@ -81,6 +81,7 @@ interface NavigationFormProps {
   mode: 'create' | 'edit';
   menuType: MenuType;
   parentId?: string;
+  departmentId?: string;
   menuTree?: MenuTreeNode[];
   initialData?: Partial<Navigation> | MenuTreeNode;
   onSuccess?: (item: Navigation) => void;
@@ -179,6 +180,7 @@ export function NavigationForm({
   mode,
   menuType,
   parentId: defaultParentId,
+  departmentId,
   menuTree = [],
   initialData,
   onSuccess,
@@ -508,6 +510,7 @@ export function NavigationForm({
           pageId: data.pageId || undefined,
           categoryId: data.categoryId || undefined,
           postId: data.postId || undefined,
+          departmentId: departmentId || undefined,
         };
 
         let result;

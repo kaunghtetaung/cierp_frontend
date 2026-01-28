@@ -23,12 +23,15 @@ export type NavigationType =
   | 'category'
   | 'custom';
 
-export type MenuType =
-  | 'header'
-  | 'footer'
-  | 'sidebar'
-  | 'mobile'
-  | 'custom';
+/** Well-known predefined menu locations. */
+export type PredefinedMenuType = 'header' | 'footer' | 'sidebar' | 'mobile';
+
+/**
+ * MenuType is a free-form string.
+ * Predefined: 'header', 'footer', 'sidebar', 'mobile'.
+ * Custom: any slug-safe string (e.g. 'alumni-menu').
+ */
+export type MenuType = string;
 
 // ============================================
 // NAVIGATION ENTITY

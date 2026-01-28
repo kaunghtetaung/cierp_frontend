@@ -133,11 +133,15 @@ export class NavigationService {
   }
 
   /**
-   * Get menu tree by type
+   * Get menu tree by type, optionally scoped to a department
    */
-  async getMenuTree(menuType: MenuType, language: string = 'en'): Promise<ApiResponse<MenuTreeNode[]>> {
+  async getMenuTree(menuType: MenuType, language: string = 'en', departmentId?: string): Promise<ApiResponse<MenuTreeNode[]>> {
+    let endpoint = `${NAVIGATION_BASE}/menu/${menuType}?language=${language}`;
+    if (departmentId) {
+      endpoint += `&departmentId=${encodeURIComponent(departmentId)}`;
+    }
     const response = await this.httpClient.request<MenuTreeNode[]>(
-      `${NAVIGATION_BASE}/menu/${menuType}?language=${language}`,
+      endpoint,
       {
         method: 'GET',
         tenantId: this.tenantId,
@@ -338,6 +342,30 @@ export class NavigationService {
 
     if (!response.success) {
       throw new Error(response.error || 'Failed to restore navigation item');
+    }
+
+    return response;
+  }
+
+  /**
+   * Get distinct menu types from existing navigations
+   */
+  async getMenuTypes(departmentId?: string): Promise<ApiResponse<string[]>> {
+    let endpoint = `${NAVIGATION_BASE}/menu-types`;
+    if (departmentId) {
+      endpoint += `?departmentId=${encodeURIComponent(departmentId)}`;
+    }
+    const response = await this.httpClient.request<string[]>(endpoint, {
+      method: 'GET',
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch menu types');
     }
 
     return response;

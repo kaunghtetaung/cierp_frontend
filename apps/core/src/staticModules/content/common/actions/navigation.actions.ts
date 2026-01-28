@@ -10,6 +10,7 @@ import { getCurrentUser, getCurrentSession } from '@repo/auth/server-api';
 import { getApiDomain } from '@repo/utils/server';
 import { getCacheInstance, CacheKeys } from '@repo/cache';
 import { NavigationService } from '../services/navigation.service';
+import { getModuleReference } from '@repo/app-modules';
 import type { ApiResponse } from '@repo/types';
 import type {
   Navigation,
@@ -140,15 +141,16 @@ export async function getNavigationItems(
 }
 
 /**
- * Get menu tree by type
+ * Get menu tree by type, optionally scoped to a department
  */
 export async function getMenuTree(
   menuType: MenuType,
-  language: string = 'en'
+  language: string = 'en',
+  departmentId?: string
 ): Promise<ApiResponse<MenuTreeNode[]>> {
   try {
     const { service } = await getNavigationService();
-    const response = await service.getMenuTree(menuType, language);
+    const response = await service.getMenuTree(menuType, language, departmentId);
     return response;
   } catch (error) {
     console.error('Get menu tree error:', error);
@@ -372,6 +374,27 @@ export async function restoreNavigationItem(
 }
 
 /**
+ * Get distinct menu types from existing navigations
+ */
+export async function getMenuTypes(
+  departmentId?: string
+): Promise<ApiResponse<string[]>> {
+  try {
+    const { service } = await getNavigationService();
+    return await service.getMenuTypes(departmentId);
+  } catch (error) {
+    console.error('Get menu types error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch menu types',
+      message: 'Fetch failed',
+      data: null as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
  * Get flat navigation list
  */
 export async function getNavigationFlatList(
@@ -386,6 +409,60 @@ export async function getNavigationFlatList(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch navigation list',
+      message: 'Fetch failed',
+      data: null as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
+ * Get organizations reference list for dropdowns
+ */
+export async function getOrganizations(): Promise<ApiResponse<Array<{ _id: string; name: string; displayName?: { en?: string; mm?: string } }>>> {
+  try {
+    const data = await getModuleReference('organizations', undefined, 'core');
+    return {
+      success: true,
+      data: data as any,
+      message: 'Success',
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Get organizations error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch organizations',
+      message: 'Fetch failed',
+      data: null as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
+ * Get departments reference list filtered by organization
+ */
+export async function getDepartments(
+  organizationId: string
+): Promise<ApiResponse<Array<{ _id: string; fullName: string; displayName?: { en?: string; mm?: string } }>>> {
+  try {
+    // Use dependentFieldValue param — the reference service maps it to the
+    // department's primary accessControlField (organizationId) automatically.
+    // Passing organizationId directly is rejected by the query-builder guard
+    // because the runtime access policy in MongoDB may not list it.
+    const data = await getModuleReference('departments', { dependentFieldValue: organizationId }, 'core');
+    return {
+      success: true,
+      data: data as any,
+      message: 'Success',
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Get departments error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch departments',
       message: 'Fetch failed',
       data: null as any,
       timestamp: new Date(),

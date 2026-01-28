@@ -24,13 +24,7 @@ export const navigationTypeSchema = z.enum([
   'custom',
 ]);
 
-export const menuTypeSchema = z.enum([
-  'header',
-  'footer',
-  'sidebar',
-  'mobile',
-  'custom',
-]);
+export const menuTypeSchema = z.string().min(1, 'Menu type is required');
 
 // ============================================
 // CREATE NAVIGATION (Base schema without refinement for partial)
