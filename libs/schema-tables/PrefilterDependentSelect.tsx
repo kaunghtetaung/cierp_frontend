@@ -130,7 +130,20 @@ export function PrefilterDependentSelect({
           // Extract label based on labelField configuration
           let label = "";
           const labelField = field.dataSource?.labelField || "name";
-          const valueField = field.dataSource?.valueField || "_id";
+
+          // Smart valueField detection (same logic as PrefilterSelect):
+          // 1. If fieldName contains dot notation (e.g., "catalogType.name"), ALWAYS use the part after the dot
+          // 2. Otherwise, use dataSource.valueField if explicitly set
+          // 3. Otherwise default to "_id"
+          let valueField: string;
+          if (field.fieldName.includes('.')) {
+            // Extract the property name from dot notation (e.g., "catalogType.name" -> "name")
+            const parts = field.fieldName.split('.');
+            valueField = parts[parts.length - 1];
+            console.log(`🔧 PrefilterDependentSelect: Auto-detected valueField from fieldName "${field.fieldName}" -> "${valueField}" (overriding dataSource.valueField: "${field.dataSource?.valueField}")`);
+          } else {
+            valueField = field.dataSource?.valueField || "_id";
+          }
 
           const labelValue = item[labelField] || item.label || item.displayName || item.name;
 
@@ -143,15 +156,35 @@ export function PrefilterDependentSelect({
           }
 
           // Use valueField to determine what value to send for filtering
-          let filterValue = itemId;
-          if (valueField && item[valueField] !== undefined) {
-            const val = item[valueField];
+          let filterValue = itemId; // Fallback to ID
+
+          // Try to get the value from the detected valueField
+          let val = item[valueField];
+
+          // If the valueField doesn't exist in the item, try common name fields
+          // This handles cases where API returns "label" but we detected "name" from fieldName
+          if (val === undefined && (valueField === 'name' || valueField === 'displayName')) {
+            val = item['label'] || item['displayName'] || item['name'];
+            console.log(`🔄 PrefilterDependentSelect: valueField "${valueField}" not found, using fallback:`, val);
+          }
+
+          if (val !== undefined) {
             if (typeof val === "object" && val !== null) {
               filterValue = val[currentLanguage] || val.en || itemId;
             } else {
               filterValue = String(val);
             }
           }
+
+          console.log(`📋 PrefilterDependentSelect: Transformed option for ${field.fieldName}:`, {
+            itemId,
+            labelField,
+            valueField,
+            label,
+            filterValue,
+            detectedValueExists: item[valueField] !== undefined,
+            rawItem: item
+          });
 
           return {
             value: filterValue,

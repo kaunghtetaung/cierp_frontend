@@ -22,24 +22,30 @@ export class StandardHttpExecutor implements HttpExecutor {
     attempt: number
   ): Promise<HttpResponseContext<T>> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 StandardHttpExecutor: Executing request (attempt ${attempt}):`, {
-        url: context.url,
-        method: context.method,
-        headers: context.headers,
-        hasBody: !!context.body
-      });
+      console.log("\n");
+      console.log("┌─────────────────────────────────────────────────────────────────────────────┐");
+      console.log("│ 🚀 HTTP EXECUTOR: Making Request (Attempt", attempt + ")");
+      console.log("├─────────────────────────────────────────────────────────────────────────────┤");
+      console.log("│ 🌐 COMPLETE URL:", context.url);
+      console.log("│ 📤 Method:", context.method);
+      console.log("│ 🔑 Headers:", JSON.stringify(context.headers, null, 2));
+      console.log("│ 📦 Has Body:", !!context.body);
+      console.log("└─────────────────────────────────────────────────────────────────────────────┘");
+      console.log("\n");
     }
 
     try {
       const response = await fetch(context.url, context.options);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ StandardHttpExecutor: Fetch completed:`, {
-          url: context.url,
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok
-        });
+        console.log("┌─────────────────────────────────────────────────────────────────────────────┐");
+        console.log("│ ✅ HTTP EXECUTOR: Response Received");
+        console.log("├─────────────────────────────────────────────────────────────────────────────┤");
+        console.log("│ 🌐 URL:", context.url);
+        console.log("│ 📊 Status:", response.status, response.statusText);
+        console.log("│ ✓ Success:", response.ok);
+        console.log("└─────────────────────────────────────────────────────────────────────────────┘");
+        console.log("\n");
       }
 
       return {

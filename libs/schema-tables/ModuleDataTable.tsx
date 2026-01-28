@@ -194,6 +194,14 @@ export function ModuleDataTable({
             values[field.fieldName] = splitValues;
           } else {
             values[field.fieldName] = paramValue;
+            if (field.fieldName.includes('catalogType')) {
+              console.log(`📥 INIT: Loaded catalogType from URL: ${field.fieldName} = ${paramValue}`);
+              // Check if it looks like an ObjectId (24 hex characters)
+              const isObjectId = /^[0-9a-f]{24}$/i.test(paramValue);
+              if (isObjectId) {
+                console.log(`⚠️  WARNING: Value looks like an ObjectId, not a name!`);
+              }
+            }
           }
         }
       }
@@ -263,6 +271,20 @@ export function ModuleDataTable({
   // Handle prefilter changes - now with operator support for text fields
   // Works with both legacy fields array and new fieldGroups structure
   const handlePrefilterChange = (fieldName: string, value: string | string[] | { from: string; to: string } | undefined, operator?: string) => {
+    console.log("\n");
+    console.log("╔═══════════════════════════════════════════════════════════════════════════════╗");
+    console.log("║           🔄 PREFILTER CHANGE - ModuleDataTable.handlePrefilterChange        ║");
+    console.log("╠═══════════════════════════════════════════════════════════════════════════════╣");
+    console.log("║ 🏷️  Field Name:", fieldName);
+    console.log("║ 📝 Value:", value);
+    console.log("║ 🔧 Operator:", operator || 'none');
+    console.log("║ 📊 Value Type:", Array.isArray(value) ? 'array' : typeof value);
+    if (fieldName.includes('catalogType')) {
+      console.log("║ ⚠️  CATALOG TYPE FILTER DETECTED!");
+    }
+    console.log("╚═══════════════════════════════════════════════════════════════════════════════╝");
+    console.log("\n");
+
     const newValues = { ...prefilterValues };
 
     if (value !== undefined && (Array.isArray(value) ? value.length > 0 : value)) {
@@ -328,8 +350,12 @@ export function ModuleDataTable({
         // Using pipe instead of comma to support values containing commas
         const joinedValue = val.join('|');
         newSearchParams.set(key, joinedValue);
+        console.log(`📝 Setting URL param: ${key} = ${joinedValue} (array joined)`);
       } else {
         newSearchParams.set(key, val as string);
+        if (key.includes('catalogType')) {
+          console.log(`🎯 Setting catalogType URL param: ${key} = ${val} (type: ${typeof val})`);
+        }
       }
     });
 
@@ -714,7 +740,27 @@ export function ModuleDataTable({
 
   // Helper function to get nested field values
   const getNestedValue = (obj: any, path: string) => {
-    const value = path.split(".").reduce((current, key) => current?.[key], obj);
+    const parts = path.split(".");
+    let value = obj;
+
+    // Traverse the path, handling arrays intelligently
+    for (let i = 0; i < parts.length; i++) {
+      const key = parts[i];
+      value = value?.[key];
+
+      // If we hit an array and there are more path parts, map over the array
+      if (Array.isArray(value) && i < parts.length - 1) {
+        const remainingPath = parts.slice(i + 1).join(".");
+        // Recursively get the nested value from each array item
+        const arrayValues = value.map(item => {
+          const nestedVal = getNestedValue(item, remainingPath);
+          return nestedVal;
+        }).filter(v => v !== null && v !== undefined && v !== "");
+
+        // Return comma-separated string for arrays of primitives
+        return arrayValues.join(", ");
+      }
+    }
 
     // Handle populated reference fields with structure {_id, displayName: {en, mm}, ...}
     if (value && typeof value === "object" && value._id && value.displayName) {

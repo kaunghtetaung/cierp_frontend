@@ -49,7 +49,9 @@ export function PrefilterSelect({
   currentLanguage,
   moduleSlug,
 }: PrefilterSelectProps) {
-  const [options, setOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [options, setOptions] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -61,8 +63,9 @@ export function PrefilterSelect({
     try {
       // Parse the endpoint to extract module and existing query params
       // e.g., "/regions/ref?type=state" -> module="regions", queryParams={type:"state"}
-      const [endpointPath, endpointQueryString] = field.dataSource.endpoint.split('?');
-      const endpointParts = endpointPath.split('/').filter(Boolean);
+      const [endpointPath, endpointQueryString] =
+        field.dataSource.endpoint.split("?");
+      const endpointParts = endpointPath.split("/").filter(Boolean);
       const referenceModule = endpointParts[0];
 
       // Parse existing query parameters from the endpoint
@@ -74,11 +77,11 @@ export function PrefilterSelect({
         });
       }
 
-      console.log('🔍 PrefilterSelect loadOptions:', {
+      console.log("🔍 PrefilterSelect loadOptions:", {
         endpoint: field.dataSource.endpoint,
         referenceModule,
         queryParams,
-        serviceName: field.dataSource.serviceName
+        serviceName: field.dataSource.serviceName,
       });
 
       // Call the API to get reference data
@@ -96,9 +99,25 @@ export function PrefilterSelect({
           // Extract label based on labelField configuration
           let label = "";
           const labelField = field.dataSource?.labelField || "name";
-          const valueField = field.dataSource?.valueField || "_id";
 
-          const labelValue = item[labelField] || item.label || item.displayName || item.name;
+          // Smart valueField detection:
+          // 1. If fieldName contains dot notation (e.g., "catalogType.name"), ALWAYS use the part after the dot
+          // 2. Otherwise, use dataSource.valueField if explicitly set
+          // 3. Otherwise default to "_id"
+          let valueField: string;
+          if (field.fieldName.includes(".")) {
+            // Extract the property name from dot notation (e.g., "catalogType.name" -> "name")
+            const parts = field.fieldName.split(".");
+            valueField = parts[parts.length - 1];
+            console.log(
+              `🔧 PrefilterSelect: Auto-detected valueField from fieldName "${field.fieldName}" -> "${valueField}" (overriding dataSource.valueField: "${field.dataSource?.valueField}")`
+            );
+          } else {
+            valueField = field.dataSource?.valueField || "_id";
+          }
+
+          const labelValue =
+            item[labelField] || item.label || item.displayName || item.name;
 
           if (typeof labelValue === "object" && labelValue !== null) {
             label = labelValue[currentLanguage] || labelValue.en || itemId;
@@ -109,10 +128,25 @@ export function PrefilterSelect({
           }
 
           // Use valueField to determine what value to send for filtering
-          // Default to _id for backend compatibility
-          let filterValue = itemId;
-          if (valueField && item[valueField] !== undefined) {
-            const val = item[valueField];
+          let filterValue = itemId; // Fallback to ID
+
+          // Try to get the value from the detected valueField
+          let val = item[valueField];
+
+          // If the valueField doesn't exist in the item, try common name fields
+          // This handles cases where API returns "label" but we detected "name" from fieldName
+          if (
+            val === undefined &&
+            (valueField === "name" || valueField === "displayName")
+          ) {
+            val = item["label"] || item["displayName"] || item["name"];
+            console.log(
+              `🔄 PrefilterSelect: valueField "${valueField}" not found, using fallback:`,
+              val
+            );
+          }
+
+          if (val !== undefined) {
             if (typeof val === "object" && val !== null) {
               filterValue = val[currentLanguage] || val.en || itemId;
             } else {
@@ -120,8 +154,21 @@ export function PrefilterSelect({
             }
           }
 
+          console.log(
+            `📋 PrefilterSelect: Transformed option for ${field.fieldName}:`,
+            {
+              itemId,
+              labelField,
+              valueField,
+              label,
+              filterValue,
+              detectedValueExists: item[valueField] !== undefined,
+              rawItem: item,
+            }
+          );
+
           return {
-            value: filterValue, // Use valueField (defaults to _id) for filtering
+            value: filterValue, // Use valueField value for filtering
             label: label,
           };
         });
@@ -142,22 +189,25 @@ export function PrefilterSelect({
       loadOptions();
     } else if (field.type === "select" && field.options) {
       // For static select, transform options
-      const transformedOptions = field.options.map(opt => ({
+      const transformedOptions = field.options.map((opt) => ({
         value: opt.value,
-        label: typeof opt.label === "object" 
-          ? (opt.label[currentLanguage as keyof MultilingualText] || opt.label.en || opt.value)
-          : opt.label
+        label:
+          typeof opt.label === "object"
+            ? opt.label[currentLanguage as keyof MultilingualText] ||
+              opt.label.en ||
+              opt.value
+            : opt.label,
       }));
       setOptions(transformedOptions);
     }
   }, [field, currentLanguage, loadOptions]);
 
-  const selectedLabel = options.find(opt => opt.value === value)?.label || "";
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || "";
 
   return (
     <div className="flex flex-col gap-2.5">
       <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-        {getLocalizedText(field.label, currentLanguage)}
+        {getLocalizedText(field.label, currentLanguage)} test
       </label>
       <div className="relative">
         <button
@@ -171,13 +221,18 @@ export function PrefilterSelect({
             value ? "border-primary/50" : "border-input"
           )}
         >
-          <span className={cn(
-            "truncate",
-            value ? "text-foreground font-medium" : "text-muted-foreground"
-          )}>
+          <span
+            className={cn(
+              "truncate",
+              value ? "text-foreground font-medium" : "text-muted-foreground"
+            )}
+          >
             {isLoading ? (
               <span className="flex items-center gap-2">
-                <IconComponent name="Loader2" className="h-3 w-3 animate-spin" />
+                <IconComponent
+                  name="Loader2"
+                  className="h-3 w-3 animate-spin"
+                />
                 Loading...
               </span>
             ) : value ? (

@@ -86,13 +86,33 @@ export class ModuleService {
       endpoint += `?${queryParams.toString()}`;
     }
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📡 [MODULE SERVICE] API REQUEST");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🔗 Full Endpoint:", endpoint);
-    console.log("📋 Input Params:", JSON.stringify(params, null, 2));
-    console.log("🔍 Query String:", queryParams.toString());
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // Get the base URL from httpClient if available
+    const baseURL = (this.httpClient as any).config?.baseURL || 'http://api-dev.um1ygn.edu.mm';
+    const fullURL = `${baseURL}${endpoint}`;
+
+    // Check if catalogType filter is present
+    const hasCatalogTypeFilter = params.filters &&
+      (params.filters['catalogType.name'] || params.filters['catalogType']);
+    const catalogTypeValue = params.filters?.['catalogType.name'] || params.filters?.['catalogType'] || 'NONE';
+
+    console.log("\n");
+    console.log("╔═══════════════════════════════════════════════════════════════════════════════╗");
+    console.log("║                    📡 [MODULE API REQUEST] BACKEND CALL                       ║");
+    console.log("╠═══════════════════════════════════════════════════════════════════════════════╣");
+    console.log("║ 🌐 FULL URL:", fullURL);
+    console.log("║ 📍 Endpoint:", endpoint);
+    console.log("║ 🔍 Module:", module);
+    console.log("║ 📦 App:", this.appName);
+    if (hasCatalogTypeFilter) {
+      console.log("║ 🎯 CATALOG TYPE FILTER:", catalogTypeValue, "⚠️");
+    }
+    console.log("╟───────────────────────────────────────────────────────────────────────────────╢");
+    console.log("║ 📋 REQUEST PARAMS:");
+    console.log("║ ", JSON.stringify(params, null, 2).split('\n').join('\n║  '));
+    console.log("╟───────────────────────────────────────────────────────────────────────────────╢");
+    console.log("║ 🔗 QUERY STRING:", queryParams.toString());
+    console.log("╚═══════════════════════════════════════════════════════════════════════════════╝");
+    console.log("\n");
 
     const response = await this.httpClient.request<any>(endpoint, {
       method: "GET",

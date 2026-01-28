@@ -120,6 +120,25 @@ export function ServerSidePaginationWrapper({
           // For multiple values, send as comma-separated string
           // Backend should handle splitting if needed
           params.filters[field.fieldName] = paramValue;
+
+          // Log catalog type filter
+          if (field.fieldName.includes('catalogType')) {
+            const isObjectId = /^[0-9a-f]{24}$/i.test(paramValue);
+            console.log("\n");
+            console.log("╔═══════════════════════════════════════════════════════════════════════════════╗");
+            console.log("║        🔍 ServerSidePaginationWrapper: Processing Catalog Type Filter        ║");
+            console.log("╠═══════════════════════════════════════════════════════════════════════════════╣");
+            console.log("║ 🏷️  Field Name:", field.fieldName);
+            console.log("║ 📝 URL Param Value:", paramValue);
+            console.log("║ ⚠️  Is ObjectId?:", isObjectId);
+            console.log("║ 🎯 Sending to Backend:", paramValue);
+            if (isObjectId) {
+              console.log("║ ❌ ERROR: Sending ObjectId instead of name value!");
+              console.log("║ 💡 Solution: User must re-select the filter to get name value");
+            }
+            console.log("╚═══════════════════════════════════════════════════════════════════════════════╝");
+            console.log("\n");
+          }
         }
       }
     };
@@ -158,13 +177,32 @@ export function ServerSidePaginationWrapper({
     return params;
   }, [searchParams, module.dataTableSchema]);
 
-  console.log("🖥️ [SERVER-SIDE] Pagination Debug:", {
-    module: module.slug,
-    queryParams,
-    searchParamsString: searchParams.toString(),
-    filters: queryParams.filters,
-    mode: "SERVER_SIDE_PAGINATION",
-  });
+  // Check for catalog type filter in query params
+  const hasCatalogTypeFilter = queryParams.filters?.['catalogType.name'] || queryParams.filters?.['catalogType'];
+  const catalogTypeValue = queryParams.filters?.['catalogType.name'] || queryParams.filters?.['catalogType'];
+  const isCatalogTypeObjectId = catalogTypeValue && /^[0-9a-f]{24}$/i.test(catalogTypeValue);
+
+  console.log("\n");
+  console.log("╔═══════════════════════════════════════════════════════════════════════════════╗");
+  console.log("║              🖥️  SERVER-SIDE PAGINATION - Query Params Built                  ║");
+  console.log("╠═══════════════════════════════════════════════════════════════════════════════╣");
+  console.log("║ 🔍 Module:", module.slug);
+  console.log("║ 📄 Page:", queryParams.page);
+  console.log("║ 📊 Limit:", queryParams.limit);
+  if (hasCatalogTypeFilter) {
+    console.log("║ 🎯 CATALOG TYPE FILTER:", catalogTypeValue);
+    if (isCatalogTypeObjectId) {
+      console.log("║ ❌ ERROR: Catalog type value is ObjectId, not name!");
+    } else {
+      console.log("║ ✅ OK: Catalog type value is a name");
+    }
+  }
+  console.log("╟───────────────────────────────────────────────────────────────────────────────╢");
+  console.log("║ 📋 All Filters:", JSON.stringify(queryParams.filters, null, 2));
+  console.log("╟───────────────────────────────────────────────────────────────────────────────╢");
+  console.log("║ 🔗 URL Search Params:", searchParams.toString());
+  console.log("╚═══════════════════════════════════════════════════════════════════════════════╝");
+  console.log("\n");
 
   // Fetch data using React Query - always enabled for server-side pagination
   const {

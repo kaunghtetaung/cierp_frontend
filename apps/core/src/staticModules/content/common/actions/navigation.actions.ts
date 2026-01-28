@@ -8,6 +8,7 @@
 import { headers } from 'next/headers';
 import { getCurrentUser, getCurrentSession } from '@repo/auth/server-api';
 import { getApiDomain } from '@repo/utils/server';
+import { getCacheInstance, CacheKeys } from '@repo/cache';
 import { NavigationService } from '../services/navigation.service';
 import type { ApiResponse } from '@repo/types';
 import type {
@@ -27,7 +28,7 @@ import type {
 /**
  * Get navigation service instance with proper context
  */
-async function getNavigationService(): Promise<NavigationService> {
+async function getNavigationService(): Promise<{ service: NavigationService; tenantId: string }> {
   const headerStore = await headers();
   const [user, session] = await Promise.all([
     getCurrentUser(headerStore),
@@ -45,11 +46,28 @@ async function getNavigationService(): Promise<NavigationService> {
 
   const apiUrl = await getApiDomain();
 
-  return new NavigationService(apiUrl, {
+  const service = new NavigationService(apiUrl, {
     tenantId,
     userSessionId: session.id,
     userId: user.id,
   });
+
+  return { service, tenantId };
+}
+
+/**
+ * Clear content settings cache for a tenant
+ * Navigation data is part of content settings (headerMenu, footerMenu),
+ * so cache must be invalidated when navigation changes.
+ */
+async function clearContentSettingsCacheForTenant(tenantId: string): Promise<void> {
+  try {
+    const cache = getCacheInstance();
+    const cacheKey = CacheKeys.contentSettings(tenantId);
+    await cache.del(cacheKey);
+  } catch (error) {
+    console.error('Failed to clear content settings cache:', error);
+  }
 }
 
 /**
@@ -79,8 +97,13 @@ export async function createNavigationItem(
       };
     }
 
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.create(data);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Create navigation item error:', error);
@@ -101,7 +124,7 @@ export async function getNavigationItems(
   params?: NavigationQuery
 ): Promise<ApiResponse<NavigationListResponse>> {
   try {
-    const service = await getNavigationService();
+    const { service } = await getNavigationService();
     const response = await service.getAll(params);
     return response;
   } catch (error) {
@@ -124,7 +147,7 @@ export async function getMenuTree(
   language: string = 'en'
 ): Promise<ApiResponse<MenuTreeNode[]>> {
   try {
-    const service = await getNavigationService();
+    const { service } = await getNavigationService();
     const response = await service.getMenuTree(menuType, language);
     return response;
   } catch (error) {
@@ -147,7 +170,7 @@ export async function getFilteredMenuTree(
   language: string = 'en'
 ): Promise<ApiResponse<MenuTreeNode[]>> {
   try {
-    const service = await getNavigationService();
+    const { service } = await getNavigationService();
     const response = await service.getFilteredMenuTree(menuType, language);
     return response;
   } catch (error) {
@@ -169,7 +192,7 @@ export async function getNavigationItemById(
   id: string
 ): Promise<ApiResponse<Navigation>> {
   try {
-    const service = await getNavigationService();
+    const { service } = await getNavigationService();
     const response = await service.getById(id);
     return response;
   } catch (error) {
@@ -192,8 +215,13 @@ export async function updateNavigationItem(
   data: UpdateNavigationDto
 ): Promise<ApiResponse<Navigation>> {
   try {
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.update(id, data);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Update navigation item error:', error);
@@ -214,8 +242,13 @@ export async function deleteNavigationItem(
   id: string
 ): Promise<ApiResponse<void>> {
   try {
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.delete(id);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Delete navigation item error:', error);
@@ -236,8 +269,13 @@ export async function reorderNavigationItems(
   data: ReorderNavigationDto
 ): Promise<ApiResponse<void>> {
   try {
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.reorder(data);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Reorder navigation items error:', error);
@@ -259,8 +297,13 @@ export async function moveNavigationItem(
   data: MoveNavigationDto
 ): Promise<ApiResponse<Navigation>> {
   try {
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.move(id, data);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Move navigation item error:', error);
@@ -281,8 +324,13 @@ export async function bulkNavigationOperation(
   data: BulkNavigationOperation
 ): Promise<ApiResponse<{ affected: number }>> {
   try {
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.bulkOperation(data);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Bulk navigation operation error:', error);
@@ -303,8 +351,13 @@ export async function restoreNavigationItem(
   id: string
 ): Promise<ApiResponse<Navigation>> {
   try {
-    const service = await getNavigationService();
+    const { service, tenantId } = await getNavigationService();
     const response = await service.restore(id);
+
+    if (response.success) {
+      await clearContentSettingsCacheForTenant(tenantId);
+    }
+
     return response;
   } catch (error) {
     console.error('Restore navigation item error:', error);
@@ -325,7 +378,7 @@ export async function getNavigationFlatList(
   menuType: MenuType
 ): Promise<ApiResponse<NavigationFlatItem[]>> {
   try {
-    const service = await getNavigationService();
+    const { service } = await getNavigationService();
     const response = await service.getFlatList(menuType);
     return response;
   } catch (error) {

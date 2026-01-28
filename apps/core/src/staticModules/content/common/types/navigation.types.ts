@@ -99,7 +99,9 @@ export interface CreateNavigationDto {
 // UPDATE DTO
 // ============================================
 
-export type UpdateNavigationDto = Partial<CreateNavigationDto>;
+export interface UpdateNavigationDto extends Partial<CreateNavigationDto> {
+  version: number; // Required for optimistic concurrency control
+}
 
 // ============================================
 // QUERY PARAMETERS
@@ -128,11 +130,7 @@ export interface NavigationQuery extends PaginationQuery {
 // ============================================
 
 export interface ReorderNavigationDto {
-  items: Array<{
-    id: string;
-    order: number;
-    parentId?: string;
-  }>;
+  navigationIds: string[];
 }
 
 // ============================================

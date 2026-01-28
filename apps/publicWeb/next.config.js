@@ -84,6 +84,15 @@ const nextConfig = {
         protocol: 'http',
         hostname: '**.crystal-image.net',
       },
+      // YouTube thumbnails for video previews
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+      },
       // Note: S3/storage domains are handled by S3Image component with unoptimized flag
       // This allows any storage domain without needing to update config
     ],

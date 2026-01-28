@@ -2,6 +2,22 @@
 
 import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
   Card,
   CardContent,
   CardHeader,
@@ -15,13 +31,6 @@ import {
   DialogTitle,
 } from '@repo/ui';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@repo/ui';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -31,33 +40,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@repo/ui';
-import { Button, Badge } from '@repo/ui';
+import { Button } from '@repo/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui';
 import { toastSuccess, toastError } from '@repo/utils';
 import {
   Plus,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
   RefreshCw,
   Loader2,
   Menu,
-  ChevronRight,
-  ChevronDown,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  RotateCcw,
-  GripVertical,
 } from 'lucide-react';
 import {
   getMenuTree,
   deleteNavigationItem,
   restoreNavigationItem,
   updateNavigationItem,
+  reorderNavigationItems,
+  moveNavigationItem,
 } from '../common/actions';
-import type { MenuTreeNode, MenuType, EntityStatus } from '../common/types';
+import type { MenuTreeNode, MenuType } from '../common/types';
 import { NavigationForm } from './NavigationForm';
+import { SortableMenuTreeItem } from './SortableMenuTreeItem';
+import {
+  findSiblingsAndIndex,
+  findNodeById,
+  findParentNode,
+  getPreviousSibling,
+  canMoveUp as checkCanMoveUp,
+  canMoveDown as checkCanMoveDown,
+  canMakeSubItem as checkCanMakeSubItem,
+  canPromote as checkCanPromote,
+  buildReorderIds,
+} from './navigation-tree-utils';
 
 // Menu type labels
 const menuTypeLabels: Record<MenuType, string> = {
@@ -80,6 +93,16 @@ export default function NavigationPage() {
   const [editingItem, setEditingItem] = useState<MenuTreeNode | null>(null);
   const [deletingItem, setDeletingItem] = useState<MenuTreeNode | null>(null);
   const [parentId, setParentId] = useState<string | undefined>(undefined);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Load menu tree
   const loadMenuTree = useCallback(async () => {
@@ -130,11 +153,9 @@ export default function NavigationPage() {
 
   // Handle create
   const handleCreate = (parentItemId?: string) => {
-    console.log('handleCreate called, parentItemId:', parentItemId);
     setEditingItem(null);
     setParentId(parentItemId);
     setIsFormOpen(true);
-    console.log('isFormOpen set to true');
   };
 
   // Handle edit
@@ -177,6 +198,7 @@ export default function NavigationPage() {
       try {
         const result = await updateNavigationItem(item._id, {
           isVisible: !item.isVisible,
+          version: item.version,
         });
         if (result.success) {
           toastSuccess(`Menu item ${item.isVisible ? 'hidden' : 'shown'} successfully`);
@@ -217,149 +239,263 @@ export default function NavigationPage() {
     loadMenuTree();
   };
 
-  // Get status badge
-  const getStatusBadge = (status: EntityStatus) => {
-    switch (status) {
-      case 'Active':
-        return <Badge variant="success" className="text-xs">Active</Badge>;
-      case 'Inactive':
-        return <Badge variant="secondary" className="text-xs">Inactive</Badge>;
-      default:
-        return <Badge variant="outline" className="text-xs">{status}</Badge>;
-    }
-  };
+  // ---- DRAG-AND-DROP REORDER (same level) ----
+  const handleDragEnd = useCallback(
+    (siblingParentId: string | undefined) => (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
 
-  // Render menu tree item
-  const renderMenuItem = (item: MenuTreeNode, level: number = 0) => {
-    const hasChildren = item.children && item.children.length > 0;
-    const isExpanded = expandedIds.has(item._id);
+      const siblings = siblingParentId
+        ? findNodeById(menuTree, siblingParentId)?.children
+        : menuTree;
+
+      if (!siblings) return;
+
+      const oldIndex = siblings.findIndex((s) => s._id === active.id);
+      const newIndex = siblings.findIndex((s) => s._id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove([...siblings], oldIndex, newIndex);
+
+      // Optimistic update
+      setMenuTree((prev) => {
+        const next = structuredClone(prev);
+        if (!siblingParentId) {
+          return reordered as MenuTreeNode[];
+        }
+        const parent = findNodeById(next, siblingParentId);
+        if (parent) {
+          parent.children = reordered as MenuTreeNode[];
+        }
+        return next;
+      });
+
+      startTransition(async () => {
+        try {
+          const navigationIds = buildReorderIds(reordered);
+          const result = await reorderNavigationItems({ navigationIds });
+          if (!result.success) {
+            toastError(result.error || 'Failed to reorder');
+            loadMenuTree();
+          }
+        } catch {
+          toastError('Failed to reorder');
+          loadMenuTree();
+        }
+      });
+    },
+    [menuTree, loadMenuTree]
+  );
+
+  // ---- MOVE UP ----
+  const handleMoveUp = useCallback(
+    (item: MenuTreeNode) => {
+      const result = findSiblingsAndIndex(menuTree, item._id);
+      if (!result || result.index === 0) return;
+
+      const { siblings, index } = result;
+      const reordered = [...siblings];
+      [reordered[index - 1], reordered[index]] = [reordered[index], reordered[index - 1]];
+
+      const itemParentId = item.parentId;
+
+      // Optimistic update
+      setMenuTree((prev) => {
+        const next = structuredClone(prev);
+        if (!itemParentId) return reordered as MenuTreeNode[];
+        const parent = findNodeById(next, itemParentId);
+        if (parent) parent.children = reordered as MenuTreeNode[];
+        return next;
+      });
+
+      startTransition(async () => {
+        try {
+          const navigationIds = buildReorderIds(reordered);
+          const res = await reorderNavigationItems({ navigationIds });
+          if (!res.success) {
+            toastError(res.error || 'Failed to move item');
+            loadMenuTree();
+          }
+        } catch {
+          toastError('Failed to move item');
+          loadMenuTree();
+        }
+      });
+    },
+    [menuTree, loadMenuTree]
+  );
+
+  // ---- MOVE DOWN ----
+  const handleMoveDown = useCallback(
+    (item: MenuTreeNode) => {
+      const result = findSiblingsAndIndex(menuTree, item._id);
+      if (!result || result.index >= result.siblings.length - 1) return;
+
+      const { siblings, index } = result;
+      const reordered = [...siblings];
+      [reordered[index], reordered[index + 1]] = [reordered[index + 1], reordered[index]];
+
+      const itemParentId = item.parentId;
+
+      setMenuTree((prev) => {
+        const next = structuredClone(prev);
+        if (!itemParentId) return reordered as MenuTreeNode[];
+        const parent = findNodeById(next, itemParentId);
+        if (parent) parent.children = reordered as MenuTreeNode[];
+        return next;
+      });
+
+      startTransition(async () => {
+        try {
+          const navigationIds = buildReorderIds(reordered);
+          const res = await reorderNavigationItems({ navigationIds });
+          if (!res.success) {
+            toastError(res.error || 'Failed to move item');
+            loadMenuTree();
+          }
+        } catch {
+          toastError('Failed to move item');
+          loadMenuTree();
+        }
+      });
+    },
+    [menuTree, loadMenuTree]
+  );
+
+  // ---- MAKE SUB-ITEM ----
+  const handleMakeSubItem = useCallback(
+    (item: MenuTreeNode) => {
+      const prevSibling = getPreviousSibling(menuTree, item._id);
+      if (!prevSibling) return;
+
+      const targetParentId = prevSibling._id;
+      const targetOrder = prevSibling.children?.length ?? 0;
+
+      // Auto-expand the previous sibling so the moved item is visible
+      setExpandedIds((prev) => new Set([...prev, targetParentId]));
+
+      startTransition(async () => {
+        try {
+          const res = await moveNavigationItem(item._id, {
+            targetParentId,
+            targetOrder,
+          });
+          if (res.success) {
+            toastSuccess('Item moved to sub-menu');
+            loadMenuTree();
+          } else {
+            toastError(res.error || 'Failed to move item');
+          }
+        } catch {
+          toastError('Failed to move item');
+        }
+      });
+    },
+    [menuTree, loadMenuTree]
+  );
+
+  // ---- PROMOTE (move to parent level) ----
+  const handlePromote = useCallback(
+    (item: MenuTreeNode) => {
+      const parent = findParentNode(menuTree, item._id);
+      if (!parent) return;
+
+      const grandparentId = parent.parentId;
+      const grandSiblings = grandparentId
+        ? findNodeById(menuTree, grandparentId)?.children
+        : menuTree;
+
+      if (!grandSiblings) return;
+
+      const parentIndex = grandSiblings.findIndex((n) => n._id === parent._id);
+      const targetOrder = parentIndex + 1;
+
+      startTransition(async () => {
+        try {
+          const res = await moveNavigationItem(item._id, {
+            targetParentId: grandparentId || undefined,
+            targetOrder,
+          });
+          if (res.success) {
+            toastSuccess('Item promoted to parent level');
+            loadMenuTree();
+          } else {
+            toastError(res.error || 'Failed to promote item');
+          }
+        } catch {
+          toastError('Failed to promote item');
+        }
+      });
+    },
+    [menuTree, loadMenuTree]
+  );
+
+  // ---- RENDER SIBLING GROUP ----
+  // Each group of siblings gets its own DndContext + SortableContext
+  // so drag is constrained to same-level reordering.
+  const renderSiblingGroup = (
+    siblings: MenuTreeNode[],
+    siblingParentId: string | undefined,
+    level: number
+  ) => {
+    if (siblings.length === 0) return null;
 
     return (
-      <React.Fragment key={item._id}>
-        <div
-          className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 rounded-lg transition-colors group"
-          style={{ marginLeft: `${level * 24}px` }}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={handleDragEnd(siblingParentId)}
+      >
+        <SortableContext
+          items={siblings.map((s) => s._id)}
+          strategy={verticalListSortingStrategy}
         >
-          {/* Drag handle */}
-          <div className="cursor-move opacity-0 group-hover:opacity-50">
-            <GripVertical className="h-4 w-4" />
-          </div>
+          {siblings.map((item) => {
+            const hasChildren = item.children && item.children.length > 0;
+            const isExpanded = expandedIds.has(item._id);
+            const prevSibling = getPreviousSibling(menuTree, item._id);
 
-          {/* Expand button */}
-          <button
-            onClick={() => hasChildren && toggleExpand(item._id)}
-            className={`w-6 h-6 flex items-center justify-center rounded hover:bg-muted ${
-              !hasChildren ? 'invisible' : ''
-            }`}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </button>
+            return (
+              <React.Fragment key={item._id}>
+                <div style={{ marginLeft: `${level * 24}px` }}>
+                  <SortableMenuTreeItem
+                    item={item}
+                    isExpanded={isExpanded}
+                    hasChildren={hasChildren}
+                    onToggleExpand={toggleExpand}
+                    onCreateChild={handleCreate}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onToggleVisibility={handleToggleVisibility}
+                    onRestore={handleRestore}
+                    onMoveUp={handleMoveUp}
+                    onMoveDown={handleMoveDown}
+                    onMakeSubItem={handleMakeSubItem}
+                    onPromote={handlePromote}
+                    canMoveUp={checkCanMoveUp(menuTree, item._id)}
+                    canMoveDown={checkCanMoveDown(menuTree, item._id)}
+                    canMakeSubItem={checkCanMakeSubItem(menuTree, item._id)}
+                    canPromote={checkCanPromote(menuTree, item._id)}
+                    previousSiblingTitle={
+                      prevSibling
+                        ? (typeof prevSibling.title?.en === 'string' && prevSibling.title.en)
+                          || (typeof prevSibling.title?.mm === 'string' && prevSibling.title.mm)
+                          || 'Untitled'
+                        : undefined
+                    }
+                  />
+                </div>
 
-          {/* Icon */}
-          <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
-            <Menu className="h-4 w-4 text-muted-foreground" />
-          </div>
-
-          {/* Item info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className={`font-medium ${!item.isVisible ? 'text-muted-foreground' : ''}`}>
-                {item.title.en || item.title.mm || 'Untitled'}
-              </span>
-              {item.openInNewTab && (
-                <ExternalLink className="h-3 w-3 text-muted-foreground" />
-              )}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {item.type === 'external' && item.url && (
-                <span className="truncate">{item.url}</span>
-              )}
-              {item.type === 'page' && <span>Page Link</span>}
-              {item.type === 'post' && <span>Post Link</span>}
-              {item.type === 'category' && <span>Category Link</span>}
-              {item.type === 'internal' && <span>/{item.slug}</span>}
-              {item.type === 'custom' && <span>Custom</span>}
-            </div>
-          </div>
-
-          {/* Status badges */}
-          <div className="flex items-center gap-2">
-            {!item.isVisible && (
-              <Badge variant="secondary" className="text-xs">
-                Hidden
-              </Badge>
-            )}
-            {item.requiresAuth && (
-              <Badge variant="outline" className="text-xs">
-                Auth
-              </Badge>
-            )}
-            {getStatusBadge(item.status)}
-          </div>
-
-          {/* Actions */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleCreate(item._id)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Child
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEdit(item)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleToggleVisibility(item)}>
-                {item.isVisible ? (
-                  <>
-                    <EyeOff className="h-4 w-4 mr-2" />
-                    Hide
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Show
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {item.deletedAt ? (
-                <DropdownMenuItem onClick={() => handleRestore(item)}>
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Restore
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  onClick={() => handleDelete(item)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Children */}
-        {hasChildren && isExpanded && (
-          <>
-            {item.children.map((child) => renderMenuItem(child, level + 1))}
-          </>
-        )}
-      </React.Fragment>
+                {/* Recursively render children as their own sortable group */}
+                {hasChildren && isExpanded &&
+                  renderSiblingGroup(item.children, item._id, level + 1)
+                }
+              </React.Fragment>
+            );
+          })}
+        </SortableContext>
+      </DndContext>
     );
   };
 
@@ -422,7 +558,7 @@ export default function NavigationPage() {
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {menuTree.map((item) => renderMenuItem(item))}
+                    {renderSiblingGroup(menuTree, undefined, 0)}
                   </div>
                 )}
               </CardContent>
@@ -433,7 +569,23 @@ export default function NavigationPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => {
+            // Prevent closing dialog when clicking inside portaled dropdowns (e.g. IconSelector)
+            const target = e.target as HTMLElement | null;
+            if (target?.closest?.('[data-icon-selector-portal]')) {
+              e.preventDefault();
+            }
+          }}
+          onFocusOutside={(e) => {
+            // Allow focus to move to portaled dropdowns (e.g. IconSelector search input)
+            const target = e.target as HTMLElement | null;
+            if (target?.closest?.('[data-icon-selector-portal]')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
@@ -462,7 +614,7 @@ export default function NavigationPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deletingItem?.title.en || deletingItem?.title.mm}&quot;?
+              Are you sure you want to delete &quot;{(typeof deletingItem?.title?.en === 'string' && deletingItem.title.en) || (typeof deletingItem?.title?.mm === 'string' && deletingItem.title.mm) || 'Untitled'}&quot;?
               {deletingItem?.children && deletingItem.children.length > 0 && (
                 <span className="block mt-2 text-amber-600">
                   This item has {deletingItem.children.length} child items that will also be affected.
