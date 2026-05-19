@@ -175,28 +175,41 @@ export class StandardPostDataStrategy implements PostDataStrategy {
         `📝 Post Data Strategy - Fetching posts list for tenant: ${tenantId}`, options
       );
 
-      // Build query parameters
+      // Build query parameters for /content/post/public.
+      //
+      // Notes vs the old /content/posts call:
+      //   - status + visibility are dropped: the public endpoint forces
+      //     status: 'Published' and visibility: 'Public' server-side, so
+      //     passing them again would be a no-op AND get rejected by the
+      //     DTO whitelist.
+      //   - categoryIds/tagIds (plural) become categoryId/tagId
+      //     (singular) — PostPublicQueryDto only supports one of each.
+      //     If callers need multi-id filtering we'd add a new param
+      //     server-side; current usage in this codebase is single-id.
+      //   - featured/pinned are not in PostPublicQueryDto and would be
+      //     rejected. Drop them silently here; if a future use case
+      //     needs them, the DTO can be extended.
+      //   - The previous endpoint was /content/posts (plural) which
+      //     doesn't actually map to a backend controller (post controller
+      //     is @Controller('post') singular), so this code path was
+      //     effectively broken until now.
       const params = new URLSearchParams();
       if (options.page) params.append('page', options.page.toString());
       if (options.limit) params.append('limit', options.limit.toString());
-      if (options.status) params.append('status', options.status);
-      if (options.visibility) params.append('visibility', options.visibility);
-      if (options.categoryIds?.length) params.append('categoryIds', options.categoryIds.join(','));
-      if (options.tagIds?.length) params.append('tagIds', options.tagIds.join(','));
+      if (options.categoryIds?.length) params.append('categoryId', options.categoryIds[0]);
+      if (options.tagIds?.length) params.append('tagId', options.tagIds[0]);
       if (options.search) params.append('search', options.search);
       if (options.sortBy) params.append('sortBy', options.sortBy);
       if (options.sortOrder) params.append('sortOrder', options.sortOrder);
-      if (options.featured !== undefined) params.append('featured', options.featured.toString());
-      if (options.pinned !== undefined) params.append('pinned', options.pinned.toString());
 
-      const endpoint = `/content/posts?${params.toString()}`;
+      const endpoint = `/content/post/public?${params.toString()}`;
 
       const response: ApiResponse<PostListResult> = await this.httpClient.request(
         endpoint,
         {
           method: "GET",
           tenantId,
-          withAuth: true,
+          withAuth: false,
         }
       );
 

@@ -26,12 +26,13 @@ export class StandardTagStrategy implements TagStrategy {
     if (cached) return cached;
 
     try {
+      // Anonymous read — see /tags/slug/:slug/public on the backend.
       const response: ApiResponse<PostTag> = await this.httpClient.request(
-        `/content/tags/slug/${slug}`,
+        `/content/tags/slug/${slug}/public`,
         {
           method: "GET",
           tenantId,
-          withAuth: true,
+          withAuth: false,
         }
       );
 
@@ -57,12 +58,13 @@ export class StandardTagStrategy implements TagStrategy {
     if (cached) return cached;
 
     try {
+      // Anonymous list — /tags/public pins status: 'Active' server-side.
       const response: ApiResponse<PostTag[]> = await this.httpClient.request(
-        `/content/tags`,
+        `/content/tags/public`,
         {
           method: "GET",
           tenantId,
-          withAuth: true,
+          withAuth: false,
         }
       );
 

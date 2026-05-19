@@ -26,12 +26,14 @@ export class StandardCategoryStrategy implements CategoryStrategy {
     if (cached) return cached;
 
     try {
+      // Anonymous read — see /categories/slug/:slug/public on the
+      // backend (added alongside /categories/public for parity).
       const response: ApiResponse<PostCategory> = await this.httpClient.request(
-        `/content/categories/slug/${slug}`,
+        `/content/categories/slug/${slug}/public`,
         {
           method: "GET",
           tenantId,
-          withAuth: true,
+          withAuth: false,
         }
       );
 
@@ -57,12 +59,14 @@ export class StandardCategoryStrategy implements CategoryStrategy {
     if (cached) return cached;
 
     try {
+      // Anonymous list — /categories/public pins status: 'Active'
+      // server-side.
       const response: ApiResponse<PostCategory[]> = await this.httpClient.request(
-        `/content/categories`,
+        `/content/categories/public`,
         {
           method: "GET",
           tenantId,
-          withAuth: true,
+          withAuth: false,
         }
       );
 
