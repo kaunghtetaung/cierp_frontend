@@ -51,12 +51,16 @@ export class ContentService {
     const startTime = Date.now();
 
     try {
+      // publicWeb consumes content settings anonymously (theme, header /
+       // footer menu, layout). Use the /public sibling that bypasses
+       // CoreGuard so we don't need a service-account JWT — backend
+       // serves the same payload, scoped to x-tenant-id.
       const response: ApiResponse<ContentSettingsData> = await this.httpClient.request(
-        `/content/settings/tenant/effective`,
+        `/content/settings/tenant/effective/public`,
         {
           method: 'GET',
           tenantId,  // Pass tenantId in config for interceptor
-          withAuth: true
+          withAuth: false,
         }
       );
 

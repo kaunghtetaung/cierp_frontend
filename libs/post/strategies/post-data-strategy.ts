@@ -41,31 +41,67 @@ export class StandardPostDataStrategy implements PostDataStrategy {
           `📝 Post Data Strategy - Making API request (attempt ${attempt}/${POST_CONSTANTS.MAX_RETRIES}) to: /content/post/slug/${slug} for tenant: ${tenantId}`
         );
 
-        const endpoint = populate 
-          ? `/content/post/slug/${slug}?populate=true`
-          : `/content/post/slug/${slug}`;
+        // Backend `findBySlug` already populates organization, dept,
+        // postType, categoryIds, tagIds, createdBy, publishedBy by
+        // default — so `?populate=true` was always redundant AND it
+        // now gets rejected by the gateway's query-field validation
+        // (`INVALID_QUERY_FIELD` 400). Always hit the bare endpoint.
+        // The `populate` argument is kept on this method for backward
+        // compatibility with existing callers but is now ignored.
+        void populate;
+        // Anonymous public read. CoreGuard bypasses the /public sibling;
+        // the backend enforces Published + visibility === 'Public' at
+        // the handler so this can't expose drafts.
+        const endpoint = `/content/post/slug/${encodeURIComponent(slug)}/public`;
 
-        const response: ApiResponse<BasePostData | PopulatedPostData> = await this.httpClient.request(
+        const response: any = await this.httpClient.request(
           endpoint,
           {
             method: "GET",
             tenantId,
-            withAuth: true,
+            withAuth: false,
           }
         );
 
-        console.log(`📝 Post Data Strategy - API response received:`, {
-          success: response.success,
-          hasData: !!response.data,
-          error: response.error,
-          attempt,
-        });
+        // Raw response logging so we can see exactly what the
+        // gateway returns when the slug isn't resolving. Shape may
+        // be `{success, data, error}` (ApiResponse envelope) OR the
+        // post doc itself depending on how StandardResponseHandler
+        // unwraps.
+        console.log(
+          `📝 Post Data Strategy - raw response for slug='${slug}':`,
+          {
+            attempt,
+            success: response?.success,
+            error: response?.error,
+            message: response?.message,
+            hasDataKey: response && typeof response === "object" && "data" in response,
+            dataIsObject: typeof response?.data === "object" && response?.data !== null,
+            dataHasId: !!(response?.data as any)?._id,
+            responseHasId: !!(response as any)?._id,
+          },
+        );
 
-        if (!response.success || !response.data) {
-          throw new Error(response.error || "Failed to fetch post");
+        // The post controller returns the doc unwrapped (no
+        // `{success, data, error}` envelope) — sometimes the response
+        // handler wraps it in `{ data: <post> }`, sometimes it passes
+        // through directly. Accept both shapes by reading whichever
+        // has a real `_id`. Without this, `response.success` is
+        // undefined for the unwrapped shape and the request throws
+        // "Failed to fetch post" even when the doc exists.
+        const postData = (response &&
+          response.data &&
+          (response.data as any)._id)
+          ? response.data
+          : response && (response as any)._id
+            ? response
+            : null;
+
+        if (!postData) {
+          throw new Error(
+            (response && (response as any).error) || "Failed to fetch post",
+          );
         }
-
-        const postData = response.data;
 
         // Validate and cache the result
         if (this.isValidPostData(postData)) {

@@ -80,8 +80,18 @@ export class PageService {
   }
 
   /**
-   * Get page by slug for current tenant (read-only)
-   * This is the main method for fetching pages by slug
+   * Get page by slug for current tenant (read-only).
+   *
+   * Resolution order:
+   *   1. **Posts collection** (page-as-post: `postTypeSlug='page'`) —
+   *      this is the canonical home for newly authored pages. The
+   *      admin uses `PostForm` and stores in `posts`.
+   *   2. **Legacy `pages` collection** — kept as a backward-compat
+   *      reader for orgs that haven't migrated yet. Hit only when the
+   *      post-side lookup misses.
+   *
+   * Same slug can exist in both collections — the post wins, since
+   * that's where active authoring happens.
    */
   async getPageBySlug(slug: string): Promise<PageData> {
     // Get tenant ID from headers
@@ -92,9 +102,71 @@ export class PageService {
       throw new Error("No tenant ID found in request headers");
     }
 
-    const cacheKey = CacheKeys.pageBySlug(tenantId, slug);
+    // Tier 1 — page-as-post lookup. Run BEFORE the cache check so a
+    // stale legacy entry from before the post-as-page migration can't
+    // shadow the canonical doc. Cache key bumped to `:v2` so any old
+    // legacy values (different layout shape) are abandoned wholesale.
+    //
+    // Route through `httpClient.request` so auth (`Bearer <token>`)
+    // and tenant headers are attached the same way the legacy lookup
+    // does. The post controller returns the doc unwrapped (no
+    // `{statusCode, data}` envelope), so we accept either shape from
+    // the response handler.
+    const cacheKey = `${CacheKeys.pageBySlug(tenantId, slug)}:v2`;
 
-    // Try to get from cache first
+    try {
+      console.log(
+        `📄 Page Service - Tier 1 (post-as-page) request: /content/post/slug/${slug}`,
+      );
+      // publicWeb renders anonymously. Use the /public sibling that
+      // CoreGuard bypasses; the backend enforces Published + visibility
+      // === 'Public' at the handler. withAuth: false skips the JWT
+      // lookup so we don't need a service-account token.
+      const postResp: any = await this.httpClient.request(
+        `/content/post/slug/${encodeURIComponent(slug)}/public`,
+        {
+          method: "GET",
+          tenantId,
+          withAuth: false,
+        },
+      );
+      // The handler may wrap or pass through. Walk both shapes.
+      const candidate =
+        (postResp && postResp.data && (postResp.data as any)._id)
+          ? postResp.data
+          : (postResp && (postResp as any)._id)
+            ? (postResp as any)
+            : null;
+      if (candidate) {
+        const slugFromPostType =
+          typeof (candidate as any).postTypeSlug === "string"
+            ? (candidate as any).postTypeSlug
+            : (candidate as any).postTypeId?.slug;
+        if (!slugFromPostType || slugFromPostType === "page") {
+          console.log(
+            `📄 Page Service - Tier 1 hit: post-as-page _id=${(candidate as any)._id}`,
+          );
+          if (this.isValidPageData(candidate)) {
+            await this.cache.set(
+              cacheKey,
+              candidate as PageData,
+              CacheTTL.CONTENT || 60 * 60 * 24,
+            );
+          }
+          return candidate as PageData;
+        }
+      }
+      console.log(
+        `📄 Page Service - Tier 1 miss for slug='${slug}', falling back to legacy /page endpoint`,
+      );
+    } catch (err) {
+      console.warn(
+        `📄 Page Service - post-as-page fetch failed, falling back:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    // Try to get from cache (post-as-page miss → legacy lookup path)
     const cachedPage = await this.cache.get<PageData>(cacheKey);
     if (cachedPage && this.isValidPageData(cachedPage)) {
       return cachedPage;
@@ -110,12 +182,13 @@ export class PageService {
           `📄 Page Service - Making API request (attempt ${attempt}/${maxRetries}) to: /content/page/slug/${slug} for tenant: ${tenantId}`
         );
 
+        // Anonymous read — see comment on the post-as-page tier above.
         const response: ApiResponse<PageData> = await this.httpClient.request(
-          `/content/page/slug/${slug}`,
+          `/content/page/slug/${slug}/public`,
           {
             method: "GET",
             tenantId,
-            withAuth: true,
+            withAuth: false,
           }
         );
 
@@ -234,13 +307,19 @@ export class PageService {
   }
 
   /**
-   * Get page sections that are enabled
+   * Get page sections that are enabled.
+   *
+   * Defensive — `sections` may be undefined when the legacy page
+   * collection migrated to Posts (postType=page) and a stale doc
+   * lacks the field, or when the backend returns a page that has
+   * no sections at all. Treat missing/non-array as "no sections".
    */
   async getPageSections(slug: string): Promise<SectionData[]> {
     const page = await this.getPageBySlug(slug);
-    return page.sections
+    const sections = Array.isArray(page?.sections) ? page.sections : [];
+    return sections
       .filter((section) => section.isVisible)
-      .sort((a, b) => a.order - b.order);
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
 }
 
@@ -297,15 +376,122 @@ export const isPageAccessible = cache(
 );
 
 /**
- * Get page sections using React.cache
+ * Walks a layout-tree (containers > rows > columns > sectionRefs) and
+ * returns every sectionId referenced. Layout-built pages don't carry a
+ * top-level `sections` array — section ids live nested inside the
+ * builder tree, so callers that need a flat list (the renderer's
+ * `allSections` prop) have to gather them from here.
+ */
+function collectSectionIdsFromLayout(layout: any): string[] {
+  if (!layout || !Array.isArray(layout.containers)) return [];
+  const ids = new Set<string>();
+  const visitRows = (rows: any[]) => {
+    for (const row of rows ?? []) {
+      for (const col of row?.columns ?? []) {
+        for (const ref of col?.sectionRefs ?? []) {
+          if (ref?.sectionId) ids.add(String(ref.sectionId));
+        }
+        // Sub-rows — depth-recurse so nested layouts work too.
+        if (Array.isArray(col?.rows) && col.rows.length > 0) {
+          visitRows(col.rows);
+        }
+      }
+    }
+  };
+  for (const container of layout.containers) {
+    visitRows(container?.rows ?? []);
+  }
+  return [...ids];
+}
+
+/**
+ * Fetch every section referenced in a layout tree (containers > rows
+ * > columns > sectionRefs[], including sub-rows). Used by the route
+ * directly when it has already resolved the *effective* layout
+ * (page.layout OR — for wrapper-mode pages — template.layout) and
+ * `getPageSections(slug)` would walk only the page's own (empty)
+ * layout.
+ *
+ * Returns `[]` for empty layouts, missing tenant context, or when
+ * every fetch fails — never throws.
+ */
+export async function getSectionsByLayout(
+  layout: any,
+): Promise<SectionData[]> {
+  const ids = collectSectionIdsFromLayout(layout);
+  if (ids.length === 0) return [];
+
+  const middleware = await getMiddlewareDataFromHeaders();
+  const tenantId = middleware.tenantId;
+  if (!tenantId) return [];
+
+  const apiUrl = await getApiDomain();
+  const sectionClient = createHttpClient({ baseURL: apiUrl });
+
+  const fetched = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        // Anonymous section fetch — /sections/:id/public bypasses
+        // CoreGuard. Tenant scoping is still enforced by the
+        // OrganizationContextInterceptor on the backend.
+        const resp: any = await sectionClient.request(
+          `/content/sections/${id}/public`,
+          { method: "GET", tenantId, withAuth: false },
+        );
+        const doc = resp?.data?._id
+          ? resp.data
+          : resp?._id
+            ? resp
+            : null;
+        if (!doc) {
+          console.warn(`getSectionsByLayout: empty response for section ${id}`);
+          return null;
+        }
+        return doc as SectionData;
+      } catch (err) {
+        console.warn(
+          `getSectionsByLayout: failed to fetch section ${id}`,
+          err instanceof Error ? err.message : err,
+        );
+        return null;
+      }
+    }),
+  );
+  return fetched.filter((s): s is SectionData => !!s);
+}
+
+/**
+ * Get page sections using React.cache.
+ *
+ * Two-tier resolution:
+ *   1. Legacy: `page.sections` (flat array) — populated by the
+ *      backend for pages authored under the old model.
+ *   2. New: walk `page.layout` and fetch each referenced section by
+ *      id — used by pages authored with the page-builder tree, which
+ *      don't carry a top-level `sections` array.
+ *
+ * NOTE: this only walks `page.layout`. For wrapper-mode pages where
+ * `page.layout` is empty and the layout lives on the assigned
+ * template, the route must call `getSectionsByLayout(effectiveLayout)`
+ * separately — this function intentionally doesn't fetch the
+ * template (it lives in the publicWeb theme layer to avoid pulling
+ * tenant/theme resolution into libs/page).
  */
 export const getPageSections = cache(
   async (slug: string): Promise<SectionData[]> => {
     const page = await getPageBySlug(slug);
-    return page.sections
-      .filter((section) => section.isVisible)
-      .sort((a, b) => a.order - b.order);
-  }
+
+    // Tier 1 — legacy flat array.
+    const flat = Array.isArray(page?.sections) ? page.sections : [];
+    if (flat.length > 0) {
+      return flat
+        .filter((section) => section.isVisible)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
+    // Tier 2 — layout tree.
+    return getSectionsByLayout((page as any)?.layout);
+  },
 );
 
 /**
