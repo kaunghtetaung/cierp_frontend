@@ -1,5 +1,4 @@
 import React, { cache } from "react";
-import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPageBySlug, getPageSections, getSectionsByLayout } from "@repo/page";
 import { getContentSettings } from "@repo/content";
@@ -9,57 +8,11 @@ import { getThemeTemplates, type ThemeName } from "@/themes";
 import { resolvePageLayout } from "@/themes/default/lib/template-resolver";
 import { ErrorPage } from "../../feature-components/error";
 
-// Cache window for the home page's per-tenant data fetches. Pure ISR on the
-// route itself doesn't work because SafeHomePage reads headers() to resolve
-// the tenant, which forces dynamic rendering. Instead we cache the data
-// fetches themselves keyed by tenantId+language so cross-request hits skip
-// the 4 backend round trips. Backend Redis cache sits behind this for an
-// additional layer.
-const HOMEPAGE_CACHE_REVALIDATE_SEC = 600; // 10 minutes
-
-// Per-tenant cached fetch for the home page payload. Returns the same shape
-// the inline implementation used. Network errors propagate to the caller.
-const getHomePageData = (tenantId: string, language: string) =>
-  unstable_cache(
-    async () => {
-      const homePage = await getPageBySlug("home");
-      const effectiveLayout = await resolvePageLayout(homePage as any);
-      const sections = effectiveLayout
-        ? await getSectionsByLayout(effectiveLayout).catch(() => [] as any[])
-        : await getPageSections("home").catch(() => [] as any[]);
-      return { homePage, effectiveLayout, sections };
-    },
-    [`safe-home-page`, tenantId, language],
-    {
-      revalidate: HOMEPAGE_CACHE_REVALIDATE_SEC,
-      tags: [`home:${tenantId}`, `page:${tenantId}`],
-    },
-  )();
-
-// Resolve the active theme name. Cached per tenant — settings rarely change.
-const getThemeNameCached = (tenantId: string) =>
-  unstable_cache(
-    async (): Promise<ThemeName> => {
-      try {
-        const contentSettings = await getContentSettings(tenantId);
-        const candidate = (contentSettings as any)?.themeName;
-        if (candidate && isKnownTheme(candidate)) {
-          return candidate as ThemeName;
-        }
-      } catch {
-        // fall through to default
-      }
-      return "default";
-    },
-    [`safe-home-theme`, tenantId],
-    {
-      revalidate: HOMEPAGE_CACHE_REVALIDATE_SEC,
-      tags: [`settings:${tenantId}`],
-    },
-  )();
-
-// Per-request dedup for the middleware-headers lookup. If two RSC children
-// also call this within the same request, React's cache() coalesces.
+// Per-request dedup only. Avoid Next's `unstable_cache` here: the underlying
+// data services (getPageBySlug, getContentSettings, ...) read request
+// headers (tenantId, auth) via `headers()`, which throws inside an
+// `unstable_cache` callback. Cross-request caching is handled by the
+// backend Redis layer instead (see content service repositories).
 const getRequestMiddlewareData = cache(() => getMiddlewareDataFromHeaders());
 
 /**
@@ -99,15 +52,40 @@ export default async function SafeHomePage() {
       );
     }
 
-    // Resolve theme + home-page data in parallel; both are tenant-cached so
-    // a warm cache returns in microseconds.
-    const [themeName, homePageData] = await Promise.all([
-      getThemeNameCached(tenantId),
-      getHomePageData(tenantId, currentLanguage),
-    ]);
+    // Resolve the active theme so home content uses the right templates.
+    // Settings.themeName is the source of truth; any unregistered value
+    // falls back to 'default'.
+    let themeName: ThemeName = "default";
+    try {
+      const contentSettings = await getContentSettings(tenantId);
+      const candidate = (contentSettings as any)?.themeName;
+      if (candidate && isKnownTheme(candidate)) {
+        themeName = candidate as ThemeName;
+      }
+    } catch {
+      // Theme resolution failure is non-fatal — render with default.
+    }
 
     const { HomePage } = getThemeTemplates(themeName);
-    const { homePage, effectiveLayout, sections } = homePageData;
+
+    // Fetch the home page. Network errors propagate to the outer catch
+    // so they redirect to /error/service-unavailable; the null path
+    // (legitimate "no home configured") falls through to the HomePage
+    // template's empty state.
+    const homePage = await getPageBySlug("home");
+
+    // Resolve effective layout — prefers `homePage.layout`, falls back to
+    // the assigned authored Template (`homePage.templateId`) when the
+    // page itself doesn't carry a layout. Returns `null` for pages with
+    // neither, so the renderer falls through to flat sectionRefs.
+    const effectiveLayout = await resolvePageLayout(homePage as any);
+
+    // Fetch sections from the *effective* layout so wrapper-mode pages
+    // (page.layout empty, layout lives on the template) don't end up
+    // with an empty sections list.
+    const sections = effectiveLayout
+      ? await getSectionsByLayout(effectiveLayout).catch(() => [] as any[])
+      : await getPageSections("home").catch(() => [] as any[]);
 
     const homePageWithLayout = homePage
       ? ({ ...homePage, layout: effectiveLayout ?? (homePage as any).layout } as any)
@@ -122,9 +100,9 @@ export default async function SafeHomePage() {
       />
     );
   } catch (error) {
-    // `redirect()` throws a NEXT_REDIRECT signal — DO NOT swallow
-    // it. Re-throw so Next can complete the redirect; otherwise it
-    // falls through and we'd render an inline ErrorPage instead.
+    // `redirect()` throws a NEXT_REDIRECT signal — DO NOT swallow it.
+    // Re-throw so Next can complete the redirect; otherwise it falls
+    // through and we'd render an inline ErrorPage instead.
     if (
       error &&
       typeof error === "object" &&
@@ -138,13 +116,7 @@ export default async function SafeHomePage() {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
-    // Any backend fetch failure (gateway up, content service down,
-    // gateway down, timeout, 5xx) all funnel to the same friendly
-    // page. Previously a "gateway" string-match branch and a
-    // generic ErrorPage rendered inline fragments — the user saw
-    // a broken header + "Page Load Error" card instead of a clean
-    // error UI. Single redirect target gives consistent UX with
-    // the middleware-level errors.
+    // Any backend fetch failure funnels to the same friendly page.
     redirectToServiceUnavailable("CONTENT_SERVICE_UNAVAILABLE", errorMessage);
   }
 }
