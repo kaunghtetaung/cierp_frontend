@@ -56,18 +56,27 @@ export async function createCategory(
   data: CreateCategoryDto
 ): Promise<ApiResponse<Category>> {
   try {
-    if (!data.name?.en || !data.name?.mm) {
+    // Backend DTO is `name: string`. Accept either a string or a multilang
+    // object (legacy callers) and normalize to the string the API expects.
+    const rawName: any = (data as any).name;
+    const normalizedName: string =
+      typeof rawName === 'string'
+        ? rawName.trim()
+        : (rawName?.en || rawName?.mm || '').toString().trim();
+
+    if (!normalizedName) {
       return {
         success: false,
-        error: 'Name is required in both languages',
+        error: 'Name is required',
         message: 'Validation failed',
         data: null as any,
         timestamp: new Date(),
       };
     }
 
+    const payload = { ...data, name: normalizedName } as any;
     const service = await getCategoryService();
-    const response = await service.create(data);
+    const response = await service.create(payload);
     return response;
   } catch (error) {
     console.error('Create category error:', error);
@@ -104,6 +113,54 @@ export async function getCategories(
 }
 
 /**
+ * Lightweight reference lookup for dropdowns — `{ id, label, value }` items.
+ * Goes Next.js (server-side, with auth token) → API gateway → content
+ * service `/categories/ref`.
+ */
+export async function getCategoryReference(
+  params?: { search?: string; limit?: number; status?: string }
+): Promise<
+  ApiResponse<Array<{ id: string; label: string; value: string }>>
+> {
+  try {
+    const service = await getCategoryService();
+    const response = await service.getReference(params);
+    if (response.success && response.data) {
+      // The shared StandardResponseHandler unwraps `body.data` automatically,
+      // so `response.data` is already the array. Older code paths returned
+      // the full wrapper; handle both for safety.
+      const raw: any = response.data;
+      const list: Array<{ id: string; label: string; value: string }> =
+        Array.isArray(raw) ? raw : (raw.data || []);
+      return {
+        success: true,
+        data: list,
+        message:
+          (typeof raw === 'object' && !Array.isArray(raw) && raw.message) ||
+          'OK',
+        timestamp: new Date(),
+      } as ApiResponse<Array<{ id: string; label: string; value: string }>>;
+    }
+    return {
+      success: false,
+      error: response.error || 'Failed to fetch category reference',
+      message: 'Fetch failed',
+      data: [] as any,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Get category reference error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch category reference',
+      message: 'Fetch failed',
+      data: [] as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
  * Get category tree
  */
 export async function getCategoryTree(
@@ -112,6 +169,22 @@ export async function getCategoryTree(
   try {
     const service = await getCategoryService();
     const response = await service.getTree(params);
+    // Backend returns `{ data: [...], meta: {...} }` and the shared
+    // response handler preserves the wrap (so paginated callers can
+    // read meta). The declared return type is `ApiResponse<...[]>` —
+    // callers expect `result.data` to BE the array. Unwrap one level
+    // here so categories/page.tsx and other consumers can do
+    // `setCategories(result.data)` directly, matching the shape of
+    // every other array-returning action in this file.
+    if (
+      response.success &&
+      response.data &&
+      typeof response.data === 'object' &&
+      !Array.isArray(response.data) &&
+      Array.isArray((response.data as any).data)
+    ) {
+      return { ...response, data: (response.data as any).data };
+    }
     return response;
   } catch (error) {
     console.error('Get category tree error:', error);
