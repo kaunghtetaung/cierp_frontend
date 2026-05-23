@@ -9,6 +9,7 @@
     "./core": "./core/index.ts",
     "./server": "./server/server.ts",
     "./server-api": "./server/server-api.ts",
+    "./session-fetch": "./server/session-fetch.ts",
     "./hooks": "./hooks/hooks.ts",
     "./auth-provider": "./components/auth-provider.tsx",
     "./login-page": "./components/login-page.tsx",

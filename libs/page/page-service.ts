@@ -2,6 +2,7 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { getApiDomain } from "@repo/utils/server";
+import { resolveAuthMode } from "@repo/auth/session-fetch";
 import { createHttpClient } from "@repo/api/client";
 import { getCacheInstance, CacheKeys, CacheTTL } from "@repo/cache";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
@@ -112,24 +113,33 @@ export class PageService {
     // does. The post controller returns the doc unwrapped (no
     // `{statusCode, data}` envelope), so we accept either shape from
     // the response handler.
+    // Session-aware path selection. Anonymous visitors hit
+    // `/content/post/slug/:slug/public` (forces visibility=Public
+    // server-side). Authenticated visitors hit the bare
+    // `/content/post/slug/:slug`, which runs through
+    // VisibilityInterceptor and may surface Private (owner-only) /
+    // Protected (role/group/user-scoped) docs the requester is
+    // entitled to. We bypass the slug cache for authenticated reads
+    // because the result is per-user and caching it would leak
+    // role-scoped content between sessions.
+    const auth = await resolveAuthMode();
     const cacheKey = `${CacheKeys.pageBySlug(tenantId, slug)}:v2`;
+    const allowCache = !auth.authenticated;
 
     try {
+      const tier1Path = auth.authenticated
+        ? `/content/post/slug/${encodeURIComponent(slug)}`
+        : `/content/post/slug/${encodeURIComponent(slug)}/public`;
       console.log(
-        `📄 Page Service - Tier 1 (post-as-page) request: /content/post/slug/${slug}`,
+        `📄 Page Service - Tier 1 (post-as-page) request: ${tier1Path}` +
+          ` (auth=${auth.authenticated})`,
       );
-      // publicWeb renders anonymously. Use the /public sibling that
-      // CoreGuard bypasses; the backend enforces Published + visibility
-      // === 'Public' at the handler. withAuth: false skips the JWT
-      // lookup so we don't need a service-account token.
-      const postResp: any = await this.httpClient.request(
-        `/content/post/slug/${encodeURIComponent(slug)}/public`,
-        {
-          method: "GET",
-          tenantId,
-          withAuth: false,
-        },
-      );
+      const postResp: any = await this.httpClient.request(tier1Path, {
+        method: "GET",
+        tenantId,
+        withAuth: auth.withAuth,
+        ...(auth.tokenStrategy ? { tokenStrategy: auth.tokenStrategy } : {}),
+      });
       // The handler may wrap or pass through. Walk both shapes.
       const candidate =
         (postResp && postResp.data && (postResp.data as any)._id)
@@ -146,7 +156,7 @@ export class PageService {
           console.log(
             `📄 Page Service - Tier 1 hit: post-as-page _id=${(candidate as any)._id}`,
           );
-          if (this.isValidPageData(candidate)) {
+          if (allowCache && this.isValidPageData(candidate)) {
             await this.cache.set(
               cacheKey,
               candidate as PageData,
@@ -166,10 +176,14 @@ export class PageService {
       );
     }
 
-    // Try to get from cache (post-as-page miss → legacy lookup path)
-    const cachedPage = await this.cache.get<PageData>(cacheKey);
-    if (cachedPage && this.isValidPageData(cachedPage)) {
-      return cachedPage;
+    // Try to get from cache (post-as-page miss → legacy lookup path).
+    // Skip the cache for authenticated reads — caching role-scoped
+    // responses would leak Private/Protected content across sessions.
+    if (allowCache) {
+      const cachedPage = await this.cache.get<PageData>(cacheKey);
+      if (cachedPage && this.isValidPageData(cachedPage)) {
+        return cachedPage;
+      }
     }
 
     // Fetch from API using HTTP client with tenant context - with token retry
@@ -178,17 +192,22 @@ export class PageService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        const tier2Path = auth.authenticated
+          ? `/content/page/slug/${slug}`
+          : `/content/page/slug/${slug}/public`;
         console.log(
-          `📄 Page Service - Making API request (attempt ${attempt}/${maxRetries}) to: /content/page/slug/${slug} for tenant: ${tenantId}`
+          `📄 Page Service - Making API request (attempt ${attempt}/${maxRetries}) to: ${tier2Path} (auth=${auth.authenticated})`,
         );
 
-        // Anonymous read — see comment on the post-as-page tier above.
+        // Same session-aware switch as Tier 1 — authenticated reads
+        // go through the bare endpoint with VisibilityInterceptor.
         const response: ApiResponse<PageData> = await this.httpClient.request(
-          `/content/page/slug/${slug}/public`,
+          tier2Path,
           {
             method: "GET",
             tenantId,
-            withAuth: false,
+            withAuth: auth.withAuth,
+            ...(auth.tokenStrategy ? { tokenStrategy: auth.tokenStrategy } : {}),
           }
         );
 
@@ -205,8 +224,9 @@ export class PageService {
 
         const pageData = response.data;
 
-        // Validate and cache the result
-        if (this.isValidPageData(pageData)) {
+        // Validate and cache the result (anonymous reads only — see
+        // earlier comment on `allowCache`).
+        if (allowCache && this.isValidPageData(pageData)) {
           await this.cache.set(
             cacheKey,
             pageData,

@@ -15,6 +15,7 @@
 
 import { getApiDomain } from "@repo/utils/server";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
+import { resolveAuthMode } from "@repo/auth/session-fetch";
 import { createHttpClient } from "@repo/api/client";
 
 export interface Department {
@@ -127,11 +128,25 @@ export async function getDeptHomePage(
     const tenantId: string | undefined = (middleware as any)?.tenantId;
     const c = await client(tenantId);
     if (!c || !tenantId) return null;
-    // Anonymous list — /content/post/public bypasses CoreGuard and
-    // pins status: Published + visibility: Public server-side.
+    const auth = await resolveAuthMode();
+    // Endpoint switches on session presence:
+    //   - anonymous → /content/post/public (forces visibility=Public)
+    //   - authenticated → /content/post; VisibilityInterceptor filters
+    //     Private/Protected/Password rows per-visitor server-side.
+    const baseParams = `departmentId=${encodeURIComponent(departmentId)}&postTypeSlug=page&limit=25`;
+    // publicView=true on the auth path pins Published + OR-includes
+    // eligible drafts (matches publicView contract on PostController).
+    const url = auth.authenticated
+      ? `/content/post?${baseParams}&publicView=true`
+      : `/content/post/public?${baseParams}`;
     const resp: any = await c.request(
-      `/content/post/public?departmentId=${encodeURIComponent(departmentId)}&postTypeSlug=page&limit=25`,
-      { method: "GET", tenantId, withAuth: false },
+      url,
+      {
+        method: "GET",
+        tenantId,
+        withAuth: auth.withAuth,
+        ...(auth.authenticated ? { tokenStrategy: auth.tokenStrategy } : {}),
+      },
     );
     // List response shape: `{ data: [...], meta: {...} }`.
     const list =

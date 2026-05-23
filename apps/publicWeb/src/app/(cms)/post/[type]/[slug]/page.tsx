@@ -1,4 +1,5 @@
 import React from "react";
+import { cookies } from "next/headers";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getApiDomain } from "@repo/utils/server";
 import { createHttpClient } from "@repo/api/client";
@@ -11,6 +12,8 @@ import { getContentSettings } from "@repo/content";
 import { isKnownTheme } from "@repo/types";
 import { getThemeTemplates, type ThemeName } from "@/themes";
 import { ErrorPage } from "../../../../../feature-components/error";
+import { PasswordGate } from "@/feature-components/password-gate/PasswordGate";
+import { cookieNameFor, decryptPassword } from "@/lib/post-unlock";
 
 /**
  * Site-wide taxonomy fetcher — pulls every Active category / tag
@@ -63,6 +66,52 @@ async function fetchTaxonomy(
 
 // Dynamic — pulls headers + per-tenant data
 export const dynamic = "force-dynamic";
+
+/**
+ * Try to unlock a Password-protected post using the previously-stored
+ * `pw_<postId>` cookie. If the cookie is present and decryptable, we
+ * re-call `POST /content/post/slug/:slug/access` with the cached
+ * password and return the unredacted body. Any failure (missing cookie,
+ * tampered value, wrong password against rotated post password) is
+ * silently treated as "still locked" so the gate re-renders.
+ */
+async function tryUnlockWithCookie(
+  slug: string,
+  postId: string,
+  tenantId: string,
+): Promise<any | null> {
+  const cookieStore = await cookies();
+  const stored = cookieStore.get(cookieNameFor(postId))?.value;
+  const password = decryptPassword(stored);
+  if (!password) return null;
+  try {
+    const apiDomain = await getApiDomain();
+    const httpClient = createHttpClient({
+      baseURL: apiDomain,
+      enableAuth: false,
+      timeout: 10_000,
+    });
+    const resp: any = await httpClient.request(
+      `/content/post/slug/${encodeURIComponent(slug)}/access`,
+      {
+        method: "POST",
+        tenantId,
+        withAuth: false,
+        body: { password },
+      },
+    );
+    const unlocked =
+      (resp?.data && (resp.data as any)._id && resp.data) ||
+      (resp && (resp as any)._id ? resp : null);
+    return unlocked;
+  } catch (err) {
+    console.warn(
+      `[PostTypeSlugPage] cookie unlock failed for slug='${slug}':`,
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+}
 
 interface PostTypeSlugPageProps {
   params: Promise<{
@@ -129,7 +178,7 @@ export default async function PostTypeSlugPage({
     // root cause (404 / auth / network) surfaces in server logs;
     // returning `null` keeps the user-facing "Post Not Found" UI
     // identical regardless of the failure mode.
-    const post = await getPost(slug, true).catch((err: unknown) => {
+    let post: any = await getPost(slug, true).catch((err: unknown) => {
       console.warn(
         `[PostTypeSlugPage] getPost("${slug}") failed:`,
         err instanceof Error ? err.message : err,
@@ -137,11 +186,33 @@ export default async function PostTypeSlugPage({
       return null;
     });
 
+    // Password-protected post → try to swap in the unredacted version
+    // using the visitor's previously-set unlock cookie. If the swap
+    // succeeds, the rest of the route renders the full post normally.
+    // If it doesn't, we leave `post` as the redacted form so the gate
+    // below can render with the title/feature image still intact.
+    let needsGate = false;
+    if (post && (post as any).visibility === "Password" && post._id) {
+      const unlocked = await tryUnlockWithCookie(
+        slug,
+        String(post._id),
+        tenantId,
+      );
+      if (unlocked) {
+        post = unlocked;
+      } else {
+        needsGate = true;
+      }
+    }
+
     // Best-effort related-posts fetch. Failure is non-critical; the
-    // sidebar just hides the widget when the list is empty.
-    const related = post
-      ? await getRelatedPosts(post as any, 5).catch(() => [])
-      : [];
+    // sidebar just hides the widget when the list is empty. Skip when
+    // the post is still locked — we have no taxonomy ids to suggest by
+    // and the gate page shouldn't tease "related" content.
+    const related =
+      post && !needsGate
+        ? await getRelatedPosts(post as any, 5).catch(() => [])
+        : [];
 
     // Categories / tags — site-wide taxonomy fetched fresh from the
     // gateway so the post sidebar shows the same data as the
@@ -167,6 +238,35 @@ export default async function PostTypeSlugPage({
       { label: typeLabel, href: `/post/${type}` },
       { label: titleStr || slug },
     ];
+
+    if (needsGate && post) {
+      // Reuse the theme's PostPage shell so the gate sits inside the
+      // normal hero / header / sidebar chrome — visitors see the post
+      // title and feature image but the body slot is replaced with the
+      // PasswordGate form. We pass a redacted post (body stripped by
+      // the backend interceptor) so the template renders title/image
+      // safely; the gate component handles its own messaging.
+      return (
+        <PostPage
+          post={post}
+          categories={categories}
+          tags={tags}
+          related={[]}
+          currentLanguage={currentLanguage}
+          crumbs={crumbs}
+          slug={slug}
+          bodySlot={
+            <PasswordGate
+              postId={String((post as any)._id)}
+              slug={slug}
+              type={type}
+              title={titleStr}
+              currentLanguage={currentLanguage}
+            />
+          }
+        />
+      );
+    }
 
     return (
       <PostPage

@@ -6,32 +6,25 @@ import { createHttpClient } from "@repo/api/client";
 import { getContentSettings } from "@repo/content";
 import { isKnownTheme } from "@repo/types";
 import { getThemeTemplates, type ThemeName } from "@/themes";
-import { ErrorPage } from "../../../../feature-components/error";
+import { ErrorPage } from "../../../feature-components/error";
 import type { ListViewMode } from "@/themes/default/templates/post-list/ViewToggle";
 
-// Dynamic — pulls headers + per-tenant data + query params
 export const dynamic = "force-dynamic";
 
-interface PostTypePageProps {
-  params: Promise<{ type: string }>;
+interface SearchPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
- * Public list page for a given post type — used for announcements,
- * news, article, lesson, event index routes. All share the same
- * layout (theme-resolved) with view toggle (list / card / table)
- * and pagination via URL query params.
+ * Site-wide post search results page — URL `/search?q=<term>`.
  *
- * URL params:
- *   - `?view=list|card|table` — view mode (default `list`)
- *   - `?page=N`               — 1-indexed page (default 1)
- *   - `?limit=N`              — items per page (default 12, max 50)
+ * Submits anonymous queries to `/content/post/public?search=<term>`
+ * which runs case-insensitive regex over title/body/excerpt across
+ * both languages (en + mm). Same layout shell as /post/[type] and
+ * /category/[cat]: theme-resolved `PostListPage` with hero +
+ * pagination + sidebar.
  */
 
-/** Site-wide taxonomy fetch — mirror of the one in the post detail
- *  route. Both pages render the same sidebar so they need the same
- *  data shape. */
 async function fetchTaxonomy(
   tenantId: string,
   resource: "categories" | "tags",
@@ -46,8 +39,6 @@ async function fetchTaxonomy(
     });
     const params = new URLSearchParams();
     params.set("limit", String(limit));
-    // Anonymous taxonomy fetch — the /public sibling forces
-    // status: 'Active' server-side so we don't need to send it.
     const response: any = await httpClient.request(
       `/content/${resource}/public?${params.toString()}`,
       { method: "GET", tenantId, withAuth: false },
@@ -65,27 +56,19 @@ async function fetchTaxonomy(
     return Array.isArray(data) ? data : [];
   } catch (err) {
     console.warn(
-      `[PostTypePage] fetchTaxonomy(${resource}) failed:`,
+      `[SearchPage] fetchTaxonomy(${resource}) failed:`,
       err instanceof Error ? err.message : err,
     );
     return [];
   }
 }
 
-/** Page-of-posts fetcher — hits the gateway list endpoint with
- *  postTypeSlug, status=Published, paging, and sort.
- *
- *  Endpoint switches on session presence: anonymous visitors hit
- *  `/content/post/public` (pins visibility=Public server-side); signed-in
- *  visitors hit `/content/post` so the backend's VisibilityInterceptor
- *  also surfaces the Private/Protected/Password rows their role grants.
- *  We still scope to `status=Published` either way so non-published rows
- *  stay hidden. */
-async function fetchPostsPage(
+async function fetchSearchPage(
   tenantId: string,
-  postTypeSlug: string,
+  q: string,
   page: number,
   limit: number,
+  language?: string,
 ): Promise<{ posts: any[]; total: number }> {
   try {
     const apiDomain = await getApiDomain();
@@ -96,15 +79,23 @@ async function fetchPostsPage(
       timeout: 10_000,
     });
     const params = new URLSearchParams();
-    params.set("postTypeSlug", postTypeSlug);
+    params.set("search", q);
     params.set("page", String(page));
     params.set("limit", String(limit));
     params.set("sortBy", "publishedAt");
     params.set("sortOrder", "desc");
+    // Don't pin a language — backend searches BOTH en + mm when
+    // `language` is omitted, which is what users expect from a
+    // top-bar search box.
+    if (language === "en" || language === "mm") {
+      // Only set if explicitly requested via ?lang= override. Keeping
+      // the param optional means the natural bilingual behavior is the
+      // default.
+      params.set("language", language);
+    }
     if (auth.authenticated) {
-      // Ask the backend to pin Published + OR-include the visitor's
-      // eligible drafts. See libs/post/strategies/post-data-strategy
-      // for the publicView contract.
+      // See /content/post publicView contract — pins Published and
+      // OR-adds the visitor's eligible drafts.
       params.set("publicView", "true");
     }
     const endpoint = auth.authenticated
@@ -120,9 +111,6 @@ async function fetchPostsPage(
       },
     );
     if (!response?.success) return { posts: [], total: 0 };
-    // The list endpoint wraps `{data: [...], meta: {total, ...}}`.
-    // The response handler may pass that through or unwrap once;
-    // accept either shape.
     let raw: any = response.data;
     let meta: any = response.meta ?? {};
     if (
@@ -141,7 +129,7 @@ async function fetchPostsPage(
     return { posts, total };
   } catch (err) {
     console.warn(
-      `[PostTypePage] fetchPostsPage failed:`,
+      `[SearchPage] fetchSearchPage failed:`,
       err instanceof Error ? err.message : err,
     );
     return { posts: [], total: 0 };
@@ -160,38 +148,20 @@ function readNumber(
   return Math.min(max, Math.max(min, Math.floor(n)));
 }
 
-function readView(
-  value: string | string[] | undefined,
-): ListViewMode {
+function readView(value: string | string[] | undefined): ListViewMode {
   if (Array.isArray(value)) value = value[0];
   if (value === "card" || value === "table") return value;
   return "list";
 }
 
-/** Title Case heading from the URL slug for known + unknown types. */
-function getTypeLabel(type: string, language: "en" | "mm"): string {
-  const KNOWN: Record<string, { en: string; mm: string }> = {
-    announcements: { en: "Announcements", mm: "ကြေငြာချက်များ" },
-    announcement: { en: "Announcements", mm: "ကြေငြာချက်များ" },
-    news: { en: "News", mm: "သတင်းများ" },
-    article: { en: "Articles", mm: "ဆောင်းပါးများ" },
-    articles: { en: "Articles", mm: "ဆောင်းပါးများ" },
-    events: { en: "Events", mm: "ပွဲများ" },
-    event: { en: "Events", mm: "ပွဲများ" },
-    lesson: { en: "Lessons", mm: "သင်ခန်းစာများ" },
-    lessons: { en: "Lessons", mm: "သင်ခန်းစာများ" },
-  };
-  const hit = KNOWN[type.toLowerCase()];
-  if (hit) return hit[language];
-  return type.charAt(0).toUpperCase() + type.slice(1);
+function readString(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 }
 
-export default async function PostTypePage({
-  params,
-  searchParams,
-}: PostTypePageProps) {
-  const { type } = await params;
+export default async function SearchPage({ searchParams }: SearchPageProps) {
   const sp = await searchParams;
+  const q = readString(sp.q).trim();
 
   try {
     const middleware = await getMiddlewareDataFromHeaders();
@@ -217,9 +187,6 @@ export default async function PostTypePage({
       if (candidate && isKnownTheme(candidate)) {
         themeName = candidate as ThemeName;
       }
-      // Site-wide fallback image for posts without their own
-      // `featuredImage`. Authored in the admin Settings page; the
-      // RecentPosts home-section reads from the same field.
       defaultFeatureImage =
         (contentSettings as any)?.defaultFeatureImage || undefined;
     } catch {
@@ -230,23 +197,38 @@ export default async function PostTypePage({
     const page = readNumber(sp.page, 1, 1, 9999);
     const limit = readNumber(sp.limit, 12, 1, 50);
     const view = readView(sp.view);
+    const langOverride = readString(sp.lang);
 
-    // Run all three fetches in parallel.
+    // Three parallel fetches; results are empty when q is blank so we
+    // skip the post query in that case (saves a roundtrip and keeps
+    // the "no query" state explicit).
     const [{ posts, total }, categories, tags] = await Promise.all([
-      fetchPostsPage(tenantId, type, page, limit),
+      q
+        ? fetchSearchPage(tenantId, q, page, limit, langOverride)
+        : Promise.resolve({ posts: [] as any[], total: 0 }),
       fetchTaxonomy(tenantId, "categories"),
       fetchTaxonomy(tenantId, "tags"),
     ]);
 
-    const title = getTypeLabel(type, currentLanguage);
+    const heading =
+      currentLanguage === "mm" ? "ရှာဖွေမှု ရလဒ်များ" : "Search Results";
+    const subtitle = q
+      ? currentLanguage === "mm"
+        ? `"${q}" အတွက် ရလဒ် ${total} ခု`
+        : `${total} result${total === 1 ? "" : "s"} for "${q}"`
+      : currentLanguage === "mm"
+        ? "ရှာဖွေရန် စကားလုံး ထည့်ပါ"
+        : "Enter a search term";
+
     const crumbs = [
       { label: currentLanguage === "mm" ? "ပင်မ" : "Home", href: "/" },
-      { label: title },
+      { label: heading },
     ];
 
     return (
       <PostListPage
-        title={title}
+        title={heading}
+        subtitle={subtitle}
         crumbs={crumbs}
         posts={posts as any[]}
         total={total}
@@ -255,20 +237,23 @@ export default async function PostTypePage({
         view={view}
         categories={categories}
         tags={tags}
-        pathname={`/post/${type}`}
+        pathname={`/search`}
         searchParams={sp}
-        fallbackType={type}
         currentLanguage={currentLanguage}
         defaultFeatureImage={defaultFeatureImage}
       />
     );
   } catch (error) {
-    console.error("Error in PostTypePage:", error);
+    console.error("Error in SearchPage:", error);
     return (
       <ErrorPage
         type="page"
-        title="Error Loading List"
-        message={`There was an error loading the "${type}" list.`}
+        title="Error Loading Search"
+        message={
+          q
+            ? `There was an error loading results for "${q}".`
+            : "There was an error loading the search page."
+        }
         debugInfo={error instanceof Error ? error.message : String(error)}
       />
     );

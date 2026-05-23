@@ -2,6 +2,7 @@
 
 import { getApiDomain } from "@repo/utils/server";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
+import { resolveAuthMode } from "@repo/auth/session-fetch";
 import { createHttpClient } from "@repo/api/client";
 import { RecentPostsSectionData } from "../types";
 import { PostListItem } from "./RecentPostsLayouts";
@@ -37,6 +38,7 @@ export async function fetchRecentPostsPage(
     if (!tenantId) return empty;
 
     const apiDomain = await getApiDomain();
+    const auth = await resolveAuthMode();
     const q = section.query ?? { limit: 6, sort: "latest" };
 
     const { sortBy, sortOrder } =
@@ -55,21 +57,32 @@ export async function fetchRecentPostsPage(
     if (q.categoryIds && q.categoryIds.length > 0) {
       params.set("categoryId", q.categoryIds[0]);
     }
+    if (auth.authenticated) {
+      // publicView=true on the auth endpoint pins Published AND
+      // OR-includes the visitor's eligible drafts (sys / org / dept
+      // admin scope). Lets admins preview their drafts in the home
+      // recent-posts section without leaking drafts to ordinary
+      // signed-in visitors.
+      params.set("publicView", "true");
+    }
 
-    // Anonymous list endpoint — /content/post/public bypasses CoreGuard
-    // and force-pins status: 'Published' + visibility: 'Public' at the
-    // handler. No service-to-service token needed; tenant scoping still
-    // flows through x-tenant-id.
+    // Endpoint switches on session presence:
+    //   - anonymous → /content/post/public (forces visibility=Public).
+    //   - authenticated → /content/post; VisibilityInterceptor on the
+    //     backend filters Private/Protected/Password rows per-visitor.
     const httpClient = createHttpClient({
       baseURL: apiDomain,
-      enableAuth: false,
+      enableAuth: auth.authenticated,
       timeout: 10_000,
     });
-    const path = `/content/post/public?${params.toString()}`;
+    const path = auth.authenticated
+      ? `/content/post?${params.toString()}`
+      : `/content/post/public?${params.toString()}`;
     const response: any = await httpClient.request(path, {
       method: "GET",
       tenantId,
-      withAuth: false,
+      withAuth: auth.withAuth,
+      ...(auth.authenticated ? { tokenStrategy: auth.tokenStrategy } : {}),
     });
     if (!response?.success) {
       console.warn(
