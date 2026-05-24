@@ -57,6 +57,56 @@
   --gradient-hero: radial-gradient(ellipse at top, var(--color-primary), var(--color-accent));
 }
 
+/* ──────────────────────────────────────────────────────────────────
+   Variants — applied via `.theme-variant-<key>` class on the theme
+   ROOT (set by ThemeLayout based on Settings.themeVariant). The
+   `@theme` block above is the BLUE variant's source-of-truth (since
+   that's also the default-variant for back-compat). The `.theme-
+   variant-blue` block below restates those overrides explicitly so
+   the class can be toggled at runtime without relying on the global
+   defaults to "win" via specificity. The `.theme-variant-teal`
+   block carries the medical-teal palette previously shipped under
+   the now-removed `um1sf` theme.
+   ────────────────────────────────────────────────────────────── */
+
+.theme-variant-blue {
+  --color-primary: #1D7BDB;
+  --color-ring: hsl(221 76% 40%);
+  --color-header-bg: #2663EB;
+  --color-nav-bg: #1F54B5;
+  --color-mobile-header-bg: #1A48A4;
+  --color-nav-active: #FA9918;
+  --color-banner-bg: #1F5CB7;
+  --color-header-action-button: #FF6855;
+  --color-header-signup-button: #0166ff;
+  --color-mega-menu-title: #0166ff;
+}
+
+.theme-variant-teal {
+  --color-primary: #006D6E;
+  --color-ring: hsl(184 100% 22%);
+  --color-secondary: hsl(180 25% 95%);
+  --color-secondary-foreground: hsl(195 100% 12%);
+  --color-muted: hsl(180 18% 95%);
+  --color-muted-foreground: hsl(195 14% 40%);
+  --color-accent: hsl(180 25% 92%);
+  --color-accent-foreground: hsl(195 100% 12%);
+  --color-success: hsl(165 70% 32%);
+  --color-warning: hsl(40 92% 52%);
+  --color-info: hsl(189 80% 35%);
+  --color-border: hsl(180 20% 88%);
+  --color-input: hsl(180 20% 88%);
+  --color-header-bg: #00838A;
+  --color-nav-bg: #006D6E;
+  --color-mobile-header-bg: #005C5E;
+  --color-nav-active: #D4A11A;
+  --color-banner-bg: #007377;
+  --color-header-banner-subtitle: rgba(255, 255, 255, 0.92);
+  --color-header-action-button: #D4A11A;
+  --color-header-signup-button: #B8860B;
+  --color-mega-menu-title: #006D6E;
+}
+
 /* Gradient utility classes */
 .bg-gradient-primary {
   background: var(--gradient-primary);
@@ -363,8 +413,10 @@ nav {
   position: relative;
 }
 
-/* All sections have solid background */
-section,
-.section-wrapper {
-  background-color: #1F54B5 !important;
-}
+/* (Removed) — was a global `section, .section-wrapper {
+ *  background-color: #1F54B5 !important; }` rule that painted
+ *  EVERY <section> element across the whole app blue, regardless
+ *  of theme. Default theme's individual section components set
+ *  their own backgrounds; the override was leftover from an early
+ *  prototype and was leaking cardinal-blue into um1sf's home page.
+ */

@@ -37,8 +37,14 @@ const publicWebConfig: Partial<MiddlewareConfig> = {
     // Exclude Redis test routes
     "/redis",
     "/api/redis/test",
-    // Exclude error pages to prevent infinite redirects
+    // Exclude error pages to prevent infinite redirects. Any new
+    // friendly-error route added to publicWeb MUST be listed here
+    // — otherwise the middleware fails again on the error route
+    // itself, redirects again, and Next aborts the loop by falling
+    // back to the raw JSON response.
     "/error/tenant-not-found",
+    "/error/service-unavailable",
+    "/error/",
   ],
   enableLogging: process.env.NODE_ENV === "development",
 };

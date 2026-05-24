@@ -1,0 +1,196 @@
+/* um1sf Theme — University of Medicine 1 Yangon
+ * (ဆေးတက္ကသိုလ် ၁ ရန်ကုန်)
+ *
+ * Stanford-inspired palette: cardinal red on a neutral white
+ * canvas. Serif editorial headlines + humanist sans body. Heavy
+ * whitespace, restrained accents.
+ *
+ * UM1's actual brand assets (logo, official tints) should override
+ * the placeholders below when they land. Until then, the cardinal
+ * choice signals "academic medical institution" without being
+ * literally Stanford.
+ */
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Padauk:wght@400;700&display=swap');
+
+/* Variables scoped to `.theme-um1sf` (set on ThemeLayout's root div) —
+ * NOT on `:root` — so they don't leak into other themes. Tailwind v4
+ * `@theme` blocks from sibling themes (default/styles/index.css) all
+ * bundle into the same stylesheet at build time; whoever wins is
+ * import-order dependent. Class-scoping makes the choice deterministic
+ * and matches the pattern used by `library-shell` / `site-shell`. */
+.theme-um1sf {
+  /* Neutral canvas — shared across all variants */
+  --color-background: #FFFFFF;
+  --color-foreground: #1A1A1A;          /* near-black slate for body text */
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1A1A1A;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1A1A1A;
+  --color-secondary: #F4F4F2;           /* warm neutral */
+  --color-secondary-foreground: #1A1A1A;
+  --color-muted: #F4F4F2;
+  --color-muted-foreground: #5F5F5F;    /* mid-grey for subtitles */
+
+  --color-success: #2E7D32;
+  --color-success-foreground: #FFFFFF;
+  --color-warning: #B85800;
+  --color-warning-foreground: #FFFFFF;
+  --color-info: #2D5F8E;
+  --color-info-foreground: #FFFFFF;
+
+  --color-border: #E0E0E0;              /* hairline rules */
+  --color-input: #E0E0E0;
+
+  /* Header chrome that doesn't change per variant */
+  --color-header-bg: #FFFFFF;           /* white brand row */
+  --color-nav-menu-text: #FFFFFF;
+  --color-header-banner-title: #FFFFFF;
+  --color-header-banner-subtitle: rgba(255, 255, 255, 0.92);
+  --color-header-actions-text: #1A1A1A;
+
+  /* Footer chrome — dark slate stays across variants for editorial feel */
+  --color-footer-bg: #2A2A2A;
+  --color-footer-text: #E5E5E5;
+  --color-footer-heading: #FFFFFF;
+  --color-footer-link: #C9C9C9;
+  --color-footer-link-hover: #FFFFFF;
+  --color-footer-divider: #404040;
+
+  /* Gateway top strip — text/link colours stay; bg is variant-tinted */
+  --color-gateway-text: #FFFFFF;
+  --color-gateway-link: rgba(255, 255, 255, 0.85);
+  --color-gateway-link-hover: #FFFFFF;
+
+  --color-primary-foreground: #FFFFFF;
+  --color-accent-foreground: #FFFFFF;
+  --color-destructive-foreground: #FFFFFF;
+
+  /* Border radius — Stanford uses very little; keep rounding restrained */
+  --radius: 0.25rem;
+
+  /* Typography — editorial pair, shared across all variants */
+  --font-serif: 'Source Serif Pro', 'Georgia', 'Times New Roman', serif;
+  --font-sans: 'Inter', 'Helvetica Neue', 'Arial', system-ui, sans-serif;
+  --font-myanmar: 'Padauk', 'Pyidaungsu', 'Myanmar Text', sans-serif;
+
+  /* Default to cardinal variant when no `.theme-variant-X` class is set */
+  --color-primary: #8C1C13;
+  --color-accent: #B83A4B;
+  --color-destructive: #B83A4B;
+  --color-danger: #B83A4B;
+  --color-ring: #8C1C13;
+  --color-nav-bg: #8C1C13;
+  --color-mobile-header-bg: #8C1C13;
+  --color-nav-active: #C99700;
+  --color-banner-bg: #8C1C13;
+  --color-header-action-button: #8C1C13;
+  --color-header-signup-button: #8C1C13;
+  --color-mega-menu-title: #8C1C13;
+  --color-gateway-bg: #8C1C13;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Variants — applied via `.theme-variant-<key>` class set alongside
+   `.theme-um1sf` on the ThemeLayout root. Selectors are double-classed
+   (`.theme-um1sf.theme-variant-X`) so they beat default theme's
+   single-class `.theme-variant-X` blocks on specificity, regardless
+   of stylesheet bundle order.
+   ────────────────────────────────────────────────────────────── */
+
+.theme-um1sf.theme-variant-cardinal {
+  --color-primary: #8C1C13;
+  --color-accent: #B83A4B;
+  --color-destructive: #B83A4B;
+  --color-danger: #B83A4B;
+  --color-ring: #8C1C13;
+  --color-nav-bg: #8C1C13;
+  --color-mobile-header-bg: #8C1C13;
+  --color-nav-active: #C99700;          /* gold underline for active link */
+  --color-banner-bg: #8C1C13;
+  --color-header-action-button: #8C1C13;
+  --color-header-signup-button: #8C1C13;
+  --color-mega-menu-title: #8C1C13;
+  --color-gateway-bg: #8C1C13;
+}
+
+.theme-um1sf.theme-variant-blue {
+  --color-primary: #1D7BDB;
+  --color-accent: #FF6855;              /* orange accent */
+  --color-destructive: #DC2626;
+  --color-danger: #DC2626;
+  --color-ring: #1B4CB4;
+  --color-nav-bg: #1F54B5;
+  --color-mobile-header-bg: #1A48A4;
+  --color-nav-active: #FA9918;          /* orange underline */
+  --color-banner-bg: #1F5CB7;
+  --color-header-action-button: #FF6855;
+  --color-header-signup-button: #0166FF;
+  --color-mega-menu-title: #0166FF;
+  --color-gateway-bg: #1F54B5;
+}
+
+.theme-um1sf.theme-variant-teal {
+  --color-primary: #006D6E;
+  --color-accent: #D4A11A;              /* gold accent */
+  --color-destructive: #B83A4B;
+  --color-danger: #B83A4B;
+  --color-ring: #006D6E;
+  --color-nav-bg: #006D6E;
+  --color-mobile-header-bg: #005C5E;
+  --color-nav-active: #D4A11A;          /* gold underline */
+  --color-banner-bg: #007377;
+  --color-header-action-button: #D4A11A;
+  --color-header-signup-button: #B8860B;
+  --color-mega-menu-title: #006D6E;
+  --color-gateway-bg: #006D6E;
+}
+
+/* Component-level styling — minimal; Stanford avoids heavy decoration. */
+
+.um1sf-hero-headline {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  /* 1.1 clipped Burmese stacked diacritics against the line above;
+     1.8 gives them room to breathe while keeping English headlines
+     readable. Applies to every place that uses this class
+     (PageHeader, PostHero, HomePage hero, etc). */
+  line-height: 1.8;
+}
+
+.um1sf-section-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.um1sf-pull-quote {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+.um1sf-stat-number {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-feature-settings: "tnum";
+  line-height: 1;
+}
+
+/* Active nav-link gold underline (set by JS / aria-current) */
+.um1sf-nav-link[aria-current="page"],
+.um1sf-nav-link.is-active {
+  border-bottom-color: var(--color-nav-active);
+}
+
+/* When Burmese is selected, prefer the dedicated Myanmar font for
+   any text inside the language root. */
+:lang(my) .um1sf-hero-headline,
+:lang(my) .um1sf-pull-quote {
+  font-family: var(--font-myanmar);
+}

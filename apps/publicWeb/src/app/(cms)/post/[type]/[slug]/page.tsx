@@ -1,8 +1,10 @@
 import React from "react";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getApiDomain } from "@repo/utils/server";
 import { createHttpClient } from "@repo/api/client";
+import { buildContentMetadata } from "@/themes/default/lib/seo-metadata";
 // `getPost` is the public alias for `getPostBySlug` exported from
 // the `@repo/post` barrel. The barrel does NOT re-export the
 // underlying `getPostBySlug` symbol, so importing it directly fails
@@ -118,6 +120,26 @@ interface PostTypeSlugPageProps {
     type: string;
     slug: string;
   }>;
+}
+
+/**
+ * Per-route SEO metadata for post detail pages. Pulls `metaTitle`,
+ * `metaDescription`, `metaKeywords` straight off the post doc (with
+ * title/excerpt fallback) so news/announcement/blog posts get proper
+ * search-result + social-card surfaces.
+ */
+export async function generateMetadata({
+  params,
+}: PostTypeSlugPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const middleware = await getMiddlewareDataFromHeaders().catch(() => null);
+  const language = (middleware?.language as "en" | "mm") || "en";
+  const post = await getPost(slug, false).catch(() => null);
+  return buildContentMetadata(post as any, {
+    language,
+    fallbackTitle: slug,
+    ogType: "article",
+  });
 }
 
 /**

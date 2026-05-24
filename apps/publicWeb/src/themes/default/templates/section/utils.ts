@@ -13,7 +13,17 @@ import {
   FaqSectionData,
   PricingSectionData,
   DataTableSectionData,
-  OrganizationStructureSectionData
+  OrganizationStructureSectionData,
+  CarouselSectionData,
+  RecentPostsSectionData,
+  StatsSectionData,
+  CategoryListSectionData,
+  TagListSectionData,
+  PostBodySectionData,
+  NavigationMenuSectionData,
+  TabsSectionData,
+  StudentEnrollmentSectionData,
+  RectorSectionData,
 } from './types';
 import { AppListSectionData } from './applist/AppListSection';
 
@@ -96,8 +106,65 @@ export function isStatusColorsShowcase(section: SectionData): boolean {
   return (section as any).type === 'statusColorsShowcase';
 }
 
-export function isAppListSection(section: SectionData): section is AppListSectionData {
-  return section.type === 'appList';
+// `appList` lives outside the main SectionData union (it's defined in
+// its own component file). Use a permissive parameter type so the type
+// predicate doesn't try to prove `AppListSectionData` extends `SectionData`.
+export function isAppListSection(section: unknown): section is AppListSectionData {
+  return (section as { type?: string })?.type === 'appList';
+}
+
+export function isCarouselSection(section: SectionData): section is CarouselSectionData {
+  return section.type === 'carousel';
+}
+
+export function isRecentPostsSection(section: SectionData): section is RecentPostsSectionData {
+  return section.type === 'recentPosts';
+}
+
+export function isStatsSection(section: SectionData): section is StatsSectionData {
+  return section.type === 'stats';
+}
+
+export function isCategoryListSection(
+  section: SectionData,
+): section is CategoryListSectionData {
+  return section.type === 'categoryList';
+}
+
+export function isTagListSection(
+  section: SectionData,
+): section is TagListSectionData {
+  return section.type === 'tagList';
+}
+
+export function isPostBodySection(
+  section: SectionData,
+): section is PostBodySectionData {
+  return section.type === 'postBody';
+}
+
+export function isNavigationMenuSection(
+  section: SectionData,
+): section is NavigationMenuSectionData {
+  return section.type === 'navigationMenu';
+}
+
+export function isTabsSection(
+  section: SectionData,
+): section is TabsSectionData {
+  return section.type === 'tabs';
+}
+
+export function isStudentEnrollmentSection(
+  section: SectionData,
+): section is StudentEnrollmentSectionData {
+  return section.type === 'studentEnrollment';
+}
+
+export function isRectorSection(
+  section: SectionData,
+): section is RectorSectionData {
+  return section.type === 'rector';
 }
 
 /**
@@ -139,9 +206,24 @@ export function sortSectionsByOrder(sections: SectionData[]): SectionData[] {
 
 /**
  * Filter enabled sections
+ *
+ * Accepts THREE shapes:
+ *   - Legacy dummy data (`isEnabled: boolean`).
+ *   - DB-authored sections (`isVisible: boolean`, `status: 'Active' | 'Inactive'`).
+ *   - Older admin docs missing both flags — assumed visible.
+ *
+ * Only EXPLICIT negatives drop a section; missing flags pass through
+ * so older content keeps rendering until it's re-saved with the new
+ * shape.
  */
 export function filterEnabledSections(sections: SectionData[]): SectionData[] {
-  return sections.filter(section => section.isEnabled);
+  return sections.filter((section) => {
+    const s = section as any;
+    if (s?.isEnabled === false) return false;
+    if (s?.isVisible === false) return false;
+    if (s?.status && s.status !== 'Active') return false;
+    return true;
+  });
 }
 
 /**

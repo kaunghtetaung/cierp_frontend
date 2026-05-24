@@ -1,5 +1,8 @@
 import React from "react";
 import { getTheme } from "@/themes";
+import { isKnownTheme } from "@repo/types";
+import { getContentSettings } from "@repo/content";
+import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 
 // Force all CMS pages to be dynamic to avoid header serialization issues
 export const dynamic = 'force-dynamic';
@@ -25,11 +28,29 @@ async function loadCMSData(): Promise<CMSLayoutState> {
     const { getCurrentTenantForClient } = await import("@repo/tenant/wrapper");
     state.tenant = await getCurrentTenantForClient();
 
-    // Load content settings for this tenant
+    // Resolve `themeName` from the tenant's content settings doc.
+    // Read order:
+    //   1. `Settings.themeName` (admin-authored, single source of truth)
+    //   2. legacy `tenant.theme` field (back-compat for tenants that
+    //      haven't authored Settings yet)
+    //   3. 'default' as a final fallback
+    // Theme keys not in the registry catalogue are rejected so a
+    // typo in the DB doesn't crash the layout — fall back instead.
     try {
-      // Simplified: just use default theme for now
-      state.themeName = state.tenant?.theme || "default";
-      state.contentSettings = { themeName: state.themeName };
+      const middleware = await getMiddlewareDataFromHeaders();
+      const tenantId = middleware?.tenantId;
+      if (tenantId) {
+        const contentSettings = await getContentSettings(tenantId);
+        state.contentSettings = contentSettings as any;
+        const candidate = (contentSettings as any)?.themeName;
+        if (candidate && isKnownTheme(candidate)) {
+          state.themeName = candidate;
+        } else if (state.tenant?.theme && isKnownTheme(state.tenant.theme)) {
+          state.themeName = state.tenant.theme;
+        }
+      } else if (state.tenant?.theme && isKnownTheme(state.tenant.theme)) {
+        state.themeName = state.tenant.theme;
+      }
     } catch (settingsError) {
       console.error("Failed to load content settings:", settingsError);
       // Continue with defaults

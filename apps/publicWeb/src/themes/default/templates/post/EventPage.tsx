@@ -5,6 +5,7 @@ import { PostSidebar } from "./PostSidebar";
 import { PostBody } from "./body/PostBody";
 import { RelatedPostsBlock } from "./RelatedPostsBlock";
 import { DraftBadge } from "@/feature-components/draft-badge/DraftBadge";
+import { PostViewTracker } from "@/feature-components/post-view-tracker/PostViewTracker";
 
 interface EventPageProps {
   post: any;
@@ -130,6 +131,13 @@ export function EventPage({
 
             {bodySlot ?? (
               <PostBody post={post} currentLanguage={currentLanguage} />
+            )}
+            {/* See ArticlePage for the gate rationale. */}
+            {!bodySlot && post?._id && post?.slug && (
+              <PostViewTracker
+                postId={String(post._id)}
+                slug={String(post.slug)}
+              />
             )}
           </main>
 

@@ -1,6 +1,267 @@
 /* Import Tailwind CSS v4 */
 @import "tailwindcss";
 
+/* Inline rich-HTML styles for server-injected content (FAQ accordion's
+   `answerHtml`, post bodies rendered via `dangerouslySetInnerHTML`,
+   etc). Designed to give server-rendered article content the kind of
+   typographic rhythm that `@tailwindcss/typography` would otherwise
+   provide — we replicate it inline because the v0.5 plugin's legacy
+   `plugin(api => …)` shape doesn't resolve under Tailwind v4's
+   `@plugin` directive in this monorepo's pnpm layout. Scoped to the
+   `data-rich-html` attribute so unmarked layout chrome stays
+   unaffected.
+
+   Spec at a glance (all values scale off the container's font-size
+   via `em`):
+   • base line-height 1.75 (comfortable reading)
+   • heading scale h1 2rem → h6 1rem; matching mt/mb spacing
+   • paragraphs separated by ~1em vertical rhythm
+   • lists indented 1.625em with disc/decimal markers OUTSIDE the
+     content edge, nested lists shifted further in
+   • tables with full borders, header tint, hover row
+   • images / hr / code-block all get explicit margins so adjacent
+     elements don't collide
+*/
+[data-rich-html] {
+  color: var(--color-foreground, inherit);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+/* Default vertical rhythm — every direct child gets ~1em top margin
+   relative to its predecessor. Specific elements below override for
+   tighter / wider gaps where the type calls for it. */
+[data-rich-html] > * + * {
+  margin-top: 1em;
+}
+
+/* ── Headings ── */
+[data-rich-html] :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--color-foreground, currentColor);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+[data-rich-html] h1 {
+  font-size: 2rem;
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+}
+[data-rich-html] h2 {
+  font-size: 1.625rem;
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border, #e5e7eb) 100%, transparent);
+}
+[data-rich-html] h3 {
+  font-size: 1.3125rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.4em;
+}
+[data-rich-html] h4 {
+  font-size: 1.125rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.4em;
+}
+[data-rich-html] h5 {
+  font-size: 1rem;
+  margin-top: 1.25em;
+  margin-bottom: 0.3em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+[data-rich-html] h6 {
+  font-size: 0.9375rem;
+  margin-top: 1.25em;
+  margin-bottom: 0.3em;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}
+/* Suppress the giant top-margin on the very first heading so the
+   block doesn't start with a big empty band. */
+[data-rich-html] > :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: 0;
+}
+
+/* ── Paragraphs + inline marks ── */
+[data-rich-html] p {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+[data-rich-html] strong {
+  font-weight: 600;
+  color: var(--color-foreground, currentColor);
+}
+[data-rich-html] em { font-style: italic; }
+[data-rich-html] u { text-decoration: underline; text-underline-offset: 2px; }
+[data-rich-html] s,
+[data-rich-html] del {
+  text-decoration: line-through;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+[data-rich-html] mark {
+  background: color-mix(in srgb, var(--color-primary, #1d7bdb) 18%, transparent);
+  padding: 0 0.15em;
+  border-radius: 0.125rem;
+}
+[data-rich-html] a {
+  color: var(--color-primary, #1d7bdb);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s ease;
+}
+[data-rich-html] a:hover {
+  color: color-mix(in srgb, var(--color-primary, #1d7bdb) 75%, black);
+  text-decoration-thickness: 2px;
+}
+
+/* ── Lists — markers OUTSIDE the content edge so wrapped lines
+        align with the first text character, not the bullet. Generous
+        indent so the bullet column has visual weight. Nested lists
+        shift inward without doubling spacing. */
+[data-rich-html] ul,
+[data-rich-html] ol {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding-left: 1.625em;
+}
+[data-rich-html] ul { list-style: disc outside; }
+[data-rich-html] ol { list-style: decimal outside; }
+[data-rich-html] ul ul { list-style: circle outside; }
+[data-rich-html] ul ul ul { list-style: square outside; }
+[data-rich-html] li {
+  margin-top: 0.375em;
+  margin-bottom: 0.375em;
+  padding-left: 0.375em;
+}
+[data-rich-html] li::marker {
+  color: color-mix(in srgb, var(--color-primary, #1d7bdb) 80%, transparent);
+  font-weight: 600;
+}
+/* Paragraphs INSIDE list items (the shape Tiptap emits — every
+   `<li>` wraps its text in a `<p>`) should not stack their own
+   margin on top of the list item's spacing. */
+[data-rich-html] li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+/* Nested lists tuck inside their parent item without an extra
+   blank line above. */
+[data-rich-html] li > ul,
+[data-rich-html] li > ol {
+  margin-top: 0.375em;
+  margin-bottom: 0.375em;
+}
+
+/* ── Blockquote ── */
+[data-rich-html] blockquote {
+  border-left: 4px solid var(--color-primary, #1d7bdb);
+  padding: 0.25em 0 0.25em 1.25em;
+  margin: 1.25em 0;
+  font-style: italic;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+[data-rich-html] blockquote p:first-child { margin-top: 0; }
+[data-rich-html] blockquote p:last-child { margin-bottom: 0; }
+
+/* ── Tables ── */
+/* Was previously `display: block; overflow-x: auto` to let wide
+   tables scroll, but block-tables shrink to content width and
+   ignored `width: 100%` — the table sat at its natural cell width
+   while the article column had hundreds of pixels of empty space
+   on either side. Reverted to the native `display: table` so
+   `width: 100%` stretches to fill the article container.
+   Horizontal scroll for wide tables is now handled by a wrapper
+   element emitted by the renderer (`<div class="rich-table-wrap">`),
+   so the scroll behaviour doesn't fight the width. */
+[data-rich-html] table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+  font-size: 0.95em;
+  table-layout: auto;
+}
+[data-rich-html] .rich-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+[data-rich-html] .rich-table-wrap > table {
+  margin: 0;
+}
+[data-rich-html] thead { background: var(--color-muted, hsl(240 4.8% 95.9%)); }
+[data-rich-html] th,
+[data-rich-html] td {
+  border: 1px solid var(--color-border, hsl(240 5.9% 90%));
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+}
+[data-rich-html] th {
+  background: var(--color-muted, hsl(240 4.8% 95.9%));
+  font-weight: 600;
+  color: var(--color-foreground, currentColor);
+}
+[data-rich-html] tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--color-muted, hsl(240 4.8% 95.9%)) 40%, transparent);
+}
+/* Tighten paragraph margins inside cells so a single line of text
+   doesn't get padded with both cell padding AND `<p>` margin. */
+[data-rich-html] :is(th, td) > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ── Images / figures ── */
+[data-rich-html] img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.25em auto;
+  display: block;
+}
+[data-rich-html] figure {
+  margin: 1.5em 0;
+  text-align: center;
+}
+[data-rich-html] figcaption {
+  margin-top: 0.5em;
+  font-size: 0.875em;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+/* ── Code ── */
+[data-rich-html] code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: color-mix(in srgb, var(--color-muted, hsl(240 4.8% 95.9%)) 70%, transparent);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  color: var(--color-foreground, currentColor);
+}
+[data-rich-html] pre {
+  background: var(--color-muted, hsl(240 4.8% 95.9%));
+  padding: 1em 1.25em;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  font-size: 0.875em;
+  line-height: 1.6;
+}
+[data-rich-html] pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── Horizontal rule ── */
+[data-rich-html] hr {
+  border: 0;
+  border-top: 1px solid var(--color-border, hsl(240 5.9% 90%));
+  margin: 2.25em 0;
+}
+
 /* ======================================
    CSS VARIABLES FOR DESIGN SYSTEM
    Required for @repo/ui Button and other components
@@ -60,6 +321,60 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/* ======================================
+   POST DETAIL — ARTICLE BODY TYPOGRAPHY
+   ----------------------------------------
+   Targets the `<article data-post-body="article">` rendered by
+   `ArticleBody.tsx`. Lives here (not as Tailwind utilities) for
+   three reasons:
+
+   1. Tailwind's arbitrary-value classes for `text-shadow` hit a
+      parser edge case when combined with descendant variants like
+      `[&_p]:` plus a value containing both `_` (space placeholder)
+      and `/` (alpha separator) — the class compiles but the rule
+      body drops.
+   2. `prose` (Tailwind Typography) sets per-tag `line-height` and
+      other typography at specificity `(0,1,1)`. The descendant
+      variant `[&_p]:leading-[…]` generates a class with the same
+      specificity, so prose's source-order position can win and
+      the Tailwind class quietly has no effect. Explicit per-tag
+      rules in a CSS file loaded AFTER Tailwind reliably win.
+   3. CSS variables (`--article-body-leading`,
+      `--article-heading-leading`, `--article-body-shadow`) give
+      one knob each to tune intensity site-wide; changing line
+      height 3 → 3.4 touches one line, not five.
+   ====================================== */
+[data-post-body="article"] {
+  /* Tune from one place: body text gets the looser leading
+     (Burmese stacked diacritics), headings get a tighter value so
+     multi-word titles stay visually grouped. */
+  --article-body-leading: 1.9;
+  --article-heading-leading: 2;
+  --article-body-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+
+  line-height: 1.9;
+  text-shadow: var(--article-body-shadow);
+}
+[data-post-body="article"] p,
+[data-post-body="article"] li {
+  line-height: var(--article-body-leading);
+  text-shadow: var(--article-body-shadow);
+}
+[data-post-body="article"] h1,
+[data-post-body="article"] h2,
+[data-post-body="article"] h3,
+[data-post-body="article"] h4,
+[data-post-body="article"] h5,
+[data-post-body="article"] h6 {
+  line-height: var(--article-heading-leading);
+  text-shadow: var(--article-body-shadow);
+}
+[data-post-body="article"] blockquote,
+[data-post-body="article"] strong,
+[data-post-body="article"] em {
+  text-shadow: var(--article-body-shadow);
 }
 
 /* final color */

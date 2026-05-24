@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { TenantProvider } from "@repo/tenant";
 import { getCurrentTenantForClient, getTenantWithSecrets } from "@repo/tenant/wrapper";
 import { initializeTenantToken } from "@repo/tenant/token-initializer";
+import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { GlobalErrorFallback } from "@/base-components/error/GlobalErrorFallback";
 import { Toaster } from "@repo/ui/components/sonner";
 import { getLocalizedText } from "@repo/utils";
 import { ConsoleLoggerProvider } from "@/components/ConsoleLoggerProvider";
+import { AppClientProviders } from "@/components/AppClientProviders";
 import "./globals.css";
 
 // Force dynamic rendering - required for tenant resolution with cookies/headers
@@ -82,6 +84,17 @@ export default async function RootLayout({
   let initialError = null;
   let criticalError = false;
 
+  // Resolve the visitor's preferred language from middleware headers
+  // (set by the tenant/lang middleware upstream). Falls back to 'en'
+  // when middleware data isn't available (e.g. during early errors).
+  let initialLanguage = "en";
+  try {
+    const middlewareData = await getMiddlewareDataFromHeaders();
+    if (middlewareData?.language) initialLanguage = middlewareData.language;
+  } catch {
+    // Non-fatal — keep default.
+  }
+
   try {
     // Get current tenant using the wrapper pattern
     initialTenant = await getCurrentTenantForClient();
@@ -157,12 +170,14 @@ export default async function RootLayout({
 
   // Normal operation - use TenantProvider (can handle non-critical tenant errors)
   return (
-    <html lang="en">
+    <html lang={initialLanguage}>
       <body>
         <ConsoleLoggerProvider />
         <TenantProvider initialTenant={initialTenant} initialError={initialError}>
-          {children}
-          <Toaster />
+          <AppClientProviders initialLanguage={initialLanguage}>
+            {children}
+            <Toaster />
+          </AppClientProviders>
         </TenantProvider>
       </body>
     </html>

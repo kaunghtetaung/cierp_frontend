@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ChevronDown, Mail, Phone, User, Building } from "lucide-react";
 import { OrganizationStructureSectionData, SectionProps } from "../types";
 import { getLocalizedText } from "../utils";
+import { getMessages } from "../../../lib/messages";
 
 interface OrganizationNode {
   id: string;
@@ -46,15 +47,16 @@ export function OrganizationStructureSection({
     : null;
 
   if (!structure) {
+    const t = getMessages(currentLanguage);
     return (
       <section className="py-16 bg-gradient-to-b from-background via-muted/50 to-background">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <div className="bg-card border border-border rounded-lg p-8 shadow-lg">
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              No Organization Structure Available
+              {t.section.noOrgStructureTitle}
             </h3>
             <p className="text-muted-foreground">
-              Organization structure will be displayed here when available.
+              {t.section.noOrgStructureMessage}
             </p>
           </div>
         </div>

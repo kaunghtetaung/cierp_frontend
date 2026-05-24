@@ -1,5 +1,7 @@
 import React from "react";
 import { SectionRenderer } from "../section";
+import { PageLayoutRenderer } from "./PageLayoutRenderer";
+import { getMessages } from "../../lib/messages";
 
 interface HomePageProps {
   tenantId: string;
@@ -18,19 +20,19 @@ export async function HomePage({
   homePage,
   sections,
 }: HomePageProps) {
+  const t = getMessages(currentLanguage);
+
   if (!homePage) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="text-center p-8 bg-destructive/10 border border-destructive/20 rounded-lg">
           <h1 className="text-2xl font-bold text-destructive mb-4">
-            Home Page Not Found
+            {t.homePage.notFoundTitle}
           </h1>
           <p className="text-destructive/80 mb-2">
-            The home page has not been configured for this tenant.
+            {t.homePage.notFoundMessage}
           </p>
-          <p className="text-destructive/70">
-            Please contact the administrator to set up the home page.
-          </p>
+          <p className="text-destructive/70">{t.homePage.notFoundHint}</p>
         </div>
       </div>
     );
@@ -55,21 +57,26 @@ export async function HomePage({
         </div>
       )}
 
-      {/* Page Sections */}
-      {sections.length > 0 ? (
-        <SectionRenderer
-          sections={sections}
+      {/* Page Sections — page-builder tree if authored, else flat fallback */}
+      {homePage.layout || sections.length > 0 ? (
+        <PageLayoutRenderer
+          layout={homePage.layout}
+          allSections={sections}
+          fallbackSections={sections}
           currentLanguage={currentLanguage}
-          className="w-full"
+          // Home page opts in to alternating-band zebra stripes so
+          // adjacent marketing sections read as separate bands.
+          // Other pages (about, faculty, post detail) render flat.
+          striped
         />
       ) : (
         <div className="max-w-4xl mx-auto px-4 py-24">
           <div className="text-center p-12 bg-muted/50 rounded-xl border border-border">
             <h2 className="text-3xl font-semibold text-foreground mb-4">
-              Welcome
+              {t.homePage.welcomeTitle}
             </h2>
             <p className="text-lg text-muted-foreground">
-              This home page is ready for content. Add sections to get started.
+              {t.homePage.welcomeMessage}
             </p>
           </div>
         </div>

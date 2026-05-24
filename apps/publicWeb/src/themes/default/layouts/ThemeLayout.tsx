@@ -2,8 +2,10 @@ import React from "react";
 import { headers } from "next/headers";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getAuthenticationStatus, getCurrentUser } from "@repo/auth/server-api";
-import { HeaderContainer } from "../common/header";
-import { FooterContainer } from "../common/footer";
+import { resolveThemeVariant } from "@repo/types";
+import { getContentSettings } from "@repo/content";
+import { HeaderContainer } from "@/components/site-shell/header";
+import { FooterContainer } from "@/components/site-shell/footer";
 
 interface ThemeLayoutProps {
   children: React.ReactNode;
@@ -71,9 +73,25 @@ export async function ThemeLayout({
     );
   }
 
+  // Resolve the active variant ('blue' / 'teal') for the default
+  // theme. Fetched from this tenant's Settings doc; falls back to
+  // the catalogue's defaultVariant if unset or no longer valid.
+  let themeVariant: string | undefined;
+  try {
+    const contentSettings = await getContentSettings(tenantId);
+    themeVariant = resolveThemeVariant(
+      (contentSettings as any)?.themeName ?? "default",
+      (contentSettings as any)?.themeVariant,
+    );
+  } catch (error) {
+    // Settings unreachable — fall back to the catalogue default.
+    themeVariant = resolveThemeVariant("default", undefined);
+  }
+  const variantClass = themeVariant ? `theme-variant-${themeVariant}` : "";
+
   return (
     <div
-      className={`
+      className={`${variantClass}
       min-h-screen flex flex-col
       font-sans antialiased
       bg-gradient-to-br from-background via-muted/30 to-background

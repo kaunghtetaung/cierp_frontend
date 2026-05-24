@@ -1,0 +1,84 @@
+/* Site shell styles — minimum CSS needed by the shared HeaderContainer
+   / FooterContainer components. Loaded by SiteShellLayout for routes
+   that sit OUTSIDE the theme system (library, login, register).
+   Themes may redefine these variables in their own CSS to recolour
+   the chrome on (cms) routes. */
+
+/* Scoped to `.library-shell` (set on LibraryShellLayout's root div)
+   so the library's chrome colours stay confined to library routes
+   only. Earlier this was on `:root`, which meant the library palette
+   bled into (cms) tenant themes after a back-navigation — once
+   loaded, `:root` rules persist across client-side navigation
+   because Next.js merges every route's CSS into one document
+   stylesheet.
+
+   Plain CSS custom properties (not Tailwind v4 `@theme`) because
+   this file is imported from TSX, not the entry stylesheet — `@theme`
+   only runs through Tailwind on the main globals.css. */
+.library-shell {
+  --color-header-bg: #2663EB;
+  --color-nav-bg: #1F54B5;
+  --color-mobile-header-bg: #1A48A4;
+  --color-nav-active: #FA9918;
+  --color-nav-menu-text: #FFF;
+  --color-banner-bg: #1F5CB7;
+  --color-header-banner-title: #FFF;
+  --color-header-banner-subtitle: #FFF;
+  --color-header-actions-text: #FFF;
+  --color-header-action-button: #FF6855;
+  --color-header-signup-button: #0166ff;
+}
+
+/* Medical pattern for the header banner. Used by HeaderContainer's
+   first-row banner block. Decorative — drops gracefully to a flat
+   colour if the user's browser doesn't support repeating gradients. */
+.medical-pattern-bg {
+  background-color: var(--color-banner-bg);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 60px,
+      rgba(255, 255, 255, 0.03) 60px,
+      rgba(255, 255, 255, 0.03) 62px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 60px,
+      rgba(255, 255, 255, 0.03) 60px,
+      rgba(255, 255, 255, 0.03) 62px
+    ),
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 80px,
+      rgba(255, 255, 255, 0.02) 80px,
+      rgba(255, 255, 255, 0.02) 120px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 80px,
+      rgba(255, 255, 255, 0.02) 80px,
+      rgba(255, 255, 255, 0.02) 120px
+    );
+  background-size:
+    120px 120px,
+    120px 120px,
+    100% 100%,
+    100% 100%,
+    240px 240px,
+    240px 240px;
+  position: relative;
+}

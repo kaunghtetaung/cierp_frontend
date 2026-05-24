@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { S3Image } from "@/components/common/S3Image";
 import { ArrowLeft } from "lucide-react";
 import { useTenant } from "@repo/tenant";
-import { LangSelectorUI } from "@/themes/default/common/navigation/header/LangSelectorUI";
+import { LangSelectorUI } from "@/components/site-shell/navigation/header/LangSelectorUI";
 import { LangSelectorProvider } from "@/feature-components/lang-selector";
 import type { Language } from "@/feature-components/lang-selector";
 

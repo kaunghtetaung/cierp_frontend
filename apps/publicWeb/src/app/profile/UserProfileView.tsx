@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { User, Lock, Mail, Shield, Calendar, CheckCircle, LogOut, Home } from "lucide-react";
 import type { User as UserType } from "@repo/types";
 import { ChangePasswordForm } from "./ChangePasswordForm";
@@ -11,7 +12,19 @@ interface UserProfileViewProps {
 }
 
 export function UserProfileView({ user }: UserProfileViewProps) {
-  const [showChangePassword, setShowChangePassword] = useState(false);
+  const searchParams = useSearchParams();
+  const [showChangePassword, setShowChangePassword] = useState(
+    searchParams?.get("action") === "change-password",
+  );
+
+  // Open the password form when the user navigates here from the
+  // header dropdown's "Change password" item (`?action=change-password`).
+  // Run on every searchParams change so back/forward navigation works.
+  useEffect(() => {
+    if (searchParams?.get("action") === "change-password") {
+      setShowChangePassword(true);
+    }
+  }, [searchParams]);
 
   // Format date
   const formatDate = (date: Date | string | undefined) => {

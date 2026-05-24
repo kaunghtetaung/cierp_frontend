@@ -16,6 +16,16 @@ import {
   isOrganizationStructureSection,
   isStatusColorsShowcase,
   isAppListSection,
+  isCarouselSection,
+  isRecentPostsSection,
+  isStatsSection,
+  isCategoryListSection,
+  isTagListSection,
+  isPostBodySection,
+  isNavigationMenuSection,
+  isTabsSection,
+  isStudentEnrollmentSection,
+  isRectorSection,
 } from "./utils";
 
 // Section components
@@ -31,6 +41,17 @@ import DataTableSection from "./datatable/DataTableSection";
 import OrganizationStructureSection from "./organization/OrganizationStructureSection";
 import StatusColorsShowcase from "./showcase/StatusColorsShowcase";
 import AppListSection from "./applist/AppListSection";
+import CarouselSection from "./carousel/CarouselSection";
+import RecentPostsSection from "./recent-posts/RecentPostsSection";
+import StatsSection from "./stats/StatsSection";
+import CategoryListSection from "./category-list/CategoryListSection";
+import TagListSection from "./tag-list/TagListSection";
+import PostBodySection from "./post-body/PostBodySection";
+import NavigationMenuSection from "./navigation-menu/NavigationMenuSection";
+import TabsSection from "./tabs/TabsSection";
+import StudentEnrollmentSection from "./student-enrollment/StudentEnrollmentSection";
+import RectorSection from "./rector/RectorSection";
+import { getMessages } from "../../lib/messages";
 
 /**
  * Section Renderer Component
@@ -134,11 +155,92 @@ export function SectionRenderer({
             currentLanguage={currentLanguage}
           />
         );
+      } else if (isCarouselSection(section)) {
+        sectionComponent = (
+          <CarouselSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isRecentPostsSection(section)) {
+        // Async Server Component — fetches posts at render time. React
+        // awaits the returned element during server rendering.
+        sectionComponent = (
+          <RecentPostsSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isStatsSection(section)) {
+        sectionComponent = (
+          <StatsSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isCategoryListSection(section)) {
+        sectionComponent = (
+          <CategoryListSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isTagListSection(section)) {
+        sectionComponent = (
+          <TagListSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isPostBodySection(section)) {
+        sectionComponent = (
+          <PostBodySection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isNavigationMenuSection(section)) {
+        // Server-fetched sidebar nav. The component is async (RSC) —
+        // legal here because SectionRenderer is itself rendered from
+        // the server-component route. Returning the JSX element
+        // unevaluated is fine; React resolves the promise.
+        sectionComponent = (
+          <NavigationMenuSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isTabsSection(section)) {
+        sectionComponent = (
+          <TabsSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isStudentEnrollmentSection(section)) {
+        sectionComponent = (
+          <StudentEnrollmentSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
+      } else if (isRectorSection(section)) {
+        sectionComponent = (
+          <RectorSection
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
       } else if (isStatusColorsShowcase(section)) {
         sectionComponent = <StatusColorsShowcase />;
       } else {
         // Unknown section type fallback
-        sectionComponent = <UnknownSectionFallback section={section} />;
+        sectionComponent = (
+          <UnknownSectionFallback
+            section={section}
+            currentLanguage={currentLanguage}
+          />
+        );
       }
 
       return (
@@ -185,17 +287,23 @@ export function SectionRenderer({
 /**
  * Fallback component for unknown section types
  */
-function UnknownSectionFallback({ section }: { section: SectionData }) {
+function UnknownSectionFallback({
+  section,
+  currentLanguage = "en",
+}: {
+  section: SectionData;
+  currentLanguage?: "en" | "mm";
+}) {
+  const t = getMessages(currentLanguage);
   return (
     <section className={`py-16 bg-muted/50`}>
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-4">
           <h3 className={`text-xl font-semibold text-foreground`}>
-            Unknown Section Type
+            {t.section.unknownTitle}
           </h3>
           <p className="text-muted-foreground">
-            Section type &quot;{section.type}&quot; does not have a renderer
-            component.
+            {t.section.unknownMessage(section.type)}
           </p>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>Section ID: {section._id}</p>

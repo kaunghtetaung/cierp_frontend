@@ -2,6 +2,7 @@ import React from "react";
 import { ArticlePage } from "./ArticlePage";
 import { EventPage } from "./EventPage";
 import { ErrorPage } from "../../../../feature-components/error/ErrorPage";
+import { getMessages } from "../../lib/messages";
 
 interface PostPageProps {
   post?: any;
@@ -46,14 +47,15 @@ export function PostPage({
   bodySlot,
 }: PostPageProps) {
   if (!post) {
+    const t = getMessages(currentLanguage);
     return (
       <ErrorPage
         type="page"
-        title="Post Not Found"
+        title={t.postPage.notFoundTitle}
         message={
           slug
-            ? `The post "${slug}" could not be found.`
-            : "The requested post could not be found."
+            ? t.postPage.notFoundMessageWithSlug(slug)
+            : t.postPage.notFoundMessage
         }
         showRetry={false}
         showHome={true}

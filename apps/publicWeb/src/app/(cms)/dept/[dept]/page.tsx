@@ -1,369 +1,177 @@
-"use client";
+import React from "react";
+import { redirect } from "next/navigation";
+import { getPageSections, getSectionsByLayout } from "@repo/page";
+import { getContentSettings } from "@repo/content";
+import { isKnownTheme } from "@repo/types";
+import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
+import { getThemeTemplates, type ThemeName } from "@/themes";
+import { resolvePageLayout } from "@/themes/default/lib/template-resolver";
+import { getDepartmentBySlug, getDeptHomePage } from "./_lib/dept-fetch";
+import { DeptComingSoon } from "./_components/DeptComingSoon";
 
-import { useTenant, TenantLogo } from "@repo/tenant";
-import { getLocalizedText } from "@repo/utils";
-import { useEffect, useState } from "react";
+/**
+ * Department landing page.
+ *
+ * Flow:
+ *   1. Resolve dept by URL slug.
+ *   2. If dept exists AND has a published Post with
+ *      `isHomePage = true`, render via the active theme's
+ *      `HomePage` template (same chain `SafeHomePage` uses for the
+ *      org home).
+ *   3. Otherwise render the `DeptComingSoon` placeholder.
+ *
+ * The previous client-side debug page (tenant-info + request-info
+ * cards) is gone. That UI was useful while wiring the multi-tenant
+ * middleware but is inappropriate for public production traffic.
+ *
+ * Fetch failures of CRITICAL data (gateway down, content service
+ * down) redirect to the friendly `/error/service-unavailable` page
+ * — matches the org-level home behaviour from `SafeHomePage`.
+ */
 
-export default function TenantHomePage({
-  params,
-}: {
+interface DeptPageProps {
   params: Promise<{ dept: string }>;
-}) {
-  const { tenant, isLoading, error } = useTenant();
-  const [deptParam, setDeptParam] = useState<string>("");
-  const [requestInfo, setRequestInfo] = useState({
-    hostname: "unknown",
-    protocol: "unknown",
-    requestId: "unknown",
-    language: "unknown",
-  });
+}
 
-  // Resolve params Promise
-  useEffect(() => {
-    params.then((resolvedParams) => {
-      setDeptParam(resolvedParams.dept);
-    });
-  }, [params]);
+function redirectToServiceUnavailable(reason: string, message?: string): never {
+  const params = new URLSearchParams();
+  params.set("code", reason);
+  if (message) params.set("message", message);
+  redirect(`/error/service-unavailable?${params.toString()}`);
+}
 
-  // Get request info from headers on client side
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setRequestInfo({
-        hostname: window.location.hostname,
-        protocol: window.location.protocol.replace(":", ""),
-        requestId:
-          document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("x-request-id="))
-            ?.split("=")[1] || "unknown",
-        language:
-          document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("x-lang="))
-            ?.split("=")[1] || "en",
-      });
-    }
-  }, []);
-
-  if (isLoading) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-600">Loading tenant information...</p>
-      </main>
-    );
+function pickMultiLang(
+  raw: unknown,
+  language: "en" | "mm",
+): string | null {
+  if (!raw) return null;
+  if (typeof raw === "string") return raw.trim() || null;
+  if (typeof raw === "object") {
+    const r = raw as Record<string, unknown>;
+    const v =
+      (typeof r[language] === "string" && (r[language] as string)) ||
+      (typeof r.en === "string" && (r.en as string)) ||
+      (typeof r.mm === "string" && (r.mm as string)) ||
+      null;
+    return v ? v.trim() || null : null;
   }
+  return null;
+}
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-red-600 mb-2">Tenant Error</h1>
-          <p className="text-gray-600">{error}</p>
-        </div>
-      </main>
-    );
-  }
-
+/**
+ * Pick the best human-readable label for a department by walking
+ * a priority list of fields. The Department schema persists
+ * `displayName` (multi-lang) + `fullName` (plain) + `shortName`
+ * (plain); some legacy / external tenants may only set the plain
+ * fields. The slug is the last-resort fallback so the page always
+ * renders something instead of showing "undefined".
+ */
+function pickDeptLabel(
+  dept: { displayName?: unknown; fullName?: unknown; name?: unknown } | null,
+  language: "en" | "mm",
+  fallbackSlug: string,
+): string {
+  if (!dept) return fallbackSlug;
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6">
-            <TenantLogo size="lg" className="mr-4" />
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">
-                {getLocalizedText(tenant?.displayName, requestInfo.language) ||
-                  "Welcome"}
-              </h1>
-              {getLocalizedText(
-                tenant?.displayShortName,
-                requestInfo.language
-              ) && (
-                <p className="text-lg text-gray-600 mt-2">
-                  {getLocalizedText(
-                    tenant?.displayShortName,
-                    requestInfo.language
-                  )}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {getLocalizedText(
-            tenant?.localizedDescription,
-            requestInfo.language
-          ) && (
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              {getLocalizedText(
-                tenant?.localizedDescription,
-                requestInfo.language
-              )}
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {/* Tenant Information Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <svg
-                className="h-6 w-6 text-blue-600 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-              Tenant Information
-            </h2>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tenant ID
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                    {tenant?.id || "Not available"}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                    {deptParam}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Language Support
-                </label>
-                <div className="flex flex-wrap gap-1">
-                  {tenant?.langSupport?.map((lang) => (
-                    <span
-                      key={lang}
-                      className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
-                    >
-                      {lang.toUpperCase()}
-                    </span>
-                  )) || (
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                      EN
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Root Domain
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {tenant?.rootDomain || requestInfo.hostname}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Name ({requestInfo.language?.toUpperCase()})
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {getLocalizedText(
-                    tenant?.displayName,
-                    requestInfo.language
-                  ) || "Not available"}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Short Name ({requestInfo.language?.toUpperCase()})
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {getLocalizedText(
-                    tenant?.displayShortName,
-                    requestInfo.language
-                  ) || "Not available"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Request Information Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <svg
-                className="h-6 w-6 text-green-600 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              Request Information
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hostname
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {requestInfo.hostname}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Protocol
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {requestInfo.protocol}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Request ID
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {requestInfo.requestId.slice(0, 16)}...
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Language
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded-md font-mono text-sm">
-                  {requestInfo.language}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        {tenant?.contact && (
-          <div className="bg-white rounded-xl shadow-lg p-8 mt-8 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <svg
-                className="h-6 w-6 text-purple-600 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-              Contact Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tenant.contact.email && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
-                    {tenant.contact.email}
-                  </div>
-                </div>
-              )}
-
-              {tenant.contact.phoneNo && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
-                    {tenant.contact.phoneNo}
-                  </div>
-                </div>
-              )}
-
-              {tenant.contact.address && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
-                    {tenant.contact.address}
-                  </div>
-                </div>
-              )}
-
-              {tenant.contact.webSiteUrl && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Website
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
-                    <a
-                      href={tenant.contact.webSiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      {tenant.contact.webSiteUrl}
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {tenant.contact.faceBookUrl && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Facebook
-                  </label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm">
-                    <a
-                      href={tenant.contact.faceBookUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      {tenant.contact.faceBookUrl}
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="text-center mt-12">
-          <p className="text-gray-500">
-            This page demonstrates the tenant settings loaded from the wrapper
-            without secrets.
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            Middleware resolves tenant → Wrapper caches with secrets → Provider
-            gets clean data
-          </p>
-        </div>
-      </div>
-    </main>
+    pickMultiLang(dept.displayName, language) ||
+    pickMultiLang(dept.name, language) ||
+    (typeof dept.fullName === "string" && dept.fullName.trim()
+      ? dept.fullName.trim()
+      : null) ||
+    fallbackSlug
   );
+}
+
+export default async function DepartmentLandingPage({ params }: DeptPageProps) {
+  const { dept: deptSlug } = await params;
+
+  try {
+    // ── 1. Resolve tenant / theme context ───────────────────────
+    const middleware = await getMiddlewareDataFromHeaders();
+    const tenantId: string | undefined = (middleware as any)?.tenantId;
+    const currentLanguage = ((middleware as any)?.language ?? "en") as
+      | "en"
+      | "mm";
+
+    let themeName: ThemeName = "default";
+    if (tenantId) {
+      try {
+        const contentSettings = await getContentSettings(tenantId);
+        const candidate = (contentSettings as any)?.themeName;
+        if (candidate && isKnownTheme(candidate)) themeName = candidate;
+      } catch (settingsError) {
+        // Non-fatal — fall through with default theme.
+        console.warn(
+          "DepartmentLandingPage: theme resolve failed, using default",
+          settingsError,
+        );
+      }
+    }
+    const { HomePage } = getThemeTemplates(themeName);
+
+    // ── 2. Resolve the department ───────────────────────────────
+    const dept = await getDepartmentBySlug(deptSlug);
+    const deptLabel = pickDeptLabel(
+      dept as any,
+      currentLanguage,
+      deptSlug,
+    );
+
+    // Department doesn't exist (or backend couldn't tell us) → show
+    // the Coming Soon placeholder. Avoids a 404 page for slugs that
+    // are valid but haven't been seeded yet, which is the most
+    // common state during early rollout.
+    if (!dept?._id) {
+      return (
+        <DeptComingSoon deptLabel={deptLabel} deptSlug={deptSlug} />
+      );
+    }
+
+    // ── 3. Look up the dept's home page ─────────────────────────
+    const homePage = await getDeptHomePage(dept._id);
+    if (!homePage) {
+      return (
+        <DeptComingSoon deptLabel={deptLabel} deptSlug={deptSlug} />
+      );
+    }
+
+    // ── 4. Render the dept home via the standard theme template ─
+    // Same layout-resolution + section-fetch chain `SafeHomePage`
+    // uses for the org home, so wrapper-mode pages (with a
+    // `templateId` pointing at an authored Template) also work.
+    const effectiveLayout = await resolvePageLayout(homePage as any);
+    const sections = effectiveLayout
+      ? await getSectionsByLayout(effectiveLayout).catch(() => [] as any[])
+      : await getPageSections(homePage.slug as string).catch(
+          () => [] as any[],
+        );
+
+    const homePageWithLayout = {
+      ...homePage,
+      layout: effectiveLayout ?? (homePage as any).layout,
+    } as any;
+
+    return (
+      <HomePage
+        tenantId={tenantId ?? ""}
+        currentLanguage={currentLanguage}
+        homePage={homePageWithLayout}
+        sections={sections || []}
+      />
+    );
+  } catch (error) {
+    // Re-throw NEXT_REDIRECT so Next.js completes the redirect.
+    if (
+      error &&
+      typeof error === "object" &&
+      (error as any).digest?.startsWith?.("NEXT_REDIRECT")
+    ) {
+      throw error;
+    }
+    // Any other backend / network failure → friendly error page,
+    // same UX as the org home's failure path.
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("DepartmentLandingPage: render failed", error);
+    redirectToServiceUnavailable("CONTENT_SERVICE_UNAVAILABLE", message);
+  }
 }

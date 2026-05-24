@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Search, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { getApiDomain } from "@repo/utils/server";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getContentSettings } from "@repo/content";
@@ -8,6 +8,8 @@ import { createHttpClient } from "@repo/api/client";
 import { IconComponent } from "@repo/ui/components/icons";
 import HeaderUserActions from "./HeaderUserActions";
 import HeaderLangSelector from "./HeaderLangSelector";
+import HeaderSearch from "./HeaderSearch";
+import MobileMenu from "./MobileMenu";
 
 interface HeaderContainerProps {
   currentLanguage?: "en" | "mm";
@@ -195,9 +197,10 @@ export async function HeaderContainer({
 
   return (
     <header className="w-full border-b border-border">
-      {/* Row 1 — audience gateway */}
+      {/* Row 1 — audience gateway. Desktop-only (≥ lg) — on mobile
+          the secondary menu lives inside the slide-in drawer. */}
       <div
-        className="w-full"
+        className="hidden lg:block w-full"
         style={{
           backgroundColor: "var(--color-gateway-bg)",
           color: "var(--color-gateway-text)",
@@ -309,12 +312,17 @@ export async function HeaderContainer({
       {/* Row 2 — brand bar with logo + primary nav + search */}
       <div className="w-full bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-6 py-5">
-            {/* Logo / wordmark */}
+          <div className="flex items-center justify-between gap-4 lg:gap-6 py-3 lg:py-5">
+            {/* Logo / wordmark. On mobile (< lg) the title is allowed
+                to truncate and the subtitle is hidden so the row stays
+                a single compact line next to the hamburger trigger. */}
             {showLogo && (
-              <Link href="/" className="flex items-baseline gap-2 shrink-0">
+              <Link
+                href="/"
+                className="flex items-baseline gap-2 min-w-0 lg:shrink-0"
+              >
                 <span
-                  className="text-2xl md:text-[1.6rem] font-bold tracking-tight"
+                  className="text-lg md:text-xl lg:text-[1.6rem] font-bold tracking-tight truncate"
                   style={{
                     color: "var(--color-primary)",
                     fontFamily: "var(--font-serif)",
@@ -324,7 +332,7 @@ export async function HeaderContainer({
                 </span>
                 {brandSubtitle && (
                   <span
-                    className="text-xs uppercase tracking-widest text-muted-foreground"
+                    className="hidden lg:inline text-xs uppercase tracking-widest text-muted-foreground"
                     style={{ fontFamily: "var(--font-sans)" }}
                   >
                     {brandSubtitle}
@@ -574,41 +582,30 @@ export async function HeaderContainer({
             </nav>
             )}
 
-            {/* Dual-scope search */}
-            {showSearch && (
-              <div className="hidden md:flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="Search"
-                  className="flex items-center gap-2 rounded-sm border border-border px-3 py-1.5 text-sm text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                >
-                  <Search className="h-3.5 w-3.5" />
-                  <span>{currentLanguage === "mm" ? "ရှာ" : "Search"}</span>
-                  <span className="text-xs text-muted-foreground/70">
-                    · Web · People
-                  </span>
-                </button>
-              </div>
-            )}
+            {/* Desktop search (≥ lg) — mobile gets a search icon inside
+                the MobileMenu trigger row, so this is intentionally
+                hidden on smaller widths. */}
+            {showSearch && <HeaderSearch currentLanguage={currentLanguage} />}
+
+            {/* Mobile shell (< lg): search icon + hamburger that opens
+                a slide-in drawer with the full primary + audience nav,
+                language switcher, and user actions. Desktop layout is
+                unaffected — every desktop block above is gated by
+                `hidden lg:flex` / `hidden lg:block`. */}
+            <div className="lg:hidden">
+              <MobileMenu
+                primaryMenu={primaryMenu as MenuTreeNode[]}
+                audienceMenu={audienceMenu as MenuTreeNode[]}
+                currentLanguage={currentLanguage}
+                showSearch={showSearch}
+                showNavigation={showNavigation}
+                showLanguageSelector={showLanguageSelector}
+                showUserMenu={showUserMenu}
+                brandTitle={brandTitle}
+              />
+            </div>
           </div>
         </div>
-
-        {/* Mobile: nav row below brand row.
-            Top-level + first-level children are flattened onto one
-            scrollable line (children indented with a small leading dot)
-            because dropdown UX on a horizontally-scrolling strip is
-            awkward. Renders inline so deeper menus stay reachable
-            without JS. */}
-        {showNavigation && (
-          <div className="lg:hidden border-t border-border">
-            <nav className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-4 py-2 overflow-x-auto text-sm whitespace-nowrap">
-              {(primaryMenu as MenuTreeNode[]).flatMap((item) =>
-                flattenMobile(item, currentLanguage),
-              )}
-            </nav>
-          </div>
-        )}
       </div>
     </header>
   );
@@ -699,46 +696,6 @@ function DropdownNode({
       )}
     </li>
   );
-}
-
-/**
- * Mobile inline-flatten — recursively walks the tree and emits one
- * `<Link>` per node, indenting deeper levels with leading dots so
- * hierarchy stays legible on the horizontal-scroll strip.
- */
-function flattenMobile(
-  node: MenuTreeNode,
-  language: "en" | "mm",
-  depth = 0,
-): React.ReactNode[] {
-  const label = pickLang(node.title, language) || node.slug || "";
-  const link = (
-    <Link
-      key={node._id}
-      href={node.url || "#"}
-      target={node.openInNewTab ? "_blank" : undefined}
-      rel={node.openInNewTab ? "noopener noreferrer" : undefined}
-      className={`um1sf-nav-link inline-flex items-center gap-1.5 border-b-2 border-transparent pb-0.5 ${
-        depth === 0 ? "font-medium" : "text-muted-foreground"
-      }`}
-      style={{ fontFamily: "var(--font-sans)" }}
-    >
-      {depth > 0 && <span aria-hidden>{"·".repeat(depth)}</span>}
-      {node.icon && (
-        <IconComponent
-          name={node.icon}
-          size={13}
-          className="flex-shrink-0"
-        />
-      )}
-      {label}
-    </Link>
-  );
-  const out: React.ReactNode[] = [link];
-  for (const child of node.children ?? []) {
-    out.push(...flattenMobile(child, language, depth + 1));
-  }
-  return out;
 }
 
 /**

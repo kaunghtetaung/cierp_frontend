@@ -56,12 +56,21 @@ export function PostHero({
         <>
           {/* Featured image — eslint disable because we read from
                arbitrary user URLs and don't want to bake every
-               possible storage host into next.config. */}
+               possible storage host into next.config.
+               LCP optimization: eager-load + high fetch priority +
+               async decode so the hero (typically the LCP element)
+               doesn't block the largest-contentful-paint metric. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={featuredImageUrl}
             alt=""
             aria-hidden
+            loading="eager"
+            decoding="async"
+            // @ts-expect-error — fetchpriority is a valid attribute
+            // not yet in React's typed HTMLAttributes (lands in the
+            // experimental DOM types).
+            fetchpriority="high"
             className="absolute inset-0 w-full h-full object-cover"
           />
           {/* Dark gradient overlay for title legibility — top is

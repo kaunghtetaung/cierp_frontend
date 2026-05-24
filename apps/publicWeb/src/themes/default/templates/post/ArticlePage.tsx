@@ -6,6 +6,7 @@ import { PostSidebar } from "./PostSidebar";
 import { PostBody } from "./body/PostBody";
 import { RelatedPostsBlock } from "./RelatedPostsBlock";
 import { DraftBadge } from "@/feature-components/draft-badge/DraftBadge";
+import { PostViewTracker } from "@/feature-components/post-view-tracker/PostViewTracker";
 
 interface ArticlePageProps {
   post: any;
@@ -197,6 +198,15 @@ export function ArticlePage({
 
             {bodySlot ?? (
               <PostBody post={post} currentLanguage={currentLanguage} />
+            )}
+            {/* View beacon — only mounted when the real body is
+                rendered (skipped on the password gate). Visible-dwell
+                + cookie dedupe inside the component. */}
+            {!bodySlot && post?._id && post?.slug && (
+              <PostViewTracker
+                postId={String(post._id)}
+                slug={String(post.slug)}
+              />
             )}
           </main>
 
