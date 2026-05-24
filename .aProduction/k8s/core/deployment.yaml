@@ -97,6 +97,12 @@ spec:
             secretKeyRef:
               name: frontend-secrets
               key: tenant-api-client-secret
+        # Google Books API (for library/bibliographies ISBN lookup)
+        - name: GOOGLE_BOOKS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets
+              key: google-books-api-key
         # Redis
         - name: REDIS_HOST
           value: "192.168.200.32"

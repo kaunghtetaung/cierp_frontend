@@ -179,7 +179,7 @@ pushCi:
 	@echo ""
 	@echo "Step 2: Syncing code to production server..."
 	@echo "  Source: $(PWD)/"
-	@echo "  Target: ciadmin@git.crystal-image.net:~/ciapp_frontend/"
+	@echo "  Target: ciadmin@192.168.200.42:~/ciapp_frontend/"
 	@echo ""
 	rsync -avz --delete \
 		--exclude 'node_modules/' \
@@ -198,7 +198,7 @@ pushCi:
 		--exclude '.turbo/' \
 		--exclude '*.tsbuildinfo' \
 		-e "ssh -i ~/.ssh/ciservers -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-		./ ciadmin@git.crystal-image.net:~/ciapp_frontend/
+		./ ciadmin@192.168.200.42:~/ciapp_frontend/
 	@echo ""
 	@echo "✅ Frontend deployment complete!"
 	@echo ""
