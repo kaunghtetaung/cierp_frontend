@@ -20,6 +20,11 @@ export type NavigationType =
   | 'external'
   | 'page'
   | 'post'
+  // `posts` — list page for a whole post type
+  // (e.g. /post/news). Distinct from `post` which targets a single
+  // post by id. Stored as a normal navigation item; the URL is
+  // computed at save time from the picked post type's slug.
+  | 'posts'
   | 'category'
   | 'custom';
 

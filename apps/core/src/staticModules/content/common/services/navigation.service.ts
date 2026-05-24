@@ -6,6 +6,24 @@
 
 import { getCachedServerHttpClient } from '@repo/api/server-only';
 import type { ApiResponse } from '@repo/types';
+
+// Drills through the `{data, meta}` envelope that `StandardResponseHandler`
+// preserves on list-shaped responses (paginated list views need both
+// rows and meta — see libs/api/handlers/response-handler.ts). Returns
+// the inner array verbatim. Falls through to the value when the
+// envelope shape isn't present (older endpoints / non-list shapes).
+function unwrapList<T>(raw: unknown): T {
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    !Array.isArray(raw) &&
+    'data' in raw &&
+    ('meta' in raw || 'pagination' in raw)
+  ) {
+    return (raw as { data: T }).data;
+  }
+  return raw as T;
+}
 import type {
   Navigation,
   MenuTreeNode,
@@ -140,7 +158,7 @@ export class NavigationService {
     if (departmentId) {
       endpoint += `&departmentId=${encodeURIComponent(departmentId)}`;
     }
-    const response = await this.httpClient.request<MenuTreeNode[]>(
+    const response = await this.httpClient.request<any>(
       endpoint,
       {
         method: 'GET',
@@ -156,14 +174,18 @@ export class NavigationService {
       throw new Error(response.error || 'Failed to fetch menu tree');
     }
 
-    return response;
+    // The StandardResponseHandler now preserves `{data, meta}` wrap on
+    // list-shaped responses (paginated lists need both). Drill through
+    // it so callers see the array directly — without this, the menu
+    // tree page's `nodes.flatMap` blew up on the wrap object.
+    return { ...response, data: unwrapList<MenuTreeNode[]>(response.data) };
   }
 
   /**
    * Get filtered menu tree (role-based filtering for public site)
    */
   async getFilteredMenuTree(menuType: MenuType, language: string = 'en'): Promise<ApiResponse<MenuTreeNode[]>> {
-    const response = await this.httpClient.request<MenuTreeNode[]>(
+    const response = await this.httpClient.request<any>(
       `${NAVIGATION_BASE}/menu/${menuType}/filtered?language=${language}`,
       {
         method: 'GET',
@@ -179,7 +201,7 @@ export class NavigationService {
       throw new Error(response.error || 'Failed to fetch filtered menu tree');
     }
 
-    return response;
+    return { ...response, data: unwrapList<MenuTreeNode[]>(response.data) };
   }
 
   /**

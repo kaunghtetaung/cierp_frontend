@@ -14,76 +14,67 @@ import type {
 // ATTRIBUTE TYPES
 // ============================================
 
+/**
+ * Attribute types — matches the backend `customAttribute.type` enum exactly:
+ * `/workspace/apps/core/src/content/post-type/schemas/post-type.schema.ts:14`.
+ * Keep this list in sync with the backend or save will be rejected.
+ */
 export type AttributeType =
   | 'text'
   | 'textarea'
-  | 'richText'
+  | 'rich-text'
   | 'number'
   | 'date'
-  | 'datetime'
   | 'boolean'
   | 'select'
-  | 'multiSelect'
-  | 'image'
-  | 'file'
-  | 'gallery'
-  | 'url'
   | 'email'
-  | 'color'
-  | 'relation';
+  | 'url';
 
 // ============================================
 // ATTRIBUTE VALIDATION
+// (Matches backend `customAttribute.validation` block.)
 // ============================================
 
 export interface AttributeValidation {
-  required?: boolean;
-  min?: number;
-  max?: number;
   minLength?: number;
   maxLength?: number;
   pattern?: string;
-  allowedExtensions?: string[];
-  maxFileSize?: number;
-}
-
-// ============================================
-// ATTRIBUTE OPTION
-// ============================================
-
-export interface AttributeOption {
-  label: MultiLanguageText;
-  value: string;
-  color?: string;
+  min?: number;
+  max?: number;
 }
 
 // ============================================
 // ATTRIBUTE DEFINITION
+// (Matches backend `customAttribute` schema. Frontend keeps this single-
+// language because the backend stores `name`/`label` as plain strings.
+// Per-tenant translation can be layered on the post-side if needed.)
 // ============================================
 
 export interface AttributeDefinition {
-  key: string;
-  label: MultiLanguageText;
+  /** Stable key used as the form field name + as `customFields[].fieldName`. */
+  name: string;
+  /** Human label shown next to the input. */
+  label: string;
   type: AttributeType;
-  description?: MultiLanguageText;
-  placeholder?: MultiLanguageText;
+  required: boolean;
   defaultValue?: unknown;
-  options?: AttributeOption[];
+  /** Allowed values when `type === 'select'`. */
+  options?: string[];
   validation?: AttributeValidation;
-  isLocalizable: boolean;
-  showInList: boolean;
-  showInPreview: boolean;
+  /** Display order in the post form. */
   order: number;
-  group?: string;
-  dependsOn?: {
-    attributeKey: string;
-    value: unknown;
-  };
-  relationConfig?: {
-    targetType: string;
-    displayField: string;
-    multiple: boolean;
-  };
+}
+
+/**
+ * Legacy alias kept for the existing Zod schema names — the runtime shape
+ * is identical. Marked deprecated; new code should reference
+ * `AttributeDefinition` directly.
+ *
+ * @deprecated use AttributeDefinition.options (string[]) instead.
+ */
+export interface AttributeOption {
+  label: string;
+  value: string;
 }
 
 // ============================================
@@ -96,7 +87,8 @@ export interface PostType extends BaseEntity {
   description?: MultiLanguageText;
   icon?: string;
   color?: string;
-  attributes: AttributeDefinition[];
+  /** Per-PostType custom attributes (matches backend `customAttributes`). */
+  customAttributes: AttributeDefinition[];
   supportsCategories: boolean;
   supportsTags: boolean;
   supportsComments: boolean;
@@ -121,7 +113,7 @@ export interface CreatePostTypeDto {
   description?: MultiLanguageText;
   icon?: string;
   color?: string;
-  attributes?: AttributeDefinition[];
+  customAttributes?: AttributeDefinition[];
   supportsCategories?: boolean;
   supportsTags?: boolean;
   supportsComments?: boolean;

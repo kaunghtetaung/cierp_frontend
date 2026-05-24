@@ -30,6 +30,32 @@ export type PageTemplate =
 // PAGE ENTITY
 // ============================================
 
+/**
+ * Hybrid section model — each entry on the page is either a reference to a
+ * reusable Section doc (`sectionId` only), an inline custom section
+ * (`sectionData` only), or a referenced section with per-page overrides
+ * (BOTH set; the public renderer merges `sectionData` on top of the
+ * resolved Section). `isVisible: false` keeps the entry in the layout but
+ * hidden — useful for seasonal feature flags.
+ */
+export interface PageSectionRef {
+  sectionId?: string | null;
+  sectionData?: Section | Record<string, unknown> | null;
+  order: number;
+  isVisible?: boolean;
+}
+
+/**
+ * Layout discriminator — every page uses ONE of these channels for its
+ * body content:
+ *  - `tiptap`   → rich-text body via Tiptap (default for content pages
+ *    like Faculty / Program / News). Lives in `bodyTiptap`.
+ *  - `sections` → section composition (Hero/FAQ/CTA/etc). Reserved for
+ *    homepage + a handful of marketing pages. Lives in `sectionRefs`.
+ * Both fields stay on the doc so toggling modes preserves data.
+ */
+export type PageLayoutMode = 'tiptap' | 'sections';
+
 export interface Page extends BaseEntity {
   title: MultiLanguageText;
   slug: string;
@@ -39,7 +65,18 @@ export interface Page extends BaseEntity {
   featuredImageAlt?: MultiLanguageText;
   template: PageTemplate;
   layout?: Layout;
-  sectionIds: string[];
+  /** Picks `bodyTiptap` vs `sectionRefs` as the active body channel. */
+  layoutMode?: PageLayoutMode;
+  /** Tiptap ProseMirror JSON per language. Used when layoutMode === 'tiptap'. */
+  bodyTiptap?: {
+    en?: Record<string, unknown>;
+    mm?: Record<string, unknown>;
+  };
+  /** Hybrid section model — references, inline data, or both with overrides. */
+  sectionRefs: PageSectionRef[];
+  /** @deprecated use `sectionRefs` — kept for old API consumers reading legacy responses. */
+  sectionIds?: string[];
+  /** Resolved sections post-population (server hydrates from `sectionRefs`). */
   sections?: Section[];
   parentId?: string;
   parent?: Page;
@@ -77,6 +114,15 @@ export interface PageTreeNode extends Omit<Page, 'children' | 'sections'> {
 // CREATE DTO
 // ============================================
 
+// Used in the page-create / page-update flow when the form persists
+// section instances inline (or as a mix of references + inline overrides).
+export interface CreatePageSectionRefDto {
+  sectionId?: string | null;
+  sectionData?: Record<string, unknown> | null;
+  order: number;
+  isVisible?: boolean;
+}
+
 export interface CreatePageDto {
   title: MultiLanguageText;
   slug?: string;
@@ -86,6 +132,15 @@ export interface CreatePageDto {
   featuredImageAlt?: MultiLanguageText;
   template?: PageTemplate;
   layout?: Partial<Layout>;
+  layoutMode?: PageLayoutMode;
+  bodyTiptap?: {
+    en?: Record<string, unknown>;
+    mm?: Record<string, unknown>;
+  };
+  /** Hybrid section model. Use `sectionRefs` going forward; `sectionIds`
+   *  is kept for legacy API compatibility (server normalizes it). */
+  sectionRefs?: CreatePageSectionRefDto[];
+  /** @deprecated use `sectionRefs` */
   sectionIds?: string[];
   parentId?: string;
   order?: number;

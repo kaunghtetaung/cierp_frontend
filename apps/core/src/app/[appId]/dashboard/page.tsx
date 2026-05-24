@@ -1,5 +1,6 @@
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { LibraryDashboardClient } from "@/components/library/dashboard/LibraryDashboardClient";
+import { ContentDashboardClient } from "@/components/content/dashboard/ContentDashboardClient";
 
 interface DashboardPageProps {
   params: Promise<{
@@ -10,12 +11,24 @@ interface DashboardPageProps {
 export default async function DashboardPage({ params }: DashboardPageProps) {
   const resolvedParams = await params;
 
-  // If appId is "library", render the library dashboard
+  // Per-app dispatcher. New apps add a branch here pointing at their
+  // dashboard client. The default branch renders a placeholder so apps
+  // without a dashboard yet still resolve the route.
   if (resolvedParams.appId === "library") {
     return (
       <QueryProvider>
         <div className="container mx-auto py-8">
           <LibraryDashboardClient />
+        </div>
+      </QueryProvider>
+    );
+  }
+
+  if (resolvedParams.appId === "content") {
+    return (
+      <QueryProvider>
+        <div className="container mx-auto py-8">
+          <ContentDashboardClient />
         </div>
       </QueryProvider>
     );

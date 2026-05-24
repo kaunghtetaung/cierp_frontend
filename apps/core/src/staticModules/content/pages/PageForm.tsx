@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * @deprecated Pages have been consolidated into the Post collection
+ * (PostType.slug='page'). Authoring goes through `PostForm.tsx` +
+ * `PageDetailsCard.tsx`. This file is orphaned (no importers as of
+ * 2026-04-29) and will be removed when the legacy `pages` collection
+ * is retired — see `project_deferred_work.md` item #8.
+ */
+
 import React, { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,10 +31,18 @@ import {
 } from '@repo/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui';
 import { toastSuccess, toastError } from '@repo/utils';
-import { Loader2, Save, X } from 'lucide-react';
+import {
+  Loader2,
+  Save,
+  X,
+  FileText,
+  Layers,
+  AlertCircle,
+} from 'lucide-react';
 import { createPage, updatePage } from '../common/actions';
-import type { Page, PageTemplate } from '../common/types';
+import type { Page, PageTemplate, PageLayoutMode } from '../common/types';
 import { generateSlug } from '../common/utils';
+import { TiptapEditor } from '../common/components/editor/TiptapEditor';
 
 // Page form schema
 const pageFormSchema = z.object({
@@ -40,6 +56,16 @@ const pageFormSchema = z.object({
     mm: z.string().optional(),
   }).optional(),
   template: z.enum(['default', 'fullWidth', 'sidebar', 'landing', 'blog', 'blank']).default('default'),
+  // Layout discriminator — picks `bodyTiptap` (default for content pages)
+  // vs `sectionRefs` (for homepage / marketing pages). The form shows the
+  // matching editor and hides the other.
+  layoutMode: z.enum(['tiptap', 'sections']).default('tiptap'),
+  bodyTiptap: z
+    .object({
+      en: z.record(z.unknown()).optional(),
+      mm: z.record(z.unknown()).optional(),
+    })
+    .optional(),
   order: z.number().min(0).optional(),
   showInNavigation: z.boolean().default(true),
   showBreadcrumbs: z.boolean().default(true),
@@ -76,6 +102,8 @@ export function PageForm({
       slug: initialData?.slug || '',
       description: initialData?.description || { en: '', mm: '' },
       template: initialData?.template || 'default',
+      layoutMode: (initialData?.layoutMode as PageLayoutMode) || 'tiptap',
+      bodyTiptap: initialData?.bodyTiptap,
       order: initialData?.order || 0,
       showInNavigation: initialData?.showInNavigation ?? true,
       showBreadcrumbs: initialData?.showBreadcrumbs ?? true,
@@ -448,6 +476,149 @@ export function PageForm({
             </div>
           </div>
         </div>
+
+        {/* ───────── Page body ─────────
+            Two channels, one active at a time:
+              - Tiptap (rich text body, default for content pages)
+              - Sections (composition; reserved for homepage / landing) */}
+        <FormField
+          control={form.control}
+          name="layoutMode"
+          render={({ field }) => {
+            const mode = (field.value ?? 'tiptap') as PageLayoutMode;
+            return (
+              <FormItem>
+                <div className="rounded-lg border bg-background overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/40 border-b">
+                    <div>
+                      <FormLabel className="text-sm font-semibold">
+                        Page body
+                      </FormLabel>
+                      <FormDescription className="text-[11px]">
+                        Pick how this page renders: a rich-text body inside
+                        a template, or section composition for marketing
+                        pages.
+                      </FormDescription>
+                    </div>
+                    {/* Segmented mode toggle */}
+                    <div className="flex items-center gap-1 border rounded-md p-1 bg-background shrink-0">
+                      <Button
+                        type="button"
+                        variant={mode === 'tiptap' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => field.onChange('tiptap')}
+                        className="h-7 px-3 gap-1.5"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Tiptap body
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={mode === 'sections' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => field.onChange('sections')}
+                        className="h-7 px-3 gap-1.5"
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        Sections
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="p-4">
+                    {mode === 'tiptap' ? (
+                      <div className="space-y-2">
+                        <Tabs
+                          value={langTab}
+                          onValueChange={(v) =>
+                            setLangTab(v as 'en' | 'mm')
+                          }
+                        >
+                          <TabsList className="h-8 mb-2">
+                            <TabsTrigger
+                              value="en"
+                              className="text-xs px-3 py-1"
+                            >
+                              EN
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="mm"
+                              className="text-xs px-3 py-1"
+                            >
+                              MM
+                            </TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="en" className="mt-0">
+                            <FormField
+                              control={form.control}
+                              name="bodyTiptap.en"
+                              render={({ field: bodyField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <TiptapEditor
+                                      content={
+                                        (bodyField.value as any) ?? ''
+                                      }
+                                      onChange={bodyField.onChange}
+                                      outputFormat="json"
+                                      placeholder="Write the page body in English…"
+                                      minHeight="300px"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </TabsContent>
+                          <TabsContent value="mm" className="mt-0">
+                            <FormField
+                              control={form.control}
+                              name="bodyTiptap.mm"
+                              render={({ field: bodyField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <TiptapEditor
+                                      content={
+                                        (bodyField.value as any) ?? ''
+                                      }
+                                      onChange={bodyField.onChange}
+                                      outputFormat="json"
+                                      placeholder="ပို့စ်ဇာတ်ကြောင်း (မြန်မာ)…"
+                                      minHeight="300px"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+                    ) : (
+                      <div className="rounded-md border-2 border-dashed bg-muted/20 px-4 py-8 text-center">
+                        <Layers className="h-7 w-7 mx-auto mb-2 text-muted-foreground/60" />
+                        <p className="text-sm font-medium mb-1">
+                          Section composition
+                        </p>
+                        <p className="text-[11px] text-muted-foreground max-w-md mx-auto mb-3">
+                          Reserved for homepage and a small set of marketing
+                          pages. The drag-and-drop section builder lives on
+                          the dedicated Sections page (coming next phase).
+                        </p>
+                        <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          {((initialData?.sectionRefs?.length ?? 0) === 0)
+                            ? 'No sections yet on this page.'
+                            : `${initialData?.sectionRefs?.length} section(s) currently on this page.`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </FormItem>
+            );
+          }}
+        />
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t">

@@ -240,6 +240,14 @@ export function useFileBrowser(options: UseFileBrowserOptions): UseFileBrowserRe
     }
   }, [autoLoad]); // Only run on mount
 
+  // Sync currentPath when basePath prop changes
+  useEffect(() => {
+    if (basePath !== currentPath) {
+      setCurrentPath(basePath);
+      loadFiles(basePath);
+    }
+  }, [basePath]);
+
   return {
     // State
     files,

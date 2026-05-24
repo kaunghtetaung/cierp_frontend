@@ -59,6 +59,30 @@ async function getPostService(): Promise<PostService> {
 export async function createPost(
   data: CreatePostDto
 ): Promise<ApiResponse<Post>> {
+  // Workaround for a Next.js Server Action RSC encoding bug: any
+  // property literally named `attrs` on a plain object loses its
+  // value across the browser → server boundary (the decoded property
+  // ends up as `attrs: undefined`, which JSON.stringify then drops).
+  // This wiped the `src` off every Tiptap image node, the `href` off
+  // every link mark, the `level` off every heading, the
+  // `colspan/rowspan` off every table cell, and so on — anything
+  // ProseMirror serialises under the `attrs` key.
+  //
+  // The client wraps the body in `bodySerialized` (a plain JSON
+  // string, immune to the RSC bug) and sets `_bodyIsStringified`.
+  // We unwrap it here before validation runs.
+  const dataAny = data as any;
+  if (dataAny._bodyIsStringified && typeof dataAny.bodySerialized === 'string') {
+    try {
+      const parsed = JSON.parse(dataAny.bodySerialized);
+      dataAny.body = parsed;
+    } catch {
+      /* leave body as-is so the caller sees the validation error */
+    }
+    delete dataAny.bodySerialized;
+    delete dataAny._bodyIsStringified;
+  }
+
   try {
     if (!data.title?.en || !data.title?.mm) {
       return {
@@ -168,6 +192,18 @@ export async function updatePost(
   id: string,
   data: UpdatePostDto
 ): Promise<ApiResponse<Post>> {
+  // Same RSC `attrs` workaround as createPost — unwrap stringified body.
+  const dataAny = data as any;
+  if (dataAny._bodyIsStringified && typeof dataAny.bodySerialized === 'string') {
+    try {
+      const parsed = JSON.parse(dataAny.bodySerialized);
+      dataAny.body = parsed;
+    } catch {
+      /* leave body as-is */
+    }
+    delete dataAny.bodySerialized;
+    delete dataAny._bodyIsStringified;
+  }
   try {
     const service = await getPostService();
     const response = await service.update(id, data);

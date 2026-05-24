@@ -56,18 +56,27 @@ export async function createTag(
   data: CreateTagDto
 ): Promise<ApiResponse<Tag>> {
   try {
-    if (!data.name?.en || !data.name?.mm) {
+    // Backend DTO is `name: string`. Accept either a string or a multilang
+    // object and normalize to a string.
+    const rawName: any = (data as any).name;
+    const normalizedName: string =
+      typeof rawName === 'string'
+        ? rawName.trim()
+        : (rawName?.en || rawName?.mm || '').toString().trim();
+
+    if (!normalizedName) {
       return {
         success: false,
-        error: 'Name is required in both languages',
+        error: 'Name is required',
         message: 'Validation failed',
         data: null as any,
         timestamp: new Date(),
       };
     }
 
+    const payload = { ...data, name: normalizedName } as any;
     const service = await getTagService();
-    const response = await service.create(data);
+    const response = await service.create(payload);
     return response;
   } catch (error) {
     console.error('Create tag error:', error);
@@ -76,6 +85,53 @@ export async function createTag(
       error: error instanceof Error ? error.message : 'Failed to create tag',
       message: 'Create failed',
       data: null as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
+ * Lightweight reference lookup for dropdowns — `{ id, label, value }` items.
+ * Goes Next.js (server-side, with auth token) → API gateway → content
+ * service `/tags/ref`.
+ */
+export async function getTagReference(
+  params?: { search?: string; limit?: number; status?: string }
+): Promise<
+  ApiResponse<Array<{ id: string; label: string; value: string }>>
+> {
+  try {
+    const service = await getTagService();
+    const response = await service.getReference(params);
+    if (response.success && response.data) {
+      // The shared StandardResponseHandler unwraps `body.data` automatically,
+      // so `response.data` is already the array.
+      const raw: any = response.data;
+      const list: Array<{ id: string; label: string; value: string }> =
+        Array.isArray(raw) ? raw : (raw.data || []);
+      return {
+        success: true,
+        data: list,
+        message:
+          (typeof raw === 'object' && !Array.isArray(raw) && raw.message) ||
+          'OK',
+        timestamp: new Date(),
+      } as ApiResponse<Array<{ id: string; label: string; value: string }>>;
+    }
+    return {
+      success: false,
+      error: response.error || 'Failed to fetch tag reference',
+      message: 'Fetch failed',
+      data: [] as any,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Get tag reference error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch tag reference',
+      message: 'Fetch failed',
+      data: [] as any,
       timestamp: new Date(),
     };
   }

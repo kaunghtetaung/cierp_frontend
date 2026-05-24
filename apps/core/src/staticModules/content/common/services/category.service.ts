@@ -126,6 +126,44 @@ export class CategoryService {
   }
 
   /**
+   * Lightweight `/ref` lookup for dropdown pickers. Server returns
+   * `{ data: [{ id, label, value }], total }` — much smaller than `getAll`
+   * and supports a `search` query.
+   */
+  async getReference(params?: { search?: string; limit?: number; status?: string }): Promise<
+    ApiResponse<{
+      statusCode: number;
+      message: string;
+      data: Array<{ id: string; label: string; value: string }>;
+      total: number;
+    }>
+  > {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params?.status) qs.set('status', params.status);
+    const endpoint = `${CATEGORY_BASE}/ref${qs.toString() ? `?${qs}` : ''}`;
+    const response = await this.httpClient.request<{
+      statusCode: number;
+      message: string;
+      data: Array<{ id: string; label: string; value: string }>;
+      total: number;
+    }>(endpoint, {
+      method: 'GET',
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+      timeout: 25000,
+    });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch category reference');
+    }
+    return response;
+  }
+
+  /**
    * Get category tree structure
    * Uses /tree endpoint pattern
    */

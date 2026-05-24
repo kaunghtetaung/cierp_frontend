@@ -54,7 +54,7 @@ export const contentBlockSchema = z.object({
 // VISIBILITY & STATUS
 // ============================================
 
-export const visibilitySchema = z.enum(['Public', 'Private', 'Protected', 'Password']);
+export const visibilitySchema = z.enum(['Public', 'Private', 'Protected', 'Password', 'Restricted']);
 export const contentStatusSchema = z.enum(['Draft', 'Published', 'Archived', 'Scheduled']);
 export const entityStatusSchema = z.enum(['Active', 'Inactive']);
 export const categoryStatusSchema = z.enum(['Active', 'Inactive', 'Draft']);

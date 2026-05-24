@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { MediaBrowserProps, MediaServiceConfig, MediaFile } from '../../types';
 import type { MediaServerActions } from '../../services/media-service';
 import { useFileBrowser } from '../../hooks/useFileBrowser';
@@ -26,6 +26,7 @@ export interface FileBrowserProps extends MediaBrowserProps {
   onAddThumbnail?: (file: MediaFile) => void;
   onPreview?: (file: MediaFile) => void;
   onFileMove?: (fileKeys: string[], destinationFolder: string, sourcePath: string) => void;
+  onPathChange?: (newPath: string) => void;
 }
 
 export function FileBrowser({
@@ -46,6 +47,7 @@ export function FileBrowser({
   onAddThumbnail,
   onPreview,
   onFileMove,
+  onPathChange,
 }: FileBrowserProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(initialViewMode);
 
@@ -62,9 +64,20 @@ export function FileBrowser({
     actions,
   });
 
+  // Notify parent component when path changes
+  useEffect(() => {
+    if (onPathChange && browser.currentPath) {
+      onPathChange(browser.currentPath);
+    }
+  }, [browser.currentPath, onPathChange]);
+
   const handleFileClick = (file: any) => {
     if (multiSelect) {
       browser.toggleFileSelection(file);
+      // Also notify the parent — without this, the MediaBrowserDialog's own
+      // selectedFiles state stays empty in multi-select mode, leaving the
+      // Select button disabled forever.
+      onFileSelect?.(file);
     } else {
       browser.selectFile(file);
       onFileSelect?.(file);

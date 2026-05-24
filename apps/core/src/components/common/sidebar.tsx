@@ -23,6 +23,13 @@ const getSecondaryNavItems = (
   appPrefix: string = "/core"
 ) => [
   {
+    title: getLocalizedText({ en: "Media Library", mm: "မီဒီယာစာကြည့်တိုက်" }, language),
+    url: `${appPrefix}/media`,
+    icon: ({ className, ...props }: any) => (
+      <IconComponent name="FolderOpen" className={className} {...props} />
+    ),
+  },
+  {
     title: getLocalizedText({ en: "Support", mm: "အကူအညီ" }, language),
     url: `${appPrefix}/support`,
     icon: ({ className, ...props }: any) => (
@@ -58,6 +65,16 @@ const getSecondaryNavItems = (
   },
 ];
 
+// Module slugs to hide from the sidebar nav. The underlying schema is
+// still served by /initialize and routes/access-policy continue to
+// resolve — this just removes the entry from the visible menu.
+//
+// `post` — superseded by per-PostType entries under "Contents"
+//   (News / Article / Events / Lesson / Page / Announcements). Direct
+//   /core/post/{new,id/edit} URLs still work for create/edit flows
+//   triggered from those per-type list views.
+const SIDEBAR_HIDDEN_MODULE_SLUGS = new Set(['post']);
+
 // Function to convert clean client modules to navigation items with language support
 // Supports hierarchical navigation with parent modules
 function modulesToNavItems(
@@ -65,6 +82,12 @@ function modulesToNavItems(
   language: string,
   currentAppId?: string
 ): any[] {
+  // Drop hidden entries before any hierarchy/grouping work — keeps the
+  // logic below identical to the original, just operating on a smaller list.
+  modules = modules.filter(
+    (m) => !SIDEBAR_HIDDEN_MODULE_SLUGS.has(m.slug),
+  );
+
   // Use reliable server data (currentAppId) as primary source for app prefix
   // This prevents stale window.location.pathname during server component re-renders
   const getAppPrefix = (): string => {

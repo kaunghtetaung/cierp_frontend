@@ -6,6 +6,7 @@
 export {
   createCategory,
   getCategories,
+  getCategoryReference,
   getCategoryTree,
   getCategoryById,
   updateCategory,
@@ -15,10 +16,14 @@ export {
   restoreCategory,
 } from './category.actions';
 
+// Department actions (post-module scoped)
+export { getPublishableDepartments } from './department.actions';
+
 // Tag actions
 export {
   createTag,
   getTags,
+  getTagReference,
   getTagById,
   updateTag,
   deleteTag,
@@ -87,6 +92,20 @@ export {
   getSectionsByType,
 } from './section.actions';
 
+// Template actions
+export {
+  createTemplate,
+  getTemplates,
+  getTemplateReference,
+  getTemplateById,
+  updateTemplate,
+  deleteTemplate,
+  hardDeleteTemplate,
+  getDeletedTemplates,
+  getDeletedTemplateCount,
+  restoreTemplate,
+} from './template.actions';
+
 // Navigation actions
 export {
   createNavigationItem,
@@ -101,6 +120,9 @@ export {
   bulkNavigationOperation,
   restoreNavigationItem,
   getNavigationFlatList,
+  getMenuTypes,
+  getOrganizations,
+  getDepartments,
 } from './navigation.actions';
 
 // Settings actions
@@ -124,6 +146,7 @@ export {
 export {
   createPostType,
   getPostTypes,
+  getPostTypeReference,
   getPostTypeById,
   getPostTypeBySlug,
   updatePostType,

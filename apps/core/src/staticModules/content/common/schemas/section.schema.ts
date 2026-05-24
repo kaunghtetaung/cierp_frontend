@@ -27,9 +27,11 @@ export const sectionTypeSchema = z.enum([
   'faq',
   'pricing',
   'dataTable',
-  'studentEnrollment',
+  'stats',
   'rector',
   'organizationStructure',
+  'carousel',
+  'recentPosts',
 ]);
 
 // ============================================

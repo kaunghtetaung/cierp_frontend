@@ -10,6 +10,95 @@ import { createTenantS3Client } from '@repo/s3';
 import { getMimeType } from '@repo/s3/utils';
 import { logger } from '@repo/utils/common/logger';
 import type { ListMediaResponse } from '@repo/media';
+import { getApiDomain } from '@repo/utils/server';
+import {
+  MediaMetadataService,
+  type MediaMetadata,
+  type CreateMediaMetadataInput,
+} from '../services/media-metadata.service';
+
+/** SHA-256 hash of an upload buffer — used for dedup / integrity. */
+async function computeBufferChecksum(buf: Buffer): Promise<string> {
+  const { createHash } = await import('node:crypto');
+  return createHash('sha256').update(buf).digest('hex');
+}
+
+/**
+ * Merge backend Media metadata into the S3-listing file objects so that the
+ * UI sees a single shape (id, alt, caption, tags, visibility, ...) without
+ * having to know whether the file has been registered yet.
+ *
+ * @param files     S3-listing rows (must contain `key` relative to basePath).
+ * @param toFullKey Function that turns a relative key into the full
+ *                  tenant-scoped key stored in the Media collection.
+ */
+async function enrichFilesWithMetadata<
+  T extends { key: string } & Record<string, unknown>,
+>(files: T[], toFullKey: (relativeKey: string) => string): Promise<T[]> {
+  if (files.length === 0) return files;
+  const metadataService = await getMediaMetadataService();
+  if (!metadataService) return files;
+
+  const fullKeys = files.map((f) => toFullKey(f.key));
+  try {
+    const result = await metadataService.findByKeys(fullKeys);
+    if (!result.success || !result.data) return files;
+    const byKey = new Map<string, MediaMetadata>(
+      (result.data as MediaMetadata[]).map((m) => [m.key, m]),
+    );
+    return files.map((f) => {
+      const fullKey = toFullKey(f.key);
+      const meta = byKey.get(fullKey);
+      if (!meta) return f;
+      return {
+        ...f,
+        id: meta._id || meta.id,
+        alt: meta.alt,
+        caption: meta.caption,
+        tags: meta.tags,
+        visibility: meta.visibility,
+        width: meta.width,
+        height: meta.height,
+        durationSeconds: meta.durationSeconds,
+        checksum: meta.checksum,
+        folderPath: meta.folderPath,
+      } as T;
+    });
+  } catch (err) {
+    logger.warn('enrichFilesWithMetadata failed — returning S3-only data', {
+      component: 'media-actions',
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return files;
+  }
+}
+
+/**
+ * Build a MediaMetadataService bound to the current request's auth context.
+ * Returns null if any required header is missing — callers treat metadata
+ * sync as best-effort (S3 ops still succeed without metadata persistence).
+ */
+async function getMediaMetadataService(): Promise<MediaMetadataService | null> {
+  try {
+    const headerStore = await headers();
+    const tenantId = headerStore.get('x-tenant-id') ?? undefined;
+    const userSessionId = headerStore.get('x-session-id') ?? undefined;
+    const userId = headerStore.get('x-user-id') ?? undefined;
+    if (!tenantId) return null;
+    const baseURL = await getApiDomain();
+    return new MediaMetadataService(baseURL, {
+      tenantId,
+      userSessionId,
+      userId,
+    });
+  } catch (err) {
+    logger.warn('getMediaMetadataService failed — metadata sync skipped', {
+      component: 'media-actions',
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
 
 /**
  * Resolve tenant info from headers or cookies server-side
@@ -191,6 +280,46 @@ export async function listMediaAction(params: {
     // Resolve tenant info with JWT validation
     const tenantInfo = await resolveTenantInfo(tenantId, app);
 
+    // Import cache utilities
+    const { getCacheInstance, CacheKeys, CacheTTL } = await import('@repo/cache');
+    const cache = getCacheInstance();
+
+    // Build cache key for this folder listing
+    const cacheKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, path);
+
+    // Try to get cached folder listing
+    try {
+      const cachedResult = await cache.get<ListMediaResponse>(cacheKey);
+      if (cachedResult) {
+        logger.info('List media cache hit', {
+          component: 'media-actions',
+          operation: 'list',
+          tenantId,
+          app,
+          path,
+          cacheKey,
+        });
+        return cachedResult;
+      }
+    } catch (cacheError) {
+      // Cache miss or error - continue to S3
+      logger.warn('Cache read failed, falling back to S3', {
+        component: 'media-actions',
+        operation: 'list',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
+
+    // Cache miss - fetch from S3
+    logger.info('List media cache miss, fetching from S3', {
+      component: 'media-actions',
+      operation: 'list',
+      tenantId,
+      app,
+      path,
+      cacheKey,
+    });
+
     // Create S3 client with tenant context
     const s3Client = await createTenantS3Client({
       tenantId: tenantInfo.tenantId,
@@ -271,21 +400,62 @@ export async function listMediaAction(params: {
       };
     });
 
+    // Enrich files with backend Media metadata (id, alt, caption, tags).
+    // Best-effort: if metadata lookup fails, files are returned with S3-only
+    // info. Existing consumers keep working since the new fields are optional.
+    const { buildS3Key: buildS3KeyForLookup } = await import(
+      '@repo/s3/utils/path-resolver'
+    );
+    const enrichedFiles = await enrichFilesWithMetadata(
+      filesWithUrls,
+      (relativeKey) =>
+        buildS3KeyForLookup(
+          {
+            tenantId: tenantInfo.tenantId,
+            tenantSlug: tenantInfo.tenantSlug,
+            tenantRootDomain: tenantInfo.tenantRootDomain,
+            app,
+            basePath: path,
+          },
+          relativeKey,
+        ),
+    );
+
     logger.info('List media successful', {
       component: 'media-actions',
       operation: 'list',
       tenantId,
       app,
-      filesCount: filesWithUrls.length,
+      filesCount: enrichedFiles.length,
       foldersCount: folders.length,
     });
 
-    return {
-      files: filesWithUrls,
+    const response: ListMediaResponse = {
+      files: enrichedFiles,
       folders,
-      total: filesWithUrls.length + folders.length,
+      total: enrichedFiles.length + folders.length,
       hasMore: false,
     };
+
+    // Cache the result for future requests
+    try {
+      await cache.set(cacheKey, response, CacheTTL.MEDIUM); // 1 hour TTL
+      logger.info('Cached folder listing', {
+        component: 'media-actions',
+        operation: 'list',
+        cacheKey,
+        ttl: CacheTTL.MEDIUM,
+      });
+    } catch (cacheError) {
+      // Cache write failed - log but don't fail the request
+      logger.warn('Failed to cache folder listing', {
+        component: 'media-actions',
+        operation: 'list',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
+
+    return response;
   } catch (error) {
     logger.error('List media failed', {
       component: 'media-actions',
@@ -304,7 +474,13 @@ export async function uploadMediaAction(params: {
   app: string;
   path?: string;
   file: File;
+  /** Optional metadata to persist with the Media record. */
+  alt?: { en?: string; mm?: string };
+  caption?: { en?: string; mm?: string };
+  tags?: string[];
 }): Promise<{
+  /** Mongo Media._id when the metadata record was registered. */
+  id?: string;
   key: string;
   name: string;
   size: number;
@@ -319,7 +495,7 @@ export async function uploadMediaAction(params: {
   };
 }> {
   try {
-    const { tenantId, app, path = '', file } = params;
+    const { tenantId, app, path = '', file, alt, caption, tags } = params;
 
     logger.info('Upload media request', {
       component: 'media-actions',
@@ -461,7 +637,91 @@ export async function uploadMediaAction(params: {
       hasThumbnails: !!result.thumbnails,
     });
 
-    return result;
+    // Invalidate folder listing cache (new file added to folder)
+    try {
+      const { getCacheInstance, CacheKeys } = await import('@repo/cache');
+      const cache = getCacheInstance();
+      const folderCacheKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, path);
+      await cache.del(folderCacheKey);
+      logger.info('Invalidated folder listing cache after upload', {
+        component: 'media-actions',
+        operation: 'upload',
+        cacheKey: folderCacheKey,
+      });
+    } catch (cacheError) {
+      // Cache invalidation failed - log but don't fail the request
+      logger.warn('Failed to invalidate folder listing cache', {
+        component: 'media-actions',
+        operation: 'upload',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
+
+    // Register metadata in the backend Media collection. Best-effort: an S3
+    // upload that succeeds without a metadata record will simply lack a
+    // Mongo `id` — the file is still browsable via S3 listing. An orphan
+    // cleanup job (Phase 5) will reconcile.
+    let mediaId: string | undefined;
+    try {
+      const metadataService = await getMediaMetadataService();
+      if (metadataService) {
+        const visibility: 'public' | 'private' | 'personal' = key.includes(
+          '/public/',
+        )
+          ? 'public'
+          : key.includes('/personal/')
+          ? 'personal'
+          : 'private';
+
+        const checksum = await computeBufferChecksum(buffer);
+
+        const metadataInput: CreateMediaMetadataInput = {
+          key: fullKey,
+          url: result.url,
+          filename: file.name,
+          mimeType: file.type || getMimeType(file.name),
+          size: file.size,
+          checksum,
+          storageProvider: 'minio',
+          visibility,
+          folderPath: path || undefined,
+          thumbnails: result.thumbnails,
+          alt,
+          caption,
+          tags,
+        };
+
+        const metadataResult = await metadataService.create(metadataInput);
+        if (metadataResult.success && metadataResult.data) {
+          mediaId = metadataResult.data._id || metadataResult.data.id;
+          logger.info('Registered media metadata', {
+            component: 'media-actions',
+            operation: 'upload',
+            mediaId,
+            key: fullKey,
+          });
+        } else {
+          logger.warn('Media metadata register returned non-success', {
+            component: 'media-actions',
+            operation: 'upload',
+            key: fullKey,
+            error: metadataResult.error,
+          });
+        }
+      }
+    } catch (metadataError) {
+      logger.error('Media metadata register failed (best-effort)', {
+        component: 'media-actions',
+        operation: 'upload',
+        key: fullKey,
+        error:
+          metadataError instanceof Error
+            ? metadataError.message
+            : String(metadataError),
+      });
+    }
+
+    return { id: mediaId, ...result };
   } catch (error) {
     logger.error('Upload media failed', {
       component: 'media-actions',
@@ -480,9 +740,12 @@ export async function deleteMediaAction(params: {
   app: string;
   path?: string;
   keys: string[];
+  /** Soft delete (default — file stays in S3 so it can be restored), or
+   *  hard delete (remove from MinIO too). */
+  mode?: 'soft' | 'hard';
 }): Promise<{ success: boolean }> {
   try {
-    const { tenantId, app, path = '', keys } = params;
+    const { tenantId, app, path = '', keys, mode = 'soft' } = params;
 
     logger.info('Delete media request', {
       component: 'media-actions',
@@ -490,6 +753,7 @@ export async function deleteMediaAction(params: {
       tenantId,
       app,
       keysCount: keys.length,
+      mode,
     });
 
     if (!keys || keys.length === 0) {
@@ -508,16 +772,78 @@ export async function deleteMediaAction(params: {
       basePath: path,
     });
 
-    // Delete objects (keys are relative to basePath)
-    logger.info('Deleting objects with keys', {
-      component: 'media-actions',
-      operation: 'delete',
-      keys,
-      basePath: path,
-      tenantSlug: tenantInfo.tenantSlug,
-    });
+    // --- soft-delete metadata records first ---
+    // For both soft and hard mode, we mark Media docs deleted so they stop
+    // showing up in the picker UI even if S3 cleanup is delayed/skipped.
+    try {
+      const metadataService = await getMediaMetadataService();
+      if (metadataService) {
+        const { buildS3Key: buildS3KeyForLookup } = await import(
+          '@repo/s3/utils/path-resolver'
+        );
+        const fullKeys = keys.map((k) =>
+          buildS3KeyForLookup(
+            {
+              tenantId: tenantInfo.tenantId,
+              tenantSlug: tenantInfo.tenantSlug,
+              tenantRootDomain: tenantInfo.tenantRootDomain,
+              app,
+              basePath: path,
+            },
+            k,
+          ),
+        );
+        const lookup = await metadataService.findByKeys(fullKeys);
+        if (lookup.success && Array.isArray(lookup.data)) {
+          for (const m of lookup.data) {
+            const id = m._id || m.id;
+            if (!id) continue;
+            try {
+              if (mode === 'hard') {
+                await metadataService.hardDelete(id);
+              } else {
+                await metadataService.softDelete(id);
+              }
+            } catch (mErr) {
+              logger.warn('Per-media metadata delete failed', {
+                component: 'media-actions',
+                operation: 'delete',
+                id,
+                key: m.key,
+                error: mErr instanceof Error ? mErr.message : String(mErr),
+              });
+            }
+          }
+        }
+      }
+    } catch (metaErr) {
+      logger.warn('Bulk metadata delete failed (best-effort)', {
+        component: 'media-actions',
+        operation: 'delete',
+        error: metaErr instanceof Error ? metaErr.message : String(metaErr),
+      });
+    }
 
-    await s3Client.deleteObjects(keys);
+    // --- S3 side ---
+    // Soft delete keeps the object in S3 (only metadata is hidden) so users
+    // can restore from trash. Hard delete also removes the object.
+    if (mode === 'hard') {
+      logger.info('Deleting objects with keys', {
+        component: 'media-actions',
+        operation: 'delete',
+        keys,
+        basePath: path,
+        tenantSlug: tenantInfo.tenantSlug,
+      });
+
+      await s3Client.deleteObjects(keys);
+    } else {
+      logger.info('Soft delete — S3 objects preserved for restore', {
+        component: 'media-actions',
+        operation: 'delete',
+        keys,
+      });
+    }
 
     logger.info('Delete media successful', {
       component: 'media-actions',
@@ -526,6 +852,26 @@ export async function deleteMediaAction(params: {
       app,
       keysCount: keys.length,
     });
+
+    // Invalidate folder listing cache (files removed from folder)
+    try {
+      const { getCacheInstance, CacheKeys } = await import('@repo/cache');
+      const cache = getCacheInstance();
+      const folderCacheKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, path);
+      await cache.del(folderCacheKey);
+      logger.info('Invalidated folder listing cache after delete', {
+        component: 'media-actions',
+        operation: 'delete',
+        cacheKey: folderCacheKey,
+      });
+    } catch (cacheError) {
+      // Cache invalidation failed - log but don't fail the request
+      logger.warn('Failed to invalidate folder listing cache', {
+        component: 'media-actions',
+        operation: 'delete',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
 
     return { success: true };
   } catch (error) {
@@ -585,6 +931,26 @@ export async function createFolderAction(params: {
       folderName,
     });
 
+    // Invalidate parent folder listing cache (new subfolder created)
+    try {
+      const { getCacheInstance, CacheKeys } = await import('@repo/cache');
+      const cache = getCacheInstance();
+      const parentFolderKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, path);
+      await cache.del(parentFolderKey);
+      logger.info('Invalidated parent folder listing cache after folder creation', {
+        component: 'media-actions',
+        operation: 'create-folder',
+        cacheKey: parentFolderKey,
+      });
+    } catch (cacheError) {
+      // Cache invalidation failed - log but don't fail the request
+      logger.warn('Failed to invalidate folder listing cache', {
+        component: 'media-actions',
+        operation: 'create-folder',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
+
     return { success: true };
   } catch (error) {
     logger.error('Create folder failed', {
@@ -643,6 +1009,32 @@ export async function renameMediaAction(params: {
       key,
       newName,
     });
+
+    // Invalidate parent folder listing cache (file renamed in folder)
+    try {
+      const { getCacheInstance, CacheKeys } = await import('@repo/cache');
+      const cache = getCacheInstance();
+
+      // Extract parent path from key
+      const pathParts = key.split('/');
+      pathParts.pop(); // Remove filename
+      const parentPath = pathParts.join('/');
+
+      const parentFolderKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, parentPath);
+      await cache.del(parentFolderKey);
+      logger.info('Invalidated parent folder listing cache after rename', {
+        component: 'media-actions',
+        operation: 'rename',
+        cacheKey: parentFolderKey,
+      });
+    } catch (cacheError) {
+      // Cache invalidation failed - log but don't fail the request
+      logger.warn('Failed to invalidate folder listing cache', {
+        component: 'media-actions',
+        operation: 'rename',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
 
     return { success: true };
   } catch (error) {
@@ -725,6 +1117,34 @@ export async function moveMediaAction(params: {
       app,
       sourceKeysCount: sourceKeys.length,
     });
+
+    // Invalidate folder listing cache (files moved between folders)
+    try {
+      const { getCacheInstance, CacheKeys } = await import('@repo/cache');
+      const cache = getCacheInstance();
+
+      // Invalidate source folder cache
+      const sourceFolderKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, sourcePath);
+      await cache.del(sourceFolderKey);
+
+      // Invalidate destination folder cache
+      const destFolderKey = CacheKeys.mediaFolderListing(tenantInfo.tenantId, app, destinationPath);
+      await cache.del(destFolderKey);
+
+      logger.info('Invalidated folder listing caches after move', {
+        component: 'media-actions',
+        operation: 'move',
+        sourceCacheKey: sourceFolderKey,
+        destCacheKey: destFolderKey,
+      });
+    } catch (cacheError) {
+      // Cache invalidation failed - log but don't fail the request
+      logger.warn('Failed to invalidate folder listing caches', {
+        component: 'media-actions',
+        operation: 'move',
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      });
+    }
 
     return { success: true };
   } catch (error) {

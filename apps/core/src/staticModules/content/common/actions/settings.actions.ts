@@ -8,6 +8,7 @@
 import { headers } from 'next/headers';
 import { getCurrentUser, getCurrentSession } from '@repo/auth/server-api';
 import { getApiDomain } from '@repo/utils/server';
+import { getCacheInstance, CacheKeys } from '@repo/cache';
 import { SettingsService } from '../services/settings.service';
 import type { ApiResponse } from '@repo/types';
 import type {
@@ -15,6 +16,38 @@ import type {
   PublicSettings,
   UpdateSettingsDto,
 } from '../types';
+
+/**
+ * Invalidate publicWeb's Redis cache for the current tenant's
+ * content settings + paginated home/about page data so the public
+ * site picks up the new theme, variant, banner, footer, etc. on the
+ * very next request — instead of waiting out the 24h TTL.
+ *
+ * Called from every settings-mutation action below. Failure is
+ * non-fatal — the underlying save already succeeded, the cache
+ * just lingers until TTL.
+ */
+async function invalidateContentCacheForCurrentTenant(): Promise<void> {
+  try {
+    const headerStore = await headers();
+    const tenantId = headerStore.get('x-tenant-id');
+    if (!tenantId) return;
+
+    const cache = getCacheInstance();
+    // Settings doc itself.
+    await cache.del(CacheKeys.contentSettings(tenantId));
+    // Pages cache too — `homePageId` change invalidates which page
+    // renders at `/`, and `themeVariant` doesn't directly affect
+    // pages but a save here typically means the author wants the
+    // public site refreshed wholesale anyway.
+    await cache.deletePattern(`ciApp:${tenantId}:Content:Page:*`);
+  } catch (error) {
+    console.error(
+      'Failed to invalidate content cache after settings mutation:',
+      error,
+    );
+  }
+}
 
 /**
  * Get settings service instance with proper context
@@ -131,6 +164,7 @@ export async function updateSettings(
   try {
     const service = await getSettingsService();
     const response = await service.update(data);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update settings error:', error);
@@ -153,6 +187,7 @@ export async function updateTheme(
   try {
     const service = await getSettingsService();
     const response = await service.updateTheme(themeName);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update theme error:', error);
@@ -175,6 +210,7 @@ export async function updateLayout(
   try {
     const service = await getSettingsService();
     const response = await service.updateLayout(layout);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update layout error:', error);
@@ -197,6 +233,7 @@ export async function updateHeaderSettings(
   try {
     const service = await getSettingsService();
     const response = await service.updateHeader(header);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update header settings error:', error);
@@ -219,6 +256,7 @@ export async function updateFooterSettings(
   try {
     const service = await getSettingsService();
     const response = await service.updateFooter(footer);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update footer settings error:', error);
@@ -241,6 +279,7 @@ export async function updateSeoSettings(
   try {
     const service = await getSettingsService();
     const response = await service.updateSeo(data);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update SEO settings error:', error);
@@ -264,6 +303,7 @@ export async function updateLanguageSettings(
   try {
     const service = await getSettingsService();
     const response = await service.updateLanguages(defaultLanguage, availableLanguages);
+    if (response?.success) await invalidateContentCacheForCurrentTenant();
     return response;
   } catch (error) {
     console.error('Update language settings error:', error);

@@ -16,6 +16,21 @@ export interface MediaFile {
   };
   lastModified: Date;
   isFolder: boolean;
+
+  // -- Backend metadata (populated when the media is registered in the
+  // backend `media` collection — see /core/media endpoints). All optional so
+  // legacy callers that only know about the S3 layer keep working.
+  id?: string; // Mongo _id of the media record
+  mediaId?: string; // alias for `id` — convenience for consumers that store refs
+  alt?: { en?: string; mm?: string };
+  caption?: { en?: string; mm?: string };
+  tags?: string[];
+  visibility?: 'public' | 'private' | 'personal';
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  checksum?: string;
+  folderPath?: string;
 }
 
 export interface MediaFolder {

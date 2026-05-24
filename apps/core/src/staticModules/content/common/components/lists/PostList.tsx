@@ -52,7 +52,13 @@ import {
   Archive,
   Send,
 } from 'lucide-react';
-import { deletePost, publishPost, unpublishPost, archivePost } from '../../actions';
+import {
+  deletePost,
+  publishPost,
+  unpublishPost,
+  archivePost,
+  bulkPostOperation,
+} from '../../actions';
 import type { Post, PostType, Category, ContentStatus, Visibility } from '../../types';
 
 interface PostListProps {
@@ -269,11 +275,80 @@ export function PostList({
             <span className="text-sm text-muted-foreground">
               {selectedIds.size} selected
             </span>
-            <Button variant="outline" size="sm" disabled={isPending}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                const ids = Array.from(selectedIds);
+                startTransition(async () => {
+                  const r = await bulkPostOperation({ ids, operation: 'publish' });
+                  if (r.success) {
+                    const result = (r.data as any) ?? {};
+                    const ok = result.succeeded?.length ?? ids.length;
+                    const fail = result.failed?.length ?? 0;
+                    toastSuccess(
+                      fail > 0
+                        ? `Published ${ok} post(s); ${fail} failed`
+                        : `Published ${ok} post(s)`,
+                    );
+                    setSelectedIds(new Set());
+                    onRefresh?.();
+                  } else {
+                    toastError(r.error || 'Bulk publish failed');
+                  }
+                });
+              }}
+            >
               <Send className="h-4 w-4 mr-1" />
               Publish
             </Button>
-            <Button variant="outline" size="sm" disabled={isPending}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                const ids = Array.from(selectedIds);
+                startTransition(async () => {
+                  const r = await bulkPostOperation({ ids, operation: 'unpublish' });
+                  if (r.success) {
+                    const result = (r.data as any) ?? {};
+                    const ok = result.succeeded?.length ?? ids.length;
+                    const fail = result.failed?.length ?? 0;
+                    toastSuccess(
+                      fail > 0
+                        ? `Unpublished ${ok}; ${fail} failed`
+                        : `Unpublished ${ok} post(s) (back to Draft)`,
+                    );
+                    setSelectedIds(new Set());
+                    onRefresh?.();
+                  } else {
+                    toastError(r.error || 'Bulk unpublish failed');
+                  }
+                });
+              }}
+            >
+              <Send className="h-4 w-4 mr-1 rotate-180" />
+              Unpublish
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                const ids = Array.from(selectedIds);
+                startTransition(async () => {
+                  const r = await bulkPostOperation({ ids, operation: 'archive' });
+                  if (r.success) {
+                    toastSuccess(`Archived ${ids.length} post(s)`);
+                    setSelectedIds(new Set());
+                    onRefresh?.();
+                  } else {
+                    toastError(r.error || 'Bulk archive failed');
+                  }
+                });
+              }}
+            >
               <Archive className="h-4 w-4 mr-1" />
               Archive
             </Button>
@@ -282,6 +357,26 @@ export function PostList({
               size="sm"
               className="text-destructive"
               disabled={isPending}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Delete ${selectedIds.size} post(s)? This moves them to trash; admins can restore later.`,
+                  )
+                ) {
+                  return;
+                }
+                const ids = Array.from(selectedIds);
+                startTransition(async () => {
+                  const r = await bulkPostOperation({ ids, operation: 'delete' });
+                  if (r.success) {
+                    toastSuccess(`Deleted ${ids.length} post(s)`);
+                    setSelectedIds(new Set());
+                    onRefresh?.();
+                  } else {
+                    toastError(r.error || 'Bulk delete failed');
+                  }
+                });
+              }}
             >
               <Trash2 className="h-4 w-4 mr-1" />
               Delete
@@ -331,19 +426,20 @@ export function PostList({
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          {post.featuredImage && (
+                          {post.featuredImage?.url && (
                             <img
-                              src={post.featuredImage}
-                              alt=""
+                              src={post.featuredImage.url}
+                              alt={
+                                post.featuredImage.alt?.[currentLanguage as 'en' | 'mm'] ??
+                                post.featuredImage.alt?.en ??
+                                ''
+                              }
                               className="w-10 h-10 rounded object-cover"
                             />
                           )}
                           <div>
                             <div className="font-medium flex items-center gap-1">
-                              {getLocalizedText(post.title, currentLanguage)}
-                              {post.isPinned && (
-                                <Pin className="h-3 w-3 text-primary" />
-                              )}
+                              {getLocalizedText(post.title as any, currentLanguage)}
                               {post.isFeatured && (
                                 <Star className="h-3 w-3 text-yellow-500" />
                               )}
@@ -357,21 +453,20 @@ export function PostList({
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {post.authorName || '-'}
+                      {post.createdBy ?? '-'}
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {post.categories?.slice(0, 2).map((cat) => (
-                          <Badge key={cat._id} variant="outline" className="text-xs">
-                            {getLocalizedText(cat.name, currentLanguage)}
-                          </Badge>
-                        ))}
-                        {(post.categories?.length || 0) > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{(post.categories?.length || 0) - 2}
-                          </Badge>
-                        )}
-                      </div>
+                      {post.category ? (
+                        <Badge variant="outline" className="text-xs">
+                          {getLocalizedText(post.category.name as any, currentLanguage)}
+                        </Badge>
+                      ) : post.categoryId ? (
+                        <Badge variant="outline" className="text-xs">
+                          {post.categoryId.slice(-6)}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[post.status]}>

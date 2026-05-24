@@ -100,7 +100,31 @@ export class StandardResponseHandler implements ResponseHandler {
           timestamp: new Date(),
         };
       }
-      
+
+      // List endpoints in this codebase return `{ data: [...], meta: { total, page, limit, totalPages } }`
+      // instead of the older `pagination` key. Preserve the wrap so
+      // consumers can read `result.data.data` for the rows AND
+      // `result.data.meta` for paging info — same shape as the
+      // pagination branch above. Without this, the unwrap branch at
+      // the bottom would set `result.data = posts` (array) and any
+      // consumer doing `result.data.data` would get `undefined` →
+      // empty list. (Hit by the Pages list after backend save started
+      // returning posts correctly — frontend was stripping the wrap.)
+      if (
+        data &&
+        typeof data === 'object' &&
+        'data' in data &&
+        'meta' in data &&
+        Array.isArray((data as any).data)
+      ) {
+        return {
+          data: data,
+          message: data.message || 'Success',
+          success: data.success !== false,
+          timestamp: new Date(),
+        };
+      }
+
       // Check if this is a response with navigation metadata (has both data and navigation object)
       if (data && typeof data === 'object' && 'data' in data && 'navigation' in data) {
         console.log('📍 [RESPONSE HANDLER] Detected navigation response structure:', {

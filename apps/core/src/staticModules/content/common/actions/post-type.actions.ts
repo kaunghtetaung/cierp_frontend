@@ -83,6 +83,62 @@ export async function createPostType(
 }
 
 /**
+ * Lightweight reference lookup for the post-creation form's
+ * "Post as" picker. Returns `{ id, label, value, slug }` items so the
+ * caller can save either the ObjectId or the slug.
+ */
+export async function getPostTypeReference(
+  params?: { search?: string; limit?: number; status?: string }
+): Promise<
+  ApiResponse<
+    Array<{ id: string; label: string; value: string; slug: string }>
+  >
+> {
+  try {
+    const service = await getPostTypeService();
+    const response = await service.getReference(params);
+    if (response.success && response.data) {
+      const raw: any = response.data;
+      const list: Array<{
+        id: string;
+        label: string;
+        value: string;
+        slug: string;
+      }> = Array.isArray(raw) ? raw : raw.data || [];
+      return {
+        success: true,
+        data: list,
+        message:
+          (typeof raw === 'object' && !Array.isArray(raw) && raw.message) ||
+          'OK',
+        timestamp: new Date(),
+      } as ApiResponse<
+        Array<{ id: string; label: string; value: string; slug: string }>
+      >;
+    }
+    return {
+      success: false,
+      error: response.error || 'Failed to fetch post type reference',
+      message: 'Fetch failed',
+      data: [] as any,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Get post type reference error:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch post type reference',
+      message: 'Fetch failed',
+      data: [] as any,
+      timestamp: new Date(),
+    };
+  }
+}
+
+/**
  * Get post types list
  */
 export async function getPostTypes(

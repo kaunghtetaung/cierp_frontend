@@ -337,13 +337,34 @@ export function getRemainingSessionTime(session: AuthSession | null): number {
 }
 
 /**
- * Create login URL with return URL
+ * Create login URL with return URL.
+ *
+ * Stays on the *current* subdomain so a token-expiry redirect from
+ * `app.um1ygn.edu.mm` lands on `app.um1ygn.edu.mm/login` (not on
+ * `www.um1ygn.edu.mm/login`). Earlier this used `getPublicUrlClient()`
+ * which rewrote any subdomain to `www.`, and the post-login
+ * `returnUrl` then bounced back to the rewritten www host instead of
+ * the user's original admin domain. Both the core admin app and the
+ * publicWeb mount `/login`, so the same-origin redirect works on
+ * either side.
  */
 export function createLoginUrl(returnUrl?: string): string {
-  // Import dynamically to avoid circular dependencies
-  const { getPublicUrlClient } = require('@repo/utils/client/domain');
-  const publicUrl = getPublicUrlClient();
-  const url = new URL('/login', publicUrl);
+  // Prefer the current browser origin (preserves subdomain). Fall
+  // back to the public-site URL for SSR / edge cases where `window`
+  // isn't available — the historic behaviour for those paths.
+  let origin = '';
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    origin = window.location.origin;
+  } else {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { getPublicUrlClient } = require('@repo/utils/client/domain');
+      origin = getPublicUrlClient();
+    } catch {
+      origin = '';
+    }
+  }
+  const url = origin ? new URL('/login', origin) : new URL('/login', 'http://localhost');
   if (returnUrl) {
     url.searchParams.set('returnUrl', returnUrl);
   }

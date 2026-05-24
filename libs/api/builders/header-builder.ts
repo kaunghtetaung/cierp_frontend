@@ -33,6 +33,32 @@ async function getTokenForRequest(
   }
 }
 
+/**
+ * Extract roles (access context) from JWT token
+ * Returns the roles array that backend expects in x-access-context header
+ */
+function extractRolesFromJWT(token: string): any[] {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return [];
+
+    let base64Payload = parts[1];
+    base64Payload = base64Payload.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64Payload.length % 4) {
+      base64Payload += "=";
+    }
+
+    const payload = JSON.parse(atob(base64Payload));
+
+    // Extract roles array from JWT - this contains {Organization, Department, Role} objects
+    const roles = payload.roles || [];
+    return Array.isArray(roles) ? roles : [];
+  } catch (error) {
+    console.warn('Failed to extract roles from JWT:', error);
+    return [];
+  }
+}
+
 export class StandardHeaderBuilder implements HeaderBuilder {
   private csrfToken: string | null = null;
 
@@ -69,11 +95,6 @@ export class StandardHeaderBuilder implements HeaderBuilder {
       headers['x-user-id'] = userId;
     }
 
-    // Add access context (user session ID) if provided
-    if (userSessionId) {
-      headers['x-access-context'] = userSessionId;
-    }
-
     // CRITICAL: Always resolve and add tenant ID header for API gateway
     const resolvedTenantId = await getValidTenantId(tenantId);
     if (resolvedTenantId) {
@@ -108,6 +129,28 @@ export class StandardHeaderBuilder implements HeaderBuilder {
       const token = await this.getAuthToken(resolvedTenantId || undefined, config.userId, tokenStrategy);
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
+
+        // Extract roles from JWT and set x-access-context header
+        // Backend expects JSON array of {Organization, Department, Role} objects
+        let roles = extractRolesFromJWT(token);
+
+        // If no roles found in the auth token (e.g., client credentials token),
+        // try to get roles from the user's stored JWT token directly
+        if (roles.length === 0 && resolvedTenantId && config.userId) {
+          console.log('🔍 [HEADER BUILDER] Auth token has no roles, fetching user token for access context...');
+          const userRoles = await this.getUserRolesFromCache(resolvedTenantId, config.userId);
+          if (userRoles.length > 0) {
+            roles = userRoles;
+            console.log('✅ [HEADER BUILDER] Got user roles from cached user token');
+          }
+        }
+
+        if (roles.length > 0) {
+          headers['x-access-context'] = JSON.stringify(roles);
+          console.log('✅ [HEADER BUILDER] Added x-access-context header with', roles.length, 'role(s)');
+        } else {
+          console.warn('⚠️ [HEADER BUILDER] No roles found for x-access-context header');
+        }
       }
     }
 
@@ -138,6 +181,30 @@ export class StandardHeaderBuilder implements HeaderBuilder {
     } catch (error) {
       console.error("Failed to get auth token:", error);
       return null;
+    }
+  }
+
+  /**
+   * Get user roles from cached user token
+   * This is used when the auth token (e.g., tenant token) doesn't contain user roles
+   */
+  private async getUserRolesFromCache(tenantId: string, userId: string): Promise<any[]> {
+    try {
+      // Try to get user access token data directly from cache
+      const { CacheKeys, getCacheInstance } = require("@repo/cache");
+      const cache = getCacheInstance();
+      const key = CacheKeys.userAccessToken(tenantId, userId);
+
+      const token = await cache.get<string>(key);
+      if (token && typeof token === 'string') {
+        const roles = extractRolesFromJWT(token);
+        return roles;
+      }
+
+      return [];
+    } catch (error) {
+      console.warn('Failed to get user roles from cache:', error);
+      return [];
     }
   }
 

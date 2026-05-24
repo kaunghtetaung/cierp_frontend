@@ -8,89 +8,69 @@ import { multiLanguageTextSchema, slugSchema } from './common.schema';
 
 // ============================================
 // ATTRIBUTE TYPES
+// (Matches backend enum at:
+//  /workspace/apps/core/src/content/post-type/schemas/post-type.schema.ts:14)
 // ============================================
 
 export const attributeTypeSchema = z.enum([
   'text',
   'textarea',
-  'richText',
+  'rich-text',
   'number',
   'date',
-  'datetime',
   'boolean',
   'select',
-  'multiSelect',
-  'image',
-  'file',
-  'gallery',
-  'url',
   'email',
-  'color',
-  'relation',
+  'url',
 ]);
 
 // ============================================
 // ATTRIBUTE VALIDATION
+// (Matches backend `customAttribute.validation` block.)
 // ============================================
 
 export const attributeValidationSchema = z.object({
-  required: z.boolean().optional(),
+  minLength: z.number().int().nonnegative().optional(),
+  maxLength: z.number().int().nonnegative().optional(),
+  pattern: z.string().optional(),
   min: z.number().optional(),
   max: z.number().optional(),
-  minLength: z.number().optional(),
-  maxLength: z.number().optional(),
-  pattern: z.string().optional(),
-  allowedExtensions: z.array(z.string()).optional(),
-  maxFileSize: z.number().optional(),
 });
 
 export type AttributeValidationFormData = z.infer<typeof attributeValidationSchema>;
 
 // ============================================
-// ATTRIBUTE OPTION
+// ATTRIBUTE OPTION (legacy export — kept so the barrel export still
+// resolves. New code uses plain `string[]` for `options`.)
 // ============================================
 
 export const attributeOptionSchema = z.object({
-  label: multiLanguageTextSchema,
+  label: z.string(),
   value: z.string().min(1, 'Value is required'),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
 });
 
 export type AttributeOptionFormData = z.infer<typeof attributeOptionSchema>;
 
 // ============================================
 // ATTRIBUTE DEFINITION
+// (Matches backend `customAttribute` schema exactly.)
 // ============================================
 
 export const attributeDefinitionSchema = z.object({
-  key: z.string().min(1, 'Key is required').regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, 'Key must start with a letter and contain only alphanumeric characters and underscores'),
-  label: multiLanguageTextSchema,
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .regex(
+      /^[a-zA-Z][a-zA-Z0-9_]*$/,
+      'Use letters, numbers, and underscores; must start with a letter',
+    ),
+  label: z.string().min(1, 'Label is required'),
   type: attributeTypeSchema,
-  description: z.object({
-    en: z.string().optional(),
-    mm: z.string().optional(),
-  }).optional(),
-  placeholder: z.object({
-    en: z.string().optional(),
-    mm: z.string().optional(),
-  }).optional(),
+  required: z.boolean().default(false),
   defaultValue: z.unknown().optional(),
-  options: z.array(attributeOptionSchema).optional(),
+  options: z.array(z.string().min(1)).optional(),
   validation: attributeValidationSchema.optional(),
-  isLocalizable: z.boolean().default(false),
-  showInList: z.boolean().default(false),
-  showInPreview: z.boolean().default(false),
-  order: z.number().int().min(0).default(0),
-  group: z.string().optional(),
-  dependsOn: z.object({
-    attributeKey: z.string(),
-    value: z.unknown(),
-  }).optional(),
-  relationConfig: z.object({
-    targetType: z.string(),
-    displayField: z.string(),
-    multiple: z.boolean(),
-  }).optional(),
+  order: z.number().int().nonnegative().default(0),
 });
 
 export type AttributeDefinitionFormData = z.infer<typeof attributeDefinitionSchema>;
@@ -108,7 +88,7 @@ export const createPostTypeSchema = z.object({
   }).optional(),
   icon: z.string().optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
-  attributes: z.array(attributeDefinitionSchema).default([]),
+  customAttributes: z.array(attributeDefinitionSchema).default([]),
   supportsCategories: z.boolean().default(true),
   supportsTags: z.boolean().default(true),
   supportsComments: z.boolean().default(true),

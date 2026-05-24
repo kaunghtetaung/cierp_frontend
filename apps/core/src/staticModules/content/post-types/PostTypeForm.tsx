@@ -28,6 +28,7 @@ import { Loader2, Save, X } from 'lucide-react';
 import { createPostTypeSchema, type CreatePostTypeFormData } from '../common/schemas';
 import { createPostType, updatePostType } from '../common/actions';
 import type { PostType } from '../common/types';
+import { AttributeBuilder } from './AttributeBuilder';
 
 // Generate slug from text
 function generateSlug(text: string): string {
@@ -64,7 +65,7 @@ export function PostTypeForm({
       description: initialData?.description || { en: '', mm: '' },
       icon: initialData?.icon || '',
       color: initialData?.color || '#3b82f6',
-      attributes: initialData?.attributes || [],
+      customAttributes: initialData?.customAttributes || [],
       supportsCategories: initialData?.supportsCategories ?? true,
       supportsTags: initialData?.supportsTags ?? true,
       supportsComments: initialData?.supportsComments ?? true,
@@ -459,6 +460,30 @@ export function PostTypeForm({
                 )}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Attributes — drives custom fields on posts of this type */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Custom attributes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="customAttributes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <AttributeBuilder
+                      value={(field.value as any) || []}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

@@ -62,16 +62,24 @@ import {
   User,
   Network,
   Star,
+  Images,
+  Newspaper,
+  Folder,
+  Tag,
+  FileText,
+  Menu,
 } from 'lucide-react';
 import {
   getSections,
+  getSectionById,
   deleteSection,
   duplicateSection,
   toggleSectionVisibility,
   restoreSection,
 } from '../common/actions';
 import type { Section, SectionType, EntityStatus } from '../common/types';
-import { SectionForm } from './SectionForm';
+import { SectionEditorPage } from './SectionEditorPage';
+import { getClientTenantId } from '@/actions/client-tenant';
 
 // Section type icons
 const sectionTypeIcons: Record<SectionType, React.ReactNode> = {
@@ -84,9 +92,16 @@ const sectionTypeIcons: Record<SectionType, React.ReactNode> = {
   faq: <HelpCircle className="h-4 w-4" />,
   pricing: <DollarSign className="h-4 w-4" />,
   dataTable: <Table className="h-4 w-4" />,
-  studentEnrollment: <Users className="h-4 w-4" />,
+  stats: <Users className="h-4 w-4" />,
   rector: <User className="h-4 w-4" />,
   organizationStructure: <Network className="h-4 w-4" />,
+  carousel: <Images className="h-4 w-4" />,
+  recentPosts: <Newspaper className="h-4 w-4" />,
+  categoryList: <Folder className="h-4 w-4" />,
+  tagList: <Tag className="h-4 w-4" />,
+  postBody: <FileText className="h-4 w-4" />,
+  navigationMenu: <Menu className="h-4 w-4" />,
+  tabs: <LayoutGrid className="h-4 w-4" />,
 };
 
 // Section type labels
@@ -100,20 +115,28 @@ const sectionTypeLabels: Record<SectionType, string> = {
   faq: 'FAQ',
   pricing: 'Pricing',
   dataTable: 'Data Table',
-  studentEnrollment: 'Student Enrollment',
+  stats: 'Stats Counter',
   rector: 'Rector',
   organizationStructure: 'Organization Structure',
+  carousel: 'Carousel',
+  recentPosts: 'Recent Posts',
+  categoryList: 'Category List',
+  tagList: 'Tag List',
+  postBody: 'Post Body Placeholder',
+  navigationMenu: 'Navigation Menu (Sidebar)',
+  tabs: 'Tabs (Horizontal / Vertical)',
 };
 
 export default function SectionPage() {
+  const [tenantId, setTenantId] = useState<string>('');
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<SectionType | 'all'>('all');
 
-  // Dialog states
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  // Editor states
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [deletingSection, setDeletingSection] = useState<Section | null>(null);
   const [selectedType, setSelectedType] = useState<SectionType | null>(null);
@@ -127,8 +150,12 @@ export default function SectionPage() {
   const loadSections = useCallback(async () => {
     setLoading(true);
     try {
+      // Send `page` (1-indexed) rather than `skip` — the backend
+      // service computes its own skip from `page * limit` and
+      // ignores any incoming `skip`, so this was the reason the
+      // Next/Previous buttons never advanced past page 1.
       const params: any = {
-        skip: (currentPage - 1) * pageSize,
+        page: currentPage,
         limit: pageSize,
         sortBy: 'createdAt',
         sortOrder: 'desc' as const,
@@ -144,7 +171,8 @@ export default function SectionPage() {
 
       const result = await getSections(params);
       if (result.success && result.data) {
-        setSections(result.data.data || []);
+        // Backend returns data as direct array, not nested in data.data
+        setSections(Array.isArray(result.data) ? result.data : result.data.data || []);
         if (result.data.meta) {
           setTotalPages(result.data.meta.totalPages || 1);
         }
@@ -159,22 +187,66 @@ export default function SectionPage() {
     }
   }, [currentPage, typeFilter, searchQuery]);
 
+  // Fetch tenant ID on mount using server action
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      try {
+        const id = await getClientTenantId();
+        console.log('[SectionPage] Fetched tenantId via server action:', id);
+        setTenantId(id);
+      } catch (error) {
+        console.error('[SectionPage] Failed to fetch tenantId:', error);
+      }
+    };
+    fetchTenantId();
+  }, []);
+
   useEffect(() => {
     loadSections();
   }, [loadSections]);
+
+  // Auto-open the section editor when `?editId=<id>` is on the URL.
+  // The PageLayoutBuilder's "Edit" button on each section ref
+  // navigates here with that query param so authors can jump
+  // straight from a page's layout to that section's editor
+  // (opens in a new tab so the page-builder draft stays intact).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const editId = url.searchParams.get('editId');
+    if (!editId) return;
+
+    let cancelled = false;
+    (async () => {
+      const result = await getSectionById(editId);
+      if (cancelled) return;
+      if (result.success && result.data) {
+        setEditingSection(result.data as any);
+        setSelectedType(((result.data as any).type) ?? null);
+        setIsEditorOpen(true);
+      }
+      // Clean the query param so a refresh / back-nav doesn't
+      // re-open the editor unexpectedly.
+      url.searchParams.delete('editId');
+      window.history.replaceState({}, '', url.toString());
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Handle create - show type selector first
   const handleCreate = () => {
     setEditingSection(null);
     setSelectedType(null);
-    setIsFormOpen(true);
+    setIsEditorOpen(true);
   };
 
   // Handle edit
   const handleEdit = (section: Section) => {
     setEditingSection(section);
     setSelectedType(section.type);
-    setIsFormOpen(true);
+    setIsEditorOpen(true);
   };
 
   // Handle delete
@@ -258,12 +330,19 @@ export default function SectionPage() {
     });
   };
 
-  // Handle form success
-  const handleFormSuccess = () => {
-    setIsFormOpen(false);
+  // Handle editor success (called after save completes in SectionForm)
+  const handleEditorSuccess = () => {
+    setIsEditorOpen(false);
     setEditingSection(null);
     setSelectedType(null);
     loadSections();
+  };
+
+  // Handle editor close (cancel)
+  const handleEditorClose = () => {
+    setIsEditorOpen(false);
+    setEditingSection(null);
+    setSelectedType(null);
   };
 
   // Get status badge
@@ -491,24 +570,17 @@ export default function SectionPage() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSection ? 'Edit Section' : 'Create New Section'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingSection
-                ? 'Update the section details below'
-                : selectedType
-                ? `Configure your ${sectionTypeLabels[selectedType]} section`
-                : 'Choose a section type to get started'}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Type Selector Dialog - Only for new sections */}
+      {!editingSection && !selectedType && isEditorOpen && (
+        <Dialog open={isEditorOpen} onOpenChange={(open) => !open && handleEditorClose()}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Choose Section Type</DialogTitle>
+              <DialogDescription>
+                Select the type of section you want to create
+              </DialogDescription>
+            </DialogHeader>
 
-          {/* Type selector for new sections */}
-          {!editingSection && !selectedType ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 py-4">
               {Object.entries(sectionTypeLabels).map(([type, label]) => (
                 <button
@@ -523,23 +595,21 @@ export default function SectionPage() {
                 </button>
               ))}
             </div>
-          ) : (
-            <SectionForm
-              mode={editingSection ? 'edit' : 'create'}
-              sectionType={selectedType || editingSection?.type || 'hero'}
-              initialData={editingSection || undefined}
-              onSuccess={handleFormSuccess}
-              onCancel={() => {
-                if (!editingSection) {
-                  setSelectedType(null);
-                } else {
-                  setIsFormOpen(false);
-                }
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Full-Page Section Editor */}
+      {isEditorOpen && (editingSection || selectedType) && (
+        <SectionEditorPage
+          mode={editingSection ? 'edit' : 'create'}
+          sectionType={selectedType || editingSection?.type || 'hero'}
+          initialData={editingSection || undefined}
+          onClose={handleEditorClose}
+          onSuccess={handleEditorSuccess}
+          tenantId={tenantId}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingSection} onOpenChange={() => setDeletingSection(null)}>

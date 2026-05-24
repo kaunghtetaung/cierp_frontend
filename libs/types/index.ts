@@ -3,6 +3,7 @@ export * from './auth';
 export * from './ui';
 export * from './content';
 export * from './section';
+export * from './themes';
 
 // Export tenant types explicitly to avoid conflicts
 export type {

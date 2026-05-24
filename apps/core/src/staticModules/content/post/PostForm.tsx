@@ -583,6 +583,26 @@ export function PostForm({
       return;
     }
 
+    // Workaround for a Next.js Server Action RSC encoding bug: any
+    // property literally named `attrs` on a plain object loses its
+    // value across the browser → server boundary (the decoded property
+    // ends up as `attrs: undefined`, JSON.stringify then drops it).
+    // This wiped the `src` off every Tiptap image node, the `href` off
+    // every link mark, the `level` off every heading, the colspan/
+    // rowspan off every table cell — every author-set attr disappeared
+    // on save and the image/link/heading/table came back broken.
+    //
+    // The fix: marshall the body to a JSON string here and ship it in
+    // a sibling field (`bodySerialized` + `_bodyIsStringified` flag).
+    // The server-action wrapper in `post.actions.ts` JSON.parses it
+    // back onto `body` before passing on. Strings round-trip through
+    // the RSC encoder cleanly.
+    const dataAny = data as any;
+    if (dataAny.body && typeof dataAny.body === 'object') {
+      dataAny.bodySerialized = JSON.stringify(dataAny.body);
+      dataAny._bodyIsStringified = true;
+    }
+
     startTransition(async () => {
       try {
         let result;

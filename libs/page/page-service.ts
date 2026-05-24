@@ -280,20 +280,22 @@ export class PageService {
   }
 
   /**
-   * Validate that page data is complete and valid
+   * Validate that page data is complete and valid.
+   *
+   * Only the core identity fields are required (id, slug, title, org).
+   * Section/layout fields are intentionally NOT required — a
+   * post-as-page may legitimately render a body-only doc with no
+   * sections at all. Previously this required `Array.isArray(sections)`,
+   * which gated the cache layer off for every post-as-page doc since
+   * those carry `sectionRefs` instead of the flat `sections` array.
    */
   private isValidPageData(data: any): data is PageData {
-    return (
-      data &&
-      typeof data === "object" &&
-      data._id &&
-      data.slug &&
-      data.title &&
-      typeof data.title === "object" &&
-      data.title.en &&
-      data.organizationId &&
-      Array.isArray(data.sections)
-    );
+    if (!data || typeof data !== "object") return false;
+    if (!data._id || !data.slug) return false;
+    if (!data.title || typeof data.title !== "object" || !data.title.en)
+      return false;
+    if (!data.organizationId) return false;
+    return true;
   }
 
   /**
@@ -501,7 +503,8 @@ export const getPageSections = cache(
   async (slug: string): Promise<SectionData[]> => {
     const page = await getPageBySlug(slug);
 
-    // Tier 1 — legacy flat array.
+    // Tier 1 — legacy flat array (old Page docs that wrote sections
+    // inline as Mixed objects).
     const flat = Array.isArray(page?.sections) ? page.sections : [];
     if (flat.length > 0) {
       return flat
@@ -509,10 +512,103 @@ export const getPageSections = cache(
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
 
-    // Tier 2 — layout tree.
+    // Tier 2 — `sectionRefs` hybrid array. Both Page docs in
+    // `layoutMode: 'sections'` AND post-as-page docs carry section
+    // references in this shape. Each entry is either a pure ref
+    // (`sectionId`), a pure inline (`sectionData`), or a ref with
+    // overrides (both set — overrides win).
+    const refs = Array.isArray((page as any)?.sectionRefs)
+      ? ((page as any).sectionRefs as Array<{
+          sectionId?: string;
+          sectionData?: any;
+          order?: number;
+          isVisible?: boolean;
+        }>)
+      : [];
+    if (refs.length > 0) {
+      return getSectionsByRefs(refs);
+    }
+
+    // Tier 3 — page-builder layout tree (containers > rows > columns >
+    // sectionRefs nested).
     return getSectionsByLayout((page as any)?.layout);
   },
 );
+
+/**
+ * Resolve a hybrid `sectionRefs[]` array into a flat SectionData list.
+ * Each entry is either:
+ *   - `sectionId` only — fetch the referenced Section doc as-is.
+ *   - `sectionData` only — render inline (no fetch needed).
+ *   - both — fetch the Section doc, then deep-merge `sectionData` on
+ *     top (per-page overrides win).
+ *
+ * Hidden entries (`isVisible === false`) are dropped before sorting.
+ */
+async function getSectionsByRefs(
+  refs: Array<{
+    sectionId?: string;
+    sectionData?: any;
+    order?: number;
+    isVisible?: boolean;
+  }>,
+): Promise<SectionData[]> {
+  const visible = refs.filter((r) => r.isVisible !== false);
+  if (visible.length === 0) return [];
+
+  const middleware = await getMiddlewareDataFromHeaders();
+  const tenantId = middleware.tenantId;
+  if (!tenantId) return [];
+
+  const apiUrl = await getApiDomain();
+  const sectionClient = createHttpClient({ baseURL: apiUrl });
+
+  const resolved = await Promise.all(
+    visible.map(async (ref, idx) => {
+      // Pure inline — no fetch needed.
+      if (!ref.sectionId && ref.sectionData) {
+        return {
+          ...(ref.sectionData as any),
+          order: ref.order ?? idx,
+        } as SectionData;
+      }
+
+      if (!ref.sectionId) return null;
+
+      try {
+        const resp: any = await sectionClient.request(
+          `/content/sections/${ref.sectionId}/public`,
+          { method: "GET", tenantId, withAuth: false },
+        );
+        const doc = resp?.data?._id
+          ? resp.data
+          : resp?._id
+            ? resp
+            : null;
+        if (!doc) return null;
+
+        // Overrides win — shallow-merge `sectionData` onto the loaded
+        // Section. Deep-merging is intentionally avoided so authors can
+        // null-out a section field (e.g. clear an image) by setting it
+        // to null in `sectionData`.
+        const merged = ref.sectionData
+          ? { ...doc, ...(ref.sectionData as any) }
+          : doc;
+        return { ...merged, order: ref.order ?? idx } as SectionData;
+      } catch (err) {
+        console.warn(
+          `getPageSections: failed to fetch section ${ref.sectionId}`,
+          err instanceof Error ? err.message : err,
+        );
+        return null;
+      }
+    }),
+  );
+
+  return resolved
+    .filter((s): s is SectionData => !!s)
+    .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+}
 
 /**
  * Validate page exists and is valid

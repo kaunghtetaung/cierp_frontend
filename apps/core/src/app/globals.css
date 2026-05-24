@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Register `@tailwindcss/typography` so the `prose` utility classes
+   used by the TiptapEditor (and any rendered article body) actually
+   produce styling. Tailwind v4 requires plugins to be declared via
+   `@plugin` in CSS — without this line, `prose-headings:*`,
+   `prose-ul:list-disc`, etc. all resolve to nothing, which is why
+   H1/H2/H3 inside the admin editor looked like plain text even
+   though the toggle commands were creating the correct heading tags. */
+@plugin "@tailwindcss/typography";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

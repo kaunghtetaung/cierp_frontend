@@ -20,6 +20,9 @@ export const navigationTypeSchema = z.enum([
   'external',
   'page',
   'post',
+  // 'posts' = post-type list page (e.g. /post/news). Distinct
+  // from 'post' which targets a single post by id.
+  'posts',
   'category',
   'custom',
 ]);

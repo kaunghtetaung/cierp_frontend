@@ -33,6 +33,7 @@ import { DynamicSearch } from "./DynamicSearch";
 import { ReactHookForm } from "../forms/ReactHookForm";
 import { ConfirmationDialog } from "@repo/ui";
 import { toastSuccess, toastError } from "@repo/utils";
+import { useIsSystemAdmin } from "@/hooks/use-is-system-admin";
 import type { ModuleSchema, DataTableColumn } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -52,7 +53,13 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
   // Confirmation dialog states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [bulkHardDeleteConfirmOpen, setBulkHardDeleteConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // Hard-delete is restricted to SystemAdmin both in the UI and via
+  // the moduleAccessPolicy on the backend — see the `hardDelete`
+  // flag per role on the relevant module entry. Gating here lets us
+  // hide the bulk-permanent-delete button entirely for non-admins.
+  const canHardDelete = useIsSystemAdmin();
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
@@ -185,6 +192,39 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
   const handleBulkDelete = () => {
     if (selectedItems.length === 0) return;
     setBulkDeleteConfirmOpen(true);
+  };
+
+  const handleBulkHardDelete = () => {
+    if (selectedItems.length === 0) return;
+    setBulkHardDeleteConfirmOpen(true);
+  };
+
+  const executeBulkHardDelete = async () => {
+    try {
+      const ids = selectedItems.map((item) => item._id);
+      await bulkOperationMutation.mutateAsync({
+        operation: "hard-delete",
+        ids,
+      });
+
+      setSelectedItems([]);
+
+      const successMessage =
+        currentLanguage === "mm"
+          ? `${ids.length} ခု အပြီးအစီး ဖျက်ပြီးပါပြီ!`
+          : `${ids.length} item${ids.length > 1 ? "s" : ""} permanently deleted!`;
+
+      toastSuccess(successMessage);
+    } catch (error) {
+      console.error("Failed to bulk hard-delete items:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : currentLanguage === "mm"
+            ? "အပြီးအစီး ဖျက်ခြင်း မအောင်မြင်ပါ"
+            : "Failed to permanently delete items";
+      toastError(errorMessage);
+    }
   };
 
   const executeBulkDelete = async () => {
@@ -513,6 +553,22 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
                 ? "ဖျက်မည်"
                 : "Delete"}
             </Button>
+            {/* Bulk permanent-delete — SystemAdmin only. Same
+                 selection but skips the trash bin entirely. */}
+            {canHardDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkHardDelete}
+                disabled={bulkOperationMutation.isPending}
+                className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+              >
+                <IconComponent name="HardDriveIcon" className="w-4 h-4 mr-2" />
+                {currentLanguage === "mm"
+                  ? "အပြီးအစီးဖျက်"
+                  : "Delete Permanently"}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -645,19 +701,44 @@ export function ModuleListPage({ module, initialData }: ModuleListPageProps) {
       <ConfirmationDialog
         open={bulkDeleteConfirmOpen}
         onOpenChange={setBulkDeleteConfirmOpen}
-        title={currentLanguage === "mm" 
-          ? `${selectedItems.length} ခု ဖျက်မည်` 
+        title={currentLanguage === "mm"
+          ? `${selectedItems.length} ခု ဖျက်မည်`
           : `Delete ${selectedItems.length} Items`
         }
-        description={currentLanguage === "mm" 
-          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။`
-          : `Are you sure you want to delete ${selectedItems.length} selected items? This action cannot be undone.`
+        description={currentLanguage === "mm"
+          ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို ဖျက်လိုသည်မှာ သေချာပါသလား? ဖျက်ပြီးတဲ့ items တွေကို Trash bin ထဲကနေ ပြန် restore လုပ်နိုင်ပါတယ်။`
+          : `Are you sure you want to delete ${selectedItems.length} selected items? Items can be restored from the trash bin.`
         }
         confirmText={currentLanguage === "mm" ? "ဖျက်မည်" : "Delete All"}
         cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
         onConfirm={executeBulkDelete}
         destructive={true}
         icon="Trash2"
+      />
+
+      {/* Bulk Hard-Delete Confirmation Dialog — SystemAdmin path.
+           Stronger wording than the soft-delete dialog because there
+           is NO restore for hard-deleted rows. */}
+      <ConfirmationDialog
+        open={bulkHardDeleteConfirmOpen}
+        onOpenChange={setBulkHardDeleteConfirmOpen}
+        title={
+          currentLanguage === "mm"
+            ? `${selectedItems.length} ခု အပြီးအစီးဖျက်မည်`
+            : `Permanently Delete ${selectedItems.length} Items`
+        }
+        description={
+          currentLanguage === "mm"
+            ? `ရွေးချယ်ထားသော ${selectedItems.length} ခုကို database ထဲက အပြီးအစီးဖျက်မှာ ဖြစ်ပါတယ်။ ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍ မရပါ — Trash bin ထဲကနေပါ ပျောက်သွားမယ်။`
+            : `You are about to PERMANENTLY remove ${selectedItems.length} items from the database. This bypasses the trash bin and cannot be undone.`
+        }
+        confirmText={
+          currentLanguage === "mm" ? "အပြီးအစီးဖျက်" : "Delete Permanently"
+        }
+        cancelText={currentLanguage === "mm" ? "မလုပ်တော့" : "Cancel"}
+        onConfirm={executeBulkHardDelete}
+        destructive={true}
+        icon="HardDriveIcon"
       />
     </div>
   );

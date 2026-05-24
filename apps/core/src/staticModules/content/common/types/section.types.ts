@@ -25,9 +25,16 @@ export type SectionType =
   | 'faq'
   | 'pricing'
   | 'dataTable'
-  | 'studentEnrollment'
+  | 'stats'
   | 'rector'
-  | 'organizationStructure';
+  | 'organizationStructure'
+  | 'carousel'
+  | 'recentPosts'
+  | 'categoryList'
+  | 'tagList'
+  | 'postBody'
+  | 'navigationMenu'
+  | 'tabs';
 
 // ============================================
 // SPACING SETTINGS
@@ -36,8 +43,33 @@ export type SectionType =
 export interface SectionSpacing {
   paddingTop?: string;
   paddingBottom?: string;
+  paddingLeft?: string;
+  paddingRight?: string;
   marginTop?: string;
   marginBottom?: string;
+}
+
+// ============================================
+// CONTAINER SETTINGS
+// ============================================
+
+export interface ContainerSettings {
+  width: 'fullWidth' | 'contained' | 'custom';
+  maxWidth?: string;
+  padding?: {
+    left?: string;
+    right?: string;
+  };
+}
+
+// ============================================
+// RESPONSIVE SETTINGS
+// ============================================
+
+export interface ResponsiveSettings {
+  hideOnMobile?: boolean;
+  hideOnTablet?: boolean;
+  hideOnDesktop?: boolean;
 }
 
 // ============================================
@@ -54,6 +86,8 @@ export interface BaseSection extends BaseEntity {
   customStyles?: Record<string, unknown>;
   customClasses?: string[];
   spacing?: SectionSpacing;
+  containerSettings?: ContainerSettings;
+  responsiveSettings?: ResponsiveSettings;
 }
 
 // ============================================
@@ -272,52 +306,148 @@ export interface EnrollmentInfo {
   }>;
 }
 
-export interface StudentEnrollmentSection extends BaseSection {
-  type: 'studentEnrollment';
+// Generic stat-counter cards. Common uses include enrolled-student
+// counts, alumni totals, programmes offered, faculty counts, etc.
+// Replaces the old type-specific `studentEnrollment` interface.
+export interface StatsSection extends BaseSection {
+  type: 'stats';
   headline?: MultiLanguageText;
   description?: MultiLanguageText;
-  enrollmentData: EnrollmentInfo[];
-  showChart: boolean;
-  chartType: 'bar' | 'pie' | 'table';
+  counters: Array<{
+    title: MultiLanguageText;
+    description?: MultiLanguageText;
+    icon: string;
+    iconColor?: string;
+    count: string;
+    bgColor: string;
+    textColor: string;
+  }>;
+  layout?: 'grid' | 'row';
+  columns?: 1 | 2 | 3 | 4;
 }
 
 // ============================================
 // RECTOR SECTION
 // ============================================
 
+// Inline manual-mode person block. Used when the section does NOT
+// reference a CPMS Staff record (legacy content / honourary figures).
+export interface RectorPerson {
+  name: MultiLanguageText;
+  degrees?: MultiLanguageText;
+  email?: string;
+  photo?: string;
+  contentText?: MultiLanguageText;
+  readMoreLink?: {
+    url: string;
+    text: MultiLanguageText;
+    openInNewTab?: boolean;
+  };
+}
+
 export interface RectorSection extends BaseSection {
   type: 'rector';
-  name: MultiLanguageText;
-  title: MultiLanguageText;
-  photo: string;
-  bio: MultiLanguageText;
-  qualifications?: MultiLanguageText[];
-  contactEmail?: string;
-  socialLinks?: Array<{
-    platform: string;
-    url: string;
-  }>;
+  headline?: MultiLanguageText;
+  description?: MultiLanguageText;
+  // CPMS Staff `_id`. When present the public renderer pulls card
+  // content from `staff.publicProfile`. When absent, `person` below
+  // is used as a manual override.
+  staffRef?: string;
+  person?: RectorPerson;
+  layout?: 'left' | 'right' | 'center';
+  showEmail?: boolean;
+  showDegrees?: boolean;
+  showSocialLinks?: boolean;
+  imageSize?: 'small' | 'medium' | 'large';
+  imageShape?: 'circle' | 'square' | 'rounded';
 }
 
 // ============================================
 // ORGANIZATION STRUCTURE SECTION
 // ============================================
 
-export interface OrgChartNode {
+// Recursive node for manual-mode org charts. Mirrors the backend
+// `OrganizationNode` shape (single root with nested `children`).
+export interface OrganizationNode {
   id: string;
-  title: MultiLanguageText;
-  role: MultiLanguageText;
+  name: MultiLanguageText;
+  title?: MultiLanguageText;
   photo?: string;
-  children?: OrgChartNode[];
+  email?: string;
+  phone?: string;
+  department?: MultiLanguageText;
+  description?: MultiLanguageText;
+  children?: OrganizationNode[];
 }
+
+// ============================================
+// CAROUSEL SECTION
+// ============================================
+
+export interface CarouselOverlay {
+  enabled: boolean;
+  color: string;
+  opacity: number;
+}
+
+export interface CarouselSlide {
+  id?: string;
+  backgroundImage?: string;
+  backgroundVideo?: string;
+  overlay?: CarouselOverlay;
+  image?: string;
+  title?: MultiLanguageText;
+  subtitle?: MultiLanguageText;
+  description?: MultiLanguageText;
+  buttons?: SectionButton[];
+  layout?: 'centered' | 'split-left' | 'split-right' | 'flat';
+  contentStyle?: 'boxed' | 'flat';
+  textAlignment?: 'left' | 'center' | 'right';
+}
+
+export interface CarouselSection extends BaseSection {
+  type: 'carousel';
+  slides: CarouselSlide[];
+  autoplay?: boolean;
+  autoplaySpeed?: number;
+  showDots?: boolean;
+  showArrows?: boolean;
+  transitionEffect?: 'fade' | 'slide' | 'zoom' | 'none';
+  transitionDuration?: number;
+  height?: 'small' | 'medium' | 'large' | 'fullscreen';
+}
+
+// ============================================
+// ORGANIZATION STRUCTURE SECTION
+// ============================================
 
 export interface OrganizationStructureSection extends BaseSection {
   type: 'organizationStructure';
   headline?: MultiLanguageText;
   description?: MultiLanguageText;
-  structure: OrgChartNode[];
-  layout: 'tree' | 'horizontal' | 'vertical';
-  showPhotos: boolean;
+
+  // 'manual' = use the inline `structure` tree below.
+  // 'cpms'   = public renderer fetches CPMS staff at request time
+  //            and builds the tree from publicProfile.hierarchyLevel
+  //            + primaryDepartmentId. Filter fields below scope it.
+  derivedFrom?: 'manual' | 'cpms';
+  departmentId?: string;
+  hierarchyLevelMin?: number;
+  hierarchyLevelMax?: number;
+  tags?: string[];
+
+  structure?: OrganizationNode;
+  displayOptions?: {
+    showPhotos?: boolean;
+    showTitles?: boolean;
+    showEmails?: boolean;
+    showPhones?: boolean;
+    expandByDefault?: boolean;
+    maxDepth?: number;
+  };
+  layout?: 'tree' | 'hierarchy' | 'orgChart';
+  orientation?: 'vertical' | 'horizontal';
+  nodeStyle?: 'card' | 'minimal' | 'detailed';
 }
 
 // ============================================
@@ -334,9 +464,10 @@ export type Section =
   | FaqSection
   | PricingSection
   | DataTableSection
-  | StudentEnrollmentSection
+  | StatsSection
   | RectorSection
-  | OrganizationStructureSection;
+  | OrganizationStructureSection
+  | CarouselSection;
 
 // ============================================
 // CREATE DTO (Base)

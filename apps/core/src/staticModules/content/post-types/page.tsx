@@ -74,7 +74,12 @@ export default function PostTypesPage() {
     try {
       const result = await getPostTypes({ includePostCount: true });
       if (result.success && result.data) {
-        setPostTypes(result.data.data || []);
+        // The shared StandardResponseHandler auto-unwraps `body.data`, so
+        // `result.data` is already the array. Older code paths returned
+        // the full wrapper; handle both for safety.
+        const raw: any = result.data;
+        const list = Array.isArray(raw) ? raw : raw.data || [];
+        setPostTypes(list);
       } else {
         toastError(result.error || 'Failed to load post types');
       }
@@ -293,7 +298,7 @@ export default function PostTypesPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="secondary">
-                          {postType.attributes?.length || 0}
+                          {postType.customAttributes?.length || 0}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">

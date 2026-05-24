@@ -75,6 +75,43 @@ export class TagService {
   }
 
   /**
+   * Lightweight `/ref` lookup for dropdown pickers — same shape as the
+   * canonical reference endpoints used elsewhere in the codebase.
+   */
+  async getReference(params?: { search?: string; limit?: number; status?: string }): Promise<
+    ApiResponse<{
+      statusCode: number;
+      message: string;
+      data: Array<{ id: string; label: string; value: string }>;
+      total: number;
+    }>
+  > {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params?.status) qs.set('status', params.status);
+    const endpoint = `${TAG_BASE}/ref${qs.toString() ? `?${qs}` : ''}`;
+    const response = await this.httpClient.request<{
+      statusCode: number;
+      message: string;
+      data: Array<{ id: string; label: string; value: string }>;
+      total: number;
+    }>(endpoint, {
+      method: 'GET',
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+      timeout: 25000,
+    });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch tag reference');
+    }
+    return response;
+  }
+
+  /**
    * Get paginated list of tags with optional filters
    */
   async getAll(params?: TagQuery): Promise<ApiResponse<TagListResponse>> {

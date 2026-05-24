@@ -39,7 +39,9 @@ export interface FooterSettings {
   showSocialLinks?: boolean;
   showCopyright?: boolean;
   showBackToTop?: boolean;
+  showVisitorCount?: boolean;
   copyrightText?: MultiLanguageText;
+  openHours?: MultiLanguageText;
   socialLinks?: SocialLink[];
   contactInfo?: {
     showAddress: boolean;
@@ -48,6 +50,10 @@ export interface FooterSettings {
     address?: MultiLanguageText;
     phone?: string;
     email?: string;
+    showMap?: boolean;
+    mapEmbedUrl?: string;
+    latitude?: number;
+    longitude?: number;
   };
   columns?: FooterColumn[];
 }

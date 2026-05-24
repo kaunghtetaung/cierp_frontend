@@ -101,6 +101,7 @@ export class PostService {
       if (params.isFeatured !== undefined) queryParams.set('isFeatured', String(params.isFeatured));
       if (params.isPinned !== undefined) queryParams.set('isPinned', String(params.isPinned));
       if (params.departmentId) queryParams.set('departmentId', params.departmentId);
+      if (params.orgLevelOnly) queryParams.set('orgLevelOnly', 'true');
       if (params.publishedAfter) queryParams.set('publishedAfter', params.publishedAfter);
       if (params.publishedBefore) queryParams.set('publishedBefore', params.publishedBefore);
       if (params.includeDeleted !== undefined) queryParams.set('includeDeleted', String(params.includeDeleted));

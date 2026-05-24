@@ -193,6 +193,14 @@ export function MediaClient({ appId, tenantId, username = 'user' }: MediaClientP
     setUploadQueue((prev) => prev.filter((u) => u.id !== id));
   }, []);
 
+  // Handle folder tree selection (sidebar folders)
+  const handleFolderSelect = useCallback((path: string) => {
+    console.log('[MediaClient] Sidebar folder selected:', path);
+    setSelectedPath(path);
+    // Force FileBrowser to remount with new basePath
+    setRefreshTrigger((prev) => prev + 1);
+  }, []);
+
   const triggerFileInput = () => {
     document.getElementById('file-input-hidden')?.click();
   };
@@ -347,7 +355,7 @@ export function MediaClient({ appId, tenantId, username = 'user' }: MediaClientP
           <FolderTree
             folders={folderTree}
             selectedPath={selectedPath}
-            onSelectFolder={setSelectedPath}
+            onSelectFolder={handleFolderSelect}
             username={username}
           />
         </div>
@@ -380,10 +388,10 @@ export function MediaClient({ appId, tenantId, username = 'user' }: MediaClientP
         <DropZone onFilesSelected={handleFilesSelected} className="flex-1 overflow-hidden">
           <div className="h-full p-6">
             <FileBrowser
-              key={`${selectedPath}-${refreshTrigger}`}
+              key={refreshTrigger}
               app={appId}
               tenantId={tenantId}
-              basePath={getBasePath()}
+              basePath={selectedPath}
               actions={mediaActions}
               permissions={{
                 canRead: true,
@@ -399,6 +407,10 @@ export function MediaClient({ appId, tenantId, username = 'user' }: MediaClientP
               onAddThumbnail={handleAddThumbnail}
               onPreview={handlePreview}
               onFileMove={handleFileMove}
+              onPathChange={(newPath) => {
+                console.log('[MediaClient] FileBrowser path changed to:', newPath);
+                setSelectedPath(newPath);
+              }}
             />
           </div>
         </DropZone>

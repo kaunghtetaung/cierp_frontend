@@ -1,6 +1,17 @@
 "use server";
 
 import { getModuleReference, createModuleItem } from "@repo/app-modules";
+import { getCacheInstance, CacheKeys, CacheTTL } from "@repo/cache";
+
+const GOOGLE_BOOKS_CACHE_TTL_SUCCESS = CacheTTL.LONG * 30; // 30 days for found books
+const GOOGLE_BOOKS_CACHE_TTL_MISS = CacheTTL.LONG; // 1 day for not-found
+
+function appendApiKey(url: string): string {
+  const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+  if (!apiKey) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}key=${apiKey}`;
+}
 
 /**
  * Google Books API Integration for Bibliography Form
@@ -103,9 +114,20 @@ export async function searchGoogleBooksAction(
       };
     }
 
+    // Redis cache check — ISBN data is immutable and public, so cache globally across tenants
+    const cache = getCacheInstance();
+    const cacheKey = CacheKeys.globalCustom("GoogleBooks", "ISBN", cleanIsbn);
+    const cached = await cache.get<BookSearchResult>(cacheKey);
+    if (cached) {
+      console.log(`[GOOGLE_BOOKS] Cache hit for ISBN: ${cleanIsbn}`);
+      return cached;
+    }
+
     console.log(`[GOOGLE_BOOKS] Searching for ISBN: ${cleanIsbn}`);
 
-    const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+    const apiUrl = appendApiKey(
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`
+    );
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -129,10 +151,13 @@ export async function searchGoogleBooksAction(
 
     if (!data.items || data.items.length === 0) {
       console.log(`[GOOGLE_BOOKS] No results found for ISBN: ${cleanIsbn}`);
-      return {
+      const missResult: BookSearchResult = {
         success: false,
         error: "No book found with this ISBN",
       };
+      // Cache negative result briefly so typo'd ISBNs don't hammer the API
+      await cache.set(cacheKey, missResult, GOOGLE_BOOKS_CACHE_TTL_MISS);
+      return missResult;
     }
 
     const book = data.items[0];
@@ -141,11 +166,12 @@ export async function searchGoogleBooksAction(
     // Fetch complete book data using selfLink for more detailed information
     // The initial search returns limited data, selfLink provides complete info including dimensions
     if (book.selfLink) {
+      const detailUrl = appendApiKey(book.selfLink);
       console.log(
         `[GOOGLE_BOOKS] Fetching complete data from selfLink: ${book.selfLink}`
       );
       try {
-        const detailResponse = await fetch(book.selfLink, {
+        const detailResponse = await fetch(detailUrl, {
           method: "GET",
           headers: {
             Accept: "application/json",
@@ -225,7 +251,7 @@ export async function searchGoogleBooksAction(
 
     console.log(`[GOOGLE_BOOKS] Found book: ${volumeInfo.title}`);
 
-    return {
+    const result: BookSearchResult = {
       success: true,
       data: {
         title: volumeInfo.title,
@@ -245,6 +271,9 @@ export async function searchGoogleBooksAction(
         dimensions: volumeInfo.dimensions,
       },
     };
+
+    await cache.set(cacheKey, result, GOOGLE_BOOKS_CACHE_TTL_SUCCESS);
+    return result;
   } catch (error) {
     console.error("[GOOGLE_BOOKS] Error searching books:", error);
     return {

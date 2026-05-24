@@ -58,7 +58,8 @@ function convertDataSourceToDropdownConfig(field: SchemaFormField): SchemaFormFi
       minSearchLength: field.dataSource.minSearchLength || 2,
       debounceMs: field.dataSource.debounceMs || 300,
       // Preserve serviceName for cross-service references
-      serviceName: field.dataSource.serviceName
+      serviceName: field.dataSource.serviceName,
+      multiple: field.multiple || field.dataSource.multiple,
     };
 
     // Handle dependent fields

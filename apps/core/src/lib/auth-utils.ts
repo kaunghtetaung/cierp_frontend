@@ -8,6 +8,65 @@ import { getPublicUrl } from '@repo/utils/server/domain'
 import type { User, TenantSettings } from '@repo/types'
 
 /**
+ * SystemAdmin-only static modules that bypass normal module schema check
+ * These modules don't exist in the moduleSchemas database but are accessible
+ * only to users with SystemAdmin role
+ */
+const SYSTEM_ADMIN_STATIC_MODULES: Record<string, string[]> = {
+  core: ['schema-editor'],
+  // Add more apps and their SystemAdmin-only modules here as needed
+}
+
+/**
+ * Check if user has SystemAdmin role
+ */
+function isSystemAdmin(user: User): boolean {
+  if (!user?.roles || user.roles.length === 0) {
+    return false
+  }
+
+  const roleInfo = user.roles[0]
+
+  if (typeof roleInfo === 'string') {
+    return roleInfo.toLowerCase() === 'systemadmin'
+  }
+
+  if (typeof roleInfo === 'object' && roleInfo !== null) {
+    // Check for Role property (common format)
+    if ('Role' in roleInfo && roleInfo.Role) {
+      return (roleInfo.Role as string).toLowerCase() === 'systemadmin'
+    }
+    // Check for nested roles array
+    if ('roles' in roleInfo && Array.isArray(roleInfo.roles) && roleInfo.roles.length > 0) {
+      return roleInfo.roles[0].toLowerCase() === 'systemadmin'
+    }
+  }
+
+  return false
+}
+
+/**
+ * Check if a module is a SystemAdmin-only static module
+ */
+function isSystemAdminStaticModule(appId: string, moduleSlug: string): boolean {
+  const appModules = SYSTEM_ADMIN_STATIC_MODULES[appId.toLowerCase()]
+  return appModules?.includes(moduleSlug.toLowerCase()) ?? false
+}
+
+/**
+ * Create a placeholder module schema for SystemAdmin-only static modules
+ */
+function createSystemAdminStaticModuleSchema(moduleSlug: string): any {
+  return {
+    slug: moduleSlug,
+    name: { en: moduleSlug.charAt(0).toUpperCase() + moduleSlug.slice(1).replace(/-/g, ' '), mm: moduleSlug },
+    description: { en: 'SystemAdmin-only module', mm: 'SystemAdmin-only module' },
+    isStaticModule: true,
+    isSystemAdminOnly: true,
+  }
+}
+
+/**
  * Server-side app authorization result
  */
 export interface AppAuthResult {
@@ -165,6 +224,21 @@ export async function requireModuleAccess(appId: string, moduleSlug: string): Pr
 }> {
   // First check app access
   const { user, tenant } = await requireAppAccess(appId)
+
+  // ⭐ BYPASS: Check if this is a SystemAdmin-only static module
+  if (isSystemAdminStaticModule(appId, moduleSlug)) {
+    if (isSystemAdmin(user)) {
+      console.log(`[MODULE_AUTH] ✅ SystemAdmin user ${user.email} authorized for static module '${moduleSlug}' in app '${appId}'`)
+      return {
+        user,
+        tenant,
+        module: createSystemAdminStaticModuleSchema(moduleSlug)
+      }
+    } else {
+      console.log(`[MODULE_AUTH] User ${user.email} denied access to SystemAdmin-only module '${moduleSlug}' in app '${appId}'`)
+      redirect(`/unauthorized?app=${appId}&reason=${encodeURIComponent(`Access denied: SystemAdmin role required for '${moduleSlug}'`)}`)
+    }
+  }
 
   try {
     // Get full module schema with access policies (server-side only)

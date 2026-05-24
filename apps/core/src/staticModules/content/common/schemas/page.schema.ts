@@ -41,6 +41,29 @@ export const createPageSchema = z.object({
   featuredImageAlt: optionalMultiLanguageTextSchema.optional(),
   template: pageTemplateSchema.default('default'),
   layout: layoutSchema.partial().optional(),
+  // Layout discriminator — picks `bodyTiptap` vs `sectionRefs` as the
+  // active body channel. Defaults to 'tiptap' (most pages). Author flips
+  // to 'sections' for homepage / marketing pages.
+  layoutMode: z.enum(['tiptap', 'sections']).default('tiptap'),
+  bodyTiptap: z
+    .object({
+      en: z.record(z.unknown()).optional(),
+      mm: z.record(z.unknown()).optional(),
+    })
+    .optional(),
+  // Hybrid section model — see PageSectionRef in page.types.ts. Each entry
+  // is a reference, an inline section, or a reference + per-page override.
+  sectionRefs: z
+    .array(
+      z.object({
+        sectionId: z.string().nullable().optional(),
+        sectionData: z.record(z.unknown()).nullable().optional(),
+        order: z.number().int().nonnegative(),
+        isVisible: z.boolean().optional(),
+      }),
+    )
+    .optional(),
+  /** @deprecated use sectionRefs */
   sectionIds: z.array(z.string()).optional(),
   parentId: z.string().optional(),
   order: z.number().min(0).optional(),

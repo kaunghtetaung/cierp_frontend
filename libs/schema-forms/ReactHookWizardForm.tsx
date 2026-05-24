@@ -186,7 +186,8 @@ function convertDataSourceToDropdownConfig(field: FormField): FormField {
       refPath: field.dataSource.endpoint,
       searchable: true,
       clearable: true,
-      preloadData: field.fieldType === "dynamicSelect" ? true : false
+      preloadData: field.fieldType === "dynamicSelect" ? true : false,
+      multiple: field.multiple || field.dataSource.multiple,
     };
 
     // Handle dependent fields

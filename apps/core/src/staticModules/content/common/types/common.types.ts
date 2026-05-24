@@ -45,7 +45,7 @@ export interface MultiLanguageContentBlocks {
 // VISIBILITY & ACCESS CONTROL
 // ============================================
 
-export type Visibility = 'Public' | 'Private' | 'Protected' | 'Password';
+export type Visibility = 'Public' | 'Private' | 'Protected' | 'Password' | 'Restricted';
 
 export interface VisibilitySettings {
   visibility: Visibility;

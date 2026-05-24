@@ -76,6 +76,49 @@ export class PostTypeService {
   }
 
   /**
+   * Lightweight reference lookup for the post-creation form's
+   * "Post as" picker. Hits `GET /content/post-types/ref?search=&limit=`.
+   */
+  async getReference(params?: {
+    search?: string;
+    limit?: number;
+    status?: string;
+  }): Promise<
+    ApiResponse<{
+      statusCode: number;
+      message: string;
+      data: Array<{ id: string; label: string; value: string; slug: string }>;
+      total: number;
+    }>
+  > {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params?.status) qs.set('status', params.status);
+    const endpoint = `${POST_TYPE_BASE}/ref${
+      qs.toString() ? `?${qs}` : ''
+    }`;
+    const response = await this.httpClient.request<{
+      statusCode: number;
+      message: string;
+      data: Array<{ id: string; label: string; value: string; slug: string }>;
+      total: number;
+    }>(endpoint, {
+      method: 'GET',
+      tenantId: this.tenantId,
+      userSessionId: this.userSessionId,
+      userId: this.userId,
+      withAuth: true,
+      tokenStrategy: 'auto',
+      timeout: 25000,
+    });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch post type reference');
+    }
+    return response;
+  }
+
+  /**
    * Get paginated list of post types with optional filters
    */
   async getAll(params?: PostTypeQuery): Promise<ApiResponse<PostTypeListResponse>> {

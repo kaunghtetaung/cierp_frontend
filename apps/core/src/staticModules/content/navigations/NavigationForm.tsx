@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useEffect, useCallback } from 'react';
+import React, { useState, useTransition, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -41,6 +41,7 @@ import {
   getCategoryTree,
   getPostTypes,
   getPosts,
+  getPostTypeReference,
 } from '../common/actions';
 import type {
   Navigation,
@@ -62,7 +63,15 @@ const navigationFormSchema = z.object({
   }),
   slug: z.string().optional(),
   url: z.string().optional(),
-  type: z.enum(['internal', 'external', 'page', 'post', 'category', 'custom']),
+  type: z.enum([
+    'internal',
+    'external',
+    'page',
+    'post',
+    'posts',
+    'category',
+    'custom',
+  ]),
   pageId: z.string().optional(),
   categoryId: z.string().optional(),
   postId: z.string().optional(),
@@ -72,6 +81,11 @@ const navigationFormSchema = z.object({
   isVisible: z.boolean().default(true),
   openInNewTab: z.boolean().default(false),
   requiresAuth: z.boolean().default(false),
+  // 'dropdown' (default) renders children as a vertical drop panel.
+  // 'mega' renders a wide multi-column panel — each direct child
+  // becomes a column header, its grandchildren become the column's
+  // links. Ignored when the item has no children.
+  displayType: z.enum(['dropdown', 'mega']).default('dropdown'),
   status: z.enum(['Active', 'Inactive']).default('Active'),
 });
 
@@ -94,6 +108,10 @@ const navigationTypeLabels: Record<NavigationType, string> = {
   external: 'External URL',
   page: 'Page',
   post: 'Post',
+  // "Posts by type" — links to the public list page for one
+  // post type (e.g. /post/news, /post/announcements). Different
+  // from `post` which links to one specific post.
+  posts: 'Posts by type (list page)',
   category: 'Category',
   custom: 'Custom',
 };
@@ -241,6 +259,9 @@ export function NavigationForm({
       isVisible: initialData?.isVisible ?? true,
       openInNewTab: initialData?.openInNewTab ?? false,
       requiresAuth: initialData?.requiresAuth ?? false,
+      displayType:
+        ((initialData as any)?.displayType as 'dropdown' | 'mega') ||
+        'dropdown',
       status: initialData?.status || 'Active',
     },
   });
@@ -289,14 +310,46 @@ export function NavigationForm({
   }, [titleEn, autoSlug, setValue]);
 
   // ─── Data Loading ───────────────────────────────────
+  // Pages were consolidated into Posts (PostType.slug='page') on
+  // 2026-04-29. The legacy `getPages()` API still works against the
+  // legacy `pages` collection but only sees pre-consolidation entries.
+  // To pick up newly-authored pages, resolve the `page` PostType id and
+  // query posts by it. The picker UI doesn't change — Post has the same
+  // `_id`, `title`, `slug` shape as the legacy Page interface.
   const loadPages = useCallback(async () => {
     if (pages.length > 0) return;
     setIsLoadingData(true);
     try {
-      const result = await getPages({ limit: 200, sortBy: 'title.en', sortOrder: 'asc' });
+      const ptResult = await getPostTypeReference();
+      const ptList: any[] = Array.isArray(ptResult?.data)
+        ? ptResult.data
+        : (ptResult?.data as any)?.data || [];
+      const pageType = ptList.find((pt: any) => pt.slug === 'page');
+      if (!pageType) {
+        // Fallback to legacy pages collection if the page PostType
+        // hasn't been seeded yet (older orgs).
+        const legacy = await getPages({
+          limit: 200,
+          sortBy: 'title.en',
+          sortOrder: 'asc',
+        });
+        if (legacy.success && legacy.data) {
+          const data = Array.isArray(legacy.data)
+            ? legacy.data
+            : (legacy.data as any).data || [];
+          setPages(data);
+        }
+        return;
+      }
+      const result = await getPosts({
+        postTypeId: pageType.id,
+        limit: 200,
+        sortBy: 'title.en',
+        sortOrder: 'asc',
+      });
       if (result.success && result.data) {
-        const pagesData = Array.isArray(result.data) ? result.data : (result.data.data || []);
-        setPages(pagesData);
+        const data = (result.data as any).data || [];
+        setPages(data as any);
       }
     } catch (error) {
       console.error('Failed to load pages:', error);
@@ -352,7 +405,8 @@ export function NavigationForm({
   useEffect(() => {
     if (navigationType === 'page') loadPages();
     else if (navigationType === 'category') loadCategories();
-    else if (navigationType === 'post') loadPostTypes();
+    else if (navigationType === 'post' || navigationType === 'posts')
+      loadPostTypes();
   }, [navigationType, loadPages, loadCategories, loadPostTypes]);
 
   // Initialize post type for edit mode
@@ -383,13 +437,35 @@ export function NavigationForm({
     }
   }, [selectedPostTypeId, loadPosts]);
 
-  // Clear related fields when type changes
+  // Clear picker IDs whenever the type changes.
   useEffect(() => {
     if (navigationType !== 'page') setValue('pageId', undefined);
     if (navigationType !== 'category') setValue('categoryId', undefined);
     if (navigationType !== 'post') {
       setValue('postId', undefined);
       setSelectedPostTypeId('');
+    }
+  }, [navigationType, setValue]);
+
+  // Clear `url` ONLY on a user-driven type change (not on initial
+  // mount / edit-form hydration). `url` is type-specific:
+  //   - external / custom → author-typed URL
+  //   - posts             → `/post/<typeSlug>` written by the dropdown
+  //   - page / post / category → computed on submit from the picker
+  // Carrying a stale URL across a type switch caused the
+  // "(none selected)" bug for `posts` type, where a value like
+  // `/posts?type=news` survived a switch from type=custom and the
+  // slug-extractor couldn't match it. The `prevTypeRef` skips the
+  // first run so existing saved URLs still hydrate correctly.
+  const prevTypeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevTypeRef.current === null) {
+      prevTypeRef.current = navigationType;
+      return;
+    }
+    if (prevTypeRef.current !== navigationType) {
+      setValue('url', '');
+      prevTypeRef.current = navigationType;
     }
   }, [navigationType, setValue]);
 
@@ -503,8 +579,54 @@ export function NavigationForm({
   const onSubmit = (data: NavigationFormData) => {
     startTransition(async () => {
       try {
+        // Auto-compute the navigation `url` field for picker-based
+        // link types (page / post / category) so the public-side
+        // renderer can route on `url` alone — the publicWeb's
+        // `generateHref` doesn't know about postId/categoryId.
+        //
+        //   - page     → `/<slug>`              (pages live at the
+        //                                        root `/[slug]` route)
+        //   - post     → `/post/<typeSlug>/<slug>` (matches the
+        //                                          detail route)
+        //   - category → `/category/<slug>`
+        //
+        // Author-supplied `url` for `internal`/`external`/`custom`
+        // types passes through unchanged.
+        let computedUrl: string | undefined = data.url;
+        if (data.type === "post" && data.postId) {
+          const p: any = posts.find((x: any) => x._id === data.postId);
+          if (p?.slug) {
+            const seg = p.postTypeSlug || "article";
+            computedUrl = `/post/${seg}/${p.slug}`;
+          }
+        } else if (data.type === "page" && data.pageId) {
+          const pg: any = pages.find((x: any) => x._id === data.pageId);
+          if (pg?.slug) {
+            computedUrl = `/${pg.slug}`;
+          }
+        } else if (data.type === "category" && data.categoryId) {
+          // Walk the (possibly nested) category tree to find the
+          // selected category's slug — categories may be returned
+          // as a tree by the admin loader.
+          const findCat = (list: any[]): any | null => {
+            for (const c of list) {
+              if (c?._id === data.categoryId) return c;
+              if (Array.isArray(c?.children)) {
+                const hit = findCat(c.children);
+                if (hit) return hit;
+              }
+            }
+            return null;
+          };
+          const cat = findCat(categories as any[]);
+          if (cat?.slug) {
+            computedUrl = `/category/${cat.slug}`;
+          }
+        }
+
         const submitData = {
           ...data,
+          url: computedUrl,
           menuType,
           parentId: data.parentId || undefined,
           pageId: data.pageId || undefined,
@@ -517,11 +639,17 @@ export function NavigationForm({
         if (mode === 'create') {
           result = await createNavigationItem(submitData as any);
         } else if (initialData?._id) {
-          const updateData = {
-            ...submitData,
-            version: (initialData as Navigation).version,
-          };
-          result = await updateNavigationItem(initialData._id, updateData as any);
+          // Don't send `version` — the admin form loads `initialData`
+          // once and never refreshes it after subsequent saves, so the
+          // value goes stale (form keeps `0` while the doc moves to
+          // `1+`). The backend service has an `updateNavigationDto
+          // .version === undefined` branch that fetches the current
+          // version itself, which is what we want for an admin who
+          // owns the doc and doesn't have concurrent editors fighting
+          // over the same item. Sending the stale `0` here is what
+          // produced the `NAVIGATION_VERSION_CONFLICT` after the very
+          // first successful save in a session.
+          result = await updateNavigationItem(initialData._id, submitData as any);
         } else {
           throw new Error('Navigation item ID is required for update');
         }
@@ -873,6 +1001,57 @@ export function NavigationForm({
                 </FormItem>
               )}
             />
+          ) : navigationType === 'posts' ? (
+            // Post type list — pick a post type, store the resulting
+            // `/post/<slug>` URL directly in `url` so the public side
+            // routes correctly. No separate db field needed.
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => {
+                // Read the current selection back from the saved URL
+                // so editing pre-populates the dropdown.
+                const currentSlug =
+                  typeof field.value === 'string' &&
+                  field.value.startsWith('/post/')
+                    ? field.value.slice('/post/'.length).split('/')[0]
+                    : '';
+                return (
+                  <FormItem>
+                    <FormLabel>Post type</FormLabel>
+                    <Select
+                      value={currentSlug || '__none__'}
+                      onValueChange={(v) =>
+                        field.onChange(v === '__none__' ? '' : `/post/${v}`)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pick a post type…" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">
+                          (none selected)
+                        </SelectItem>
+                        {postTypes.map((pt: any) => (
+                          <SelectItem
+                            key={pt._id}
+                            value={pt.slug ?? pt._id}
+                          >
+                            {safeString(pt.name?.en) ||
+                              safeString(pt.name?.mm) ||
+                              safeString(pt.slug) ||
+                              'Untitled'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
           ) : (
             <FormField
               control={form.control}
@@ -1091,6 +1270,31 @@ export function NavigationForm({
                 />
               </FormControl>
               <FormLabel className="!mt-0">Requires authentication</FormLabel>
+            </FormItem>
+          )}
+        />
+
+        {/* Mega-menu toggle. Only meaningful for items that have
+            children. The public renderer ignores this when the
+            item is a leaf, but exposing it on every item keeps the
+            UI symmetric and lets authors pre-configure before
+            adding children. */}
+        <FormField
+          control={form.control}
+          name="displayType"
+          render={({ field }) => (
+            <FormItem className="flex items-center gap-2">
+              <FormControl>
+                <Checkbox
+                  checked={field.value === "mega"}
+                  onCheckedChange={(checked) =>
+                    field.onChange(checked ? "mega" : "dropdown")
+                  }
+                />
+              </FormControl>
+              <FormLabel className="!mt-0">
+                Display as mega menu
+              </FormLabel>
             </FormItem>
           )}
         />

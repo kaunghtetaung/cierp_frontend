@@ -62,6 +62,10 @@ export interface ContactInfo {
   address?: MultiLanguageText;
   phone?: string;
   email?: string;
+  showMap?: boolean;
+  mapEmbedUrl?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 // ============================================
@@ -73,7 +77,9 @@ export interface FooterSettings {
   showSocialLinks: boolean;
   showCopyright: boolean;
   showBackToTop: boolean;
+  showVisitorCount?: boolean;
   copyrightText?: MultiLanguageText;
+  openHours?: MultiLanguageText;
   socialLinks: SocialLink[];
   contactInfo: ContactInfo;
   columns: FooterColumn[];
@@ -87,6 +93,9 @@ export interface Settings extends BaseEntity {
   // Theme
   homePageId?: string;
   themeName: string;
+  /** Optional palette / preset variant within the chosen theme.
+   *  See `@repo/types/themes` for the catalogue. */
+  themeVariant?: string;
   layout: Layout;
   enableHeaderMenu: boolean;
   enableFooterMenu: boolean;
@@ -104,6 +113,10 @@ export interface Settings extends BaseEntity {
   metaKeywords?: string[];
   // Other
   allowCustomDepartmentBanner: boolean;
+  // Site-wide fallback featured image (MinIO key, e.g.
+  // "content/public/uploads/default-hero.jpg"). Rendered when a
+  // post lacks `featuredImage` of its own.
+  defaultFeatureImage?: string;
 }
 
 // ============================================
@@ -113,6 +126,7 @@ export interface Settings extends BaseEntity {
 export interface UpdateSettingsDto {
   homePageId?: string;
   themeName?: string;
+  themeVariant?: string;
   layout?: Partial<Layout>;
   enableHeaderMenu?: boolean;
   enableFooterMenu?: boolean;
@@ -126,6 +140,7 @@ export interface UpdateSettingsDto {
   metaDescription?: string;
   metaKeywords?: string[];
   allowCustomDepartmentBanner?: boolean;
+  defaultFeatureImage?: string;
 }
 
 // ============================================

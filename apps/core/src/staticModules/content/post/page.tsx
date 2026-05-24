@@ -1,17 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useTransition, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
   CardHeader,
-} from '@repo/ui';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from '@repo/ui';
 import {
   DropdownMenu,
@@ -66,22 +60,20 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { getPosts, deletePost, publishPost, unpublishPost, archivePost, restorePost } from '../common/actions';
-import { getCategories } from '../common/actions';
 import type { Post, ContentStatus } from '../common/types';
-import type { Category } from '../common/types';
-import { PostForm } from './PostForm';
 
-export default function PostPage() {
+interface PostPageProps {
+  appId: string;
+}
+
+export default function PostPage({ appId }: PostPageProps) {
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ContentStatus | 'all'>('all');
 
-  // Dialog states
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [deletingPost, setDeletingPost] = useState<Post | null>(null);
 
   // Pagination
@@ -125,33 +117,18 @@ export default function PostPage() {
     }
   }, [currentPage, statusFilter, searchQuery]);
 
-  // Load categories for form
-  const loadCategories = useCallback(async () => {
-    try {
-      const result = await getCategories({});
-      if (result.success && result.data) {
-        setCategories(result.data.data || []);
-      }
-    } catch (error) {
-      console.error('Load categories error:', error);
-    }
-  }, []);
-
   useEffect(() => {
     loadPosts();
-    loadCategories();
-  }, [loadPosts, loadCategories]);
+  }, [loadPosts]);
 
-  // Handle create
+  // Handle create — navigate to the full-page create route.
   const handleCreate = () => {
-    setEditingPost(null);
-    setIsFormOpen(true);
+    router.push(`/${appId}/post/new`);
   };
 
-  // Handle edit
+  // Handle edit — navigate to the full-page edit route.
   const handleEdit = (post: Post) => {
-    setEditingPost(post);
-    setIsFormOpen(true);
+    router.push(`/${appId}/post/${post._id}`);
   };
 
   // Handle delete
@@ -251,13 +228,6 @@ export default function PostPage() {
         toastError('Failed to restore post');
       }
     });
-  };
-
-  // Handle form success
-  const handleFormSuccess = () => {
-    setIsFormOpen(false);
-    setEditingPost(null);
-    loadPosts();
   };
 
   // Get status badge variant
@@ -508,29 +478,6 @@ export default function PostPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingPost ? 'Edit Post' : 'Create New Post'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingPost
-                ? 'Update the post details below'
-                : 'Fill in the details to create a new post'}
-            </DialogDescription>
-          </DialogHeader>
-          <PostForm
-            mode={editingPost ? 'edit' : 'create'}
-            initialData={editingPost || undefined}
-            categories={categories}
-            onSuccess={handleFormSuccess}
-            onCancel={() => setIsFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingPost} onOpenChange={() => setDeletingPost(null)}>

@@ -6,11 +6,21 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@repo/ui';
 import { Button } from '@repo/ui';
 import { FileBrowser, type MediaFile, type MediaServerActions } from '@repo/media';
 import type { MediaBrowserConfig } from '@repo/types';
+import { PanelLeftClose, PanelLeft, Upload, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+
+// Upload progress tracking
+interface UploadItem {
+  id: string;
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'success' | 'error';
+  error?: string;
+}
 
 // Folder tree structure (same as media module)
 interface FolderNode {
@@ -42,6 +52,9 @@ export function MediaBrowserDialog({
 }: MediaBrowserDialogProps) {
   const [selectedPath, setSelectedPath] = useState(config.basePath || 'public');
   const [selectedFiles, setSelectedFiles] = useState<MediaFile[]>([]);
+  const [showSidebar, setShowSidebar] = useState(false); // Sidebar hidden by default
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([]);
 
   // Default expiry options (in seconds)
   const defaultExpiryOptions = [
@@ -141,6 +154,72 @@ export function MediaBrowserDialog({
     onClose();
   };
 
+  const handleUpload = useCallback(async (files: File[]) => {
+    try {
+      const { uploadMediaAction } = await import('@/actions/media');
+
+      // Process files sequentially with progress tracking
+      for (const file of files) {
+        const uploadId = `${file.name}-${Date.now()}`;
+
+        // Add to upload queue
+        setUploadQueue(prev => [...prev, {
+          id: uploadId,
+          fileName: file.name,
+          progress: 0,
+          status: 'uploading',
+        }]);
+
+        // Simulate progress updates
+        const progressInterval = setInterval(() => {
+          setUploadQueue(prev => prev.map(item =>
+            item.id === uploadId && item.progress < 85
+              ? { ...item, progress: Math.min(item.progress + 15, 85) }
+              : item
+          ));
+        }, 300);
+
+        try {
+          await uploadMediaAction({
+            tenantId,
+            app: appId,
+            path: selectedPath,
+            file,
+          });
+
+          // Upload successful
+          clearInterval(progressInterval);
+          setUploadQueue(prev => prev.map(item =>
+            item.id === uploadId
+              ? { ...item, progress: 100, status: 'success' }
+              : item
+          ));
+        } catch (uploadError) {
+          // Upload failed
+          clearInterval(progressInterval);
+          setUploadQueue(prev => prev.map(item =>
+            item.id === uploadId
+              ? {
+                  ...item,
+                  status: 'error',
+                  error: uploadError instanceof Error ? uploadError.message : 'Upload failed'
+                }
+              : item
+          ));
+        }
+      }
+
+      // Refresh the file list after all uploads complete
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Upload failed:', error);
+    }
+  }, [tenantId, appId, selectedPath]);
+
+  const handleDismissUpload = useCallback((id: string) => {
+    setUploadQueue(prev => prev.filter(item => item.id !== id));
+  }, []);
+
   const getDialogClassName = () => {
     const size = config.dialogSize || 'xl';
     const sizeClasses = {
@@ -153,16 +232,31 @@ export function MediaBrowserDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className={`${getDialogClassName()} h-[80vh]`}>
-        <DialogHeader>
-          <DialogTitle>Select Media File(s)</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleCancel}>
+        <DialogContent className={`${getDialogClassName()} h-[80vh]`}>
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              {/* Sidebar Toggle Button */}
+              {config.showFolderTree !== false && (
+                <button
+                  type="button"
+                  onClick={() => setShowSidebar(!showSidebar)}
+                  className="p-2 hover:bg-gray-100 rounded-md"
+                  aria-label={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
+                  title={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
+                >
+                  {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+                </button>
+              )}
+              <DialogTitle>Select Media File(s)</DialogTitle>
+            </div>
+          </DialogHeader>
 
         {/* Main content */}
         <div className="flex h-full overflow-hidden">
-          {/* Folder Tree Sidebar (if enabled) */}
-          {config.showFolderTree !== false && (
+          {/* Folder Tree Sidebar (hidden by default, toggleable) */}
+          {config.showFolderTree !== false && showSidebar && (
             <div className="w-64 border-r border-gray-200 overflow-auto pr-4">
               <FolderTreeView
                 folders={folderTree}
@@ -173,8 +267,9 @@ export function MediaBrowserDialog({
           )}
 
           {/* File Browser */}
-          <div className="flex-1 overflow-auto pl-4">
+          <div className={`flex-1 overflow-auto ${showSidebar ? 'pl-4' : ''}`}>
             <FileBrowser
+              key={refreshTrigger}
               app={appId}
               tenantId={tenantId}
               basePath={selectedPath}
@@ -190,6 +285,25 @@ export function MediaBrowserDialog({
                 canDelete: false,
                 canCreateFolder: false,
               }}
+              onUploadClick={
+                config.allowUpload !== false
+                  ? () => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.multiple = true;
+                      if (config.allowedTypes && config.allowedTypes.length > 0) {
+                        input.accept = config.allowedTypes.join(',');
+                      }
+                      input.onchange = (e) => {
+                        const files = Array.from((e.target as HTMLInputElement).files || []);
+                        if (files.length > 0) {
+                          handleUpload(files);
+                        }
+                      };
+                      input.click();
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>
@@ -245,7 +359,130 @@ export function MediaBrowserDialog({
           </div>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+
+      {/* Upload Progress Indicator - Rendered outside Dialog */}
+      {uploadQueue.length > 0 && (
+        <UploadProgressIndicator uploads={uploadQueue} onDismiss={handleDismissUpload} />
+      )}
+    </>
+  );
+}
+
+/**
+ * Upload Progress Indicator Component
+ * Shows progress for file uploads with status (same as media module)
+ */
+function UploadProgressIndicator({
+  uploads,
+  onDismiss,
+}: {
+  uploads: UploadItem[];
+  onDismiss?: (id: string) => void;
+}) {
+  if (uploads.length === 0) {
+    return null;
+  }
+
+  const activeUploads = uploads.filter((u) => u.status === 'uploading');
+  const completedUploads = uploads.filter((u) => u.status !== 'uploading');
+
+  return (
+    <div
+      className="fixed bottom-4 right-4 w-96 max-h-96 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200"
+      style={{ zIndex: 1080 }}
+    >
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3">
+        <h3 className="font-semibold text-gray-900">
+          {activeUploads.length > 0 ? (
+            <span>
+              Uploading {activeUploads.length} file{activeUploads.length > 1 ? 's' : ''}
+            </span>
+          ) : (
+            <span>Upload Complete</span>
+          )}
+        </h3>
+      </div>
+
+      {/* Upload Items */}
+      <div className="divide-y divide-gray-100">
+        {uploads.map((upload) => (
+          <div key={upload.id} className="px-4 py-3">
+            <div className="flex items-start gap-3">
+              {/* Icon */}
+              <div className="flex-shrink-0 mt-0.5">
+                {upload.status === 'uploading' && (
+                  <Loader2 size={18} className="text-blue-500 animate-spin" />
+                )}
+                {upload.status === 'success' && (
+                  <CheckCircle size={18} className="text-green-500" />
+                )}
+                {upload.status === 'error' && (
+                  <XCircle size={18} className="text-red-500" />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {upload.fileName}
+                  </p>
+                  {upload.status !== 'uploading' && onDismiss && (
+                    <button
+                      type="button"
+                      onClick={() => onDismiss(upload.id)}
+                      className="text-gray-400 hover:text-gray-600"
+                      title="Dismiss"
+                      aria-label="Dismiss upload"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                {upload.status === 'uploading' && (
+                  <div className="space-y-1">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${upload.progress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">{upload.progress}%</p>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {upload.status === 'error' && upload.error && (
+                  <p className="text-xs text-red-600 mt-1">{upload.error}</p>
+                )}
+
+                {/* Success Message */}
+                {upload.status === 'success' && (
+                  <p className="text-xs text-green-600 mt-1">Upload complete</p>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Clear All Button */}
+      {completedUploads.length > 0 && activeUploads.length === 0 && (
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 py-2">
+          <button
+            type="button"
+            onClick={() => completedUploads.forEach((u) => onDismiss?.(u.id))}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

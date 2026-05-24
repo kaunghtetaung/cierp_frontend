@@ -141,9 +141,21 @@ export const CacheKeys = {
   rateLimitIP: (tenantId: string, ip: string) => `ciApp:${tenantId}:RateLimit:IP:${ip}`,
   
   // Analytics and metrics
-  analytics: (tenantId: string, metric: string, period: string) => 
+  analytics: (tenantId: string, metric: string, period: string) =>
     `ciApp:${tenantId}:Analytics:${metric}:${period}`,
-  
+
+  // Media namespace - folder-level caching for S3 file listings
+  mediaFolderListing: (tenantId: string, app: string, path: string) =>
+    `ciApp:${tenantId}:Media:Listing:${app}:${path}`,
+  mediaFolderMetadata: (tenantId: string, app: string, path: string) =>
+    `ciApp:${tenantId}:Media:Metadata:${app}:${path}`,
+  // Pattern for invalidating all listings in an app
+  mediaFolderPattern: (tenantId: string, app: string) =>
+    `ciApp:${tenantId}:Media:Listing:${app}:*`,
+  // Pattern for invalidating specific path and all subpaths
+  mediaFolderPathPattern: (tenantId: string, app: string, path: string) =>
+    `ciApp:${tenantId}:Media:Listing:${app}:${path}*`,
+
   // Lock keys for preventing race conditions
   lock: (tenantId: string, resource: string) => `ciApp:${tenantId}:Lock:${resource}`,
   

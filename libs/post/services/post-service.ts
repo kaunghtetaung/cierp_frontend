@@ -286,52 +286,65 @@ const getPostService = async () => {
   return postServiceInstance;
 };
 
-// Export standalone functions that use the service instance
-export const getPostBySlug = (slug: string, populate: boolean = true) =>
-  getPostService().getPostBySlug(slug, populate);
-export const getPostsList = (options: PostListOptions = {}) =>
-  getPostService().getPostsList(options);
-export const getPublicPosts = (
+// Export standalone functions that use the service instance.
+//
+// `getPostService` is async (it pulls the per-request API base URL
+// from request headers) so every standalone export here MUST `await`
+// it before calling a method — calling `.foo()` on the returned
+// Promise produces "X is not a function" at runtime.
+//
+// Async-class methods are awaited in turn so the caller sees the
+// underlying value (not a Promise<Promise<T>>).
+export const getPostBySlug = async (slug: string, populate: boolean = true) =>
+  (await getPostService()).getPostBySlug(slug, populate);
+export const getPostsList = async (options: PostListOptions = {}) =>
+  (await getPostService()).getPostsList(options);
+export const getPublicPosts = async (
   options: Omit<PostListOptions, "status" | "visibility"> = {}
-) => getPostService().getPublicPosts(options);
-export const getFeaturedPosts = (limit?: number) =>
-  getPostService().getFeaturedPosts(limit);
-export const getPostsByCategory = (
+) => (await getPostService()).getPublicPosts(options);
+export const getFeaturedPosts = async (limit?: number) =>
+  (await getPostService()).getFeaturedPosts(limit);
+export const getPostsByCategory = async (
   categorySlug: string,
   options: PostListOptions = {}
-) => getPostService().getPostsByCategory(categorySlug, options);
-export const getPostsByTag = (tagSlug: string, options: PostListOptions = {}) =>
-  getPostService().getPostsByTag(tagSlug, options);
-export const incrementPostViews = (slug: string) =>
-  getPostService().incrementPostViews(slug);
-export const isPostAccessible = (slug: string) =>
-  getPostService().isPostAccessible(slug);
-export const getCategoryBySlug = (slug: string) =>
-  getPostService().getCategoryBySlug(slug);
-export const getCategories = () => getPostService().getCategories();
-export const getTagBySlug = (slug: string) =>
-  getPostService().getTagBySlug(slug);
-export const getTags = () => getPostService().getTags();
-export const searchPosts = (query: string, options: PostListOptions = {}) =>
-  getPostService().searchPosts(query, options);
-export const isValidPostData = (
+) => (await getPostService()).getPostsByCategory(categorySlug, options);
+export const getPostsByTag = async (
+  tagSlug: string,
+  options: PostListOptions = {}
+) => (await getPostService()).getPostsByTag(tagSlug, options);
+export const incrementPostViews = async (slug: string) =>
+  (await getPostService()).incrementPostViews(slug);
+export const isPostAccessible = async (slug: string) =>
+  (await getPostService()).isPostAccessible(slug);
+export const getCategoryBySlug = async (slug: string) =>
+  (await getPostService()).getCategoryBySlug(slug);
+export const getCategories = async () => (await getPostService()).getCategories();
+export const getTagBySlug = async (slug: string) =>
+  (await getPostService()).getTagBySlug(slug);
+export const getTags = async () => (await getPostService()).getTags();
+export const searchPosts = async (
+  query: string,
+  options: PostListOptions = {}
+) => (await getPostService()).searchPosts(query, options);
+export const isValidPostData = async (
   data: any
-): data is BasePostData | PopulatedPostData =>
-  getPostService().isValidPostData(data);
-export const validatePost = (slug: string) =>
-  getPostService().validatePost(slug);
-export const getPostMeta = (slug: string) => getPostService().getPostMeta(slug);
-export const clearPostCache = (tenantId?: string, slug?: string) =>
-  getPostService().clearPostCache(tenantId, slug);
-export const getLocalizedText = (
+): Promise<boolean> =>
+  (await getPostService()).isValidPostData(data);
+export const validatePost = async (slug: string) =>
+  (await getPostService()).validatePost(slug);
+export const getPostMeta = async (slug: string) =>
+  (await getPostService()).getPostMeta(slug);
+export const clearPostCache = async (tenantId?: string, slug?: string) =>
+  (await getPostService()).clearPostCache(tenantId, slug);
+export const getLocalizedText = async (
   text: MultiLanguageText | string | undefined,
   language?: string
-) => getPostService().getLocalizedText(text, language);
-export const getPostUrl = (slug: string, baseUrl?: string) =>
-  getPostService().getPostUrl(slug, baseUrl);
-export const isPostPublished = (post: BasePostData) =>
-  getPostService().isPostPublished(post);
-export const generatePostExcerpt = (content: string, maxLength?: number) =>
-  getPostService().generatePostExcerpt(content, maxLength);
-export const calculateReadingTime = (content: string, language?: string) =>
-  getPostService().calculateReadingTime(content, language);
+) => (await getPostService()).getLocalizedText(text, language);
+export const getPostUrl = async (slug: string, baseUrl?: string) =>
+  (await getPostService()).getPostUrl(slug, baseUrl);
+export const isPostPublished = async (post: BasePostData) =>
+  (await getPostService()).isPostPublished(post);
+export const generatePostExcerpt = async (content: string, maxLength?: number) =>
+  (await getPostService()).generatePostExcerpt(content, maxLength);
+export const calculateReadingTime = async (content: string, language?: string) =>
+  (await getPostService()).calculateReadingTime(content, language);

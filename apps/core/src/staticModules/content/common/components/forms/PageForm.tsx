@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * @deprecated Pages have been consolidated into the Post collection
+ * (PostType.slug='page'). Authoring goes through `PostForm.tsx` +
+ * `PageDetailsCard.tsx`. This file is orphaned (no importers as of
+ * 2026-04-29) and will be removed when the legacy `pages` collection
+ * is retired — see `project_deferred_work.md` item #8.
+ */
+
 import React, { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

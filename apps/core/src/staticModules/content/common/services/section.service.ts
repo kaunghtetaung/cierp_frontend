@@ -89,6 +89,12 @@ export class SectionService {
       if (params.departmentId) queryParams.set('departmentId', params.departmentId);
       if (params.includeDeleted !== undefined) queryParams.set('includeDeleted', String(params.includeDeleted));
       if (params.language) queryParams.set('language', params.language);
+      // Forward both `page` (1-indexed) and `skip` so callers can use
+      // whichever the backend expects. The Section service reads
+      // `page` and computes its own skip; without this branch the
+      // pagination controls in the admin list never advanced past
+      // page 1.
+      if (params.page !== undefined) queryParams.set('page', String(params.page));
       if (params.skip !== undefined) queryParams.set('skip', String(params.skip));
       if (params.limit !== undefined) queryParams.set('limit', String(params.limit));
       if (params.sortBy) queryParams.set('sortBy', params.sortBy);
