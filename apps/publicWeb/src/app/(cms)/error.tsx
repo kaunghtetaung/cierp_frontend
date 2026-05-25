@@ -3,8 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { Home, RefreshCw, AlertTriangle, Mail } from "lucide-react";
-import { reportError } from "@repo/utils/common";
-import { getClientRequestContext } from "@repo/utils/client/error-context";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -12,15 +10,16 @@ interface ErrorProps {
 }
 
 /**
- * Route-level error boundary for unmatched non-cms routes (and as
- * a fallback when the inner `(cms)/error.tsx` boundary itself fails
- * to mount). Catches runtime errors that bubble up from a page
- * during render. Provider-less — has to render even when the
- * LanguageProvider tree failed to mount, so reads the language
- * cookie directly (same pattern as root `not-found.tsx`).
+ * Theme-aware error boundary for CMS routes.
  *
- * Visual language matches the redesigned 404 page (oversized
- * status, gradient background, bilingual copy, icon buttons).
+ * Wrapped by `(cms)/layout.tsx`'s `<ThemeLayout>` chrome — so the
+ * active theme's header + footer surround this content. Matches
+ * the same visual language as `(cms)/not-found.tsx`.
+ *
+ * Must be a client component (Next.js error boundary requirement —
+ * needs `reset()` and error access). Reads language from cookie
+ * directly because the LanguageProvider may not be reachable if
+ * the error happened during provider mount.
  */
 function readLanguageCookie(): "en" | "mm" {
   if (typeof document === "undefined") return "en";
@@ -52,32 +51,19 @@ const T = {
   },
 } as const;
 
-export default function ErrorPage({ error, reset }: ErrorProps) {
+export default function CMSErrorPage({ error, reset }: ErrorProps) {
   const [lang, setLang] = React.useState<"en" | "mm">("en");
   React.useEffect(() => {
     setLang(readLanguageCookie());
   }, []);
-  const m = T[lang];
-
-  // Report error to telemetry once on mount. Failures swallowed —
-  // a degraded error-reporter shouldn't itself crash the error
-  // page. We pass the raw Error + request context; the reporter
-  // handles classification (its handle() path infers error type).
   React.useEffect(() => {
-    try {
-      const requestContext = getClientRequestContext();
-      (reportError as any)(error, requestContext)?.catch?.((err: unknown) =>
-        console.error("Failed to report error:", err),
-      );
-    } catch (reportErr) {
-      console.error("Application error:", error, reportErr);
-    }
+    console.error("CMS error boundary caught:", error);
   }, [error]);
-
+  const m = T[lang];
   const isDev = process.env.NODE_ENV === "development";
 
   return (
-    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-background via-background to-muted/40 px-4 py-12">
+    <section className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-background via-background to-muted/40 px-4 py-20 sm:py-28">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-destructive/20 blur-3xl"
@@ -148,6 +134,6 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
           </details>
         )}
       </div>
-    </main>
+    </section>
   );
 }

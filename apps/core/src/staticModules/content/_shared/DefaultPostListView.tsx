@@ -353,7 +353,13 @@ export function DefaultPostListView({
     // a trailing `/edit` would route through the catch-all
     // `[...slug]/page.tsx` which looks for an `<id>/edit/` folder
     // that doesn't exist.
-    router.push(`/${appId}/post/${post._id}`);
+    //
+    // Pass `postTypeSlug` so edit.tsx can route the user back to the
+    // *type-specific* list after save (e.g. `/content/news` for news).
+    // Without this, save lands on `/content/post` regardless of type.
+    router.push(
+      `/${appId}/post/${post._id}?postTypeSlug=${postTypeSlug}`,
+    );
   };
 
   const handleView = (post: Post) => {

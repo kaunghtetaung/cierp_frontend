@@ -6,6 +6,7 @@ export * from "./security";
 export * from "./formatters";
 export * from "./localization";
 export * from "./styles";
+export * from "./sanitize-html";
 
 // Date utilities
 export * from "./date";

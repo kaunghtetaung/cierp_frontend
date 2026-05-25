@@ -1,4 +1,5 @@
 import React from "react";
+import { sanitizeHtml } from "@repo/utils/common";
 import { tiptapJsonToHtml } from "../../section/post-body/tiptap-render";
 
 /**
@@ -87,7 +88,7 @@ export function ArticleBody({
       // the comment block in `globals.css` for the full rationale.
       className="prose prose-neutral dark:prose-invert max-w-none w-full"
       data-post-body="article"
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
     />
   );
 }

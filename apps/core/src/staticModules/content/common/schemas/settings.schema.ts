@@ -16,6 +16,9 @@ import {
 // ============================================
 
 export const headerSettingsSchema = z.object({
+  variant: z.string().optional(),
+  menuType: z.string().optional(),
+  secondaryMenuType: z.string().optional(),
   enabled: z.boolean().default(true),
   showSearch: z.boolean().default(true),
   showLanguageSelector: z.boolean().default(true),
@@ -79,6 +82,8 @@ export type ContactInfoFormData = z.infer<typeof contactInfoSchema>;
 // ============================================
 
 export const footerSettingsSchema = z.object({
+  variant: z.string().optional(),
+  menuType: z.string().optional(),
   enabled: z.boolean().default(true),
   showSocialLinks: z.boolean().default(true),
   showCopyright: z.boolean().default(true),

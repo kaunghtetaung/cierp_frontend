@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@repo/ui';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toastError } from '@repo/utils';
@@ -16,9 +16,25 @@ interface PostEditPageProps {
 
 export default function PostEditPage({ appId, itemId }: PostEditPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Derive the post-type slug so save-and-close lands on the *same*
+  // list the user came from (e.g. `/content/page` for pages,
+  // `/content/news` for news). Priority:
+  //   1. `?postTypeSlug=` query — set by `DefaultPostListView.handleEdit`
+  //      so the list view passes its own slug through.
+  //   2. The loaded post's denormalised `postTypeSlug` (when the
+  //      backend populates it).
+  //   3. Generic `/post` fallback.
+  // Without this, edit.tsx always shipped users to `/post`, ignoring
+  // whichever PostType the page-as-post belongs to.
+  const postTypeSlug =
+    searchParams?.get('postTypeSlug') ||
+    (post as any)?.postTypeSlug ||
+    'post';
 
   const reload = async () => {
     setLoading(true);
@@ -45,7 +61,7 @@ export default function PostEditPage({ appId, itemId }: PostEditPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemId]);
 
-  const goBack = () => router.push(`/${appId}/post`);
+  const goBack = () => router.push(`/${appId}/${postTypeSlug}`);
 
   if (loading) {
     return (

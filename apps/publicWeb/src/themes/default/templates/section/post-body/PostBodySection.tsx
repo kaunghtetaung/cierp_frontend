@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import { sanitizeHtml } from "@repo/utils/common";
 import type { PostBodySectionData, SectionProps } from "../types";
 import { usePostContent } from "./PostContentContext";
 import { tiptapJsonToHtml } from "./tiptap-render";
@@ -69,7 +70,7 @@ export function PostBodySection({
         className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 min-h-[82vh]"
         data-section-type="postBody"
         data-rich-html
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
       />
       {/* Lightbox: listens for clicks on img[data-lightbox] inside
            the article above and opens a fullscreen modal viewer.

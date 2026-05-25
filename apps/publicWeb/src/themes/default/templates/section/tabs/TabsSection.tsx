@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { sanitizeHtml } from "@repo/utils/common";
 import type { TabsSectionData, SectionProps } from "../types";
 import { getLocalizedText } from "../utils";
 import { getSectionSpacingStyles, hasAnySpacing } from "../section-spacing";
@@ -89,7 +90,7 @@ export function TabsSection({
               <div
                 data-rich-html
                 className="text-muted-foreground max-w-3xl"
-                dangerouslySetInnerHTML={{ __html: description }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
               />
             )}
           </div>
@@ -172,7 +173,7 @@ function Panel({ html, plain }: { html?: string; plain?: string }) {
       <div
         data-rich-html
         className="bg-card border border-border rounded-lg p-5"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
       />
     );
   }

@@ -51,6 +51,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Defense-in-depth: reject path traversal patterns in user-
+    // supplied filePath and app params. S3/MinIO treat keys as
+    // literal strings so `..` doesn't enable traversal at the
+    // storage layer today — but a future cache layer or a
+    // filesystem-backed MinIO gateway would, so reject at the
+    // edge. Allowlist: alphanumerics, slash, dot, dash, underscore.
+    const SAFE_PATH = /^[a-zA-Z0-9/_.-]+$/;
+    const HAS_TRAVERSAL = /(^|\/)\.\.(\/|$)/;
+    if (
+      !SAFE_PATH.test(filePath) ||
+      HAS_TRAVERSAL.test(filePath) ||
+      filePath.includes('\0')
+    ) {
+      console.warn('[PDF_PROXY] Rejected unsafe file path:', filePath);
+      return NextResponse.json(
+        { error: 'Invalid file path' },
+        { status: 400 }
+      );
+    }
+    if (!SAFE_PATH.test(app) || HAS_TRAVERSAL.test(app) || app.includes('\0')) {
+      console.warn('[PDF_PROXY] Rejected unsafe app param:', app);
+      return NextResponse.json(
+        { error: 'Invalid app parameter' },
+        { status: 400 }
+      );
+    }
+
     // Validate session using cookies
     const cookieStore = await cookies();
     const sessionId = cookieStore.get(COOKIE_NAMES.SESSION)?.value;

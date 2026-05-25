@@ -7,6 +7,7 @@ export * from "./error-context";
 export * from "./error-handler";
 export * from "./middleware-error-wrapper";
 export * from "./console-wrapper";
+export * from "../common/sanitize-html";
 
 // Re-export selected common utilities (avoiding conflicts)
 export * from "../common/date";

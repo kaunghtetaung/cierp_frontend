@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
+import { sanitizeHtml } from "@repo/utils/common";
 import { Button } from "@/styled-components/ui/Button";
 import { FaqSectionData, SectionProps } from "../types";
 import { getLocalizedText } from "../utils";
@@ -150,9 +151,11 @@ export function FaqSection({
                     data-rich-html
                     className="pt-4"
                     dangerouslySetInnerHTML={{
-                      __html: getLocalizedText(
-                        (faq as any).answerHtml,
-                        currentLanguage,
+                      __html: sanitizeHtml(
+                        getLocalizedText(
+                          (faq as any).answerHtml,
+                          currentLanguage,
+                        ),
                       ),
                     }}
                   />

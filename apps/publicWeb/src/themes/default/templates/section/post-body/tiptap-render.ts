@@ -25,6 +25,8 @@
  * through `dompurify` BEFORE rendering.
  */
 
+import { safeUrl, safeImageUrl } from '@repo/utils/common';
+
 type Json = any;
 
 const escapeMap: Record<string, string> = {
@@ -67,7 +69,11 @@ function applyMarks(text: string, marks: Json[] | undefined): string {
         html = `<code>${html}</code>`;
         break;
       case 'link': {
-        const href = escapeAttr(m.attrs?.href ?? '#');
+        // URL scheme guard FIRST — blocks `javascript:` and other
+        // exec-on-click schemes before HTML-escaping. The escape on
+        // its own doesn't help: `javascript:alert(1)` has no chars
+        // to escape and would render as a working onclick payload.
+        const href = escapeAttr(safeUrl(m.attrs?.href));
         const target = m.attrs?.target
           ? ` target="${escapeAttr(m.attrs.target)}"`
           : '';
@@ -140,7 +146,10 @@ function renderNode(node: Json): string {
     case 'hard_break':
       return '<br />';
     case 'image': {
-      const src = escapeAttr(node.attrs?.src ?? '');
+      // Stricter than safeUrl: blocks `data:` URLs too (SVG-with-
+      // script smuggling). Empty src renders broken instead of
+      // executing a payload.
+      const src = escapeAttr(safeImageUrl(node.attrs?.src));
       const alt = escapeAttr(node.attrs?.alt ?? '');
       const title = node.attrs?.title
         ? ` title="${escapeAttr(node.attrs.title)}"`

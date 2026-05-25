@@ -14,6 +14,17 @@ import type {
 // ============================================
 
 export interface HeaderSettings {
+  /** Visual variant — 'default' | 'modern' | 'minimal'. The
+   *  publicWeb renderer picks the matching component; unknown
+   *  values fall back to 'default'. */
+  variant?: string;
+  /** Primary menu source — a `menuType` slug (e.g. 'header'). The
+   *  public renderer fetches Navigation docs with this menuType
+   *  for the primary nav. */
+  menuType?: string;
+  /** Second menu source — `menuType` slug consumed only by header
+   *  variants that render two menus (e.g. Default). */
+  secondaryMenuType?: string;
   enabled: boolean;
   showSearch: boolean;
   showLanguageSelector: boolean;
@@ -73,6 +84,10 @@ export interface ContactInfo {
 // ============================================
 
 export interface FooterSettings {
+  /** Visual variant — same contract as HeaderSettings.variant. */
+  variant?: string;
+  /** Menu source — `menuType` slug (e.g. 'footer'). */
+  menuType?: string;
   enabled: boolean;
   showSocialLinks: boolean;
   showCopyright: boolean;

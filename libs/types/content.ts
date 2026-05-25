@@ -7,6 +7,16 @@ import type { MultiLanguageText } from './common';
 export type { MultiLanguageText };
 
 export interface HeaderSettings {
+  // Visual variant the renderer should mount (e.g. 'default',
+  // 'modern', 'minimal'). Theme decides what each value means;
+  // unknown values fall back to 'default'.
+  variant?: string;
+  // Primary menu source — `menuType` slug fetched from Navigation
+  // (e.g. 'header'). Renderer falls back to 'header' when absent.
+  menuType?: string;
+  // Secondary menu source — used by variants rendering two menus
+  // (e.g. Default). Fallback 'secondary-header-menu'.
+  secondaryMenuType?: string;
   enabled?: boolean;
   showSearch?: boolean;
   showLanguageSelector?: boolean;
@@ -35,6 +45,11 @@ export interface SocialLink {
 }
 
 export interface FooterSettings {
+  // Visual variant the renderer should mount (e.g. 'default',
+  // 'modern', 'minimal'). Same contract as HeaderSettings.variant.
+  variant?: string;
+  // Menu source — `menuType` slug (e.g. 'footer'). Fallback 'footer'.
+  menuType?: string;
   enabled?: boolean;
   showSocialLinks?: boolean;
   showCopyright?: boolean;

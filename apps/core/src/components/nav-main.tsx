@@ -13,6 +13,14 @@ import {
   CollapsibleTrigger,
 } from "@repo/ui";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@repo/ui";
+import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
@@ -22,6 +30,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@repo/ui";
 
 export function NavMain({
@@ -40,6 +49,12 @@ export function NavMain({
 }) {
   const pathname = usePathname();
   const { currentLanguage } = useLanguage();
+  // `state === 'collapsed'` is the icon-only sidebar mode. We swap
+  // the inline <Collapsible> sub-menu for a flyout <DropdownMenu> so
+  // sub-items reach the user via hover/click on the icon instead of
+  // vanishing because the parent text + chevron are hidden.
+  const { state, isMobile } = useSidebar();
+  const isIconOnly = state === "collapsed" && !isMobile;
 
   // Function to check if a path is active - updated for path-based routing
   const isPathActive = (itemUrl: string, subItems?: any[]) => {
@@ -137,11 +152,58 @@ export function NavMain({
         {items.map((item) => {
           const isActive = isPathActive(item.url, item.items);
           const isParentHighlighted = isParentActive(item.url, item.items);
+          const hasSubItems = !!item.items?.length;
+
+          // Icon-only mode with children → render a dropdown anchored
+          // to the icon button. Sub-items surface on hover/click so
+          // the collapsed sidebar stays functional. Items without
+          // children behave the same in both modes (plain link).
+          if (isIconOnly && hasSubItems) {
+            return (
+              <SidebarMenuItem key={item.title}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      isActive={isParentHighlighted}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    side="right"
+                    align="start"
+                    sideOffset={4}
+                    className="min-w-48"
+                  >
+                    <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {item.items!.map((subItem) => {
+                      const isSubActive = isSubItemActive(
+                        subItem.url,
+                        item.url,
+                      );
+                      return (
+                        <DropdownMenuItem
+                          key={subItem.title}
+                          asChild
+                          className={isSubActive ? "bg-accent" : ""}
+                        >
+                          <Link href={subItem.url}>{subItem.title}</Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </SidebarMenuItem>
+            );
+          }
 
           return (
             <Collapsible key={item.title} asChild defaultOpen={isActive}>
               <SidebarMenuItem>
-                {item.items?.length ? (
+                {hasSubItems ? (
                   // If item has subitems, make it non-clickable (just for expand/collapse)
                   <SidebarMenuButton tooltip={item.title} isActive={isParentHighlighted}>
                     <item.icon />
@@ -156,7 +218,7 @@ export function NavMain({
                     </Link>
                   </SidebarMenuButton>
                 )}
-              {item.items?.length ? (
+              {hasSubItems ? (
                 <>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuAction className="data-[state=open]:rotate-90">

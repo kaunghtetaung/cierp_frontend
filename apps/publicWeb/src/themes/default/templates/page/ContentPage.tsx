@@ -1,4 +1,5 @@
 import React from "react";
+import { sanitizeHtml } from "@repo/utils/common";
 import { SectionRenderer } from "../section";
 import { PageLayoutRenderer } from "./PageLayoutRenderer";
 import { PostContentProvider } from "../section/post-body/PostContentContext";
@@ -188,8 +189,9 @@ export async function ContentPage({
                 <div
                   className="prose prose-lg max-w-none"
                   dangerouslySetInnerHTML={{
-                    __html:
+                    __html: sanitizeHtml(
                       page.content[currentLanguage] || page.content.en,
+                    ),
                   }}
                 />
               </div>

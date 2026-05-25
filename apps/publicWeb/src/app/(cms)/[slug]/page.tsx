@@ -1,4 +1,5 @@
 import React from "react";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import { getPageBySlug, getPageSections, getSectionsByLayout } from "@repo/page";
@@ -85,6 +86,13 @@ export default async function SlugPage({ params }: SlugPageProps) {
     // Fetch the page first so we know what layout shape to walk.
     const page = await getPageBySlug(slug).catch(() => null);
 
+    // Slug doesn't resolve to a real page → 404. Without this the
+    // catch-all renders an empty ContentPage instead of the
+    // framework's not-found.tsx, masking broken/typo links.
+    if (!page) {
+      notFound();
+    }
+
     // Resolve effective layout: prefer page.layout, fall back to
     // template.layout (wrapper-mode pages have an empty layout and
     // a templateId pointing at the wrapping template).
@@ -132,7 +140,24 @@ export default async function SlugPage({ params }: SlugPageProps) {
         crumbs={crumbs}
       />
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Re-throw special Next.js navigation errors (notFound, redirect)
+    // so the framework can render not-found.tsx or handle the redirect.
+    // Without this, the catch swallows `notFound()`'s internal throw
+    // and renders our generic ErrorPage with the framework code in
+    // debugInfo. Next.js 15+ uses `NEXT_HTTP_ERROR_FALLBACK;<status>`
+    // as the digest; older versions used `NEXT_NOT_FOUND`. Cover both.
+    const digest = typeof error?.digest === "string" ? error.digest : "";
+    const message = typeof error?.message === "string" ? error.message : "";
+    if (
+      digest.startsWith("NEXT_NOT_FOUND") ||
+      digest.startsWith("NEXT_HTTP_ERROR_FALLBACK") ||
+      digest.startsWith("NEXT_REDIRECT") ||
+      message.startsWith("NEXT_HTTP_ERROR_FALLBACK") ||
+      message === "NEXT_NOT_FOUND"
+    ) {
+      throw error;
+    }
     console.error("Error in SlugPage:", error);
 
     return (

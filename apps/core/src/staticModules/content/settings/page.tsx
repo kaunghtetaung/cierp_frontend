@@ -856,6 +856,129 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* ───────── Header Variant + Menu Assignment ─────────
+                  Picks the publicWeb header component. The Default
+                  variant uses two menus (primary + secondary); the
+                  Modern/Minimal variants use the primary slot only.
+                  Menu slots store `menuType` slugs that publicWeb
+                  uses to fetch Navigation docs. */}
+              <div className="space-y-4 pb-2 border-b">
+                <h3 className="text-sm font-medium">Variant &amp; Menus</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Header Design
+                    </label>
+                    <Select
+                      value={formData.header?.variant || 'default'}
+                      onValueChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          header: { ...formData.header, variant: v },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">
+                          Default
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            — 2 menus, Stanford-style
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="modern">
+                          Modern
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            — single menu + org logo, sticky
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="minimal">
+                          Minimal
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            — logo only, no menus
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Primary Menu
+                    </label>
+                    <Select
+                      value={formData.header?.menuType || 'header'}
+                      onValueChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          header: { ...formData.header, menuType: v },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="header">header</SelectItem>
+                        <SelectItem value="secondary-header-menu">
+                          secondary-header-menu
+                        </SelectItem>
+                        <SelectItem value="study-sidebar-menu">
+                          study-sidebar-menu
+                        </SelectItem>
+                        <SelectItem value="custom">custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Navigation menuType to use as the primary nav
+                    </p>
+                  </div>
+                  {/* Secondary menu picker — only meaningful for
+                      variants that render two menus (Default).
+                      Hide for Modern/Minimal to avoid confusion. */}
+                  {(formData.header?.variant || 'default') === 'default' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Secondary Menu
+                      </label>
+                      <Select
+                        value={
+                          formData.header?.secondaryMenuType ||
+                          'secondary-header-menu'
+                        }
+                        onValueChange={(v) =>
+                          setFormData({
+                            ...formData,
+                            header: {
+                              ...formData.header,
+                              secondaryMenuType: v,
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="secondary-header-menu">
+                            secondary-header-menu
+                          </SelectItem>
+                          <SelectItem value="study-sidebar-menu">
+                            study-sidebar-menu
+                          </SelectItem>
+                          <SelectItem value="header">header</SelectItem>
+                          <SelectItem value="custom">custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Used by Default variant&apos;s audience row
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -1123,6 +1246,78 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* ───────── Footer Variant + Menu Assignment ─────────
+                  Picks the publicWeb footer component. Default is
+                  the Stanford-style multi-column; Modern is a
+                  compact single-row with socials; Minimal is a
+                  copyright-only one-liner. */}
+              <div className="space-y-4 pb-2 border-b">
+                <h3 className="text-sm font-medium">Variant &amp; Menu</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Footer Design
+                    </label>
+                    <Select
+                      value={formData.footer?.variant || 'default'}
+                      onValueChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          footer: { ...formData.footer, variant: v },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">
+                          Default
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            — Stanford multi-column
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="modern">
+                          Modern
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            — compact 1-row + socials
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="minimal">
+                          Minimal
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            — copyright only
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Footer Menu</label>
+                    <Select
+                      value={formData.footer?.menuType || 'footer'}
+                      onValueChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          footer: { ...formData.footer, menuType: v },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="footer">footer</SelectItem>
+                        <SelectItem value="custom">custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Navigation menuType to use for footer links
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Checkbox

@@ -1,4 +1,5 @@
 import React from "react";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
@@ -208,6 +209,14 @@ export default async function PostTypeSlugPage({
       return null;
     });
 
+    // Slug doesn't resolve → 404. We deliberately distinguish "no
+    // such post" (here) from "post exists but locked" (needsGate
+    // path below): the locked case still renders a gate UI with
+    // the redacted post metadata.
+    if (!post) {
+      notFound();
+    }
+
     // Password-protected post → try to swap in the unredacted version
     // using the visitor's previously-set unlock cookie. If the swap
     // succeeds, the rest of the route renders the full post normally.
@@ -301,7 +310,22 @@ export default async function PostTypeSlugPage({
         slug={slug}
       />
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Re-throw special Next.js navigation errors (notFound, redirect)
+    // so the framework can render not-found.tsx instead of swallowing
+    // them as generic page-load errors. Next.js 15+ digest format is
+    // `NEXT_HTTP_ERROR_FALLBACK;<status>`; older was `NEXT_NOT_FOUND`.
+    const digest = typeof error?.digest === "string" ? error.digest : "";
+    const message = typeof error?.message === "string" ? error.message : "";
+    if (
+      digest.startsWith("NEXT_NOT_FOUND") ||
+      digest.startsWith("NEXT_HTTP_ERROR_FALLBACK") ||
+      digest.startsWith("NEXT_REDIRECT") ||
+      message.startsWith("NEXT_HTTP_ERROR_FALLBACK") ||
+      message === "NEXT_NOT_FOUND"
+    ) {
+      throw error;
+    }
     console.error("Error in PostTypeSlugPage:", error);
     return (
       <ErrorPage

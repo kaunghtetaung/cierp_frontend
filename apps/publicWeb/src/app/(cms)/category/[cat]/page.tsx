@@ -271,14 +271,18 @@ export default async function CategoryPage({
         defaultFeatureImage={defaultFeatureImage}
       />
     );
-  } catch (error) {
-    // notFound() throws — let Next.js handle it instead of catching as a generic error.
+  } catch (error: any) {
+    // notFound() throws — let Next.js handle it instead of catching
+    // as a generic error. Next.js 15+ digest is
+    // `NEXT_HTTP_ERROR_FALLBACK;<status>`; older was `NEXT_NOT_FOUND`.
+    const digest = typeof error?.digest === "string" ? error.digest : "";
+    const message = typeof error?.message === "string" ? error.message : "";
     if (
-      error &&
-      typeof error === "object" &&
-      "digest" in error &&
-      typeof (error as any).digest === "string" &&
-      (error as any).digest.startsWith("NEXT_NOT_FOUND")
+      digest.startsWith("NEXT_NOT_FOUND") ||
+      digest.startsWith("NEXT_HTTP_ERROR_FALLBACK") ||
+      digest.startsWith("NEXT_REDIRECT") ||
+      message.startsWith("NEXT_HTTP_ERROR_FALLBACK") ||
+      message === "NEXT_NOT_FOUND"
     ) {
       throw error;
     }

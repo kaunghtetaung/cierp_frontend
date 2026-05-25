@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { reportError, ApplicationError } from '@repo/utils/common';
+import { reportError } from '@repo/utils/common';
 import { getClientRequestContext } from '@repo/utils/client/error-context';
 
 // Prevent static generation for global error boundary
@@ -14,130 +14,186 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   React.useEffect(() => {
-    // Extract request context from browser
-    const requestContext = getClientRequestContext();
-
-    // Report critical error with full context
-    const appError = new ApplicationError({
-      type: 'UNKNOWN_ERROR',
-      message: error.message,
-      severity: 'critical',
-      category: 'application',
-      operation: 'app-initialization',
-      component: 'global-error-boundary',
-      cause: error,
-      // Include request context
-      hostname: requestContext.hostname,
-      appName: requestContext.appName,
-      service: requestContext.service,
-      tenantId: requestContext.tenantId,
-      userId: requestContext.userId,
-      path: requestContext.path,
-      userAgent: requestContext.userAgent,
-      metadata: {
-        digest: error.digest,
-        errorName: error.name,
-        timestamp: new Date().toISOString()
-      }
-    });
-
-    reportError(appError).catch(err => {
-      console.error('Failed to report critical error:', err);
-    });
-
-    // Fallback console logging
-    console.error('Global Error (Critical):', error);
+    // Best-effort telemetry — must not throw, the global error
+    // boundary is the LAST surface before a blank screen.
+    try {
+      const requestContext = getClientRequestContext();
+      (reportError as any)(error, {
+        ...requestContext,
+        severity: 'critical',
+        component: 'global-error-boundary',
+      })?.catch?.((err: unknown) =>
+        console.error('Failed to report critical error:', err),
+      );
+    } catch (reportErr) {
+      console.error('Global Error (Critical):', error, reportErr);
+    }
   }, [error]);
 
+  // Global error renders OUTSIDE the root layout when the layout
+  // itself fails — so we ship our own <html><body> and inline CSS.
+  // No theme tokens, no design-system imports — has to render even
+  // when the whole app pipeline is broken. Kept visually aligned
+  // with the route-level error.tsx (red accent, big icon, dual
+  // action buttons) but standalone.
+  const isDev = process.env.NODE_ENV === 'development';
+
   return (
-    <html>
-      <body>
-        <div className="min-h-screen flex items-center justify-center bg-red-50">
-          <div className="max-w-md w-full mx-auto p-6">
-            <div className="text-center">
-              <div className="mx-auto mb-6 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 13.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                Critical System Error
-              </h1>
-
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                A critical error has occurred that prevented the application
-                from loading properly. Please reload the page or contact
-                technical support.
-              </p>
-
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
-                  <h3 className="font-semibold text-sm mb-2">Error Details:</h3>
-                  <p className="text-xs text-gray-600 font-mono break-words">
-                    {error.message}
-                  </p>
-                  {error.digest && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Error ID: {error.digest}
-                    </p>
-                  )}
-                  {error.stack && (
-                    <details className="mt-2">
-                      <summary className="cursor-pointer text-xs text-gray-500">
-                        Stack Trace
-                      </summary>
-                      <pre className="mt-2 text-xs text-gray-500 overflow-auto max-h-40">
-                        {error.stack}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <button
-                  onClick={reset}
-                  className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                >
-                  🔄 Try Again
-                </button>
-
-                <button
-                  onClick={() => (window.location.href = '/')}
-                  className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-                >
-                  🏠 Reload Application
-                </button>
-
-                <button
-                  onClick={() => (window.location.href = '/support')}
-                  className="w-full px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium"
-                >
-                  🆘 Contact Support
-                </button>
-              </div>
-
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500">
-                  If this problem persists, please contact technical support
-                  with the error ID above.
-                  <br />
-                  Time: {new Date().toLocaleString()}
-                </p>
-              </div>
-            </div>
+    <html lang="en">
+      <body
+        style={{
+          margin: 0,
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'linear-gradient(135deg, #fff5f5 0%, #ffffff 50%, #fef2f2 100%)',
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+          color: '#111827',
+          padding: '3rem 1rem',
+        }}
+      >
+        <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }}>
+          <div
+            style={{
+              margin: '0 auto 1.5rem',
+              width: 96,
+              height: 96,
+              borderRadius: '9999px',
+              background: 'rgba(220, 38, 38, 0.10)',
+              boxShadow: 'inset 0 0 0 1px rgba(220, 38, 38, 0.20)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            aria-hidden
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.75">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 17h.01" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            </svg>
           </div>
+
+          <p
+            style={{
+              fontSize: '0.75rem',
+              letterSpacing: '0.2em',
+              fontWeight: 600,
+              color: '#dc2626',
+              margin: '0 0 0.5rem',
+            }}
+          >
+            CRITICAL ERROR
+          </p>
+
+          <h1
+            style={{
+              fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+              fontWeight: 700,
+              letterSpacing: '-0.025em',
+              margin: '0 0 1rem',
+            }}
+          >
+            Something went seriously wrong
+          </h1>
+
+          <p style={{ color: '#4b5563', fontSize: '1rem', lineHeight: 1.6, margin: '0 0 0.5rem' }}>
+            A critical error prevented the application from loading.
+          </p>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', lineHeight: 1.6, margin: '0 0 2rem' }}>
+            Try reloading the page. If the problem persists, contact technical support.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={reset}
+              style={{
+                width: '100%',
+                maxWidth: 280,
+                height: 44,
+                borderRadius: 8,
+                border: 'none',
+                background: '#dc2626',
+                color: '#fff',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+              }}
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={() => (window.location.href = '/')}
+              style={{
+                width: '100%',
+                maxWidth: 280,
+                height: 44,
+                borderRadius: 8,
+                border: '1px solid #d1d5db',
+                background: '#fff',
+                color: '#111827',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+              }}
+            >
+              Reload application
+            </button>
+          </div>
+
+          {error.digest && (
+            <p style={{ marginTop: '2rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+              Error ID:{' '}
+              <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+                {error.digest}
+              </span>
+            </p>
+          )}
+
+          {isDev && (
+            <details
+              style={{
+                marginTop: '2rem',
+                textAlign: 'left',
+                maxWidth: 560,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}
+            >
+              <summary
+                style={{
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  color: '#6b7280',
+                }}
+              >
+                Error details (development)
+              </summary>
+              <pre
+                style={{
+                  marginTop: '0.5rem',
+                  padding: '0.75rem',
+                  background: 'rgba(0,0,0,0.04)',
+                  borderRadius: 6,
+                  fontSize: '0.6875rem',
+                  lineHeight: 1.5,
+                  color: '#374151',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  maxHeight: 240,
+                  overflow: 'auto',
+                }}
+              >
+                {error.message}
+                {error.stack && `\n\nStack:\n${error.stack}`}
+              </pre>
+            </details>
+          )}
         </div>
       </body>
     </html>
