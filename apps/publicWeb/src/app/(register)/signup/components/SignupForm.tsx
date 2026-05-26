@@ -183,12 +183,15 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
 
   const getInputClasses = (fieldName: string) => {
     const hasError = getFieldError(fieldName);
+    // Theme-aware focus ring — uses CSS variable so um1 fields focus
+    // cardinal-red, UDM fields focus blue, etc. Arbitrary value has
+    // no space inside the brackets (Tailwind JIT requirement).
     return `
-      block w-full px-4 py-3 pl-12 border rounded-lg 
+      block w-full px-4 py-3 pl-12 border rounded-lg
       transition-all duration-200
-      ${hasError 
-        ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+      ${hasError
+        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+        : 'border-gray-300 focus:border-[var(--color-primary,#2460B9)] focus:ring-[var(--color-primary,#2460B9)]'
       }
       focus:outline-none focus:ring-2 focus:ring-opacity-50
     `;
@@ -403,20 +406,26 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
           )}
         </div>
 
-        {/* Submit Button */}
+        {/* Submit Button — uses theme primary so um1 stays cardinal,
+            UDM stays blue, etc. */}
         <button
           type="submit"
           disabled={isSubmitting || formState.success || passwordStrength < 3}
           className={`
-            w-full flex justify-center items-center py-3 px-4 
-            border border-transparent rounded-lg shadow-sm 
-            text-sm font-medium text-white 
+            w-full flex justify-center items-center py-3 px-4
+            border border-transparent rounded-lg shadow-sm
+            text-sm font-medium text-white
             transition-all duration-200
             ${isSubmitting || formState.success || passwordStrength < 3
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md active:transform active:scale-[0.98]'
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'hover:shadow-md hover:opacity-95 active:transform active:scale-[0.98]'
             }
           `}
+          style={
+            isSubmitting || formState.success || passwordStrength < 3
+              ? undefined
+              : { backgroundColor: 'var(--color-primary, #2460B9)' }
+          }
         >
           {isSubmitting ? (
             <>
