@@ -67,8 +67,6 @@ export default function AuthShell({
     );
   }
 
-  const backgroundPattern = `data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E`;
-
   const languages: Language[] = (tenant.langSupport || ["en", "mm"]).map(
     (code: string) => {
       const map: Record<string, Language> = {
@@ -117,26 +115,36 @@ export default function AuthShell({
       languages={languages}
     >
       <div
-        className={`${themeClass} min-h-screen flex flex-col bg-muted`}
-        style={{ fontFamily: "var(--font-sans, system-ui)" }}
+        className={`${themeClass} min-h-screen flex flex-col`}
+        style={{
+          fontFamily: "var(--font-sans, system-ui)",
+          backgroundColor: "#F8FAFC", // soft slate-50 — calm canvas
+        }}
       >
+        {/* Sticky header — clean white surface, brand-coloured accent
+            strip at the bottom. No background pattern; a subtle ring
+            of brand colour reads as "tenant chrome" without the
+            heavy filled bar the old design used. */}
         <header
-          className="relative z-50"
+          className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b"
           style={{
-            backgroundColor: "var(--color-primary, #2460B9)",
-            backgroundImage: `url("${backgroundPattern}")`,
-            backgroundRepeat: "repeat",
-            color: "var(--color-primary-foreground, #FFFFFF)",
+            borderBottomColor: "var(--color-primary, #2460B9)",
+            borderBottomWidth: "3px",
           }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            <div className="flex items-center justify-between gap-3">
+          <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Back / Home button — ghost pill, brand-coloured icon */}
               {hideBack ? (
                 <Link
                   href="/"
-                  className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                  aria-label="Home"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft
+                    className="h-4 w-4"
+                    style={{ color: "var(--color-primary, #2460B9)" }}
+                  />
                   <span className="text-sm font-medium hidden sm:inline">
                     Home
                   </span>
@@ -145,48 +153,66 @@ export default function AuthShell({
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                  aria-label="Back"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft
+                    className="h-4 w-4"
+                    style={{ color: "var(--color-primary, #2460B9)" }}
+                  />
                   <span className="text-sm font-medium hidden sm:inline">
                     Back
                   </span>
                 </button>
               )}
 
-              <div className="flex items-center gap-3 flex-1 justify-center sm:justify-start sm:ml-4 min-w-0">
+              {/* Brand block — logo + tenant name + screen subtitle.
+                  Centred on mobile (left/right buttons flank it) and
+                  left-aligned from sm+ for a more conventional layout. */}
+              <div className="flex items-center gap-2.5 sm:gap-3 flex-1 justify-center sm:justify-start sm:ml-2 min-w-0">
                 {tenant.brandInfo?.logoUrl && (
-                  <div className="relative h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                  <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-50 ring-1 ring-gray-100">
                     <S3Image
                       src={tenant.brandInfo.logoUrl}
                       alt={tenant.brandInfo?.title || "Logo"}
                       fill
-                      className="object-contain"
+                      className="object-contain p-1"
                     />
                   </div>
                 )}
-                <div className="min-w-0" style={{ color: "var(--color-primary-foreground, #FFFFFF)" }}>
-                  <h1 className="text-base sm:text-xl font-semibold truncate">
+                <div className="min-w-0">
+                  <h1
+                    className="text-sm sm:text-base font-semibold truncate leading-tight"
+                    style={{ color: "var(--color-primary, #2460B9)" }}
+                  >
                     <span className="md:hidden">{displayShort}</span>
                     <span className="hidden md:inline">{displayName}</span>
                   </h1>
                   {subtitle && (
-                    <p className="text-xs sm:text-sm opacity-90 truncate">
+                    <p className="text-[11px] sm:text-xs text-gray-500 truncate leading-tight mt-0.5">
                       {subtitle}
                     </p>
                   )}
                 </div>
               </div>
 
+              {/* Language selector — outlined pill, brand-coloured ring
+                  on hover. The original was a borderless ghost on dark
+                  bg which read as a transparent label; this gives it a
+                  proper "clickable control" affordance. */}
               <div className="flex items-center flex-shrink-0">
-                <LangSelectorUI
-                  variant="dropdown"
-                  showFlag={true}
-                  showNativeName={true}
-                  showName={false}
-                  triggerClassName="hover:opacity-90 transition-opacity"
-                  contentClassName="border-white/30 backdrop-blur-sm"
-                />
+                <div
+                  className="rounded-full border border-gray-200 hover:border-gray-300 transition-colors px-1.5 py-1 sm:px-2"
+                >
+                  <LangSelectorUI
+                    variant="dropdown"
+                    showFlag={true}
+                    showNativeName={true}
+                    showName={false}
+                    triggerClassName="text-gray-700 hover:text-gray-900 transition-colors"
+                    contentClassName="bg-white border-gray-200 shadow-lg"
+                  />
+                </div>
               </div>
             </div>
           </div>

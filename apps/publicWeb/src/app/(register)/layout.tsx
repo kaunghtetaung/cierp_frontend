@@ -5,6 +5,19 @@ import { getContentSettings } from "@repo/content";
 import { getMiddlewareDataFromHeaders } from "@repo/utils/server/middleware";
 import AuthShell from "./_components/AuthShell";
 
+// Pull in every theme's CSS so AuthShell's `.theme-<name>.theme-variant-<v>`
+// class actually matches a rule on a hard refresh of /signup, /verify,
+// /success, /profileSetup. (Without this the theme CSS only loads under
+// `(cms)/layout`, so direct visits to auth screens fall back to the inline
+// #2460B9 default instead of the tenant's brand colour.)
+//
+// Each file only defines CSS variables scoped under `.theme-<name>` and
+// `.theme-<name>.theme-variant-<v>` selectors — they have no side
+// effects when the matching class isn't on a DOM ancestor.
+import "@/themes/default/styles/index.css";
+import "@/themes/um1sf/styles/index.css";
+import "@/themes/crystal/styles/variables.css";
+
 interface RegisterLayoutProps {
   children: React.ReactNode;
 }

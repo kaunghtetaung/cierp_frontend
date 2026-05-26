@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, AlertCircle, CheckCircle2, Mail, UserCircle, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Mail, UserCircle, Lock, Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
 import { initiateLogin } from "@repo/auth/login-utils";
 import { signupAction } from "../actions";
 import { HumanVerificationModal } from "./HumanVerificationModal";
@@ -44,7 +44,9 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
     accountCreatedSuccess: 'Account created successfully! Please check your email for verification.',
     passwordRequirement: 'Password must be at least "Good" strength to continue',
     continueWithGoogle: 'Continue with Google',
-    orContinueWith: 'or continue with email'
+    continueWithEmail: 'Continue with Email',
+    orContinueWith: 'or',
+    backToOptions: 'Choose a different sign-up method'
   };
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,6 +65,12 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
     password: ''
   });
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Progressive disclosure — keep the initial card simple by hiding
+  // the email/password fields behind a "Continue with email" button.
+  // Users who arrive intending to sign up with Google then see one
+  // big OAuth button and one option button, not a wall of inputs.
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   // Google signup reuses the same OIDC handshake the login page uses
   // — the auth service's account.provider.findOrCreateGoogleUser
@@ -255,48 +263,89 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
           </div>
         )}
 
-        {/* Google Sign-up — hands off to OIDC; auth service shows the
-            Google option when GOOGLE_CLIENT_ID is set on the auth pod. */}
+        {/* Initial choice view — Google button + "Continue with Email"
+            button. Hides the email/password fields until the user
+            opts into them, so the card stays calm for Google users. */}
+        {!showEmailForm && (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            {/* Google Sign-up */}
+            <button
+              type="button"
+              onClick={handleGoogleSignup}
+              disabled={isGoogleLoading || isSubmitting || formState.success}
+              className={`
+                group w-full flex justify-center items-center gap-3 py-3 px-4
+                border border-gray-300 rounded-lg shadow-sm
+                text-sm font-medium text-gray-700 bg-white
+                transition-all duration-200
+                ${isGoogleLoading || isSubmitting || formState.success
+                  ? 'opacity-60 cursor-not-allowed'
+                  : 'hover:bg-gray-50 hover:shadow-md hover:border-gray-400 active:scale-[0.99]'
+                }
+              `}
+              aria-label={t.continueWithGoogle}
+            >
+              {isGoogleLoading ? (
+                <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+              ) : (
+                <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.44c-.28 1.46-1.13 2.7-2.41 3.53v2.94h3.89c2.28-2.1 3.57-5.18 3.57-8.71z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.89-2.94c-1.08.72-2.45 1.16-4.04 1.16-3.11 0-5.74-2.1-6.68-4.92H1.32v3.09C3.29 21.3 7.34 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.32 14.39c-.24-.72-.38-1.49-.38-2.39s.14-1.67.38-2.39V6.52H1.32A11.99 11.99 0 0 0 0 12c0 1.94.46 3.78 1.32 5.48l4-3.09z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.34 0 3.29 2.7 1.32 6.52l4 3.09C6.26 6.85 8.89 4.75 12 4.75z"/>
+                </svg>
+              )}
+              {t.continueWithGoogle}
+            </button>
+
+            {/* "or" mini-divider */}
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+                <span className="bg-white px-2 text-gray-400">
+                  {t.orContinueWith}
+                </span>
+              </div>
+            </div>
+
+            {/* Continue with Email — brand-coloured CTA. Clicking reveals
+                the email/password fields below. */}
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(true)}
+              className={`
+                group w-full flex justify-center items-center gap-2 py-3 px-4
+                border border-transparent rounded-lg shadow-sm
+                text-sm font-medium text-white
+                transition-all duration-200
+                hover:shadow-md hover:opacity-95 active:scale-[0.99]
+              `}
+              style={{ backgroundColor: 'var(--color-primary, #2460B9)' }}
+            >
+              <Mail className="h-5 w-5" />
+              {t.continueWithEmail}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Email form view — fields, password strength, submit. Only
+            mounts after the user opts in via "Continue with Email"
+            so the initial card stays light. */}
+        {showEmailForm && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+        {/* Back-to-options link */}
         <button
           type="button"
-          onClick={handleGoogleSignup}
-          disabled={isGoogleLoading || isSubmitting || formState.success}
-          className={`
-            w-full flex justify-center items-center gap-3 py-3 px-4
-            border border-gray-300 rounded-lg shadow-sm
-            text-sm font-medium text-gray-700 bg-white
-            transition-all duration-200
-            ${isGoogleLoading || isSubmitting || formState.success
-              ? 'opacity-60 cursor-not-allowed'
-              : 'hover:bg-gray-50 hover:shadow-md active:transform active:scale-[0.98]'
-            }
-          `}
-          aria-label={t.continueWithGoogle}
+          onClick={() => setShowEmailForm(false)}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
         >
-          {isGoogleLoading ? (
-            <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
-          ) : (
-            <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.44c-.28 1.46-1.13 2.7-2.41 3.53v2.94h3.89c2.28-2.1 3.57-5.18 3.57-8.71z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.89-2.94c-1.08.72-2.45 1.16-4.04 1.16-3.11 0-5.74-2.1-6.68-4.92H1.32v3.09C3.29 21.3 7.34 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.32 14.39c-.24-.72-.38-1.49-.38-2.39s.14-1.67.38-2.39V6.52H1.32A11.99 11.99 0 0 0 0 12c0 1.94.46 3.78 1.32 5.48l4-3.09z"/>
-              <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.34 0 3.29 2.7 1.32 6.52l4 3.09C6.26 6.85 8.89 4.75 12 4.75z"/>
-            </svg>
-          )}
-          {t.continueWithGoogle}
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {t.backToOptions}
         </button>
-
-        {/* Divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-3 text-gray-500">
-              {t.orContinueWith}
-            </span>
-          </div>
-        </div>
 
         {/* Full Name Field */}
         <div>
@@ -441,6 +490,9 @@ export function SignupForm({ tenantId, language = 'en', translations }: SignupFo
             t.createAccount
           )}
         </button>
+
+        </div>
+        )}
       </form>
 
       {/* Human Verification Modal */}
