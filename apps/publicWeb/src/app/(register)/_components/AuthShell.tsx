@@ -13,6 +13,13 @@ import type { Language } from "@/feature-components/lang-selector";
 interface AuthShellProps {
   children: React.ReactNode;
   initialLanguage?: string;
+  /** Active theme key (`default`, `um1sf`, …). Applied as `.theme-<name>`
+   *  on the shell's root so all theme CSS variables (primary, accent,
+   *  …) are available inside auth screens. */
+  themeName?: string;
+  /** Active variant key (`cardinal`, `blue`, `teal`, …) for the theme.
+   *  Applied as `.theme-variant-<key>` alongside the theme class. */
+  themeVariant?: string;
 }
 
 /**
@@ -33,17 +40,28 @@ interface AuthShellProps {
 export default function AuthShell({
   children,
   initialLanguage = "en",
+  themeName,
+  themeVariant,
 }: AuthShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { tenant } = useTenant();
 
+  // Mirror the theme class set by `(cms)/layout` so um1 gets cardinal-red,
+  // UDM blue, etc. — auth chrome then reads `var(--color-primary)` etc.
+  // straight from the theme's `index.css` blocks. Falls back to no class
+  // if themeName isn't provided; theme-less environments use the inline
+  // styles below.
+  const themeClass = themeName
+    ? `theme-${themeName}${themeVariant ? ` theme-variant-${themeVariant}` : ""}`
+    : "";
+
   if (!tenant) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#e8f0fa]">
+      <div className={`${themeClass} min-h-screen flex items-center justify-center bg-muted`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2460B9] mx-auto mb-4" />
-          <p className="text-gray-600">Loading…</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading…</p>
         </div>
       </div>
     );
@@ -98,13 +116,17 @@ export default function AuthShell({
       initialLanguage={initialLanguage}
       languages={languages}
     >
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#e8f0fa" }}>
+      <div
+        className={`${themeClass} min-h-screen flex flex-col bg-muted`}
+        style={{ fontFamily: "var(--font-sans, system-ui)" }}
+      >
         <header
           className="relative z-50"
           style={{
-            backgroundColor: "#2460B9",
+            backgroundColor: "var(--color-primary, #2460B9)",
             backgroundImage: `url("${backgroundPattern}")`,
             backgroundRepeat: "repeat",
+            color: "var(--color-primary-foreground, #FFFFFF)",
           }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
@@ -143,13 +165,13 @@ export default function AuthShell({
                     />
                   </div>
                 )}
-                <div className="text-white min-w-0">
+                <div className="min-w-0" style={{ color: "var(--color-primary-foreground, #FFFFFF)" }}>
                   <h1 className="text-base sm:text-xl font-semibold truncate">
                     <span className="md:hidden">{displayShort}</span>
                     <span className="hidden md:inline">{displayName}</span>
                   </h1>
                   {subtitle && (
-                    <p className="text-xs sm:text-sm text-blue-100 truncate">
+                    <p className="text-xs sm:text-sm opacity-90 truncate">
                       {subtitle}
                     </p>
                   )}
@@ -162,8 +184,8 @@ export default function AuthShell({
                   showFlag={true}
                   showNativeName={true}
                   showName={false}
-                  triggerClassName="text-white hover:text-blue-100 transition-colors"
-                  contentClassName="!bg-[#1e4f99] border-white/30 backdrop-blur-sm"
+                  triggerClassName="hover:opacity-90 transition-opacity"
+                  contentClassName="border-white/30 backdrop-blur-sm"
                 />
               </div>
             </div>

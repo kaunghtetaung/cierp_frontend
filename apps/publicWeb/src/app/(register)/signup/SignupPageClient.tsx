@@ -18,10 +18,9 @@ interface SignupPageClientProps {
  * `AuthShell`. This file owns only the form card + the four-step
  * registration journey hint.
  *
- * Earlier this component implemented its own full-height 2-panel
- * layout with a duplicate language switcher and a left-side branding
- * panel; both were redundant with the shared AuthShell, so we kept
- * the step ribbon and the form card, dropped the rest.
+ * Tenant brand colours come through `var(--color-primary)` (set on
+ * the AuthShell root via `.theme-<name>.theme-variant-<v>`). Hex
+ * fallback only kicks in for theme-less environments.
  */
 export function SignupPageClient({
   tenantSettings,
@@ -31,8 +30,13 @@ export function SignupPageClient({
   // currentLanguage means switching languages in the header updates
   // the signup form copy without a page reload.
   const { currentLanguage } = useLangSelector();
-  const currentLang = (currentLanguage as "en" | "mm") || (initialLang as "en" | "mm") || "en";
+  const currentLang =
+    (currentLanguage as "en" | "mm") || (initialLang as "en" | "mm") || "en";
   const t = translations[currentLang] || translations.en;
+
+  // Use a CSS variable for the brand colour so um1 (cardinal),
+  // um1-blue, UDM-blue, etc. all light up automatically.
+  const primary = "var(--color-primary, #2460B9)";
 
   const steps = [
     { icon: UserPlus, label: t.step1, title: t.createAccountStep, current: true },
@@ -53,11 +57,12 @@ export function SignupPageClient({
             <li key={i} className="flex items-center flex-1">
               <div className="flex flex-col items-center text-center min-w-0 flex-1">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 ${
+                  className="w-9 h-9 rounded-full flex items-center justify-center mb-2"
+                  style={
                     s.current
-                      ? "bg-[#2460B9] text-white shadow"
-                      : "bg-white border border-gray-200 text-gray-400"
-                  }`}
+                      ? { backgroundColor: primary, color: "#FFFFFF" }
+                      : { backgroundColor: "#FFFFFF", border: "1px solid #E5E7EB", color: "#9CA3AF" }
+                  }
                 >
                   <Icon className="w-4 h-4" />
                 </div>
@@ -83,7 +88,7 @@ export function SignupPageClient({
       {/* Form card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-[#2460B9]">
+          <div className="flex items-center gap-2" style={{ color: primary }}>
             <UserPlus className="w-5 h-5" />
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
               {t.signUp}
@@ -103,7 +108,8 @@ export function SignupPageClient({
           {t.alreadyHaveAccount}{" "}
           <Link
             href="/login"
-            className="font-medium text-[#2460B9] hover:underline"
+            className="font-medium hover:underline"
+            style={{ color: primary }}
           >
             {t.signIn}
           </Link>
@@ -113,11 +119,19 @@ export function SignupPageClient({
         <div className="mt-6 pt-6 border-t border-gray-100">
           <p className="text-xs text-center text-gray-500">
             {t.agreementText}{" "}
-            <Link href="/terms" className="text-[#2460B9] hover:underline">
+            <Link
+              href="/terms"
+              className="hover:underline"
+              style={{ color: primary }}
+            >
               {t.termsOfService}
             </Link>{" "}
             {t.and}{" "}
-            <Link href="/privacy" className="text-[#2460B9] hover:underline">
+            <Link
+              href="/privacy"
+              className="hover:underline"
+              style={{ color: primary }}
+            >
               {t.privacyPolicy}
             </Link>
           </p>
