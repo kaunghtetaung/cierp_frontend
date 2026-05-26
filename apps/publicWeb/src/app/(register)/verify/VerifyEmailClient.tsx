@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle2, XCircle, Loader2, Mail, ArrowRight, Shield, ArrowLeft, Home } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Mail, ArrowRight, Shield } from "lucide-react";
 import Link from "next/link";
 import type { TenantSettings } from "@repo/types";
 
@@ -140,16 +140,10 @@ export function VerifyEmailClient({ tenantSettings, initialLang }: VerifyEmailCl
   };
 
   return (
-    <div className="min-h-screen h-screen overflow-hidden flex items-center justify-center bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-4">
+    <div className="flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-lg animate-fadeIn">
-        {/* Back Link */}
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 text-sm mb-6 transition-all hover:-translate-x-1"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </Link>
+        {/* Chrome (back arrow, tenant logo/name, lang switcher, footer)
+            is provided by the outer `(register)/layout` → AuthShell. */}
 
         {/* Content Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">

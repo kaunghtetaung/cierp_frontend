@@ -190,7 +190,7 @@ export function HeaderUserActions({
         {language === "mm" ? "လော့ဂ်အင်ဝင်ရန်" : "Sign in"}
       </Link>
       <Link
-        href="/register"
+        href="/signup"
         className="inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors hover:opacity-90"
         style={{
           backgroundColor: "#FFFFFF",

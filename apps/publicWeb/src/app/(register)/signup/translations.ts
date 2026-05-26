@@ -45,6 +45,8 @@ export const translations = {
     verify: 'Verify',
     verifying: 'Verifying...',
     cancel: 'Cancel',
+    continueWithGoogle: 'Continue with Google',
+    orContinueWith: 'or continue with email',
     
     // Messages
     accountCreatedSuccess: 'Account created successfully! Please check your email for verification.',
@@ -140,6 +142,8 @@ export const translations = {
     verify: 'အတည်ပြုရန်',
     verifying: 'အတည်ပြုနေသည်...',
     cancel: 'ပယ်ဖျက်ရန်',
+    continueWithGoogle: 'Google ဖြင့် ဆက်လုပ်ရန်',
+    orContinueWith: 'သို့မဟုတ် အီးမေးလ်ဖြင့် ဆက်လုပ်ပါ',
     
     // Messages
     accountCreatedSuccess: 'အကောင့်ဖန်တီးခြင်း အောင်မြင်ပါသည်! အတည်ပြုရန် သင့်အီးမေးလ်ကို စစ်ဆေးပါ။',

@@ -160,11 +160,8 @@ export function ContactPageClient(props: ContactPageClientProps) {
   ) => setFormData((prev) => ({ ...prev, [key]: e.target.value }));
 
   const goToSignUp = () => {
-    // Bounce to /register with a return URL. After signup the user
-    // can come back and re-fill (form-state preservation across the
-    // auth jump is deliberately deferred — see plan).
     const ret = encodeURIComponent("/contact");
-    window.location.href = `/register?return=${ret}`;
+    window.location.href = `/signup?return=${ret}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
