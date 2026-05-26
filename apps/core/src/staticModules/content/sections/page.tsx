@@ -243,9 +243,32 @@ export default function SectionPage() {
   };
 
   // Handle edit
-  const handleEdit = (section: Section) => {
-    setEditingSection(section);
-    setSelectedType(section.type);
+  //
+  // Refetch the full section by id before opening the editor — the
+  // list endpoint runs through the parent Section model, which can
+  // drop per-type discriminator fields (e.g. RecentPosts.viewAllUrl,
+  // PostBody.contentBlocks). Without this, the form opens with
+  // missing values, the user thinks the field is empty, types
+  // nothing, hits Save, and the previously-saved value silently
+  // sticks (or worse — the empty string overwrites it).
+  //
+  // We block on the refetch instead of opening optimistically:
+  // `useForm.defaultValues` runs once on mount, so swapping
+  // `initialData` after the editor is already open wouldn't refresh
+  // the form. Wait for full data, then open. Falls back to the
+  // list snapshot if the refetch fails so admins aren't stranded.
+  const handleEdit = async (section: Section) => {
+    let full = section;
+    try {
+      const result = await getSectionById((section as any)._id);
+      if (result.success && result.data) {
+        full = result.data as any;
+      }
+    } catch (err) {
+      console.warn('handleEdit: full section refetch failed', err);
+    }
+    setEditingSection(full);
+    setSelectedType(full.type);
     setIsEditorOpen(true);
   };
 

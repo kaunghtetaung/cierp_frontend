@@ -55,7 +55,14 @@ export class StandardHttpExecutor implements HttpExecutor {
       };
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error(`❌ StandardHttpExecutor: Fetch failed:`, {
+        // `console.warn` (not `error`) on purpose: Next.js 15's
+        // dev error overlay intercepts `console.error` and pops it
+        // as a recoverable error, which is misleading here — the
+        // fetch failure is caught, surfaced to the caller via the
+        // returned `error` field, and may even be retried by the
+        // retry strategy below. Use warn so the diagnostic info
+        // still reaches the console without raising the overlay.
+        console.warn(`⚠️ StandardHttpExecutor: Fetch failed:`, {
           url: context.url,
           attempt,
           error: error instanceof Error ? {
