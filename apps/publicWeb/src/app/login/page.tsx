@@ -16,6 +16,8 @@
 // than a hard requirement.
 
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@repo/auth/server-api";
 import { LoginPageContent } from "./login-page-content";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +27,26 @@ export const metadata = {
   description: "Sign in to your account",
 };
 
-export default function LoginPage() {
+/**
+ * Already-authenticated users hitting `/login` get bounced home —
+ * otherwise the page would fire `initiateLogin()` and round-trip
+ * through OIDC just to land back where they started, often with a
+ * "session created" overlay flickering. Symmetric with /signup.
+ */
+async function redirectIfAuthenticated(): Promise<void> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
+    const isGuest =
+      user.roles?.some((r: any) => r.Role === "guest" || r === "guest") ?? false;
+    redirect(isGuest ? "/profileSetup/student" : "/");
+  } catch {
+    // Token unreadable → fall through to OIDC initiator.
+  }
+}
+
+export default async function LoginPage() {
+  await redirectIfAuthenticated();
   return (
     <Suspense fallback={<LoginPageFallback />}>
       <LoginPageContent />

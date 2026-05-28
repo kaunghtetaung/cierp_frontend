@@ -440,7 +440,14 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
               type="button"
               variant="outline"
               disabled={disabled}
-              className={`flex items-center gap-2 px-3 shrink-0 bg-white border-gray-300 hover:bg-white focus:border-[#4C67E1] focus:ring-[#4C67E1] ${
+              // Pin to h-10 explicitly so the country trigger lines up
+              // with the Input next to it. The default Button size is
+              // `h-9 py-2` while Input is `h-9 py-1`, but Button's
+              // bigger inline content (flag emoji at text-lg + dial
+              // code) used to push it taller than the Input — the two
+              // looked off by ~2-4px. Forcing identical height removes
+              // the mismatch.
+              className={`h-10 flex items-center gap-2 px-3 shrink-0 bg-white border-gray-300 hover:bg-white focus:border-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)] ${
                 error ? 'border-red-300 focus:border-red-500' : ''
               }`}
             >
@@ -491,7 +498,8 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Phone Number Input */}
+        {/* Phone Number Input — matched to the country trigger's
+            height so the two read as a single grouped control. */}
         <Input
           ref={ref}
           type="tel"
@@ -501,7 +509,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           onKeyDown={handleKeyDown}
           disabled={disabled}
           placeholder={getPlaceholder()}
-          className={`flex-1 bg-white border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1] ${error || !isValid ? 'border-red-300 focus:border-red-500' : ''}`}
+          className={`h-10 flex-1 bg-white border-gray-300 focus:border-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)] ${error || !isValid ? 'border-red-300 focus:border-red-500' : ''}`}
           {...props}
         />
       </div>

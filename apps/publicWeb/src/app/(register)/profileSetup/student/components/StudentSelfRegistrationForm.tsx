@@ -50,7 +50,7 @@ export function StudentSelfRegistrationForm({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#4C67E1] mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin text-[var(--color-primary,#4C67E1)] mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[#19184A] mb-2">
             Loading Form
           </h2>

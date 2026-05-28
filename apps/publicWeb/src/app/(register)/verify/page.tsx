@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { VerifyEmailClient } from "./VerifyEmailClient";
 import { Metadata } from "next";
 import { getApiDomain } from "@repo/utils/server";
@@ -33,7 +34,33 @@ async function fetchTenantSettings(): Promise<TenantSettings | null> {
   }
 }
 
-export default async function VerifyEmailPage() {
+/**
+ * `/verify` carries an opaque token in the query string and is reached
+ * from the verification email — by design it must work without a
+ * session (the token *is* the auth). With a token we render the page
+ * unconditionally; without one there's nothing to verify, so bounce
+ * the visitor to a useful place rather than show an "invalid link"
+ * dead-end:
+ *
+ *   no token + authenticated  → /
+ *   no token + anonymous      → /signup
+ */
+export default async function VerifyEmailPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ token?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
+  if (!params.token) {
+    try {
+      const { getCurrentUser } = await import("@repo/auth/server-api");
+      const user = await getCurrentUser();
+      redirect(user ? "/" : "/signup");
+    } catch {
+      redirect("/signup");
+    }
+  }
+
   const tenantSettings = await fetchTenantSettings();
   const cookieStore = await cookies();
   const initialLang = cookieStore.get('x-lang')?.value || 'en';

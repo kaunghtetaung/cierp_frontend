@@ -11,6 +11,7 @@ import {
 } from "@repo/ui";
 import { Button } from "@repo/ui";
 import { AlertCircle, RotateCcw, XCircle } from "lucide-react";
+import { useActiveThemeClass } from "@/hooks/use-active-theme-class";
 
 interface RestoreCacheDialogProps {
   open: boolean;
@@ -29,16 +30,31 @@ export function RestoreCacheDialog({
   onRestore,
   onStartFresh,
 }: RestoreCacheDialogProps) {
+  // The Radix Dialog portals to <body>, which loses the
+  // `.theme-um1sf.theme-variant-cardinal` wrapper that `(register)/layout`
+  // applies. Re-attach the active theme class on DialogContent so
+  // `var(--color-primary)` resolves to the tenant's brand colour.
+  const themeClass = useActiveThemeClass();
+
   return (
     <Dialog open={open} modal>
       <DialogContent
-        className="sm:max-w-md bg-white"
+        className={`${themeClass} sm:max-w-md bg-white`}
         showCloseButton={false}
       >
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <AlertCircle className="h-6 w-6 text-blue-600" />
+            <div
+              className="p-2 rounded-full"
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--color-primary, #4C67E1) 14%, transparent)",
+              }}
+            >
+              <AlertCircle
+                className="h-6 w-6"
+                style={{ color: "var(--color-primary, #4C67E1)" }}
+              />
             </div>
             <DialogTitle className="text-xl">Restore Previous Progress?</DialogTitle>
           </div>
@@ -79,7 +95,8 @@ export function RestoreCacheDialog({
           <Button
             type="button"
             onClick={onRestore}
-            className="flex-1 bg-[#4C67E1] hover:bg-[#3d52b8] text-white"
+            className="flex-1 hover:opacity-90 text-white"
+            style={{ backgroundColor: "var(--color-primary, #4C67E1)" }}
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Restore Data

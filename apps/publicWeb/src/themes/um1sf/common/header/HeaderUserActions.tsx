@@ -9,8 +9,12 @@ import {
   LogOut,
   User as UserIcon,
   KeyRound,
+  UserCog,
 } from "lucide-react";
 import { useSafeAuth } from "@/hooks/use-safe-auth";
+import { ProfileSelectionDialog } from "@/components/profile/ProfileSelectionDialog";
+import { useProfileCompletionPrompt } from "@/hooks/use-profile-completion-prompt";
+import { useStaffProfilePrompt } from "@/hooks/use-staff-profile-prompt";
 
 /**
  * Header auth slot — Sign in / Sign up when unauthenticated, user
@@ -35,6 +39,21 @@ export function HeaderUserActions({
   const { user, isAuthenticated, isLoading } = useSafeAuth();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Mode-A fix: previously this header had no path to the profile
+  // completion popup, so guest users who verified their email landed
+  // on um1's home page and saw nothing prompting them to finish Stage
+  // 3 of signup. The hook auto-opens the dialog on first authenticated
+  // render whenever role=guest + profileState∈{created,incomplete,
+  // pending}; the dropdown menu item below lets users re-open it
+  // manually after dismissing.
+  const profilePrompt = useProfileCompletionPrompt();
+
+  // Staff-only nag: after Mini submission the user still has more
+  // they can add via Full form. We show "Profile X% complete" in the
+  // dropdown so they have a clear path to finish — without forcing
+  // them. Empty (no staff record) = no nag.
+  const staffPrompt = useStaffProfilePrompt();
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -88,6 +107,7 @@ export function HeaderUserActions({
         .toUpperCase() || "U";
 
     return (
+      <>
       <div className="relative" ref={dropdownRef}>
         <button
           type="button"
@@ -135,6 +155,66 @@ export function HeaderUserActions({
               )}
             </div>
             <ul className="py-1">
+              {profilePrompt.needsCompletion && (
+                <>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        profilePrompt.setOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/60 hover:text-primary transition-colors text-left"
+                    >
+                      <UserCog className="h-4 w-4" />
+                      {language === "mm"
+                        ? "ပရိုဖိုင် ဖြည့်စွက်ရန်"
+                        : "Complete profile"}
+                    </button>
+                  </li>
+                  <li className="border-t border-border my-1" />
+                </>
+              )}
+              {staffPrompt.needsCompletion && (
+                <>
+                  <li className="px-3 py-2">
+                    <Link
+                      href="/profileSetup/staff"
+                      onClick={() => setOpen(false)}
+                      className="block group"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                          {language === "mm"
+                            ? "ပရိုဖိုင် ဖြည့်စွက်ရန်"
+                            : "Profile complete"}
+                        </span>
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: "var(--color-primary)" }}
+                        >
+                          {staffPrompt.percentage}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${staffPrompt.percentage}%`,
+                            backgroundColor: "var(--color-primary)",
+                          }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-tight">
+                        {language === "mm"
+                          ? "အချိန်ရရင် ဆက်ပြီး ဖြည့်စွက်ပါ"
+                          : "Finish when you have time"}
+                      </p>
+                    </Link>
+                  </li>
+                  <li className="border-t border-border my-1" />
+                </>
+              )}
               <li>
                 <Link
                   href="/profile"
@@ -173,6 +253,13 @@ export function HeaderUserActions({
           </div>
         )}
       </div>
+
+      <ProfileSelectionDialog
+        open={profilePrompt.open}
+        onOpenChange={profilePrompt.setOpen}
+        user={profilePrompt.user}
+      />
+      </>
     );
   }
 

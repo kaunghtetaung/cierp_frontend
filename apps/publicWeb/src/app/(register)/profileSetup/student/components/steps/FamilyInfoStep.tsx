@@ -159,7 +159,7 @@ export function FamilyInfoStep() {
 
   const inputClass = cn(
     "w-full px-3 py-2 border rounded-md bg-white focus:outline-none focus:ring-2 transition-all",
-    "border-gray-300 focus:border-[#4C67E1] focus:ring-[#4C67E1]",
+    "border-gray-300 focus:border-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)]",
     "text-sm text-gray-900 placeholder-gray-400"
   );
 
@@ -437,7 +437,7 @@ export function FamilyInfoStep() {
               className={cn(
                 "px-6 py-3 text-sm font-medium transition-all relative border-b-2",
                 activeTab === tab.value
-                  ? "text-[#4C67E1] border-[#4C67E1]"
+                  ? "text-[var(--color-primary,#4C67E1)] border-[var(--color-primary,#4C67E1)]"
                   : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
               )}
             >
@@ -623,36 +623,36 @@ export function FamilyInfoStep() {
                 <span className="text-red-500 ml-1">*</span>
               </Label>
               <div className="grid grid-cols-3 gap-4">
-                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[#4C67E1] hover:bg-[#4C67E1]/5 transition-all">
+                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)]/5 transition-all">
                   <input
                     type="radio"
                     name="guardianType"
                     value="father"
                     checked={guardianType === "father"}
                     onChange={(e) => setGuardianType(e.target.value as GuardianType)}
-                    className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
+                    className="h-4 w-4 text-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)] border-gray-300"
                   />
                   <span className="text-sm text-gray-700">Father</span>
                 </label>
-                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[#4C67E1] hover:bg-[#4C67E1]/5 transition-all">
+                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)]/5 transition-all">
                   <input
                     type="radio"
                     name="guardianType"
                     value="mother"
                     checked={guardianType === "mother"}
                     onChange={(e) => setGuardianType(e.target.value as GuardianType)}
-                    className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
+                    className="h-4 w-4 text-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)] border-gray-300"
                   />
                   <span className="text-sm text-gray-700">Mother</span>
                 </label>
-                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[#4C67E1] hover:bg-[#4C67E1]/5 transition-all">
+                <label className="flex items-center justify-center space-x-2 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)]/5 transition-all">
                   <input
                     type="radio"
                     name="guardianType"
                     value="other"
                     checked={guardianType === "other"}
                     onChange={(e) => setGuardianType(e.target.value as GuardianType)}
-                    className="h-4 w-4 text-[#4C67E1] focus:ring-[#4C67E1] border-gray-300"
+                    className="h-4 w-4 text-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)] border-gray-300"
                   />
                   <span className="text-sm text-gray-700">Other</span>
                 </label>
@@ -750,7 +750,7 @@ export function FamilyInfoStep() {
                     id="sameAsStudentAddress"
                     checked={sameAsStudentAddress}
                     onChange={(e) => handleSameAsStudentAddress(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-[#4C67E1] focus:ring-[#4C67E1] cursor-pointer"
+                    className="h-4 w-4 rounded border-gray-300 text-[var(--color-primary,#4C67E1)] focus:ring-[var(--color-primary,#4C67E1)] cursor-pointer"
                   />
                   <label
                     htmlFor="sameAsStudentAddress"
@@ -929,7 +929,7 @@ export function FamilyInfoStep() {
               key={tab.value}
               className={cn(
                 "h-2 w-2 rounded-full transition-all",
-                activeTab === tab.value ? "bg-[#4C67E1] w-8" : "bg-gray-300"
+                activeTab === tab.value ? "bg-[var(--color-primary,#4C67E1)] w-8" : "bg-gray-300"
               )}
             />
           ))}
@@ -943,7 +943,7 @@ export function FamilyInfoStep() {
             "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
             activeTab === "guardian"
               ? "text-gray-400 cursor-not-allowed"
-              : "text-white bg-[#4C67E1] hover:bg-[#3A55D1]"
+              : "text-white bg-[var(--color-primary,#4C67E1)] hover:opacity-90"
           )}
         >
           Next

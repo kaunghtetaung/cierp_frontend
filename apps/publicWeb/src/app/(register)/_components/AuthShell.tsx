@@ -1,14 +1,91 @@
 "use client";
 
 import React from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/styled-components/ui/DropdownMenu";
 import { S3Image } from "@/components/common/S3Image";
 import { useTenant } from "@repo/tenant";
-import { LangSelectorUI } from "@/components/site-shell/navigation/header/LangSelectorUI";
-import { LangSelectorProvider } from "@/feature-components/lang-selector";
+import {
+  LangSelectorProvider,
+  useLangSelector,
+} from "@/feature-components/lang-selector";
 import type { Language } from "@/feature-components/lang-selector";
+
+/**
+ * Compact in-shell language switcher. Built directly on the
+ * DropdownMenu primitives so we can pin a small trigger size and
+ * own the active-item palette. The shared `LangSelectorUI` defaults
+ * to a 44px touch target and a dark dropdown background — too big
+ * for the auth chrome and unreadable when the theme tints the
+ * accent background dark (e.g. um1 cardinal-red on cardinal-red
+ * active item).
+ */
+function CompactLangSwitcher() {
+  const { currentLanguage, languages, changeLanguage } = useLangSelector();
+  if (!languages || languages.length < 2) return null;
+  const current =
+    languages.find((l: Language) => l.code === currentLanguage) || languages[0];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="group inline-flex items-center gap-1 h-8 px-2 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          aria-label="Select language"
+        >
+          {current.flag && <span className="text-sm leading-none">{current.flag}</span>}
+          <span className="uppercase tracking-wider">{current.code}</span>
+          <ChevronDown className="h-3 w-3 text-gray-400 transition-transform group-data-[state=open]:rotate-180" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="min-w-[160px] bg-white border-gray-200 shadow-lg z-[9999] p-1"
+      >
+        {languages.map((language: Language) => {
+          const isActive = language.code === currentLanguage;
+          return (
+            <DropdownMenuItem
+              key={language.code}
+              onClick={() => changeLanguage(language.code)}
+              className="cursor-pointer rounded-md px-2.5 py-1.5 text-sm focus:bg-gray-100 data-[highlighted]:bg-gray-100"
+              // Active item uses the brand colour as a subtle wash with the
+              // foreground forced to the brand's primary-foreground so the
+              // text stays readable even when the theme tint is dark (e.g.
+              // um1 cardinal-red). Inactive items keep neutral gray.
+              style={
+                isActive
+                  ? {
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-primary, #2460B9) 12%, transparent)",
+                      color: "var(--color-primary, #2460B9)",
+                      fontWeight: 600,
+                    }
+                  : undefined
+              }
+            >
+              <div className="flex items-center gap-2 w-full">
+                {language.flag && (
+                  <span className="text-sm leading-none">{language.flag}</span>
+                )}
+                <span className="flex-1 truncate">{language.nativeName}</span>
+                {isActive && <Check className="h-3.5 w-3.5" />}
+              </div>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 interface AuthShellProps {
   children: React.ReactNode;
@@ -43,7 +120,6 @@ export default function AuthShell({
   themeName,
   themeVariant,
 }: AuthShellProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { tenant } = useTenant();
 
@@ -102,12 +178,6 @@ export default function AuthShell({
     return "";
   })();
 
-  // Hide the back-arrow on terminal screens where the only sensible
-  // next step is forward (verify result, success landing) — going
-  // back from there reopens the form they just submitted.
-  const hideBack =
-    pathname?.startsWith("/verify") || pathname?.startsWith("/success");
-
   return (
     <LangSelectorProvider
       key={initialLanguage}
@@ -118,7 +188,12 @@ export default function AuthShell({
         className={`${themeClass} min-h-screen flex flex-col`}
         style={{
           fontFamily: "var(--font-sans, system-ui)",
-          backgroundColor: "#F8FAFC", // soft slate-50 — calm canvas
+          // Brand-tinted slate-100 — pulls the page out of pure-white
+          // territory so the white header + white card stand out as
+          // distinct surfaces. The 6% brand wash ties the canvas to
+          // each tenant's theme without overpowering content colour.
+          backgroundColor:
+            "color-mix(in srgb, var(--color-primary, #2460B9) 6%, #F1F5F9)",
         }}
       >
         {/* Sticky header — clean white surface, brand-coloured accent
@@ -134,44 +209,18 @@ export default function AuthShell({
         >
           <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Back / Home button — ghost pill, brand-coloured icon */}
-              {hideBack ? (
-                <Link
-                  href="/"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                  aria-label="Home"
-                >
-                  <ArrowLeft
-                    className="h-4 w-4"
-                    style={{ color: "var(--color-primary, #2460B9)" }}
-                  />
-                  <span className="text-sm font-medium hidden sm:inline">
-                    Home
-                  </span>
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => router.back()}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                  aria-label="Back"
-                >
-                  <ArrowLeft
-                    className="h-4 w-4"
-                    style={{ color: "var(--color-primary, #2460B9)" }}
-                  />
-                  <span className="text-sm font-medium hidden sm:inline">
-                    Back
-                  </span>
-                </button>
-              )}
-
-              {/* Brand block — logo + tenant name + screen subtitle.
-                  Centred on mobile (left/right buttons flank it) and
-                  left-aligned from sm+ for a more conventional layout. */}
-              <div className="flex items-center gap-2.5 sm:gap-3 flex-1 justify-center sm:justify-start sm:ml-2 min-w-0">
+              {/* Brand block doubles as the "go home" affordance — the
+                  whole logo+name row is a Link to `/`. No separate back
+                  button (would compete with the logo for the same job
+                  and clutter the chrome). */}
+              <Link
+                href="/"
+                aria-label="Home"
+                title="Home"
+                className="flex items-center gap-2.5 sm:gap-3 flex-1 justify-start min-w-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-lg"
+              >
                 {tenant.brandInfo?.logoUrl && (
-                  <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-50 ring-1 ring-gray-100">
+                  <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-50 ring-1 ring-gray-100 group-hover:ring-gray-200 transition-shadow">
                     <S3Image
                       src={tenant.brandInfo.logoUrl}
                       alt={tenant.brandInfo?.title || "Logo"}
@@ -182,7 +231,7 @@ export default function AuthShell({
                 )}
                 <div className="min-w-0">
                   <h1
-                    className="text-sm sm:text-base font-semibold truncate leading-tight"
+                    className="text-sm sm:text-base font-semibold truncate leading-tight group-hover:underline underline-offset-4 decoration-2"
                     style={{ color: "var(--color-primary, #2460B9)" }}
                   >
                     <span className="md:hidden">{displayShort}</span>
@@ -194,37 +243,30 @@ export default function AuthShell({
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
 
-              {/* Language selector — outlined pill, brand-coloured ring
-                  on hover. The original was a borderless ghost on dark
-                  bg which read as a transparent label; this gives it a
-                  proper "clickable control" affordance. */}
+              {/* Compact lang switcher — see CompactLangSwitcher above
+                  for why we don't reuse the shared LangSelectorUI here. */}
               <div className="flex items-center flex-shrink-0">
-                <div
-                  className="rounded-full border border-gray-200 hover:border-gray-300 transition-colors px-1.5 py-1 sm:px-2"
-                >
-                  <LangSelectorUI
-                    variant="dropdown"
-                    showFlag={true}
-                    showNativeName={true}
-                    showName={false}
-                    triggerClassName="text-gray-700 hover:text-gray-900 transition-colors"
-                    contentClassName="bg-white border-gray-200 shadow-lg"
-                  />
-                </div>
+                <CompactLangSwitcher />
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
+        {/* Mobile gets `py-4` so the form card has breathing room
+            under the sticky header (previously `py-0` glued the card
+            to the accent stripe). Desktop keeps `py-8`. */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-0 sm:px-6 lg:px-8 py-4 sm:py-8">
           {children}
         </main>
 
-        <footer className="hidden sm:block border-t border-gray-200 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <p className="text-center text-sm text-gray-600">
+        {/* Footer now visible on mobile too — same copyright text in
+            a slimmer container. Earlier this was `hidden sm:block`,
+            which left the page with no bottom anchor on phones. */}
+        <footer className="border-t border-gray-200 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <p className="text-center text-xs sm:text-sm text-gray-600">
               © {new Date().getFullYear()} {displayName}. All rights reserved.
             </p>
           </div>

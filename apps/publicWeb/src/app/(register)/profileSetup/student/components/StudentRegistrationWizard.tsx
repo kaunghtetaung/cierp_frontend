@@ -1295,19 +1295,19 @@ export function StudentRegistrationWizard({
           </h3>
 
           {/* Info Box - English */}
-          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-5 mb-4">
-            <p className="text-sm text-blue-900 leading-relaxed mb-3">
+          <div className="bg-[var(--color-primary,#4C67E1)]/5 border-l-4 border-[var(--color-primary,#4C67E1)] rounded-r-lg p-5 mb-4">
+            <p className="text-sm text-gray-900 leading-relaxed mb-3">
               <strong>Your profile data has been completed successfully.</strong>
             </p>
-            <p className="text-sm text-blue-800 leading-relaxed mb-3">
+            <p className="text-sm text-gray-700 leading-relaxed mb-3">
               The Student Affairs Department will review and approve your registration request.
               You will receive an approval letter via email once the review is complete.
             </p>
-            <p className="text-sm text-blue-800 leading-relaxed">
+            <p className="text-sm text-gray-700 leading-relaxed">
               Your submitted data is available at{" "}
               <a
                 href="/profile/student"
-                className="font-semibold underline hover:text-blue-600"
+                className="font-semibold underline hover:text-[var(--color-primary,#4C67E1)]"
                 target="_blank"
               >
                 /profile/student
@@ -1343,14 +1343,14 @@ export function StudentRegistrationWizard({
             <Button
               onClick={() => window.open('/profile/student', '_blank')}
               variant="outline"
-              className="border-[#4C67E1] text-[#4C67E1] hover:bg-blue-50"
+              className="border-[var(--color-primary,#4C67E1)] text-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)]/5"
               size="lg"
             >
               View My Profile / ကျွန်ုပ်၏ ကိုယ်ရေးအချက်အလက်
             </Button>
             <Button
               onClick={handleGoHome}
-              className="bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+              className="bg-[var(--color-primary,#4C67E1)] hover:opacity-90 text-white"
               size="lg"
             >
               Go to Home Page / ပင်မစာမျက်နှာသို့
@@ -1442,7 +1442,7 @@ export function StudentRegistrationWizard({
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   currentStep === 0
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-white border-2 border-[#4C67E1] text-[#4C67E1] hover:bg-[#4C67E1] hover:text-white shadow-sm"
+                    : "bg-white border-2 border-[var(--color-primary,#4C67E1)] text-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)] hover:text-white shadow-sm"
                 }`}
                 title={t.previousButton}
               >
@@ -1461,9 +1461,9 @@ export function StudentRegistrationWizard({
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                           isActive
-                            ? "bg-[#4C67E1] text-white shadow-md"
+                            ? "bg-[var(--color-primary,#4C67E1)] text-white shadow-md"
                             : isCompleted
-                            ? "bg-[#4C67E1] text-white"
+                            ? "bg-[var(--color-primary,#4C67E1)] text-white"
                             : "bg-gray-200 text-gray-400"
                         }`}
                         title={step.title}
@@ -1477,7 +1477,7 @@ export function StudentRegistrationWizard({
                       {index < WIZARD_STEPS.length - 1 && (
                         <div
                           className={`w-8 h-0.5 ${
-                            isCompleted ? "bg-[#4C67E1]" : "bg-gray-300"
+                            isCompleted ? "bg-[var(--color-primary,#4C67E1)]" : "bg-gray-300"
                           }`}
                         />
                       )}
@@ -1494,7 +1494,7 @@ export function StudentRegistrationWizard({
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   currentStep === WIZARD_STEPS.length - 1
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-[#4C67E1] text-white hover:bg-[#3B56D1] shadow-sm"
+                    : "bg-[var(--color-primary,#4C67E1)] text-white hover:opacity-90 shadow-sm"
                 }`}
                 title={t.nextButton}
               >
@@ -1504,7 +1504,7 @@ export function StudentRegistrationWizard({
             {/* Progress Bar - Small */}
             <div className="w-full bg-gray-200 rounded-full h-1">
               <div
-                className="bg-[#4C67E1] h-1 rounded-full transition-all duration-300"
+                className="bg-[var(--color-primary,#4C67E1)] h-1 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -1522,7 +1522,7 @@ export function StudentRegistrationWizard({
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
                   currentStep === 0
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-white border-2 border-[#4C67E1] text-[#4C67E1] hover:bg-[#4C67E1] hover:text-white shadow-sm"
+                    : "bg-white border-2 border-[var(--color-primary,#4C67E1)] text-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)] hover:text-white shadow-sm"
                 }`}
                 title={t.previousButton}
               >
@@ -1539,9 +1539,9 @@ export function StudentRegistrationWizard({
                       key={step.id}
                       className={`w-1.5 h-1.5 rounded-full transition-all ${
                         isActive
-                          ? "bg-[#4C67E1] w-4"
+                          ? "bg-[var(--color-primary,#4C67E1)] w-4"
                           : isCompleted
-                          ? "bg-[#4C67E1]"
+                          ? "bg-[var(--color-primary,#4C67E1)]"
                           : "bg-gray-300"
                       }`}
                     />
@@ -1557,7 +1557,7 @@ export function StudentRegistrationWizard({
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
                   currentStep === WIZARD_STEPS.length - 1
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-[#4C67E1] text-white hover:bg-[#3B56D1] shadow-sm"
+                    : "bg-[var(--color-primary,#4C67E1)] text-white hover:opacity-90 shadow-sm"
                 }`}
                 title={t.nextButton}
               >
@@ -1568,7 +1568,7 @@ export function StudentRegistrationWizard({
             {/* Step Info Row */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#4C67E1] text-white shadow-md">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-primary,#4C67E1)] text-white shadow-md">
                   <StepIcon className="h-3.5 w-3.5" />
                 </div>
                 <div>
@@ -1585,7 +1585,7 @@ export function StudentRegistrationWizard({
             {/* Progress Bar - Small */}
             <div className="w-full bg-gray-200 rounded-full h-1">
               <div
-                className="bg-[#4C67E1] h-1 rounded-full transition-all duration-300"
+                className="bg-[var(--color-primary,#4C67E1)] h-1 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -1604,7 +1604,7 @@ export function StudentRegistrationWizard({
                 <button
                   type="button"
                   onClick={() => setShowHelper(!showHelper)}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[#4C67E1]/10 hover:bg-[#4C67E1]/20 text-[#4C67E1] transition-all"
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-primary,#4C67E1)]/10 hover:bg-[var(--color-primary,#4C67E1)]/20 text-[var(--color-primary,#4C67E1)] transition-all"
                   title="Show help"
                 >
                   <HelpCircle className="h-5 w-5" />
@@ -1613,9 +1613,9 @@ export function StudentRegistrationWizard({
 
               {/* Helper Text */}
               {showHelper && (
-                <div className="mt-4 p-4 bg-blue-50 border-l-4 border-[#4C67E1] rounded-r-lg">
+                <div className="mt-4 p-4 bg-[var(--color-primary,#4C67E1)]/5 border-l-4 border-[var(--color-primary,#4C67E1)] rounded-r-lg">
                   <div className="flex items-start gap-3">
-                    <HelpCircle className="h-5 w-5 text-[#4C67E1] flex-shrink-0 mt-0.5" />
+                    <HelpCircle className="h-5 w-5 text-[var(--color-primary,#4C67E1)] flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-gray-700 leading-relaxed">
                       {currentStep === 0 && t.personalInfoHelper}
                       {currentStep === 1 && t.addressInfoHelper}
@@ -1645,7 +1645,7 @@ export function StudentRegistrationWizard({
                 <button
                   type="button"
                   onClick={() => setShowHelper(!showHelper)}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[#4C67E1]/10 hover:bg-[#4C67E1]/20 text-[#4C67E1] transition-all flex-shrink-0"
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-primary,#4C67E1)]/10 hover:bg-[var(--color-primary,#4C67E1)]/20 text-[var(--color-primary,#4C67E1)] transition-all flex-shrink-0"
                   title="Show help"
                 >
                   <HelpCircle className="h-5 w-5" />
@@ -1654,9 +1654,9 @@ export function StudentRegistrationWizard({
 
               {/* Helper Text */}
               {showHelper && (
-                <div className="mt-4 p-3 bg-blue-50 border-l-4 border-[#4C67E1] rounded-r-lg">
+                <div className="mt-4 p-3 bg-[var(--color-primary,#4C67E1)]/5 border-l-4 border-[var(--color-primary,#4C67E1)] rounded-r-lg">
                   <div className="flex items-start gap-2">
-                    <HelpCircle className="h-4 w-4 text-[#4C67E1] flex-shrink-0 mt-0.5" />
+                    <HelpCircle className="h-4 w-4 text-[var(--color-primary,#4C67E1)] flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-gray-700 leading-relaxed">
                       {currentStep === 0 && t.personalInfoHelper}
                       {currentStep === 1 && t.addressInfoHelper}
@@ -1706,7 +1706,7 @@ export function StudentRegistrationWizard({
                   handleNext();
                 }}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+                className="flex items-center gap-2 bg-[var(--color-primary,#4C67E1)] hover:opacity-90 text-white"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
@@ -1727,7 +1727,7 @@ export function StudentRegistrationWizard({
                   );
                   canSubmitRef.current = true;
                 }}
-                className="flex items-center gap-2 bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+                className="flex items-center gap-2 bg-[var(--color-primary,#4C67E1)] hover:opacity-90 text-white"
               >
                 {isSubmitting
                   ? (mode === 'edit' ? "Updating..." : "Submitting...")

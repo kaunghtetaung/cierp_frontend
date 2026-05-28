@@ -6,7 +6,6 @@ import {
   Printer,
   Download,
   User as UserIcon,
-  ArrowLeft,
   Edit,
 } from "lucide-react";
 import QRCode from "qrcode";
@@ -16,6 +15,7 @@ import type { User } from "@repo/types";
 import { Button } from "@repo/ui";
 import { S3Image } from "@/components/common/S3Image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   getMyProfile,
   getProfilePhotoUrl,
@@ -427,54 +427,44 @@ export function StudentProfileView({
   }
 
   // Simple dots pattern (clean and professional)
-  const backgroundPattern = `data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E`;
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#e8f0fa" }}>
-      {/* Blue Header with pattern - Hidden on print */}
+      {/* AuthShell-style header — clean white surface with a brand
+          accent stripe at the bottom. Matches /signup, /verify,
+          /success, /profileSetup so authed flows feel like one
+          cohesive chrome. Hidden on print. */}
       <header
-        className="no-print relative z-50"
+        className="no-print sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b"
         style={{
-          backgroundColor: "#2460B9",
-          backgroundImage: `url("${backgroundPattern}")`,
-          backgroundRepeat: "repeat",
+          borderBottomColor: "var(--color-primary, #2460B9)",
+          borderBottomWidth: "3px",
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            {/* Back button */}
-            <button
-              type="button"
-              onClick={() => {
-                // Check if there's a referrer (previous page)
-                if (document.referrer && document.referrer !== '') {
-                  router.back();
-                } else {
-                  // No referrer, go to home
-                  router.push('/');
-                }
-              }}
-              className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Logo + tenant name → Home. Doubles as the back
+                affordance so there's no separate back button. */}
+            <Link
+              href="/"
+              aria-label="Home"
+              title="Home"
+              className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-lg"
             >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="text-sm font-medium">Back</span>
-            </button>
-
-            {/* Logo and Title */}
-            <div className="flex items-center gap-3">
               {tenantLogo && (
-                <div className="relative h-12 w-12">
+                <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-50 ring-1 ring-gray-100 group-hover:ring-gray-200 transition-shadow">
                   <S3Image
                     src={tenantLogo}
                     alt={tenantDisplayName || "Organization Logo"}
                     fill
-                    className="object-contain"
+                    className="object-contain p-1"
                   />
                 </div>
               )}
-              <div className="text-white">
-                {/* Short name on mobile, full name on md+ */}
-                <h1 className="text-xl font-semibold">
+              <div className="min-w-0">
+                <h1
+                  className="text-sm sm:text-base font-semibold truncate leading-tight group-hover:underline underline-offset-4 decoration-2"
+                  style={{ color: "var(--color-primary, #2460B9)" }}
+                >
                   <span className="md:hidden">
                     {tenantDisplayShortName || tenantDisplayName || tenantName}
                   </span>
@@ -482,18 +472,23 @@ export function StudentProfileView({
                     {tenantDisplayName || tenantName}
                   </span>
                 </h1>
-                <p className="text-sm text-blue-100">Student Profile</p>
+                <p className="text-[11px] sm:text-xs text-gray-500 truncate leading-tight mt-0.5">
+                  Student Profile
+                </p>
               </div>
-            </div>
+            </Link>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
+            {/* Action Buttons — ghost-style, brand-coloured icons. The
+                old outline-on-blue scheme no longer reads on the
+                white surface; primary-tint hover gives the same
+                affordance without competing with the brand stripe. */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               {profile?.registrationStatus === "pending" && (
                 <Button
                   onClick={() => router.push("/profileSetup/student")}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-white border-amber-400/50"
+                  className="h-9 flex items-center gap-1.5 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700"
                   title="Edit Profile"
                 >
                   <Edit className="h-4 w-4" />
@@ -504,7 +499,8 @@ export function StudentProfileView({
                 onClick={handleDownloadPDF}
                 variant="outline"
                 size="sm"
-                className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border-white/30"
+                className="h-9 hidden md:flex items-center gap-1.5 border-gray-200 hover:border-[var(--color-primary,#2460B9)] hover:bg-[var(--color-primary,#2460B9)]/5"
+                style={{ color: "var(--color-primary, #2460B9)" }}
                 disabled={isDownloading}
                 title="Download PDF"
               >
@@ -519,7 +515,8 @@ export function StudentProfileView({
                 onClick={handlePrint}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border-white/30"
+                className="h-9 flex items-center gap-1.5 border-gray-200 hover:border-[var(--color-primary,#2460B9)] hover:bg-[var(--color-primary,#2460B9)]/5"
+                style={{ color: "var(--color-primary, #2460B9)" }}
                 title="Print"
               >
                 <Printer className="h-4 w-4" />

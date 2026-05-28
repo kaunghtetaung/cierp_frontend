@@ -13,6 +13,12 @@ interface StudentPhotoUploadProps {
   disabled?: boolean;
   tenantId: string;
   appId: string;
+  /**
+   * Preview box size. `"md"` (default, 160px) preserves the original
+   * student-form layout; `"sm"` (96px) is what the compact staff Mini
+   * and Full wizards use beside the name fields.
+   */
+  size?: "sm" | "md";
 }
 
 export function StudentPhotoUpload({
@@ -22,7 +28,14 @@ export function StudentPhotoUpload({
   disabled,
   tenantId,
   appId,
+  size = "md",
 }: StudentPhotoUploadProps) {
+  // Box class per size — kept as a string literal (not interpolated)
+  // so Tailwind's JIT scanner picks both variants up at build time.
+  const boxSize = size === "sm" ? "w-24 h-24" : "w-40 h-40";
+  // Icon scaling roughly matches the box ratio.
+  const iconSize = size === "sm" ? "w-8 h-8" : "w-12 h-12";
+  const hintTextSize = size === "sm" ? "text-xs" : "text-sm";
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(value || "");
@@ -197,15 +210,15 @@ export function StudentPhotoUpload({
       <div className="relative">
         {isLoadingPreview ? (
           // Loading Preview
-          <div className="relative w-40 h-40 mx-auto rounded-lg border-2 border-gray-300 bg-gray-50 flex items-center justify-center">
+          <div className={`relative ${boxSize} mx-auto rounded-lg border-2 border-gray-300 bg-gray-50 flex items-center justify-center`}>
             <div className="text-center text-gray-600">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto mb-2"></div>
-              <p className="text-sm">Loading photo...</p>
+              <p className={hintTextSize}>Loading…</p>
             </div>
           </div>
         ) : previewUrl ? (
           // Photo Preview
-          <div className="relative w-40 h-40 mx-auto rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-50">
+          <div className={`relative ${boxSize} mx-auto rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-50`}>
             <S3Image
               src={previewUrl}
               alt="Student photo"
@@ -236,16 +249,17 @@ export function StudentPhotoUpload({
           // Empty Placeholder
           <div
             className={cn(
-              "w-40 h-40 mx-auto rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
+              boxSize,
+              "mx-auto rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
               disabled
                 ? "border-gray-300 bg-gray-100 cursor-not-allowed"
-                : "border-gray-400 bg-gray-50 hover:border-[#4C67E1] hover:bg-blue-50",
+                : "border-gray-400 bg-gray-50 hover:border-[var(--color-primary,#4C67E1)] hover:bg-[var(--color-primary,#4C67E1)]/5",
               error && "border-red-400 bg-red-50"
             )}
             onClick={!disabled ? triggerFileSelect : undefined}
           >
-            <User className={cn("w-12 h-12 mb-2", disabled ? "text-gray-400" : "text-gray-500")} />
-            <p className="text-sm text-gray-600 text-center px-2">
+            <User className={cn(iconSize, "mb-2", disabled ? "text-gray-400" : "text-gray-500")} />
+            <p className={cn(hintTextSize, "text-gray-600 text-center px-2")}>
               {disabled ? "Upload disabled" : "Click to upload photo"}
             </p>
           </div>
@@ -269,7 +283,7 @@ export function StudentPhotoUpload({
           disabled={disabled || isUploading}
           className={cn(
             "flex items-center gap-2",
-            !previewUrl && "bg-[#4C67E1] hover:bg-[#3154A1] text-white"
+            !previewUrl && "bg-[var(--color-primary,#4C67E1)] hover:opacity-90 text-white"
           )}
         >
           <Upload className="w-4 h-4" />
