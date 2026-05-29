@@ -167,6 +167,21 @@ export function MiniStaffForm({ user, initialProfile, isUpdate = false, onSwitch
     }
   });
 
+  // One-shot mount diagnostic — confirms whether the server-fetched
+  // `initialProfile` actually reached the form. If a returning user
+  // sees an empty form, the console will say `hasInitialProfile=false`
+  // and we know to chase the action / page rather than the form.
+  useEffect(() => {
+    console.log("[MiniStaffForm] mounted", {
+      hasInitialProfile: Boolean(initialProfile),
+      isUpdate,
+      keysOnInitial: initialProfile ? Object.keys(initialProfile).slice(0, 12) : [],
+      seedNameEnglish: (initialProfile as any)?.nameEnglish,
+      seedNrcNumber: (initialProfile as any)?.nrcNumber,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Auto-save the form to localStorage on every change. Debounced
   // via a 500ms timer so typing fast doesn't pound localStorage.
   // Saves are skipped on submit success (clear instead) and when

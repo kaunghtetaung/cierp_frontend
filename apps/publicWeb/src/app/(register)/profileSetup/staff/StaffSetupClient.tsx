@@ -28,6 +28,10 @@ export function StaffSetupClient({
   initialProfile,
 }: StaffSetupClientProps) {
   const hasExisting = Boolean(initialProfile);
+  // Returning user (record already exists) lands on Mini in edit mode,
+  // not Full — Mini's the simpler subset and most edits happen there.
+  // They can switch to Full from the footer link. First-time users
+  // also start on Mini.
   const [mode, setMode] = useState<Mode>("mini");
   const [draft, setDraft] = useState<any>(initialProfile || null);
 
@@ -40,9 +44,17 @@ export function StaffSetupClient({
     setMode("mini");
   };
 
+  // The `key` forces a remount whenever the underlying record changes
+  // (e.g. after PATCH /me succeeds and the page reloads with fresh
+  // server data). Without it React would reuse the existing form
+  // instance and ignore the new initialProfile in its lazy useState
+  // initializer.
+  const formKey = (initialProfile as any)?._id || "new";
+
   if (mode === "full") {
     return (
       <FullStaffWizard
+        key={formKey}
         user={user}
         initialProfile={draft}
         // PATCH /me when a record already exists; otherwise POST.
@@ -54,6 +66,7 @@ export function StaffSetupClient({
 
   return (
     <MiniStaffForm
+      key={formKey}
       user={user}
       initialProfile={draft}
       // PATCH /me when a record already exists; otherwise POST.

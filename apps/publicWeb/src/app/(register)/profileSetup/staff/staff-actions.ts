@@ -262,6 +262,11 @@ export async function updateMyStaffProfile(
 /**
  * Fetch the calling user's staff record. Returns `null` if they
  * haven't self-registered yet.
+ *
+ * Response unwrap: Nest controllers sometimes return the raw record
+ * and other times a `{data, meta}` envelope (gateway-wrapped paths).
+ * The unwrap below treats either shape uniformly so the form gets
+ * a flat staff object regardless.
  */
 export async function getMyStaffProfile() {
   return withServerActionErrorHandler(
@@ -277,11 +282,74 @@ export async function getMyStaffProfile() {
         tokenStrategy: "auto",
       });
 
+      // Diagnostic: dump the raw httpClient response shape so we can
+      // see whether the failure is at the request layer, the unwrap
+      // layer, or somewhere else entirely. Strip once the flow is
+      // confirmed working in dev.
+      console.log("[staff-actions] getMyStaffProfile raw result:", {
+        success: result?.success,
+        error: result?.error,
+        dataType: typeof result?.data,
+        dataIsArray: Array.isArray(result?.data),
+        dataKeys:
+          result?.data && typeof result.data === "object"
+            ? Object.keys(result.data).slice(0, 20)
+            : null,
+        dataPreview:
+          result?.data && typeof result.data === "object"
+            ? {
+                _id: (result.data as any)._id,
+                nameEnglish: (result.data as any).nameEnglish,
+                nrcNumber: (result.data as any).nrcNumber,
+                hasDataKey: "data" in result.data,
+                innerKeys:
+                  (result.data as any).data &&
+                  typeof (result.data as any).data === "object"
+                    ? Object.keys((result.data as any).data).slice(0, 20)
+                    : null,
+              }
+            : null,
+      });
+
       if (!result.success) {
-        // 404 → no record yet; treat as success+null for caller ergonomics
+        console.warn(
+          "[staff-actions] getMyStaffProfile request failed:",
+          result.error,
+          "userId=",
+          user.id,
+        );
         return { success: true as const, data: null };
       }
-      return { success: true as const, data: result.data ?? null };
+
+      // Unwrap `{data: staff}` envelope when present — picks the
+      // inner record by checking for the schema-required `nameEnglish`
+      // key on the candidate object.
+      const raw = result.data;
+      const unwrap = (v: any): any => {
+        if (!v || typeof v !== "object") return v;
+        if (
+          "nameEnglish" in v ||
+          "nrcNumber" in v ||
+          "_id" in v
+        )
+          return v;
+        if (v.data) return unwrap(v.data);
+        return v;
+      };
+      const profile = unwrap(raw);
+      console.log("[staff-actions] getMyStaffProfile after unwrap:", {
+        profileType: typeof profile,
+        profileIsNull: profile === null,
+        profileKeys:
+          profile && typeof profile === "object"
+            ? Object.keys(profile).slice(0, 20)
+            : null,
+      });
+
+      if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
+        return { success: true as const, data: null };
+      }
+      return { success: true as const, data: profile };
     },
     {
       operation: "get-my-staff-profile",
